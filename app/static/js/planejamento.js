@@ -161,6 +161,31 @@ function buscarMeta(manual) {
     });
 }
 
+// ─── Inicializar modal Novo com filtro ativo ─────────────────────────────────
+document.addEventListener("DOMContentLoaded", function() {
+  const modalEl = document.getElementById("modalNovo");
+  if (!modalEl) return;
+
+  modalEl.addEventListener("shown.bs.modal", function() {
+    const setorEl = document.getElementById("modalSetor");
+    const linhaEl = document.getElementById("modalLinha");
+
+    if (!setorEl.value) return;
+
+    onSetorModalChange(setorEl.value);
+
+    const filterLinha = (_root().dataset.filterLinha || "").trim();
+    if (filterLinha) {
+      linhaEl.value = filterLinha;
+      onLinhaModalChange();
+    }
+
+    if (document.getElementById("modalModelo").value) {
+      buscarMeta();
+    }
+  });
+});
+
 // ─── Criar planejamento ───────────────────────────────────────────────────────
 function salvarPlanejamento() {
   const payload = {

@@ -28,7 +28,9 @@
      data-url-imprimir="{{ url_for('pages.pcp_planejamento_plano_voo_imprimir') }}"
      data-data-selecionada="{{ data_selecionada }}"
      data-ops='{{ ops | tojson }}'
-     data-opcoes='{{ opcoes | tojson }}'>
+     data-opcoes='{{ opcoes | tojson }}'
+     data-filter-setor="{{ setor }}"
+     data-filter-linha="{{ linha }}">
 
   <div id="alertArea"></div>
 
@@ -537,7 +539,7 @@
                     onchange="onSetorModalChange(this.value)" style="border-radius:8px;">
               <option value="">Selecione</option>
               {% for s in opcoes.keys() | sort %}
-              <option value="{{ s }}">{{ s }}</option>
+              <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
               {% endfor %}
             </select>
           </div>
