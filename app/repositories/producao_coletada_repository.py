@@ -155,12 +155,12 @@ def soma_lancamento_manual(modelo: str, setor: str) -> int:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT COALESCE(SUM(producao_real), 0)
+                SELECT COALESCE(SUM(producao_real), 0) AS total
                 FROM producao_coletada
                 WHERE modelo = %s AND setor = %s AND origem = 'manual' AND producao_real > 0
             """, (modelo, setor))
             row = cur.fetchone()
-            return int(row[0]) if row else 0
+            return int(row["total"]) if row else 0
 
 
 def buscar_manual_por_id(registro_id: int) -> dict | None:
