@@ -1,15 +1,10 @@
-from datetime import date, time
+from datetime import date
 from app.repositories import apontamento_repository as repo
-from app.repositories import turno_config_repository as tc_repo
 from app.repositories import controle_ops_repository as ops_repo
 from app.repositories import roteiro_repository as roteiro_repo
 from app.repositories import producao_coletada_repository as pc_repo
 
 SETORES_SMD = {"SMD"}
-
-_TURNOS_NOTURNOS_FALLBACK: dict[str, tuple[time, time]] = {
-    "2º Turno": (time(16, 48), time(2, 35)),
-}
 
 
 def data_padrao() -> tuple[str, str]:
@@ -17,21 +12,8 @@ def data_padrao() -> tuple[str, str]:
     return hoje, hoje
 
 
-def _hora_params_turno_noturno(turno: str) -> tuple:
-    if not turno:
-        return None, None
-    for c in tc_repo.listar():
-        if c["turno"] == turno and c["hora_fim"] < c["hora_inicio"]:
-            return c["hora_inicio"], c["hora_fim"]
-    if turno in _TURNOS_NOTURNOS_FALLBACK:
-        return _TURNOS_NOTURNOS_FALLBACK[turno]
-    return None, None
-
-
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "", sistema: str = "") -> list:
-    hora_ini, hora_fim = _hora_params_turno_noturno(turno)
-    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno,
-                                hora_inicio_turno=hora_ini, hora_fim_turno=hora_fim, sistema=sistema)
+    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno, sistema=sistema)
 
 
 _ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
