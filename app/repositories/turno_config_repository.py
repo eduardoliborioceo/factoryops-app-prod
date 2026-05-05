@@ -28,6 +28,16 @@ def excluir(id: int) -> None:
             cur.execute("DELETE FROM turno_config WHERE id = %s", (id,))
 
 
+def buscar_horario(turno: str) -> dict | None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT hora_inicio, hora_fim FROM turno_config WHERE turno = %s ORDER BY ordem LIMIT 1",
+                (turno,)
+            )
+            return cur.fetchone()
+
+
 def proximo_ordem(turno: str) -> int:
     with get_db() as conn:
         with conn.cursor() as cur:
