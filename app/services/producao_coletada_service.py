@@ -4,17 +4,34 @@ import uuid
 from datetime import date
 from flask import current_app
 from app.repositories import producao_coletada_repository as repo
+from app.repositories import turno_config_repository as tc_repo
 
 
 _jobs: dict = {}
 
 
+def _hora_params_turno(turno: str) -> tuple:
+    if not turno:
+        return None, None
+    try:
+        cfg = tc_repo.buscar_horario(turno)
+        if cfg and cfg["hora_inicio"] and cfg["hora_fim"]:
+            hi, hf = str(cfg["hora_inicio"]), str(cfg["hora_fim"])
+            if hf < hi:
+                return hi, hf
+    except Exception:
+        pass
+    return None, None
+
+
 def listar(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> list:
-    return repo.listar(data_inicial, data_final, setor, linha, turno)
+    hora_i, hora_f = _hora_params_turno(turno)
+    return repo.listar(data_inicial, data_final, setor, linha, turno, hora_i, hora_f)
 
 
 def totais(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "") -> dict:
-    return repo.totais(data_inicial, data_final, setor, linha, turno)
+    hora_i, hora_f = _hora_params_turno(turno)
+    return repo.totais(data_inicial, data_final, setor, linha, turno, hora_i, hora_f)
 
 
 def filtros_disponiveis(setor: str = "") -> dict:

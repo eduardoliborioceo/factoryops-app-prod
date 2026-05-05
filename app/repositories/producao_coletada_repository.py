@@ -8,14 +8,21 @@ def _where_turno_noturno(
 ) -> tuple[str, list]:
     filtro = (
         "turno = %s AND ("
-        "(data BETWEEN %s AND %s AND NULLIF(hora_inicio, '')::time >= %s)"
+        # Registros COM hora_inicio: filtro por tempo respeitando cruzamento de meia-noite
+        "(hora_inicio IS NOT NULL AND hora_inicio != '' AND ("
+        "  (data BETWEEN %s AND %s AND hora_inicio::time >= %s)"
+        "  OR (data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
+        "      AND hora_inicio::time <= %s)"
+        "))"
         " OR "
-        "(data BETWEEN %s::date + INTERVAL '1 day' AND %s::date + INTERVAL '1 day'"
-        " AND NULLIF(hora_inicio, '')::time <= %s)"
+        # Registros SEM hora_inicio (Input BI, manual): confiar no campo data/turno
+        "((hora_inicio IS NULL OR hora_inicio = '') AND data BETWEEN %s AND %s)"
         ")"
     )
-    params = [turno, data_inicial, data_final, hora_inicio_turno,
-              data_inicial, data_final, hora_fim_turno]
+    params = [turno,
+              data_inicial, data_final, hora_inicio_turno,
+              data_inicial, data_final, hora_fim_turno,
+              data_inicial, data_final]
     return filtro, params
 
 

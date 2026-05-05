@@ -3,6 +3,7 @@ from app.repositories import apontamento_repository as repo
 from app.repositories import controle_ops_repository as ops_repo
 from app.repositories import roteiro_repository as roteiro_repo
 from app.repositories import producao_coletada_repository as pc_repo
+from app.repositories import turno_config_repository as tc_repo
 
 SETORES_SMD = {"SMD"}
 
@@ -12,8 +13,24 @@ def data_padrao() -> tuple[str, str]:
     return hoje, hoje
 
 
+def _hora_params_turno(turno: str) -> tuple:
+    if not turno:
+        return None, None
+    try:
+        cfg = tc_repo.buscar_horario(turno)
+        if cfg and cfg["hora_inicio"] and cfg["hora_fim"]:
+            hi, hf = str(cfg["hora_inicio"]), str(cfg["hora_fim"])
+            if hf < hi:
+                return hi, hf
+    except Exception:
+        pass
+    return None, None
+
+
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "", sistema: str = "") -> list:
-    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno, sistema=sistema)
+    hora_i, hora_f = _hora_params_turno(turno)
+    return repo.listar_agrupado(data_inicial, data_final, setor, linha, turno,
+                                hora_inicio_turno=hora_i, hora_fim_turno=hora_f, sistema=sistema)
 
 
 _ORDEM_SETORES = ["PTH", "SMD", "IM", "PA", "VTT"]
