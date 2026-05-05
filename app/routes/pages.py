@@ -877,6 +877,12 @@ def config_paradas():
     )
 
 
+@bp.route("/config/manual")
+@login_required
+def config_manual():
+    return render_template("config/manual.html", active_menu="config_manual")
+
+
 # ─── PCP ─────────────────────────────────────────────────────────────────────
 
 @bp.route("/pcp/controle-ops", methods=["GET", "POST"])
