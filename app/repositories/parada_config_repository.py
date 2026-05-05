@@ -6,9 +6,12 @@ def listar() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT id, setor, linha, tipo, turno, hora_inicio, duracao_min, frequencia_dias
-                FROM parada_config
-                ORDER BY setor, linha, hora_inicio NULLS LAST, turno
+                SELECT pc.id, pc.setor, pc.linha, pc.tipo, pc.turno,
+                       pc.hora_inicio, pc.duracao_min, pc.frequencia_dias,
+                       lc.filial
+                FROM parada_config pc
+                LEFT JOIN linha_config lc ON lc.linha = pc.linha
+                ORDER BY pc.setor, pc.linha, pc.hora_inicio NULLS LAST, pc.turno
             """)
             return cur.fetchall()
 

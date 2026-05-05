@@ -855,14 +855,14 @@ def config_paradas():
         return redirect(url_for("pages.config_paradas"))
 
     try:
-        paradas = svc.listar_por_setor()
+        paradas = svc.listar_por_filial_setor()
         opcoes  = svc.opcoes_linha()
     except Exception as e:
         erro = str(e)
 
     lideres = {}
     try:
-        lideres = lider_svc.listar_por_setor()
+        lideres = lider_svc.listar_por_filial_setor()
     except Exception:
         pass
 

@@ -39,6 +39,19 @@ def listar() -> list:
             return cur.fetchall()
 
 
+def listar_com_filial() -> list:
+    _ensure_schema()
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT ll.setor, ll.linha, ll.turno, ll.lider, ll.hc, lc.filial
+                FROM linha_lider ll
+                LEFT JOIN linha_config lc ON lc.linha = ll.linha AND lc.setor = ll.setor
+                ORDER BY ll.setor, ll.linha, ll.turno
+            """)
+            return cur.fetchall()
+
+
 def buscar(setor: str, linha: str, turno: str) -> dict | None:
     _ensure_schema()
     with get_db() as conn:

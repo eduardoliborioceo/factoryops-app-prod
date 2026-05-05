@@ -15,6 +15,20 @@ def listar_por_setor() -> dict:
     return agrupado
 
 
+def listar_por_filial_setor() -> dict:
+    registros = repo.listar()
+    resultado: dict = {}
+    for r in registros:
+        setor = r["setor"] or "Geral"
+        filial = r.get("filial")
+        if filial:
+            resultado.setdefault(filial, {}).setdefault(setor, []).append(dict(r))
+        else:
+            for f in ("VTE", "VTT"):
+                resultado.setdefault(f, {}).setdefault(setor, []).append(dict(r))
+    return resultado
+
+
 def adicionar(form_data: dict) -> None:
     tipo = form_data.get("tipo", "").strip().upper()
 
