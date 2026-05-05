@@ -11,6 +11,15 @@ def listar_por_setor() -> dict:
     return agrupado
 
 
+def listar_por_filial_setor() -> dict:
+    registros = repo.listar_com_filial()
+    resultado: dict = {}
+    for r in registros:
+        filial = r.get("filial") or "Geral"
+        resultado.setdefault(filial, {}).setdefault(r["setor"], []).append(dict(r))
+    return resultado
+
+
 def buscar(setor: str, linha: str, turno: str) -> dict | None:
     return repo.buscar(setor, linha, turno)
 
