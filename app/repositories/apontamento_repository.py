@@ -31,12 +31,46 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
         )
         cte_extra_params = [hora_fim_turno, data_final]
     else:
-        filtros = ["pc.data BETWEEN %s AND %s"]
-        params  = [data_inicial, data_final]
+        filtros = [
+            "(pc.data BETWEEN %s AND %s"
+            " OR (pc.data = %s::date + INTERVAL '1 day'"
+            "     AND EXISTS ("
+            "         SELECT 1 FROM turno_config tc"
+            "         WHERE tc.turno = pc.turno AND tc.hora_fim < tc.hora_inicio"
+            "     )"
+            "     AND (pc.hora_inicio IS NULL OR pc.hora_inicio = ''"
+            "          OR NULLIF(pc.hora_inicio, '')::time <= ("
+            "              SELECT tc2.hora_fim FROM turno_config tc2"
+            "              WHERE tc2.turno = pc.turno AND tc2.hora_fim < tc2.hora_inicio"
+            "              ORDER BY tc2.ordem LIMIT 1"
+            "          ))"
+            " ))"
+        ]
+        params = [data_inicial, data_final, data_final]
         if turno:
             filtros.append("pc.turno = %s")
             params.append(turno)
-        data_col = "pc.data"
+        data_col = (
+            "CASE "
+            "WHEN NULLIF(pc.hora_inicio, '')::time IS NOT NULL "
+            "     AND EXISTS ("
+            "         SELECT 1 FROM turno_config tc "
+            "         WHERE tc.turno = pc.turno "
+            "           AND tc.hora_fim < tc.hora_inicio "
+            "           AND NULLIF(pc.hora_inicio, '')::time < tc.hora_fim"
+            "     ) "
+            "THEN (pc.data - INTERVAL '1 day')::date "
+            "WHEN (pc.hora_inicio IS NULL OR pc.hora_inicio = '') "
+            "     AND pc.data > %s::date "
+            "     AND EXISTS ("
+            "         SELECT 1 FROM turno_config tc "
+            "         WHERE tc.turno = pc.turno "
+            "           AND tc.hora_fim < tc.hora_inicio"
+            "     ) "
+            "THEN (pc.data - INTERVAL '1 day')::date "
+            "ELSE pc.data END"
+        )
+        cte_extra_params = [data_final]
 
     if setor:
         filtros.append("(pc.setor = %s OR lc.setor = %s)")
