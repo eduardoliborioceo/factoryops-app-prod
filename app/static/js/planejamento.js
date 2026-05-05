@@ -212,7 +212,8 @@ function onOpChange(hiddenInput, modeloInputId, saldoId) {
 let _cardMetaTimer = null;
 
 function _buildOpLabel(op) {
-  return op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
+  const setor = op.setor ? " · " + op.setor : "";
+  return op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR") + setor;
 }
 
 function _renderOpDropdown(dropdown, ops, onSelect) {
