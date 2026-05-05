@@ -14,7 +14,7 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
             "      AND pc.hora_inicio::time <= %s)"
             "))"
             " OR "
-            "((pc.hora_inicio IS NULL OR pc.hora_inicio = '') AND pc.data BETWEEN %s AND %s)"
+            "((pc.hora_inicio IS NULL OR pc.hora_inicio = '') AND pc.data BETWEEN %s AND %s::date + INTERVAL '1 day')"
             ")"
         ]
         params = [turno,
@@ -22,11 +22,14 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
                   data_inicial, data_final, hora_fim_turno,
                   data_inicial, data_final]
         data_col = (
-            "CASE WHEN NULLIF(pc.hora_inicio, '')::time < %s "
+            "CASE "
+            "WHEN NULLIF(pc.hora_inicio, '')::time < %s "
+            "THEN (pc.data - INTERVAL '1 day')::date "
+            "WHEN (pc.hora_inicio IS NULL OR pc.hora_inicio = '') AND pc.data > %s::date "
             "THEN (pc.data - INTERVAL '1 day')::date "
             "ELSE pc.data END"
         )
-        cte_extra_params = [hora_fim_turno]
+        cte_extra_params = [hora_fim_turno, data_final]
     else:
         filtros = ["pc.data BETWEEN %s AND %s"]
         params  = [data_inicial, data_final]
