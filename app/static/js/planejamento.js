@@ -92,6 +92,15 @@ document.addEventListener("DOMContentLoaded", function() {
   if (modalFilial) {
     onModalFilialChange(modalFilial.value);
   }
+
+  const editOpSearch   = document.getElementById("editOpSearch");
+  const editOpHidden   = document.getElementById("editOp");
+  const editOpDropdown = document.getElementById("editOpDropdown");
+  if (editOpSearch && editOpHidden && editOpDropdown) {
+    _initOpSearch(editOpSearch, editOpHidden, editOpDropdown, function(hidden) {
+      onOpChange(hidden, "editModelo", "editSaldo");
+    });
+  }
 });
 
 // ─── Filtro dinâmico de linhas (fora do modal) ────────────────────────────────
@@ -182,10 +191,10 @@ function sugerirHoraInicio() {
   }
 }
 
-// ─── Seleção de OP no modal de edição ────────────────────────────────────────
-function onOpChange(selectEl, modeloInputId, saldoId) {
+// ─── Seleção de OP no modal de edição (via hidden input) ─────────────────────
+function onOpChange(hiddenInput, modeloInputId, saldoId) {
   const ops    = OPS_JSON();
-  const op     = ops.find(o => String(o.id) === selectEl.value);
+  const op     = ops.find(o => String(o.id) === String(hiddenInput.value));
   const modelo = document.getElementById(modeloInputId);
   const saldo  = document.getElementById(saldoId);
 
@@ -202,14 +211,70 @@ function onOpChange(selectEl, modeloInputId, saldoId) {
 // ─── Multi-modelo: gerenciamento de cards ────────────────────────────────────
 let _cardMetaTimer = null;
 
-function _popularOpSelect(selectEl) {
-  const ops = OPS_JSON();
-  selectEl.innerHTML = '<option value="">— Nenhuma OP —</option>';
+function _buildOpLabel(op) {
+  return op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
+}
+
+function _renderOpDropdown(dropdown, ops, onSelect) {
+  dropdown.innerHTML = "";
+  const clear = document.createElement("div");
+  clear.textContent = "— Nenhuma OP —";
+  clear.style.cssText = "padding:8px 12px;font-size:0.82rem;cursor:pointer;color:var(--text-muted);";
+  clear.addEventListener("mousedown", function(e) {
+    e.preventDefault();
+    onSelect(null);
+  });
+  dropdown.appendChild(clear);
   ops.forEach(function(op) {
-    const opt = document.createElement("option");
-    opt.value = op.id;
-    opt.textContent = op.numero_op + " · " + op.produto + " · Saldo: " + Number(op.saldo).toLocaleString("pt-BR");
-    selectEl.appendChild(opt);
+    const item = document.createElement("div");
+    item.textContent = _buildOpLabel(op);
+    item.style.cssText = "padding:8px 12px;font-size:0.82rem;cursor:pointer;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+    item.addEventListener("mouseover", function() { item.style.background = "var(--bg)"; });
+    item.addEventListener("mouseout",  function() { item.style.background = ""; });
+    item.addEventListener("mousedown", function(e) {
+      e.preventDefault();
+      onSelect(op);
+    });
+    dropdown.appendChild(item);
+  });
+}
+
+function _initOpSearch(searchInput, hiddenInput, dropdown, onSelectCb) {
+  const ops = OPS_JSON();
+
+  function showDropdown(list) {
+    _renderOpDropdown(dropdown, list, function(op) {
+      if (op) {
+        hiddenInput.value    = op.id;
+        searchInput.value    = _buildOpLabel(op);
+      } else {
+        hiddenInput.value    = "";
+        searchInput.value    = "";
+      }
+      dropdown.style.display = "none";
+      if (onSelectCb) onSelectCb(hiddenInput);
+    });
+    dropdown.style.display = "";
+  }
+
+  searchInput.addEventListener("focus", function() {
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = q ? ops.filter(function(o) {
+      return o.numero_op.toLowerCase().includes(q) || o.produto.toLowerCase().includes(q);
+    }) : ops;
+    showDropdown(filtered);
+  });
+
+  searchInput.addEventListener("input", function() {
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = q ? ops.filter(function(o) {
+      return o.numero_op.toLowerCase().includes(q) || o.produto.toLowerCase().includes(q);
+    }) : ops;
+    showDropdown(filtered);
+  });
+
+  searchInput.addEventListener("blur", function() {
+    setTimeout(function() { dropdown.style.display = "none"; }, 80);
   });
 }
 
@@ -223,7 +288,12 @@ function adicionarModelo() {
   card.dataset.modelIndex = index;
   card.querySelector(".modelo-numero").textContent = "Modelo " + (index + 1);
 
-  _popularOpSelect(card.querySelector(".model-op"));
+  const opSearchInput = card.querySelector(".model-op-search");
+  const opHiddenInput = card.querySelector(".model-op");
+  const opDropdown    = card.querySelector(".op-search-dropdown");
+  _initOpSearch(opSearchInput, opHiddenInput, opDropdown, function(hidden) {
+    onOpChangeCard(hidden, card);
+  });
 
   const setor = document.getElementById("modalSetor").value;
   const linha = document.getElementById("modalLinha").value;
@@ -282,10 +352,9 @@ function toggleAteFim(checkbox) {
 }
 
 // ─── OP por card ──────────────────────────────────────────────────────────────
-function onOpChangeCard(selectEl) {
-  const card   = selectEl.closest(".modelo-card");
+function onOpChangeCard(hiddenInput, card) {
   const ops    = OPS_JSON();
-  const op     = ops.find(function(o) { return String(o.id) === selectEl.value; });
+  const op     = ops.find(function(o) { return String(o.id) === String(hiddenInput.value); });
   const modelo = card.querySelector(".model-codigo");
   const saldo  = card.querySelector(".model-saldo");
 
@@ -430,7 +499,6 @@ function abrirEditar(id) {
   document.getElementById("editInfoLinha").textContent = row.dataset.linha;
   document.getElementById("editInfoTurno").textContent = row.dataset.turno;
   document.getElementById("editInfoData").textContent  = row.dataset.data;
-  document.getElementById("editOp").value              = row.dataset.opId || "";
   document.getElementById("editModelo").value          = row.dataset.modelo;
   document.getElementById("editQtd").value             = row.dataset.qtd;
   document.getElementById("editTaxa").value            = row.dataset.taxa;
@@ -439,8 +507,13 @@ function abrirEditar(id) {
   document.getElementById("editObs").value             = row.dataset.obs || "";
   document.getElementById("editSaldo").style.display   = "none";
 
-  const ops = OPS_JSON();
-  const op  = ops.find(o => String(o.id) === row.dataset.opId);
+  const ops        = OPS_JSON();
+  const opId       = row.dataset.opId || "";
+  const op         = ops.find(o => String(o.id) === opId);
+  const editHidden = document.getElementById("editOp");
+  const editSearch = document.getElementById("editOpSearch");
+  editHidden.value = opId;
+  editSearch.value = op ? _buildOpLabel(op) : "";
   if (op) {
     document.getElementById("editSaldo").textContent   = "Saldo da OP: " + Number(op.saldo).toLocaleString("pt-BR");
     document.getElementById("editSaldo").style.display = "";
