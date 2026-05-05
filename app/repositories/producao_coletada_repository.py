@@ -15,8 +15,8 @@ def _where_turno_noturno(
         "      AND hora_inicio::time <= %s)"
         "))"
         " OR "
-        # Registros SEM hora_inicio (Input BI, manual): confiar no campo data/turno
-        "((hora_inicio IS NULL OR hora_inicio = '') AND data BETWEEN %s AND %s)"
+        # Registros SEM hora_inicio (Input BI, manual): inclui o dia seguinte (overflow do turno noturno)
+        "((hora_inicio IS NULL OR hora_inicio = '') AND data BETWEEN %s AND %s::date + INTERVAL '1 day')"
         ")"
     )
     params = [turno,
