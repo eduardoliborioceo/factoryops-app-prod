@@ -95,7 +95,7 @@
                style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--card);cursor:pointer;"
                data-bs-toggle="collapse"
                data-bs-target="#setor-VTE-{{ setor }}"
-               aria-expanded="true">
+               aria-expanded="false">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-{{ cor }}" style="font-size:0.75rem;min-width:42px;">{{ setor }}</span>
               <span class="fw-semibold">{{ setor }}</span>
@@ -113,7 +113,7 @@
               <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
             </div>
           </div>
-          <div class="collapse show" id="setor-VTE-{{ setor }}">
+          <div class="collapse" id="setor-VTE-{{ setor }}">
             <div class="card-body p-2 drop-zone"
                  data-filial="VTE"
                  data-setor="{{ setor }}"
@@ -160,7 +160,7 @@
                style="border-radius:12px 12px 0 0;border-color:rgba(13,202,240,0.25);background:rgba(13,202,240,0.04);cursor:pointer;"
                data-bs-toggle="collapse"
                data-bs-target="#setor-VTT-{{ setor }}"
-               aria-expanded="true">
+               aria-expanded="false">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-{{ cor }}" style="font-size:0.75rem;min-width:42px;">{{ setor }}</span>
               <span class="fw-semibold">{{ setor }}</span>
@@ -179,7 +179,7 @@
               <i class="bi bi-chevron-down" style="font-size:0.75rem;color:var(--text-muted);"></i>
             </div>
           </div>
-          <div class="collapse show" id="setor-VTT-{{ setor }}">
+          <div class="collapse" id="setor-VTT-{{ setor }}">
             <div class="card-body p-2 drop-zone"
                  data-filial="VTT"
                  data-setor="{{ setor }}"
