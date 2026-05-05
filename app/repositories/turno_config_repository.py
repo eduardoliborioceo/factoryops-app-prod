@@ -31,10 +31,11 @@ def excluir(id: int) -> None:
 def buscar_horario(turno: str) -> dict | None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                "SELECT hora_inicio, hora_fim FROM turno_config WHERE turno = %s ORDER BY ordem LIMIT 1",
-                (turno,)
-            )
+            cur.execute("""
+                SELECT
+                    (SELECT hora_inicio FROM turno_config WHERE turno = %s ORDER BY ordem ASC  LIMIT 1) AS hora_inicio,
+                    (SELECT hora_fim    FROM turno_config WHERE turno = %s ORDER BY ordem DESC LIMIT 1) AS hora_fim
+            """, (turno, turno))
             return cur.fetchone()
 
 

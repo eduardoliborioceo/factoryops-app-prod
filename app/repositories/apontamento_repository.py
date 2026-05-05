@@ -5,6 +5,7 @@ from psycopg.rows import dict_row
 def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: str = "", turno: str = "",
                     hora_inicio_turno=None, hora_fim_turno=None, sistema: str = "") -> list:
     cte_extra_params = []
+    extra_cte = ""
     if hora_inicio_turno is not None and hora_fim_turno is not None:
         filtros = [
             "pc.turno = %s AND ("
@@ -31,19 +32,26 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
         )
         cte_extra_params = [hora_fim_turno, data_final]
     else:
+        extra_cte = (
+            "tc_global AS ("
+            "    SELECT t1.turno, t1.hora_inicio AS hora_inicio_global, t2.hora_fim AS hora_fim_global"
+            "    FROM"
+            "        (SELECT DISTINCT ON (turno) turno, hora_inicio FROM turno_config ORDER BY turno, ordem ASC)  t1"
+            "    JOIN"
+            "        (SELECT DISTINCT ON (turno) turno, hora_fim    FROM turno_config ORDER BY turno, ordem DESC) t2"
+            "    ON t1.turno = t2.turno"
+            "),"
+        )
         filtros = [
             "(pc.data BETWEEN %s AND %s"
             " OR (pc.data = %s::date + INTERVAL '1 day'"
             "     AND EXISTS ("
-            "         SELECT 1 FROM turno_config tc"
-            "         WHERE tc.turno = pc.turno AND tc.hora_fim::time < tc.hora_inicio::time"
+            "         SELECT 1 FROM tc_global"
+            "         WHERE tc_global.turno = pc.turno"
+            "           AND tc_global.hora_fim_global::time < tc_global.hora_inicio_global::time"
+            "           AND (pc.hora_inicio IS NULL OR pc.hora_inicio = ''"
+            "                OR NULLIF(pc.hora_inicio, '')::time <= tc_global.hora_fim_global::time)"
             "     )"
-            "     AND (pc.hora_inicio IS NULL OR pc.hora_inicio = ''"
-            "          OR NULLIF(pc.hora_inicio, '')::time <= ("
-            "              SELECT tc2.hora_fim::time FROM turno_config tc2"
-            "              WHERE tc2.turno = pc.turno AND tc2.hora_fim::time < tc2.hora_inicio::time"
-            "              ORDER BY tc2.ordem LIMIT 1"
-            "          ))"
             " ))"
         ]
         params = [data_inicial, data_final, data_final]
@@ -54,18 +62,18 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
             "CASE "
             "WHEN NULLIF(pc.hora_inicio, '')::time IS NOT NULL "
             "     AND EXISTS ("
-            "         SELECT 1 FROM turno_config tc "
-            "         WHERE tc.turno = pc.turno "
-            "           AND tc.hora_fim::time < tc.hora_inicio::time "
-            "           AND NULLIF(pc.hora_inicio, '')::time < tc.hora_fim::time"
+            "         SELECT 1 FROM tc_global"
+            "         WHERE tc_global.turno = pc.turno"
+            "           AND tc_global.hora_fim_global::time < tc_global.hora_inicio_global::time"
+            "           AND NULLIF(pc.hora_inicio, '')::time < tc_global.hora_fim_global::time"
             "     ) "
             "THEN (pc.data - INTERVAL '1 day')::date "
             "WHEN (pc.hora_inicio IS NULL OR pc.hora_inicio = '') "
             "     AND pc.data > %s::date "
             "     AND EXISTS ("
-            "         SELECT 1 FROM turno_config tc "
-            "         WHERE tc.turno = pc.turno "
-            "           AND tc.hora_fim::time < tc.hora_inicio::time"
+            "         SELECT 1 FROM tc_global"
+            "         WHERE tc_global.turno = pc.turno"
+            "           AND tc_global.hora_fim_global::time < tc_global.hora_inicio_global::time"
             "     ) "
             "THEN (pc.data - INTERVAL '1 day')::date "
             "ELSE pc.data END"
@@ -89,7 +97,8 @@ def listar_agrupado(data_inicial: str, data_final: str, setor: str = "", linha: 
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
-                WITH agrupado AS (
+                WITH {extra_cte}
+                agrupado AS (
                     SELECT
                         {data_col} AS data,
                         pc.turno,
