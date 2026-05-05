@@ -762,7 +762,17 @@
 
     <div class="mb-2">
       <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
-      <select class="form-select form-select-sm model-op" onchange="onOpChangeCard(this)" style="border-radius:8px;"></select>
+      <div class="op-search-wrapper position-relative">
+        <input type="text" class="form-control form-control-sm model-op-search"
+               placeholder="Buscar por OP ou modelo..." autocomplete="off"
+               style="border-radius:8px;">
+        <input type="hidden" class="model-op">
+        <div class="op-search-dropdown"
+             style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:1055;
+                    max-height:220px;overflow-y:auto;background:var(--card);
+                    border:1px solid var(--border);border-radius:8px;
+                    box-shadow:0 4px 12px rgba(15,23,42,0.12);"></div>
+      </div>
       <div class="model-saldo form-text text-primary" style="display:none;font-size:0.75rem;"></div>
     </div>
 
@@ -843,13 +853,18 @@
 
         <div class="mb-3">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">OP <span class="text-muted fw-normal">(opcional)</span></label>
-          <select class="form-select form-select-sm" id="editOp"
-                  onchange="onOpChange(this,'editModelo','editSaldo')" style="border-radius:8px;">
-            <option value="">— Nenhuma OP —</option>
-            {% for op in ops %}
-            <option value="{{ op.id }}">{{ op.numero_op }} · {{ op.produto }} · Saldo: {{ "{:,.0f}".format(op.saldo).replace(',','.') }}</option>
-            {% endfor %}
-          </select>
+          <div class="op-search-wrapper position-relative">
+            <input type="text" id="editOpSearch"
+                   class="form-control form-control-sm"
+                   placeholder="Buscar por OP ou modelo..." autocomplete="off"
+                   style="border-radius:8px;">
+            <input type="hidden" id="editOp">
+            <div id="editOpDropdown"
+                 style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:1055;
+                        max-height:220px;overflow-y:auto;background:var(--card);
+                        border:1px solid var(--border);border-radius:8px;
+                        box-shadow:0 4px 12px rgba(15,23,42,0.12);"></div>
+          </div>
           <div id="editSaldo" class="form-text text-primary" style="display:none;font-size:0.75rem;"></div>
         </div>
 
