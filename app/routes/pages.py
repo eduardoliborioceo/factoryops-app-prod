@@ -1648,6 +1648,45 @@ def pcp_entregas_entrega_localizacao(entrega_id):
         return jsonify({"erro": str(e)}), 400
 
 
+@bp.route("/pcp/entregas/mapeamento")
+@login_required
+def pcp_entregas_mapeamento():
+    from app.services import entregas_service as svc
+    entregas = svc.posicoes_ativas()
+    return render_template(
+        "pcp/mapeamento_entregas.html",
+        active_menu="logistica_entregas",
+        entregas=entregas,
+    )
+
+
+@bp.route("/pcp/entregas/mapeamento/posicoes")
+@login_required
+def pcp_entregas_mapeamento_posicoes():
+    from flask import jsonify
+    from app.services import entregas_service as svc
+
+    result = []
+    for r in svc.posicoes_ativas():
+        result.append({
+            "id":                 r["id"],
+            "status":             r["status"],
+            "motorista_nome":     r["motorista_nome"] or "—",
+            "motorista_telefone": r["motorista_telefone"] or "",
+            "motorista_lat":      float(r["motorista_lat"])  if r["motorista_lat"]  is not None else None,
+            "motorista_lng":      float(r["motorista_lng"])  if r["motorista_lng"]  is not None else None,
+            "localizacao_em":     r["localizacao_em"].strftime("%d/%m %H:%M") if r["localizacao_em"] else None,
+            "numero_pedido":      r["numero_pedido"],
+            "cliente":            r["cliente"],
+            "modelo":             r["modelo"],
+            "local_nome":         r["local_nome"]    or "",
+            "local_endereco":     r["local_endereco"] or "",
+            "destino_lat":        float(r["destino_lat"]) if r["destino_lat"] is not None else None,
+            "destino_lng":        float(r["destino_lng"]) if r["destino_lng"] is not None else None,
+        })
+    return jsonify({"ok": True, "entregas": result})
+
+
 @bp.route("/logistica")
 @login_required
 def logistica_resumo():
