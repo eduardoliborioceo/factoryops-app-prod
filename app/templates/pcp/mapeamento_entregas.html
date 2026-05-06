@@ -1,0 +1,347 @@
+{% extends "layouts/app.html" %}
+{% block title %}Logística · Mapeamento de Entregas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #mapaGeral {
+    height: calc(100vh - 220px);
+    min-height: 380px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  @media (max-width: 767px) {
+    #mapaGeral { height: 55vh; min-height: 260px; }
+  }
+  .driver-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--card);
+    cursor: pointer;
+    transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .driver-card:hover { box-shadow: 0 2px 10px rgba(15,23,42,0.09); }
+  .driver-card.sem-posicao { opacity: 0.65; }
+  .driver-card .cor-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .painel-motoristas {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+  @media (max-width: 767px) {
+    .painel-motoristas { max-height: none; }
+  }
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Logística</span>
+    <h1 class="page-header-name">Mapeamento de Entregas</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.pcp_entregas', tab='logistica') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row g-3">
+
+    <!-- Mapa -->
+    <div class="col-12 col-lg-8">
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center"
+             style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+          <span class="fw-semibold" style="font-size:0.9rem;">
+            <i class="bi bi-map me-2 text-primary"></i>Entregas em andamento
+          </span>
+          <div class="d-flex align-items-center gap-2">
+            <span id="badgeAtivos" class="badge bg-primary" style="font-size:0.7rem;">0 ativas</span>
+            <span id="tsAtualizacao" class="text-muted" style="font-size:0.75rem;"></span>
+          </div>
+        </div>
+        <div class="card-body p-2">
+          {% if entregas %}
+          <div id="mapaGeral"></div>
+          {% else %}
+          <div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted"
+               style="min-height:320px;">
+            <i class="bi bi-map fs-1 mb-3 opacity-25"></i>
+            <p class="fw-semibold mb-1">Nenhuma entrega em andamento</p>
+            <p class="small mb-0">Entregas com status <em>Em Carregamento</em> ou <em>Em Trânsito</em> aparecem aqui.</p>
+          </div>
+          <div id="mapaGeral" style="display:none;"></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel de motoristas -->
+    <div class="col-12 col-lg-4">
+      <div class="card" style="border-radius:12px;border-color:var(--border);">
+        <div class="card-header py-2 px-3"
+             style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
+          <span class="fw-semibold" style="font-size:0.9rem;">
+            <i class="bi bi-person-lines-fill me-2 text-primary"></i>Motoristas
+          </span>
+        </div>
+        <div class="card-body p-2">
+          <div class="painel-motoristas" id="painelMotoristas">
+            {% if not entregas %}
+            <div class="text-center text-muted py-4" style="font-size:0.85rem;">
+              <i class="bi bi-truck d-block fs-3 mb-2 opacity-25"></i>
+              Nenhum motorista em rota.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+
+const URL_POSICOES  = "{{ url_for('pages.pcp_entregas_mapeamento_posicoes') }}";
+const URL_RASTREAR  = "/logistica/rastrear/";
+const DADOS_INICIAIS = {{ entregas | tojson }};
+
+const CORES = ["#0d6efd","#198754","#fd7e14","#6610f2","#d63384","#20c997","#e63946"];
+
+const STATUS_LABEL = {
+  "em_carregamento": "Em Carregamento",
+  "em_transito":     "Em Trânsito",
+};
+
+let mapa = null;
+const _camadas = {};  // {id: {truck, dest, linha}}
+
+function _cor(idx) {
+  return CORES[idx % CORES.length];
+}
+
+function _iconeMotorista(cor) {
+  return L.divIcon({
+    html: `<i class="bi bi-truck-front-fill" style="color:${cor};font-size:1.8rem;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));"></i>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 24],
+    className: "",
+  });
+}
+
+function _iconeDestino(cor) {
+  return L.divIcon({
+    html: `<i class="bi bi-geo-alt-fill" style="color:${cor};font-size:1.8rem;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));"></i>`,
+    iconSize: [20, 28],
+    iconAnchor: [10, 28],
+    className: "",
+  });
+}
+
+function _iniciarMapa() {
+  if (mapa) return;
+  mapa = L.map("mapaGeral").setView([-15.77, -47.93], 5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(mapa);
+}
+
+function _popupMotorista(e) {
+  const ts = e.localizacao_em ? `<br><span style="font-size:0.78rem;color:#64748b;">Atualizado: ${e.localizacao_em}</span>` : "";
+  const tel = e.motorista_telefone ? `<br><a href="tel:${e.motorista_telefone}" style="font-size:0.8rem;">${e.motorista_telefone}</a>` : "";
+  return `<div style="min-width:160px;font-size:0.85rem;">
+    <strong>${e.motorista_nome}</strong>${tel}
+    <br><span style="color:#64748b;">${e.numero_pedido}</span> · ${e.cliente}
+    ${ts}
+    <br><a href="${URL_RASTREAR}${e.id}" style="font-size:0.8rem;">Ver rastreio individual →</a>
+  </div>`;
+}
+
+function _popupDestino(e) {
+  return `<div style="min-width:140px;font-size:0.85rem;">
+    <strong>${e.local_nome || e.cliente}</strong>
+    ${e.local_endereco ? `<br><span style="color:#64748b;font-size:0.78rem;">${e.local_endereco}</span>` : ""}
+  </div>`;
+}
+
+function _atualizarCamadas(lista) {
+  const idsAtivos = new Set(lista.map(e => e.id));
+
+  // remove entregas que saíram da lista
+  for (const id of Object.keys(_camadas)) {
+    if (!idsAtivos.has(Number(id))) {
+      const c = _camadas[id];
+      if (c.truck) mapa.removeLayer(c.truck);
+      if (c.dest)  mapa.removeLayer(c.dest);
+      if (c.linha) mapa.removeLayer(c.linha);
+      delete _camadas[id];
+    }
+  }
+
+  lista.forEach(function(e, idx) {
+    const cor = _cor(idx);
+
+    if (!_camadas[e.id]) {
+      _camadas[e.id] = { truck: null, dest: null, linha: null };
+    }
+    const c = _camadas[e.id];
+
+    // destino
+    if (e.destino_lat && e.destino_lng) {
+      if (!c.dest) {
+        c.dest = L.marker([e.destino_lat, e.destino_lng], { icon: _iconeDestino(cor) })
+          .addTo(mapa)
+          .bindPopup(_popupDestino(e));
+      } else {
+        c.dest.setLatLng([e.destino_lat, e.destino_lng]);
+        c.dest.setPopupContent(_popupDestino(e));
+      }
+    }
+
+    // motorista
+    if (e.motorista_lat && e.motorista_lng) {
+      if (!c.truck) {
+        c.truck = L.marker([e.motorista_lat, e.motorista_lng], { icon: _iconeMotorista(cor) })
+          .addTo(mapa)
+          .bindPopup(_popupMotorista(e));
+      } else {
+        c.truck.setLatLng([e.motorista_lat, e.motorista_lng]);
+        c.truck.setPopupContent(_popupMotorista(e));
+      }
+    }
+
+    // linha motorista → destino
+    if (e.motorista_lat && e.motorista_lng && e.destino_lat && e.destino_lng) {
+      const pontos = [[e.motorista_lat, e.motorista_lng], [e.destino_lat, e.destino_lng]];
+      if (!c.linha) {
+        c.linha = L.polyline(pontos, { color: cor, weight: 2, dashArray: "6 5", opacity: 0.6 }).addTo(mapa);
+      } else {
+        c.linha.setLatLngs(pontos);
+      }
+    }
+  });
+
+  // ajusta bounds para mostrar todos os pontos
+  const pontos = [];
+  for (const c of Object.values(_camadas)) {
+    if (c.truck) pontos.push(c.truck.getLatLng());
+    if (c.dest)  pontos.push(c.dest.getLatLng());
+  }
+  if (pontos.length > 0) {
+    mapa.fitBounds(L.latLngBounds(pontos), { padding: [48, 48], maxZoom: 14 });
+  }
+}
+
+function _atualizarPainel(lista) {
+  const painel = document.getElementById("painelMotoristas");
+  if (!painel) return;
+
+  if (lista.length === 0) {
+    painel.innerHTML = `<div class="text-center text-muted py-4" style="font-size:0.85rem;">
+      <i class="bi bi-truck d-block fs-3 mb-2 opacity-25"></i>Nenhum motorista em rota.
+    </div>`;
+    return;
+  }
+
+  painel.innerHTML = lista.map(function(e, idx) {
+    const cor       = _cor(idx);
+    const temPos    = e.motorista_lat && e.motorista_lng;
+    const statusTxt = STATUS_LABEL[e.status] || e.status;
+    const corBadge  = e.status === "em_transito" ? "primary" : "warning text-dark";
+    const tsHtml    = temPos && e.localizacao_em
+      ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-clock me-1"></i>${e.localizacao_em}</div>`
+      : `<div style="font-size:0.72rem;color:#dc3545;margin-top:2px;"><i class="bi bi-exclamation-triangle me-1"></i>Posição não disponível</div>`;
+
+    return `<div class="driver-card ${temPos ? "" : "sem-posicao"}" onclick="_focarEntrega(${e.id})">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="cor-dot" style="background:${cor};"></span>
+        <span class="fw-semibold" style="font-size:0.85rem;">${e.motorista_nome}</span>
+        <span class="badge bg-${corBadge} ms-auto" style="font-size:0.65rem;">${statusTxt}</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-muted);">${e.numero_pedido} · ${e.cliente}</div>
+      ${e.local_nome ? `<div style="font-size:0.78rem;color:var(--text-muted);"><i class="bi bi-geo-alt me-1"></i>${e.local_nome}</div>` : ""}
+      ${tsHtml}
+      <a href="${URL_RASTREAR}${e.id}" class="d-block mt-1" style="font-size:0.75rem;" onclick="event.stopPropagation();">
+        <i class="bi bi-broadcast me-1"></i>Rastreio individual
+      </a>
+    </div>`;
+  }).join("");
+
+  const badge = document.getElementById("badgeAtivos");
+  if (badge) badge.textContent = lista.length + " ativa" + (lista.length !== 1 ? "s" : "");
+}
+
+function _focarEntrega(id) {
+  const c = _camadas[id];
+  if (!c || !mapa) return;
+  const pontos = [];
+  if (c.truck) pontos.push(c.truck.getLatLng());
+  if (c.dest)  pontos.push(c.dest.getLatLng());
+  if (pontos.length > 0) {
+    mapa.fitBounds(L.latLngBounds(pontos), { padding: [60, 60], maxZoom: 14 });
+    if (c.truck) c.truck.openPopup();
+  }
+}
+
+function _normalizar(lista) {
+  return lista.map(function(e) {
+    return Object.assign({}, e, {
+      motorista_lat: e.motorista_lat ? Number(e.motorista_lat) : null,
+      motorista_lng: e.motorista_lng ? Number(e.motorista_lng) : null,
+      destino_lat:   e.destino_lat   ? Number(e.destino_lat)   : null,
+      destino_lng:   e.destino_lng   ? Number(e.destino_lng)   : null,
+    });
+  });
+}
+
+function _atualizar(lista) {
+  const norm = _normalizar(lista);
+  _atualizarPainel(norm);
+  if (norm.length > 0) {
+    _iniciarMapa();
+    const el = document.getElementById("mapaGeral");
+    if (el) el.style.display = "";
+    _atualizarCamadas(norm);
+  }
+  const ts = document.getElementById("tsAtualizacao");
+  if (ts) ts.textContent = "Atualizado às " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function _poll() {
+  fetch(URL_POSICOES)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) _atualizar(data.entregas);
+    })
+    .catch(function() {});
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const dados = DADOS_INICIAIS;
+  if (dados && dados.length > 0) {
+    _iniciarMapa();
+  }
+  _atualizar(dados);
+  setInterval(_poll, 30000);
+});
+</script>
+{% endblock %}

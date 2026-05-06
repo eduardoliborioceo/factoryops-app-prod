@@ -161,5 +161,9 @@ def desativar_membro_equipe(membro_id: int) -> None:
     repo.desativar_membro_equipe(membro_id)
 
 
+def posicoes_ativas() -> list:
+    return repo.posicoes_ativas()
+
+
 def resumo_apontamento_logistica(data: str) -> list:
     return repo.resumo_apontamento_logistica(data)

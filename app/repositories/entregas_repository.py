@@ -308,6 +308,32 @@ def sincronizar_equipe_entrega(entrega_id: int, membro_ids: list[int]) -> None:
                 )
 
 
+def posicoes_ativas() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT
+                    e.id, e.status,
+                    e.lat  AS motorista_lat,
+                    e.lng  AS motorista_lng,
+                    e.localizacao_em,
+                    p.numero_pedido, p.cliente, p.modelo,
+                    m.nome     AS motorista_nome,
+                    m.telefone AS motorista_telefone,
+                    l.nome_local  AS local_nome,
+                    l.endereco    AS local_endereco,
+                    l.lat AS destino_lat,
+                    l.lng AS destino_lng
+                FROM entrega e
+                JOIN pedido_cliente p ON p.id = e.pedido_id
+                LEFT JOIN equipe_entrega m ON m.id = e.motorista_id
+                LEFT JOIN local_entrega l ON l.id = p.local_entrega_id
+                WHERE e.status IN ('em_carregamento', 'em_transito')
+                ORDER BY e.status DESC, e.data_saida DESC NULLS LAST
+            """)
+            return cur.fetchall()
+
+
 def resumo_apontamento_logistica(data: str) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
