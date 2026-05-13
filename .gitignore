@@ -5,4 +5,7 @@ coletas/*.json
 dados.json
 instrucoes.md
 coletor.py
+coletor_mes.py
+rodar_coletor.bat
 CLAUDE.md
+factoryops-key-pair.pem
