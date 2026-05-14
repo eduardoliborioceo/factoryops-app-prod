@@ -1778,10 +1778,29 @@ def logistica_conferencia_material():
     from flask import request
     from datetime import date
     from app.services import conferencia_material_service as svc
+    from app.services import planejamento_service as plan_svc
 
     data = request.args.get("data", str(date.today()))
-    planos = svc.listar_planos_por_data(data)
-    datas = svc.listar_datas()
+
+    planos_base   = plan_svc.listar(data)
+    conferencias  = svc.status_por_data(data)
+    datas         = svc.listar_datas()
+
+    planos = []
+    for p in planos_base:
+        p = dict(p)
+        conf = conferencias.get(p["id"])
+        p["status_material"]  = conf["status"]       if conf else None
+        p["conferido_por"]    = conf["conferido_por"] if conf else None
+        p["conferido_em"]     = conf["conferido_em"]  if conf else None
+        p["conferencia_obs"]  = conf["observacao"]    if conf else None
+        p["arquivo_id"]       = None
+        p["arquivo_nome"]     = None
+        arq = svc.arquivo_por_plano(p["id"])
+        if arq:
+            p["arquivo_id"]   = arq["id"]
+            p["arquivo_nome"] = arq["filename"]
+        planos.append(p)
 
     return render_template(
         "logistica/conferencia_material.html",
@@ -1808,6 +1827,7 @@ def logistica_conferencia_material_confirmar():
             status=data["status"],
             observacao=data.get("observacao"),
             conferido_por=current_user.username,
+            componentes_confirmados=data.get("componentes_confirmados"),
         )
         return jsonify({"ok": True, "id": conferencia_id})
     except (ValueError, KeyError, Exception) as e:
@@ -1824,13 +1844,44 @@ def logistica_conferencia_material_historico(planejamento_id):
     result = []
     for h in historico:
         result.append({
-            "id":           h["id"],
-            "status":       h["status"],
-            "observacao":   h["observacao"],
-            "conferido_por": h["conferido_por"],
-            "conferido_em": h["conferido_em"].strftime("%d/%m/%Y %H:%M") if h["conferido_em"] else None,
+            "id":                     h["id"],
+            "status":                 h["status"],
+            "observacao":             h["observacao"],
+            "conferido_por":          h["conferido_por"],
+            "conferido_em":           h["conferido_em"].strftime("%d/%m/%Y %H:%M") if h["conferido_em"] else None,
+            "componentes_confirmados": h["componentes_confirmados"],
         })
     return jsonify({"ok": True, "historico": result})
+
+
+@bp.route("/logistica/conferencia-material/upload/<int:planejamento_id>", methods=["POST"])
+@login_required
+def logistica_conferencia_material_upload(planejamento_id):
+    from flask import request, jsonify
+    from app.services import conferencia_material_service as svc
+
+    arquivo = request.files.get("arquivo")
+    if not arquivo or not arquivo.filename:
+        return jsonify({"erro": "Nenhum arquivo enviado."}), 400
+    try:
+        resultado = svc.upload_arquivo(planejamento_id, arquivo, current_user.username)
+        return jsonify({"ok": True, "componentes": resultado["componentes"]})
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"erro": "Erro interno ao processar arquivo."}), 500
+
+
+@bp.route("/logistica/conferencia-material/componentes/<int:planejamento_id>")
+@login_required
+def logistica_conferencia_material_componentes(planejamento_id):
+    from flask import jsonify
+    from app.services import conferencia_material_service as svc
+
+    arq = svc.arquivo_por_plano(planejamento_id)
+    if not arq or not arq["componentes"]:
+        return jsonify({"ok": True, "componentes": []})
+    return jsonify({"ok": True, "componentes": arq["componentes"]})
 
 
 # ─── Suporte ─────────────────────────────────────────────────────────────────

@@ -22,7 +22,9 @@
 <div class="container-fluid"
      id="conferencia-root"
      data-url-confirmar="{{ url_for('pages.logistica_conferencia_material_confirmar') }}"
-     data-url-historico-tpl="{{ url_for('pages.logistica_conferencia_material_historico', planejamento_id=0) }}">
+     data-url-historico-tpl="{{ url_for('pages.logistica_conferencia_material_historico', planejamento_id=0) }}"
+     data-url-upload-tpl="{{ url_for('pages.logistica_conferencia_material_upload', planejamento_id=0) }}"
+     data-url-componentes-tpl="{{ url_for('pages.logistica_conferencia_material_componentes', planejamento_id=0) }}">
 
   <div id="alertArea"></div>
 
@@ -56,11 +58,10 @@
   </div>
 
   <!-- KPIs -->
-  {% set total_planos     = planos | length %}
-  {% set confirmados      = planos | selectattr('status_material','eq','CONFIRMADO') | list | length %}
-  {% set sem_material     = planos | selectattr('status_material','eq','SEM_MATERIAL') | list | length %}
-  {% set parciais         = planos | selectattr('status_material','eq','PARCIAL') | list | length %}
-  {% set pendentes        = total_planos - confirmados - sem_material - parciais %}
+  {% set total_planos = planos | length %}
+  {% set confirmados  = planos | selectattr('status_material','eq','CONFIRMADO')   | list | length %}
+  {% set sem_material = planos | selectattr('status_material','eq','SEM_MATERIAL') | list | length %}
+  {% set parciais     = planos | selectattr('status_material','eq','PARCIAL')      | list | length %}
 
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
@@ -93,7 +94,7 @@
     </div>
   </div>
 
-  <!-- Tabela de planos -->
+  <!-- Tabela -->
   {% if planos %}
   <div class="card" style="border-radius:12px;border-color:var(--border);">
     <div class="card-body p-0">
@@ -106,30 +107,40 @@
               <th>Modelo</th>
               <th>OP</th>
               <th class="text-end">Qtd.</th>
-              <th>Prod. Status</th>
+              <th>Status Prod.</th>
               <th>Material</th>
+              <th>Documento</th>
               <th>Conferido por</th>
               <th>Horário</th>
               <th class="text-end pe-3">Ação</th>
             </tr>
           </thead>
           <tbody>
-            {% set st_bg = {'PLANEJADO':'secondary','EM_EXECUCAO':'primary','CONCLUIDO':'success','CANCELADO':'danger'} %}
-            {% set st_lb = {'PLANEJADO':'Planejado','EM_EXECUCAO':'Em execução','CONCLUIDO':'Concluído','CANCELADO':'Cancelado'} %}
+            {% set st_bg  = {'PLANEJADO':'secondary','EM_EXECUCAO':'primary','CONCLUIDO':'success','CANCELADO':'danger'} %}
+            {% set st_lb  = {'PLANEJADO':'Planejado','EM_EXECUCAO':'Em execução','CONCLUIDO':'Concluído','CANCELADO':'Cancelado'} %}
             {% set mat_cor = {'CONFIRMADO':'success','SEM_MATERIAL':'danger','PARCIAL':'warning'} %}
             {% set mat_lb  = {'CONFIRMADO':'Confirmado','SEM_MATERIAL':'Sem Material','PARCIAL':'Parcial'} %}
             {% for p in planos %}
+            {% set qtd_display = p.quantidade_calculada if p.quantidade_planejada == 0 and p.quantidade_calculada else p.quantidade_planejada %}
+            {% set eh_estimado = p.quantidade_planejada == 0 and p.quantidade_calculada %}
             <tr data-plan-id="{{ p.id }}">
               <td class="ps-3 fw-semibold text-muted small">{{ p.turno }}</td>
               <td class="fw-semibold">{{ p.linha }}</td>
               <td class="text-nowrap">{{ p.modelo }}</td>
               <td class="text-muted small">{{ p.numero_op or '—' }}</td>
               <td class="text-end fw-bold">
-                {{ "{:,.0f}".format(p.quantidade_planejada).replace(',','.') if p.quantidade_planejada else '—' }}
+                {% if qtd_display %}
+                {{ "{:,.0f}".format(qtd_display).replace(',','.') }}
+                {% if eh_estimado %}
+                <small class="text-muted d-block" style="font-size:0.68rem;">estimado</small>
+                {% endif %}
+                {% else %}
+                <span class="text-muted fst-italic" style="font-size:0.8rem;">Até fim</span>
+                {% endif %}
               </td>
               <td>
-                <span class="badge bg-{{ st_bg.get(p.status_producao,'secondary') }}" style="font-size:0.68rem;">
-                  {{ st_lb.get(p.status_producao, p.status_producao) }}
+                <span class="badge bg-{{ st_bg.get(p.status,'secondary') }}" style="font-size:0.68rem;">
+                  {{ st_lb.get(p.status, p.status) }}
                 </span>
               </td>
               <td>
@@ -141,17 +152,32 @@
                 <span class="text-muted" style="font-size:0.75rem;">Pendente</span>
                 {% endif %}
               </td>
+              <td>
+                {% if p.arquivo_nome %}
+                <span class="text-success" style="font-size:0.75rem;" title="{{ p.arquivo_nome }}">
+                  <i class="bi bi-file-earmark-check me-1"></i>
+                  {{ p.arquivo_nome | truncate(20, true, '…') }}
+                </span>
+                {% else %}
+                <label class="btn btn-outline-secondary btn-sm mb-0"
+                       style="border-radius:6px;font-size:0.72rem;padding:2px 8px;cursor:pointer;"
+                       title="Anexar lista de alimentação">
+                  <i class="bi bi-paperclip me-1"></i>Anexar
+                  <input type="file" class="d-none upload-input"
+                         data-plan-id="{{ p.id }}"
+                         accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                </label>
+                {% endif %}
+              </td>
               <td class="text-muted small">{{ p.conferido_por or '—' }}</td>
               <td class="text-muted small text-nowrap">
-                {% if p.conferido_em %}
-                {{ p.conferido_em.strftime('%d/%m %H:%M') }}
-                {% else %}—{% endif %}
+                {% if p.conferido_em %}{{ p.conferido_em.strftime('%d/%m %H:%M') }}{% else %}—{% endif %}
               </td>
               <td class="text-end pe-3">
                 <div class="d-flex gap-1 justify-content-end">
                   <button class="btn btn-outline-primary btn-sm"
                           style="border-radius:6px;font-size:0.72rem;padding:2px 8px;"
-                          onclick="abrirModalConferencia({{ p.id }}, '{{ p.modelo }}', '{{ p.linha }}', '{{ p.turno }}')"
+                          onclick="abrirModalConferencia({{ p.id }}, '{{ p.modelo }}', '{{ p.linha }}', '{{ p.turno }}', {{ 'true' if p.arquivo_id else 'false' }})"
                           title="Confirmar material">
                     <i class="bi bi-clipboard2-check me-1"></i>Conferir
                   </button>
@@ -183,7 +209,7 @@
 
 <!-- Modal Conferência -->
 <div class="modal fade" id="modalConferencia" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="border-radius:12px;border-color:var(--border);">
       <div class="modal-header" style="border-bottom:1px solid var(--border);">
         <h5 class="modal-title fw-bold" style="font-size:1rem;">Conferência de Material</h5>
@@ -207,6 +233,29 @@
           </div>
         </div>
         <input type="hidden" id="confPlanId">
+
+        <!-- Componentes -->
+        <div id="secaoComponentes" style="display:none;">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="form-label fw-semibold mb-0" style="font-size:0.8rem;">
+              Componentes da Lista de Alimentação
+            </label>
+            <span class="text-muted" style="font-size:0.75rem;" id="confProgresso"></span>
+          </div>
+          <div id="confComponentesWrap"
+               class="border rounded p-2 mb-3"
+               style="border-color:var(--border)!important;max-height:260px;overflow-y:auto;">
+            <div id="confLoadingComp" class="text-center py-3 text-muted">
+              <div class="spinner-border spinner-border-sm me-1"></div>Carregando componentes...
+            </div>
+            <div id="confListaComponentes"></div>
+          </div>
+        </div>
+        <div id="semArquivoAviso" class="alert alert-light border d-flex align-items-center gap-2 mb-3" style="display:none!important;">
+          <i class="bi bi-info-circle text-muted"></i>
+          <span style="font-size:0.82rem;">Nenhuma lista de alimentação anexada a este plano. Você pode conferir o status geral sem checklist.</span>
+        </div>
+
         <div class="mb-3">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Status do Material</label>
           <div class="d-flex gap-2 flex-wrap">
@@ -228,8 +277,10 @@
             Selecione um status.
           </div>
         </div>
-        <div class="mb-2">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Observação <span class="text-muted fw-normal">(opcional)</span></label>
+        <div>
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">
+            Observação <span class="text-muted fw-normal">(opcional)</span>
+          </label>
           <textarea class="form-control" id="confObs" rows="2"
                     style="border-radius:8px;font-size:0.85rem;"
                     placeholder="Ex.: falta parafuso M3, disponível até às 14h..."></textarea>
@@ -286,38 +337,134 @@
 {% block scripts %}
 <script>
 (function () {
-  const root       = document.getElementById('conferencia-root');
-  const urlConfirmar = root.dataset.urlConfirmar;
-  const urlHistTpl = root.dataset.urlHistoricoTpl;
+  const root           = document.getElementById('conferencia-root');
+  const urlConfirmar   = root.dataset.urlConfirmar;
+  const urlHistTpl     = root.dataset.urlHistoricoTpl;
+  const urlUploadTpl   = root.dataset.urlUploadTpl;
+  const urlCompTpl     = root.dataset.urlComponentesTpl;
 
   const matCor = { CONFIRMADO: 'success', SEM_MATERIAL: 'danger', PARCIAL: 'warning' };
   const matLb  = { CONFIRMADO: 'Confirmado', SEM_MATERIAL: 'Sem Material', PARCIAL: 'Parcial' };
 
   let statusSelecionado = '';
+  let componentesCarregados = [];
 
+  // ── Status selector ──────────────────────────────────────────────────────
   document.querySelectorAll('.status-btn').forEach(btn => {
     btn.addEventListener('click', function () {
       document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
       statusSelecionado = this.dataset.status;
-      document.getElementById('confStatus').value = statusSelecionado;
       document.getElementById('confStatusError').style.display = 'none';
     });
   });
 
-  window.abrirModalConferencia = function (planId, modelo, linha, turno) {
+  // ── Upload de documento ──────────────────────────────────────────────────
+  document.querySelectorAll('.upload-input').forEach(input => {
+    input.addEventListener('change', async function () {
+      if (!this.files.length) return;
+      const planId = this.dataset.planId;
+      const file   = this.files[0];
+      const url    = urlUploadTpl.replace('/0', '/' + planId);
+      const fd     = new FormData();
+      fd.append('arquivo', file);
+
+      const label = this.closest('label');
+      label.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+      try {
+        const resp = await fetch(url, { method: 'POST', body: fd });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) throw new Error(data.erro || 'Erro ao enviar');
+        mostrarAlerta(`Documento "${file.name}" processado com ${data.componentes.length} componentes.`, 'success');
+        setTimeout(() => location.reload(), 1200);
+      } catch (err) {
+        mostrarAlerta(err.message, 'danger');
+        label.innerHTML = '<i class="bi bi-paperclip me-1"></i>Anexar';
+      }
+    });
+  });
+
+  // ── Abrir modal conferência ───────────────────────────────────────────────
+  window.abrirModalConferencia = async function (planId, modelo, linha, turno, temArquivo) {
     document.getElementById('confPlanId').value = planId;
-    document.getElementById('confModelo').textContent = modelo;
-    document.getElementById('confLinha').textContent = linha;
-    document.getElementById('confTurno').textContent = turno;
-    document.getElementById('confObs').value = '';
+    document.getElementById('confModelo').textContent  = modelo;
+    document.getElementById('confLinha').textContent   = linha;
+    document.getElementById('confTurno').textContent   = turno;
+    document.getElementById('confObs').value           = '';
     statusSelecionado = '';
+    componentesCarregados = [];
     document.getElementById('confStatus').value = '';
     document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('confStatusError').style.display = 'none';
-    new bootstrap.Modal(document.getElementById('modalConferencia')).show();
+
+    const secao  = document.getElementById('secaoComponentes');
+    const aviso  = document.getElementById('semArquivoAviso');
+    const lista  = document.getElementById('confListaComponentes');
+    const loading = document.getElementById('confLoadingComp');
+    const progresso = document.getElementById('confProgresso');
+
+    lista.innerHTML = '';
+    progresso.textContent = '';
+
+    if (temArquivo) {
+      secao.style.display  = 'block';
+      aviso.style.display  = 'none';
+      loading.style.display = 'block';
+      lista.style.display   = 'none';
+
+      new bootstrap.Modal(document.getElementById('modalConferencia')).show();
+
+      try {
+        const url  = urlCompTpl.replace('/0', '/' + planId);
+        const resp = await fetch(url);
+        const data = await resp.json();
+        componentesCarregados = data.componentes || [];
+        loading.style.display = 'none';
+        lista.style.display   = 'block';
+        renderComponentes(componentesCarregados, lista, progresso);
+      } catch {
+        loading.innerHTML = '<span class="text-danger">Erro ao carregar componentes.</span>';
+      }
+    } else {
+      secao.style.display = 'none';
+      aviso.style.display = 'flex';
+      new bootstrap.Modal(document.getElementById('modalConferencia')).show();
+    }
   };
 
+  function renderComponentes(componentes, container, progresso) {
+    if (!componentes.length) {
+      container.innerHTML = '<p class="text-muted text-center py-3 mb-0" style="font-size:0.82rem;">Nenhum componente encontrado no documento.</p>';
+      return;
+    }
+    container.innerHTML = componentes.map((c, i) => `
+      <div class="form-check py-1" style="border-bottom:1px solid var(--border);">
+        <input class="form-check-input comp-check" type="checkbox" id="comp_${i}"
+               data-numero="${c.numero}" data-texto="${escapeHtml(c.texto)}"
+               onchange="atualizarProgresso()">
+        <label class="form-check-label" for="comp_${i}" style="font-size:0.82rem;cursor:pointer;">
+          <span class="text-muted me-1" style="font-size:0.72rem;">${c.numero}.</span>
+          ${escapeHtml(c.texto)}
+        </label>
+      </div>
+    `).join('');
+    atualizarProgresso();
+  }
+
+  window.atualizarProgresso = function () {
+    const checks = document.querySelectorAll('.comp-check');
+    const marcados = [...checks].filter(c => c.checked).length;
+    document.getElementById('confProgresso').textContent = `${marcados} / ${checks.length} conferidos`;
+  };
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ── Salvar conferência ────────────────────────────────────────────────────
   document.getElementById('btnSalvarConferencia').addEventListener('click', async function () {
     if (!statusSelecionado) {
       document.getElementById('confStatusError').style.display = 'block';
@@ -325,7 +472,15 @@
     }
     const planId = document.getElementById('confPlanId').value;
     const obs    = document.getElementById('confObs').value.trim();
-    const btn    = this;
+
+    const checks = [...document.querySelectorAll('.comp-check')];
+    const componentesConfirmados = checks.length ? checks.map(c => ({
+      numero:     parseInt(c.dataset.numero),
+      texto:      c.dataset.texto,
+      confirmado: c.checked,
+    })) : null;
+
+    const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
 
@@ -333,7 +488,12 @@
       const resp = await fetch(urlConfirmar, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planejamento_id: parseInt(planId), status: statusSelecionado, observacao: obs || null }),
+        body: JSON.stringify({
+          planejamento_id: parseInt(planId),
+          status: statusSelecionado,
+          observacao: obs || null,
+          componentes_confirmados: componentesConfirmados,
+        }),
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) throw new Error(data.erro || 'Erro ao salvar');
@@ -349,11 +509,12 @@
     }
   });
 
+  // ── Histórico ─────────────────────────────────────────────────────────────
   window.verHistorico = async function (planId, modelo) {
     document.getElementById('histModelo').textContent = modelo;
-    document.getElementById('histLoading').style.display = 'block';
-    document.getElementById('histContent').style.display = 'none';
-    document.getElementById('histEmpty').style.display = 'none';
+    document.getElementById('histLoading').style.display  = 'block';
+    document.getElementById('histContent').style.display  = 'none';
+    document.getElementById('histEmpty').style.display    = 'none';
     new bootstrap.Modal(document.getElementById('modalHistorico')).show();
 
     const url = urlHistTpl.replace('/0', '/' + planId);
@@ -370,10 +531,18 @@
         data.historico.forEach(h => {
           const cor = matCor[h.status] || 'secondary';
           const lb  = matLb[h.status]  || h.status;
+          const compInfo = h.componentes_confirmados
+            ? `<small class="d-block text-muted mt-1" style="font-size:0.7rem;">
+                ${h.componentes_confirmados.filter(c=>c.confirmado).length}/${h.componentes_confirmados.length} componentes confirmados
+               </small>`
+            : '';
           tbody.insertAdjacentHTML('beforeend', `
             <tr>
               <td class="ps-3 text-nowrap">${h.conferido_em || '—'}</td>
-              <td><span class="badge bg-${cor}" style="font-size:0.68rem;">${lb}</span></td>
+              <td>
+                <span class="badge bg-${cor}" style="font-size:0.68rem;">${lb}</span>
+                ${compInfo}
+              </td>
               <td class="text-muted small">${h.observacao || '—'}</td>
               <td class="pe-3 text-muted small">${h.conferido_por}</td>
             </tr>
