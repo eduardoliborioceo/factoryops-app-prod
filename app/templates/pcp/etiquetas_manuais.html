@@ -1,0 +1,508 @@
+{% extends "layouts/app.html" %}
+{% block title %}PCP · Etiquetas Manuais{% endblock %}
+
+{% block styles %}
+<style>
+/* ── Formulário ────────────────────────────────────────────── */
+.titulo-select-wrapper { display: flex; gap: 8px; align-items: flex-end; }
+.titulo-select-wrapper select { flex: 0 0 auto; min-width: 260px; }
+.titulo-select-wrapper input  { flex: 1; }
+
+/* ── Folha de impressão ────────────────────────────────────── */
+.etiquetas-sheet {
+  display: none;
+}
+
+/* ── Etiqueta individual ───────────────────────────────────── */
+.etiqueta {
+  width: 145mm;
+  height: 96mm;
+  border: 1.5px solid #000;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  font-size: 8pt;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  page-break-inside: avoid;
+}
+
+.etiqueta-header {
+  display: flex;
+  border-bottom: 1px solid #000;
+  flex-shrink: 0;
+}
+
+.etiqueta-left {
+  width: 50%;
+  border-right: 1px solid #000;
+  padding: 3px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.etiqueta-right {
+  width: 50%;
+  padding: 3px 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.etiqueta-right-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+  border-bottom: 1px solid #000;
+  padding-bottom: 3px;
+  margin-bottom: 2px;
+}
+
+.etiqueta-logo {
+  font-size: 7pt;
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: right;
+  color: #1a1a6e;
+}
+
+.etiqueta-titulo {
+  font-size: 6pt;
+  font-weight: bold;
+  text-align: right;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.etiqueta-field {
+  display: flex;
+  gap: 3px;
+  align-items: baseline;
+  font-size: 7.5pt;
+}
+
+.etiqueta-field label {
+  font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.etiqueta-field span {
+  font-weight: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.etiqueta-cliente {
+  border-top: 1px solid #000;
+  border-bottom: 1px solid #000;
+  text-align: center;
+  font-size: 11pt;
+  font-weight: bold;
+  padding: 2px 4px;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.etiqueta-bottom {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.etiqueta-bottom-left {
+  width: 28mm;
+  border-right: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.etiqueta-codigo-grande {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: 11pt;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.etiqueta-bottom-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: 6.5pt;
+}
+
+.etiqueta-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border-bottom: 1px solid #ccc;
+  flex-wrap: wrap;
+}
+
+.etiqueta-check-row label { font-weight: bold; }
+
+.check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.check-box {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #000;
+  flex-shrink: 0;
+}
+
+.etiqueta-obs-row {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  padding: 2px 4px;
+  gap: 12px;
+}
+
+.etiqueta-obs-row span { font-weight: bold; }
+
+/* ── @print ────────────────────────────────────────────────── */
+@media print {
+  body > * { display: none !important; }
+  .etiquetas-sheet { display: block !important; }
+
+  @page {
+    size: A4 landscape;
+    margin: 5mm;
+  }
+
+  .etiquetas-grid {
+    display: grid;
+    grid-template-columns: 145mm 145mm;
+    grid-template-rows: repeat(4, 96mm);
+    gap: 3mm;
+    width: 100%;
+  }
+
+  .etiqueta {
+    break-inside: avoid;
+  }
+}
+
+/* ── Preview (tela) ────────────────────────────────────────── */
+#previewArea .etiquetas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  max-width: 960px;
+}
+
+#previewArea .etiqueta {
+  transform-origin: top left;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 2px;
+  width: 100%;
+  height: auto;
+  min-height: 200px;
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCP</span>
+    <h1 class="page-header-name">Etiquetas Manuais</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div id="alertArea"></div>
+
+  <!-- Formulário -->
+  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
+    <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+         style="border-color:var(--border);border-radius:12px 12px 0 0;background:var(--card);">
+      <i class="bi bi-tag text-primary"></i>
+      <span class="fw-semibold" style="font-size:0.9rem;">Configuração da Etiqueta</span>
+    </div>
+    <div class="card-body p-3">
+      <div class="row g-3">
+
+        <div class="col-12">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Título da Etiqueta <span class="text-danger">*</span></label>
+          <div class="titulo-select-wrapper">
+            <select class="form-select form-select-sm" id="selectTitulo" onchange="toggleTituloCustom()" style="border-radius:8px;">
+              <option value="ETIQUETA DE IDENTIFICAÇÃO">ETIQUETA DE IDENTIFICAÇÃO</option>
+              <option value="ETIQUETA DE IDENTIFICAÇÃO SEMI-ACABADO">ETIQUETA DE IDENTIFICAÇÃO SEMI-ACABADO</option>
+              <option value="_custom">Outro (digitar)…</option>
+            </select>
+            <input type="text" class="form-control form-control-sm" id="inputTituloCustom"
+                   placeholder="Digite o título personalizado"
+                   style="border-radius:8px;display:none;">
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Cód. do Modelo <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="inputCod"
+                 placeholder="Ex: 20311066" style="border-radius:8px;">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo (Nome) <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="inputModelo"
+                 placeholder="Ex: DS-238V7 V1.5" style="border-radius:8px;">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno <span class="text-danger">*</span></label>
+          <select class="form-select form-select-sm" id="selectTurno" style="border-radius:8px;">
+            <option value="1° Turno">1° Turno</option>
+            <option value="2° Turno">2° Turno</option>
+            <option value="3° Turno">3° Turno</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="inputCliente"
+                 placeholder="Ex: HIKVISION" style="border-radius:8px;text-transform:uppercase;"
+                 oninput="this.value=this.value.toUpperCase()">
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Lote Inicial <span class="text-danger">*</span></label>
+          <input type="number" class="form-control form-control-sm" id="inputLoteInicial"
+                 placeholder="Ex: 1" min="1" style="border-radius:8px;">
+          <div class="form-text" style="font-size:0.72rem;">Número da 1ª etiqueta; as seguintes incrementam.</div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Qtd. por Magazine <span class="text-danger">*</span></label>
+          <input type="number" class="form-control form-control-sm" id="inputQtdMagazine"
+                 placeholder="Ex: 504" min="1" style="border-radius:8px;">
+          <div class="form-text" style="font-size:0.72rem;">Peças por magazine — aparece no lote como "X / <em>Qtd</em>".</div>
+        </div>
+
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Total da Produção <span class="text-danger">*</span></label>
+          <input type="number" class="form-control form-control-sm" id="inputTotalProducao"
+                 placeholder="Ex: 4000" min="1" style="border-radius:8px;">
+          <div class="form-text" style="font-size:0.72rem;">Sistema calcula o número de etiquetas necessárias.</div>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex align-items-end">
+          <div class="w-100">
+            <div class="text-muted mb-2" style="font-size:0.8rem;">
+              Etiquetas a gerar: <strong id="contadorEtiquetas">—</strong>
+              <span class="text-muted" style="font-size:0.72rem;" id="infoFolhas"></span>
+            </div>
+            <button class="btn btn-primary btn-sm fw-semibold w-100" style="border-radius:8px;"
+                    onclick="gerarEtiquetas()">
+              <i class="bi bi-eye me-1"></i>Visualizar Etiquetas
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Contador dinâmico -->
+  <script>
+  (function() {
+    const fields = ['inputQtdMagazine', 'inputTotalProducao'];
+    fields.forEach(id => {
+      document.getElementById(id).addEventListener('input', atualizarContador);
+    });
+    function atualizarContador() {
+      const qty   = parseInt(document.getElementById('inputQtdMagazine').value) || 0;
+      const total = parseInt(document.getElementById('inputTotalProducao').value) || 0;
+      const cont  = document.getElementById('contadorEtiquetas');
+      const info  = document.getElementById('infoFolhas');
+      if (qty > 0 && total > 0) {
+        const n = Math.ceil(total / qty);
+        cont.textContent = n;
+        const folhas = Math.ceil(n / 8);
+        info.textContent = ` (${folhas} folha${folhas !== 1 ? 's' : ''})`;
+      } else {
+        cont.textContent = '—';
+        info.textContent = '';
+      }
+    }
+  })();
+  </script>
+
+  <!-- Área de preview -->
+  <div id="previewArea" style="display:none;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="fw-semibold" style="font-size:0.95rem;">
+        <i class="bi bi-printer me-2 text-primary"></i>
+        Preview — <span id="labelTotal"></span> etiqueta(s)
+      </div>
+      <button class="btn btn-primary fw-semibold" style="border-radius:8px;" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i>Imprimir
+      </button>
+    </div>
+    <div id="etiquetasGrid" class="etiquetas-grid"></div>
+  </div>
+
+</div>
+
+<!-- Área de impressão (oculta na tela) -->
+<div class="etiquetas-sheet">
+  <div id="etiquetasGridPrint" class="etiquetas-grid"></div>
+</div>
+
+<script>
+function toggleTituloCustom() {
+  const sel   = document.getElementById('selectTitulo');
+  const input = document.getElementById('inputTituloCustom');
+  input.style.display = sel.value === '_custom' ? '' : 'none';
+  if (sel.value !== '_custom') input.value = '';
+}
+
+function getTitulo() {
+  const sel = document.getElementById('selectTitulo');
+  if (sel.value === '_custom') {
+    return document.getElementById('inputTituloCustom').value.trim().toUpperCase();
+  }
+  return sel.value;
+}
+
+function gerarEtiquetas() {
+  const titulo   = getTitulo();
+  const cod      = document.getElementById('inputCod').value.trim();
+  const modelo   = document.getElementById('inputModelo').value.trim();
+  const turno    = document.getElementById('selectTurno').value;
+  const cliente  = document.getElementById('inputCliente').value.trim();
+  const loteIni  = parseInt(document.getElementById('inputLoteInicial').value) || 0;
+  const qtdMag   = parseInt(document.getElementById('inputQtdMagazine').value) || 0;
+  const totalProd = parseInt(document.getElementById('inputTotalProducao').value) || 0;
+
+  if (!titulo) { mostrarAlerta('danger', 'Informe o título da etiqueta.'); return; }
+  if (!cod)    { mostrarAlerta('danger', 'Informe o Cód. do modelo.'); return; }
+  if (!modelo) { mostrarAlerta('danger', 'Informe o nome do modelo.'); return; }
+  if (!cliente){ mostrarAlerta('danger', 'Informe o cliente.'); return; }
+  if (loteIni <= 0) { mostrarAlerta('danger', 'Lote inicial deve ser maior que zero.'); return; }
+  if (qtdMag <= 0)  { mostrarAlerta('danger', 'Quantidade por magazine deve ser maior que zero.'); return; }
+  if (totalProd <= 0){ mostrarAlerta('danger', 'Total de produção deve ser maior que zero.'); return; }
+
+  const nEtiquetas = Math.ceil(totalProd / qtdMag);
+  document.getElementById('labelTotal').textContent = nEtiquetas;
+
+  const htmlEtiquetas = [];
+  for (let i = 0; i < nEtiquetas; i++) {
+    htmlEtiquetas.push(buildEtiqueta({
+      titulo, cod, modelo, turno, cliente,
+      lote: loteIni + i,
+      qtdMag,
+    }));
+  }
+
+  const html = htmlEtiquetas.join('');
+  document.getElementById('etiquetasGrid').innerHTML = html;
+  document.getElementById('etiquetasGridPrint').innerHTML = html;
+
+  const previewArea = document.getElementById('previewArea');
+  previewArea.style.display = '';
+  previewArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+function buildEtiqueta(d) {
+  return `
+<div class="etiqueta">
+  <div class="etiqueta-header">
+    <div class="etiqueta-left">
+      <div class="etiqueta-field"><label>Cód.:</label><span>${escHtml(d.cod)}</span></div>
+      <div class="etiqueta-field"><label>Modelo:</label><span>${escHtml(d.modelo)}</span></div>
+      <div class="etiqueta-field"><label>Linha:</label><span>&nbsp;</span></div>
+      <div class="etiqueta-field"><label>Turno:</label><span>${escHtml(d.turno)}</span></div>
+      <div class="etiqueta-field"><label>Lote:</label><span>${d.lote} / ${d.qtdMag}</span></div>
+      <div class="etiqueta-field"><label>Horário:</label><span>&nbsp;</span></div>
+    </div>
+    <div class="etiqueta-right">
+      <div class="etiqueta-right-top">
+        <div class="etiqueta-titulo">${escHtml(d.titulo)}</div>
+        <div class="etiqueta-logo">Venttos<br>Electronics</div>
+      </div>
+      <div class="etiqueta-field"><label>Revisor(a):</label><span>&nbsp;</span></div>
+      <div class="etiqueta-field"><label>Data:</label><span>&nbsp;</span></div>
+    </div>
+  </div>
+  <div class="etiqueta-cliente">Cliente: ${escHtml(d.cliente)}</div>
+  <div class="etiqueta-bottom">
+    <div class="etiqueta-bottom-left">
+      <div class="etiqueta-codigo-grande">${escHtml(d.cod)}</div>
+    </div>
+    <div class="etiqueta-bottom-right">
+      <div class="etiqueta-check-row">
+        <label>ALTERAÇÃO</label>
+        <span class="check-item"><span class="check-box"></span> SIM</span>
+        <span class="check-item"><span class="check-box"></span> NÃO</span>
+      </div>
+      <div class="etiqueta-check-row">
+        <label>PROCESSO</label>
+        <span class="check-item"><span class="check-box"></span> TOP</span>
+        <span class="check-item"><span class="check-box"></span> BOT</span>
+        <span class="check-item"><span class="check-box"></span> AOI</span>
+      </div>
+      <div class="etiqueta-check-row">
+        <label>STATUS CQ</label>
+        <span class="check-item"><span class="check-box"></span> APROVADO</span>
+        <span class="check-item"><span class="check-box"></span> REJEITADO</span>
+        <span class="check-item"><span class="check-box"></span> N° DESVIO</span>
+        <span class="check-item"><span class="check-box"></span> TESTE FUNCIONAL</span>
+      </div>
+      <div class="etiqueta-obs-row">
+        <span>Obs.:</span>
+        <span style="margin-left:auto;">Resp. CQ:</span>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function mostrarAlerta(tipo, msg) {
+  const area = document.getElementById('alertArea');
+  const div  = document.createElement('div');
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
+  div.role = 'alert';
+  div.innerHTML = `<i class="bi bi-exclamation-circle-fill fs-5 flex-shrink-0"></i>
+    <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 5000);
+}
+</script>
+{% endblock %}

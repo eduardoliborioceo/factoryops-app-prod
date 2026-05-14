@@ -15,9 +15,6 @@
     <h1 class="page-header-name">Entregas</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.pcp_entregas_mapeamento') }}" class="btn-header-icon" title="Mapeamento de Entregas">
-      <i class="bi bi-map"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -99,7 +96,11 @@
                 <i class="bi bi-x-lg"></i>
               </a>
             </div>
-            <div class="col-12 col-md-4 d-flex justify-content-end gap-2">
+            <div class="col-12 col-md-4 d-flex justify-content-end gap-2 flex-wrap">
+              <a href="{{ url_for('pages.pcp_entregas_mapeamento') }}" class="btn btn-outline-secondary btn-sm fw-semibold"
+                 style="border-radius:8px;">
+                <i class="bi bi-map me-1"></i>Mapeamento
+              </a>
               <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius:8px;"
                       onclick="abrirModalLocais()">
                 <i class="bi bi-geo-alt me-1"></i>Locais de Entrega

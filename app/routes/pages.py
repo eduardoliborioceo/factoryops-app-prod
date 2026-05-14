@@ -395,6 +395,12 @@ def pcp_lancamento_producao_excluir():
     return redirect(url_for("pages.pcp_lancamento_producao"))
 
 
+@bp.route("/pcp/etiquetas-manuais")
+@login_required
+def pcp_etiquetas_manuais():
+    return render_template("pcp/etiquetas_manuais.html", active_menu="pcp_etiquetas_manuais")
+
+
 @bp.route("/pcp/roteiros")
 @login_required
 @admin_required
