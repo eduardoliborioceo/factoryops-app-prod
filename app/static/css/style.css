@@ -688,6 +688,26 @@ body.fullscreen-mode .content {
   color: var(--text-muted);
 }
 
+.stat-icon-primary {
+  background: rgba(13, 110, 253, 0.10);
+  color: var(--primary);
+}
+
+.stat-icon-success {
+  background: rgba(25, 135, 84, 0.10);
+  color: var(--success-color);
+}
+
+.stat-icon-warning {
+  background: rgba(255, 193, 7, 0.15);
+  color: #856404;
+}
+
+.stat-icon-danger {
+  background: rgba(220, 53, 69, 0.10);
+  color: #dc3545;
+}
+
 .stat-value {
   font-size: 2rem;
   font-weight: 700;

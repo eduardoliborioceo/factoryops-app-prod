@@ -194,6 +194,7 @@
                   <th>Início</th>
                   <th>Fim prev.</th>
                   <th>Status</th>
+                  <th>Material</th>
                   <th class="text-end pe-3">Ações</th>
                 </tr>
               </thead>
@@ -248,6 +249,19 @@
                     <span class="badge bg-{{ st_bg.get(p.status,'secondary') }}" style="font-size:0.68rem;">
                       {{ st_lb.get(p.status, p.status) }}
                     </span>
+                  </td>
+                  <td>
+                    {% set mat_cor = {'CONFIRMADO':'success','SEM_MATERIAL':'danger','PARCIAL':'warning'} %}
+                    {% set mat_lb  = {'CONFIRMADO':'Confirmado','SEM_MATERIAL':'Sem Material','PARCIAL':'Parcial'} %}
+                    {% if p.status_material %}
+                    <span class="badge bg-{{ mat_cor.get(p.status_material,'secondary') }}"
+                          style="font-size:0.68rem;"
+                          title="{{ p.material_conferido_por }} — {{ p.material_conferido_em.strftime('%d/%m %H:%M') if p.material_conferido_em else '' }}">
+                      {{ mat_lb.get(p.status_material, p.status_material) }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted" style="font-size:0.75rem;">—</span>
+                    {% endif %}
                   </td>
                   <td class="text-end pe-3">
                     <div class="d-flex gap-1 justify-content-end">
