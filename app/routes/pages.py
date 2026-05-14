@@ -1771,6 +1771,68 @@ def logistica_rastrear(entrega_id):
     )
 
 
+
+@bp.route("/logistica/conferencia-material")
+@login_required
+def logistica_conferencia_material():
+    from flask import request
+    from datetime import date
+    from app.services import conferencia_material_service as svc
+
+    data = request.args.get("data", str(date.today()))
+    planos = svc.listar_planos_por_data(data)
+    datas = svc.listar_datas()
+
+    return render_template(
+        "logistica/conferencia_material.html",
+        active_menu="logistica_conferencia_material",
+        data=data,
+        planos=planos,
+        datas=datas,
+        status_label=svc.STATUS_LABEL,
+        status_cor=svc.STATUS_COR,
+        statuses=svc.STATUSES_VALIDOS,
+    )
+
+
+@bp.route("/logistica/conferencia-material/confirmar", methods=["POST"])
+@login_required
+def logistica_conferencia_material_confirmar():
+    from flask import request, jsonify
+    from app.services import conferencia_material_service as svc
+
+    data = request.get_json(silent=True) or {}
+    try:
+        conferencia_id = svc.confirmar(
+            planejamento_id=int(data["planejamento_id"]),
+            status=data["status"],
+            observacao=data.get("observacao"),
+            conferido_por=current_user.username,
+        )
+        return jsonify({"ok": True, "id": conferencia_id})
+    except (ValueError, KeyError, Exception) as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/logistica/conferencia-material/historico/<int:planejamento_id>")
+@login_required
+def logistica_conferencia_material_historico(planejamento_id):
+    from flask import jsonify
+    from app.services import conferencia_material_service as svc
+
+    historico = svc.historico_por_plano(planejamento_id)
+    result = []
+    for h in historico:
+        result.append({
+            "id":           h["id"],
+            "status":       h["status"],
+            "observacao":   h["observacao"],
+            "conferido_por": h["conferido_por"],
+            "conferido_em": h["conferido_em"].strftime("%d/%m/%Y %H:%M") if h["conferido_em"] else None,
+        })
+    return jsonify({"ok": True, "historico": result})
+
+
 # ─── Suporte ─────────────────────────────────────────────────────────────────
 
 @bp.route("/suporte/centro-conhecimento")

@@ -48,7 +48,7 @@
   'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros'
 ] %}
 {% set _log_menus = [
-  'logistica_resumo','logistica_entregas'
+  'logistica_resumo','logistica_entregas','logistica_conferencia_material'
 ] %}
 {% set _config_menus = [
   'config_turnos','config_linhas','config_paradas','config_manual'
@@ -96,7 +96,8 @@
       "pcp_producao_coletada": "Produção Input",
       "pcp_producao_mes": "Produção MES",
       "pcp_roteiros": "Roteiros",
-      "logistica_resumo": "Logística",
+      "logistica_resumo": "Estoque & Logística",
+      "logistica_conferencia_material": "Conferência de Material",
       "config_turnos": "Turnos",
       "config_linhas": "Linhas e Setores",
       "config_paradas": "Paradas de Linha",
@@ -304,7 +305,7 @@
                 data-bs-target="#nav-logistica"
                 aria-expanded="{{ 'true' if active_menu in _log_menus else 'false' }}">
           <i class="bi bi-box-seam"></i>
-          <span>Logística</span>
+          <span>Estoque &amp; Logística</span>
           <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
         </button>
         <div class="collapse {% if active_menu in _log_menus %}show{% endif %}"
@@ -317,6 +318,10 @@
             <a href="{{ url_for('pages.pcp_entregas') }}?tab=logistica"
                class="{% if active_menu == 'logistica_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
+            </a>
+            <a href="{{ url_for('pages.logistica_conferencia_material') }}"
+               class="{% if active_menu == 'logistica_conferencia_material' %}active{% endif %}">
+              <i class="bi bi-clipboard2-check"></i> Conferência de Material
             </a>
           </div>
         </div>

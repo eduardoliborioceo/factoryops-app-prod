@@ -28,9 +28,19 @@ def listar(data: str, turno: str = "", setor: str = "", linha: str = "") -> list
                     p.status, p.observacao, p.criado_por, p.criado_em,
                     co.numero_op,
                     co.descricao AS descricao_op,
-                    (co.quantidade - co.produzido) AS saldo_op
+                    (co.quantidade - co.produzido) AS saldo_op,
+                    cm.status      AS status_material,
+                    cm.conferido_por AS material_conferido_por,
+                    cm.conferido_em  AS material_conferido_em
                 FROM planejamento p
                 LEFT JOIN controle_ops co ON co.id = p.op_id
+                LEFT JOIN LATERAL (
+                    SELECT status, conferido_por, conferido_em
+                    FROM conferencia_material
+                    WHERE planejamento_id = p.id
+                    ORDER BY conferido_em DESC
+                    LIMIT 1
+                ) cm ON TRUE
                 WHERE {where}
                 ORDER BY p.turno, p.linha, p.hora_inicio_prevista
             """, params)
