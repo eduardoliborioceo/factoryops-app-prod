@@ -36,7 +36,7 @@
 {% set _func_menus = [
   'smt_cadastro','smt_calcular','smt_modelos',
   'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt',
-  'funcionalidades_resumo_producao'
+  'funcionalidades_resumo_producao','pcp_etiquetas_manuais'
 ] %}
 {% set _prod_menus = [
   'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil','smd_monitor_tv'
@@ -45,7 +45,7 @@
   'smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
-  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros','pcp_etiquetas_manuais'
+  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros'
 ] %}
 {% set _log_menus = [
   'logistica_resumo','logistica_entregas'
@@ -179,6 +179,10 @@
                class="{% if active_menu == 'funcionalidades_resumo_producao' %}active{% endif %}">
               <i class="bi bi-bar-chart-steps"></i> Resumo de Produção
             </a>
+            <a href="{{ url_for('pages.pcp_etiquetas_manuais') }}"
+               class="{% if active_menu == 'pcp_etiquetas_manuais' %}active{% endif %}">
+              <i class="bi bi-tag"></i> Etiquetas Manuais
+            </a>
           </div>
         </div>
       </div>
@@ -289,10 +293,6 @@
             <a href="{{ url_for('pages.pcp_entregas') }}"
                class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
-            </a>
-            <a href="{{ url_for('pages.pcp_etiquetas_manuais') }}"
-               class="{% if active_menu == 'pcp_etiquetas_manuais' %}active{% endif %}">
-              <i class="bi bi-tag"></i> Etiquetas Manuais
             </a>
           </div>
         </div>
