@@ -45,7 +45,7 @@
   'smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
-  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros'
+  'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros','pcp_etiquetas_manuais'
 ] %}
 {% set _log_menus = [
   'logistica_resumo','logistica_entregas'
@@ -105,7 +105,8 @@
       "suporte_especializado": "Suporte Especializado",
       "admin_backup": "Backup",
       "admin_chamados": "Chamados de Suporte",
-      "funcionalidades_resumo_producao": "Resumo de Produção"
+      "funcionalidades_resumo_producao": "Resumo de Produção",
+      "pcp_etiquetas_manuais": "Etiquetas Manuais"
     } %}
 
     <span class="mobile-page-title">
@@ -289,6 +290,10 @@
                class="{% if active_menu == 'pcp_entregas' %}active{% endif %}">
               <i class="bi bi-truck"></i> Entregas
             </a>
+            <a href="{{ url_for('pages.pcp_etiquetas_manuais') }}"
+               class="{% if active_menu == 'pcp_etiquetas_manuais' %}active{% endif %}">
+              <i class="bi bi-tag"></i> Etiquetas Manuais
+            </a>
           </div>
         </div>
       </div>
@@ -358,10 +363,6 @@
       <a href="{{ url_for('pages.admin_chamados') }}"
          class="{% if active_menu == 'admin_chamados' %}active{% endif %}">
         <i class="bi bi-headset"></i> Chamados
-      </a>
-      <a href="{{ url_for('pages.admin_backup') }}"
-         class="{% if active_menu == 'admin_backup' %}active{% endif %}">
-        <i class="bi bi-database"></i> Backup
       </a>
       <a href="{{ url_for('auth.admin_users_all') }}"
          class="{% if active_menu in ['admin_users', 'admin_users_all'] %}active{% endif %}">

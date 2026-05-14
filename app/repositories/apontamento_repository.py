@@ -214,18 +214,36 @@ def ops_abertas(setor: str = "") -> list:
                         co.quantidade, co.produzido,
                         COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0) AS top_feito,
                         COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0) AS bottom_feito,
+                        mp.manual_total,
                         CASE WHEN co.fase_modelo = 'AMBAS' THEN
                             co.quantidade - LEAST(
                                 COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0),
                                 COALESCE(SUM(CASE WHEN a.fase = 'BOTTOM' THEN a.quantidade ELSE 0 END), 0)
                             )
-                        ELSE (co.quantidade - co.produzido)
+                        ELSE GREATEST(0, co.quantidade - co.produzido - mp.manual_total)
                         END AS saldo
                     FROM controle_ops co
                     LEFT JOIN apontamento a ON a.op_id = co.id
+                    LEFT JOIN LATERAL (
+                        SELECT COALESCE(SUM(pc.producao_real), 0) AS manual_total
+                        FROM producao_coletada pc
+                        WHERE pc.modelo = co.produto
+                          AND pc.setor  = co.setor
+                          AND pc.origem = 'manual'
+                          AND pc.producao_real > 0
+                          AND NOT EXISTS (
+                              SELECT 1 FROM apontamento av
+                              WHERE av.data   = pc.data
+                                AND av.turno  = pc.turno
+                                AND av.modelo = pc.modelo
+                                AND av.linha  = pc.linha
+                                AND av.fase  IS NULL
+                                AND av.op_id  = co.id
+                          )
+                    ) mp ON TRUE
                     WHERE 1=1 {setor_where}
                     GROUP BY co.id, co.numero_op, co.produto, co.filial, co.setor,
-                             co.fase_modelo, co.quantidade, co.produzido
+                             co.fase_modelo, co.quantidade, co.produzido, mp.manual_total
                 ) sub
                 WHERE saldo > 0
                 ORDER BY numero_op

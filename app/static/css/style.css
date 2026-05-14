@@ -193,7 +193,9 @@ body {
 ========================= */
 .main {
   margin-left: var(--sidebar-width);
-  width: 100%;
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* =========================
@@ -366,6 +368,8 @@ body {
 
   .main {
     margin-left: 0;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .content {

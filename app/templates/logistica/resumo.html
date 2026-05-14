@@ -47,65 +47,6 @@
     </div>
   </div>
 
-  <!-- Resumo de Apontamento -->
-  <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-2 px-3" style="border-color:var(--border);background:var(--bg);border-radius:12px 12px 0 0;">
-      <span class="fw-semibold" style="font-size:0.9rem;">
-        <i class="bi bi-clipboard-data me-2 text-primary"></i>
-        Produção Apontada — {{ data_fmt }}
-      </span>
-    </div>
-    <div class="card-body p-0">
-      {% if resumo %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:0.84rem;">
-          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:.5px;background:var(--bg);">
-            <tr>
-              <th class="ps-3 py-2">Turno</th>
-              <th>Modelo</th>
-              <th>Linha</th>
-              <th>OPs</th>
-              <th class="text-end pe-3">Quantidade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% set tcores = {'1º Turno': 'warning', '2º Turno': 'primary', '3º Turno': 'secondary'} %}
-            {% for r in resumo %}
-            <tr>
-              <td class="ps-3">
-                <span class="badge bg-{{ tcores.get(r.turno, 'secondary') }} {% if r.turno == '1º Turno' %}text-dark{% endif %}"
-                      style="font-size:0.7rem;">{{ r.turno }}</span>
-              </td>
-              <td class="fw-semibold">{{ r.modelo }}</td>
-              <td class="text-muted">{{ r.linha }}</td>
-              <td class="text-muted small">{{ r.ops or '—' }}</td>
-              <td class="text-end pe-3 fw-bold text-success">
-                {{ "{:,.0f}".format(r.quantidade or 0).replace(',','.') }}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-          <tfoot style="background:var(--bg);">
-            <tr>
-              <td colspan="4" class="ps-3 fw-semibold text-end" style="font-size:0.8rem;">Total:</td>
-              <td class="text-end pe-3 fw-bold text-primary">
-                {{ "{:,.0f}".format(resumo | sum(attribute='quantidade')).replace(',','.') }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-      {% else %}
-      <div class="p-5 text-center text-muted">
-        <i class="bi bi-clipboard-data d-block fs-1 mb-3 opacity-25"></i>
-        <p class="mb-0 fw-semibold">Nenhum apontamento registrado para {{ data_fmt }}</p>
-        <p class="small mt-2 mb-0">Os apontamentos de produção são lançados pelo PCP ao longo do dia.<br>
-        Consulte novamente mais tarde ou selecione outra data.</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
   <!-- Remessas Pendentes -->
   <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
     <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center"
