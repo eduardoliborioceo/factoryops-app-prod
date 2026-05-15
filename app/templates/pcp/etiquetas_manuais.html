@@ -25,20 +25,24 @@
 
 /* cabeçalho */
 .etq-header {
+  position: relative;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #000;
   padding: 3px 3px;
-  gap: 3px;
   flex-shrink: 0;
 }
 .etq-logo {
   height: 13px;
   width: auto;
   display: block;
+  flex-shrink: 0;
 }
 .etq-header-title {
-  flex: 1;
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
   font-size: 7pt;
   font-weight: bold;
   text-transform: uppercase;
@@ -46,6 +50,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0 22px;
+  pointer-events: none;
 }
 
 /* tabela de informações */
@@ -262,16 +268,26 @@
                  placeholder="Ex: 200454354" style="border-radius:8px;">
         </div>
 
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-md-3">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
           <input type="text" class="form-control form-control-sm" id="inputModelo"
                  placeholder="Ex: DS-2D068(V1.1)-I2.5-NM-E-E9-V" style="border-radius:8px;">
         </div>
 
-        <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha <span class="text-danger">*</span></label>
-          <input type="text" class="form-control form-control-sm" id="inputLinha"
-                 placeholder="Ex: SMD" style="border-radius:8px;">
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha / Setor <span class="text-danger">*</span></label>
+          <div class="d-flex gap-1">
+            <input type="text" class="form-control form-control-sm" id="inputLinha"
+                   placeholder="Ex: 01" style="border-radius:8px; max-width:70px;">
+            <select class="form-select form-select-sm" id="selectSetor" style="border-radius:8px;">
+              <option value="">Setor</option>
+              <option value="SMD">SMD</option>
+              <option value="IM">IM</option>
+              <option value="PA">PA</option>
+              <option value="PTH">PTH</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
         </div>
 
         <div class="col-6 col-md-2">
@@ -424,6 +440,7 @@
     const cod       = document.getElementById('inputCod').value.trim();
     const modelo    = document.getElementById('inputModelo').value.trim();
     const linha     = document.getElementById('inputLinha').value.trim();
+    const setor     = document.getElementById('selectSetor').value;
     const turno     = document.getElementById('selectTurno').value;
     const cliente   = document.getElementById('inputCliente').value.trim();
     const loteIni   = parseInt(document.getElementById('inputLoteInicial').value)  || 0;
@@ -445,7 +462,7 @@
     document.getElementById('labelTotal').textContent = n;
 
     const html = Array.from({ length: n }, (_, i) =>
-      buildEtiqueta({ titulo, cod, modelo, linha, turno, cliente, loteRef, obs,
+      buildEtiqueta({ titulo, cod, modelo, linha, setor, turno, cliente, loteRef, obs,
                       lote: loteIni + i, qtdMag })
     ).join('');
 
@@ -483,7 +500,7 @@
         <td rowspan="2"><span class="etq-lbl">Data:</span></td>
       </tr>
       <tr>
-        <td><span class="etq-lbl">Linha:</span> ${esc(d.linha)}</td>
+        <td><span class="etq-lbl">Linha:</span> ${d.setor ? esc(d.linha) + ' - ' + esc(d.setor) : esc(d.linha)}</td>
         <td><span class="etq-lbl">Turno:</span> ${turnoCell}</td>
       </tr>
       <tr>
@@ -494,7 +511,7 @@
       <tr>
         <td><span class="etq-lbl">Horário:</span></td>
         <td colspan="2" class="etq-lote-row">
-          <span class="etq-lbl">LOTE</span>
+          <span class="etq-lbl">LOTE:</span>
           <span class="etq-lote-num">${esc(d.loteRef)}</span>
         </td>
       </tr>
@@ -558,13 +575,15 @@
         page-break-inside: avoid; break-inside: avoid;
       }
       .etq-header {
-        display: flex; align-items: center; border-bottom: 1px solid #000;
-        padding: 3px 3px; gap: 3px; flex-shrink: 0;
+        position: relative; display: flex; align-items: center; border-bottom: 1px solid #000;
+        padding: 3px 3px; flex-shrink: 0;
       }
-      .etq-logo { height: 13px; width: auto; display: block; }
+      .etq-logo { height: 13px; width: auto; display: block; flex-shrink: 0; }
       .etq-header-title {
-        flex: 1; font-size: 7pt; font-weight: bold; text-transform: uppercase;
+        position: absolute; left: 0; right: 0; text-align: center;
+        font-size: 7pt; font-weight: bold; text-transform: uppercase;
         letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        padding: 0 22px; pointer-events: none;
       }
       .etq-table { width: 100%; border-collapse: collapse; flex-shrink: 0; table-layout: fixed; }
       .etq-table td {
@@ -663,6 +682,7 @@
       cod:          document.getElementById('inputCod').value.trim(),
       modelo:       document.getElementById('inputModelo').value.trim(),
       linha:        document.getElementById('inputLinha').value.trim(),
+      setor:        document.getElementById('selectSetor').value,
       turno:        document.getElementById('selectTurno').value,
       cliente:      document.getElementById('inputCliente').value.trim(),
       loteIni:      document.getElementById('inputLoteInicial').value,
@@ -709,6 +729,7 @@
     document.getElementById('inputCod').value           = m.cod;
     document.getElementById('inputModelo').value        = m.modelo;
     document.getElementById('inputLinha').value         = m.linha;
+    document.getElementById('selectSetor').value        = m.setor || '';
     document.getElementById('selectTurno').value        = m.turno;
     document.getElementById('inputCliente').value       = m.cliente;
     document.getElementById('inputLoteInicial').value   = m.loteIni;
