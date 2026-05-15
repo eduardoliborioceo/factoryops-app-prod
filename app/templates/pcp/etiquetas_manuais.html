@@ -10,8 +10,7 @@
 
 /* ── Etiqueta ───────────────────────────────────────────────────── */
 .etq {
-  width: 100mm;
-  height: 71mm;
+  width: 97mm;
   border: 1.5px solid #000;
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
@@ -20,7 +19,6 @@
   background: #fff;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -130,14 +128,13 @@
   flex-shrink: 0;
 }
 
-/* rodapé — compacto e empurrado para o fundo da etiqueta */
+/* rodapé — compacto, logo abaixo dos checkboxes */
 .etq-footer {
   display: flex;
   align-items: center;
   padding: 2px 3px;
   gap: 4px;
   flex-shrink: 0;
-  margin-top: auto;
 }
 .etq-footer-obs {
   flex: 1;
@@ -148,9 +145,9 @@
 }
 .etq-cod-box {
   border: 1.5px solid #000;
-  font-size: 14pt;
+  font-size: 16pt;
   font-weight: bold;
-  padding: 0 5px;
+  padding: 0 6px;
   text-align: center;
   white-space: nowrap;
   line-height: 1.2;
@@ -173,14 +170,14 @@
   .main    { margin: 0 !important; padding: 0 !important; width: 100% !important; }
   .content { padding: 0 !important; }
   .etiquetas-sheet { display: block !important; }
-  @page { size: A4 portrait; margin: 3mm; }
-  .etiquetas-grid { display: grid; grid-template-columns: 100mm 100mm; gap: 1.5mm; }
+  @page { size: A4 portrait; margin: 5mm; }
+  .etiquetas-grid { display: grid; grid-template-columns: 97mm 97mm; gap: 2mm; }
 }
 
 /* ── Preview (tela) ─────────────────────────────────────────────── */
 #previewArea .etiquetas-grid {
   display: grid;
-  grid-template-columns: repeat(2, 100mm);
+  grid-template-columns: repeat(2, 97mm);
   gap: 12px;
 }
 #previewArea .etq {
@@ -505,12 +502,12 @@
     const css = `
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
-      @page { size: A4 portrait; margin: 3mm; }
-      .etiquetas-grid { display: grid; grid-template-columns: 100mm 100mm; gap: 1.5mm; }
+      @page { size: A4 portrait; margin: 5mm; }
+      .etiquetas-grid { display: grid; grid-template-columns: 97mm 97mm; gap: 2mm; }
       .etq {
-        width: 100mm; height: 71mm; border: 1.5px solid #000;
+        width: 97mm; border: 1.5px solid #000;
         font-size: 6pt; color: #000; background: #fff;
-        display: flex; flex-direction: column; overflow: hidden;
+        display: flex; flex-direction: column;
         page-break-inside: avoid; break-inside: avoid;
       }
       .etq-header {
@@ -552,15 +549,15 @@
       .chk-box { display: inline-block; width: 7px; height: 7px; border: 1px solid #000; flex-shrink: 0; }
       .etq-footer {
         display: flex; align-items: center; padding: 2px 3px;
-        gap: 4px; flex-shrink: 0; margin-top: auto;
+        gap: 4px; flex-shrink: 0;
       }
       .etq-footer-obs {
         flex: 1; font-size: 6pt; overflow: hidden;
         text-overflow: ellipsis; white-space: nowrap;
       }
       .etq-cod-box {
-        border: 1.5px solid #000; font-size: 14pt; font-weight: bold;
-        padding: 0 5px; text-align: center; white-space: nowrap; line-height: 1.2;
+        border: 1.5px solid #000; font-size: 16pt; font-weight: bold;
+        padding: 0 6px; text-align: center; white-space: nowrap; line-height: 1.2;
       }
       .etq-footer-resp { font-size: 5.5pt; white-space: nowrap; align-self: flex-end; padding-bottom: 1px; }
     `;
