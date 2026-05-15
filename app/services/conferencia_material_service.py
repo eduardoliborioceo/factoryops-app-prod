@@ -81,13 +81,25 @@ def upload_arquivo(planejamento_id: int, file_storage, uploaded_por: str) -> dic
 def _parse_docx(conteudo: bytes) -> list:
     try:
         from docx import Document
-        doc = Document(io.BytesIO(conteudo))
+    except ImportError:
+        raise ValueError(
+            "Biblioteca python-docx não instalada. "
+            "Execute: pip install python-docx"
+        )
+    try:
+        doc   = Document(io.BytesIO(conteudo))
         items = []
 
         for table in doc.tables:
             for i, row in enumerate(table.rows):
-                cells = [c.text.strip() for c in row.cells]
-                linha = " | ".join(c for c in cells if c)
+                seen = set()
+                cells = []
+                for c in row.cells:
+                    t = c.text.strip()
+                    if t and t not in seen:
+                        seen.add(t)
+                        cells.append(t)
+                linha = " | ".join(cells)
                 if linha and i > 0:
                     items.append(linha)
 
@@ -98,15 +110,23 @@ def _parse_docx(conteudo: bytes) -> list:
                     items.append(texto)
 
         return [{"numero": i + 1, "texto": t} for i, t in enumerate(items)]
+    except ValueError:
+        raise
     except Exception as e:
-        raise ValueError(f"Erro ao ler o arquivo DOCX: {e}")
+        raise ValueError(f"Erro ao processar DOCX: {e}")
 
 
 def _parse_pdf(conteudo: bytes) -> list:
     try:
         from pypdf import PdfReader
+    except ImportError:
+        raise ValueError(
+            "Biblioteca pypdf não instalada. "
+            "Execute: pip install pypdf"
+        )
+    try:
         reader = PdfReader(io.BytesIO(conteudo))
-        items = []
+        items  = []
         for page in reader.pages:
             text = page.extract_text() or ""
             for linha in text.splitlines():
@@ -114,5 +134,7 @@ def _parse_pdf(conteudo: bytes) -> list:
                 if linha:
                     items.append(linha)
         return [{"numero": i + 1, "texto": t} for i, t in enumerate(items)]
+    except ValueError:
+        raise
     except Exception as e:
-        raise ValueError(f"Erro ao ler o arquivo PDF: {e}")
+        raise ValueError(f"Erro ao processar PDF: {e}")
