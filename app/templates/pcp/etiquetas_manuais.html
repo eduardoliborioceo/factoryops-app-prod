@@ -96,21 +96,23 @@
   letter-spacing: 0.3px;
 }
 
-/* checkboxes */
+/* checkboxes — expande para preencher o espaço restante */
 .etq-checks {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  flex: 1;
 }
 .etq-check-row {
   display: flex;
   align-items: center;
+  flex: 1;
   gap: 5px;
-  padding: 2px 3px;
+  padding: 0 3px;
   border-bottom: 0.5px solid #aaa;
   font-size: 6pt;
   white-space: nowrap;
 }
+.etq-check-row:last-child { border-bottom: none; }
 .etq-check-lbl {
   font-weight: bold;
   min-width: 64px;
@@ -129,14 +131,14 @@
   flex-shrink: 0;
 }
 
-/* rodapé */
+/* rodapé — tamanho fixo, não expande */
 .etq-footer {
   display: flex;
   align-items: center;
-  padding: 1px 3px 1px 3px;
+  padding: 2px 3px;
   gap: 4px;
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
+  border-top: 0.5px solid #aaa;
 }
 .etq-footer-obs {
   flex: 1;
@@ -165,28 +167,15 @@
 .etiquetas-sheet { display: none; }
 
 @media print {
-  /* ocultar chrome do layout sem esconder os containers pai */
-  .mobile-header,
-  .desktop-header,
-  .sidebar,
-  .bottom-nav,
-  #etq-root,
-  #alertArea { display: none !important; }
-
-  /* resetar containers do layout para não interferir */
-  .app  { display: block !important; }
-  .main { margin: 0 !important; padding: 0 !important; }
-
-  /* mostrar folha de impressão */
+  /* fallback caso popup seja bloqueado */
+  .mobile-header, .desktop-header, .sidebar,
+  .bottom-nav, #etq-root { display: none !important; }
+  .app     { display: block !important; }
+  .main    { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  .content { padding: 0 !important; }
   .etiquetas-sheet { display: block !important; }
-
   @page { size: A4 portrait; margin: 3mm; }
-
-  .etiquetas-grid {
-    display: grid;
-    grid-template-columns: 101mm 101mm;
-    gap: 1.5mm;
-  }
+  .etiquetas-grid { display: grid; grid-template-columns: 101mm 101mm; gap: 1.5mm; }
 }
 
 /* ── Preview (tela) ─────────────────────────────────────────────── */
@@ -339,7 +328,7 @@
         <i class="bi bi-printer me-2 text-primary"></i>
         Preview — <span id="labelTotal"></span> etiqueta(s)
       </div>
-      <button class="btn btn-primary fw-semibold" style="border-radius:8px;" onclick="window.print()">
+      <button class="btn btn-primary fw-semibold" style="border-radius:8px;" onclick="imprimirEtiquetas()">
         <i class="bi bi-printer me-1"></i>Imprimir
       </button>
     </div>
@@ -507,6 +496,87 @@
 
 </div>`;
   }
+
+  window.imprimirEtiquetas = function () {
+    const grid = document.getElementById('etiquetasGrid');
+    if (!grid.innerHTML.trim()) {
+      alerta('Gere as etiquetas antes de imprimir.');
+      return;
+    }
+    const css = `
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
+      @page { size: A4 portrait; margin: 3mm; }
+      .etiquetas-grid { display: grid; grid-template-columns: 101mm 101mm; gap: 1.5mm; }
+      .etq {
+        width: 101mm; height: 71mm; border: 1.5px solid #000;
+        font-size: 6pt; color: #000; background: #fff;
+        display: flex; flex-direction: column; overflow: hidden;
+        page-break-inside: avoid; break-inside: avoid;
+      }
+      .etq-header {
+        display: flex; align-items: center; border-bottom: 1px solid #000;
+        padding: 1.5px 3px; gap: 3px; flex-shrink: 0;
+      }
+      .etq-logo { height: 13px; width: auto; display: block; }
+      .etq-header-title {
+        flex: 1; font-size: 7pt; font-weight: bold; text-transform: uppercase;
+        letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .etq-table { width: 100%; border-collapse: collapse; flex-shrink: 0; table-layout: fixed; }
+      .etq-table td {
+        border: 0.7px solid #000; padding: 1.5px 3px;
+        vertical-align: middle; overflow: hidden; line-height: 1.3; font-size: 6pt;
+      }
+      .etq-table td:first-child { border-left: none; }
+      .etq-table td:last-child  { border-right: none; }
+      .etq-table tr:last-child td { border-bottom: none; }
+      .etq-table tr:first-child td { border-top: none; }
+      .etq-col1 { width: 31%; } .etq-col2 { width: 46%; } .etq-col3 { width: 23%; }
+      .etq-lbl { font-weight: bold; }
+      .etq-lote-row { white-space: nowrap; }
+      .etq-lote-num { font-size: 7.5pt; font-weight: bold; margin-left: 4px; }
+      .etq-cliente {
+        border-top: 1px solid #000; border-bottom: 1px solid #000;
+        text-align: center; font-size: 9.5pt; font-weight: bold;
+        padding: 2px 3px; flex-shrink: 0; letter-spacing: 0.3px;
+      }
+      .etq-checks { display: flex; flex-direction: column; flex: 1; }
+      .etq-check-row {
+        display: flex; align-items: center; flex: 1;
+        gap: 5px; padding: 0 3px; border-bottom: 0.5px solid #aaa;
+        font-size: 6pt; white-space: nowrap;
+      }
+      .etq-check-row:last-child { border-bottom: none; }
+      .etq-check-lbl { font-weight: bold; min-width: 64px; flex-shrink: 0; }
+      .chk-item { display: inline-flex; align-items: center; gap: 2px; }
+      .chk-box { display: inline-block; width: 7px; height: 7px; border: 1px solid #000; flex-shrink: 0; }
+      .etq-footer {
+        display: flex; align-items: center; padding: 2px 3px;
+        gap: 4px; flex-shrink: 0; border-top: 0.5px solid #aaa;
+      }
+      .etq-footer-obs {
+        flex: 1; font-size: 6pt; overflow: hidden;
+        text-overflow: ellipsis; white-space: nowrap;
+      }
+      .etq-cod-box {
+        border: 1.5px solid #000; font-size: 12pt; font-weight: bold;
+        padding: 0 5px; text-align: center; white-space: nowrap; line-height: 1.2;
+      }
+      .etq-footer-resp { font-size: 5.5pt; white-space: nowrap; align-self: flex-end; padding-bottom: 1px; }
+    `;
+    const win = window.open('', '_blank');
+    if (!win) { alerta('Permita pop-ups neste site para imprimir. Depois clique Imprimir novamente.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>` +
+      `<div class="etiquetas-grid">${grid.innerHTML}</div>` +
+      `<script>` +
+        `var imgs=document.querySelectorAll('img'),done=0,total=imgs.length;` +
+        `function tryPrint(){if(++done>=total){window.focus();window.print();}}` +
+        `if(total===0){window.focus();window.print();}` +
+        `else{imgs.forEach(function(i){if(i.complete)tryPrint();else{i.onload=tryPrint;i.onerror=tryPrint;}});}` +
+      `<\/script></body></html>`);
+    win.document.close();
+  };
 
   function esc(str) {
     return String(str ?? '')
