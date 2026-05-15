@@ -1869,7 +1869,8 @@ def logistica_conferencia_material_upload(planejamento_id):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"erro": str(e)}), 400
+        erro_msg = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+        return jsonify({"erro": erro_msg}), 400
 
 
 @bp.route("/logistica/conferencia-material/componentes/<int:planejamento_id>")
