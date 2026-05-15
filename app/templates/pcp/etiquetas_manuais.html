@@ -128,11 +128,12 @@
   flex-shrink: 0;
 }
 
-/* rodapé — pequeno respiro acima e abaixo */
+/* rodapé — respiro de 10mm acima e abaixo */
 .etq-footer {
   display: flex;
   align-items: center;
-  padding: 2mm 3px;
+  border-top: 1px solid #000;
+  padding: 10mm 3px;
   gap: 4px;
   flex-shrink: 0;
 }
@@ -212,10 +213,25 @@
 
   <!-- Formulário -->
   <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-2 px-3 d-flex align-items-center gap-2"
+    <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between gap-2"
          style="border-color:var(--border);border-radius:12px 12px 0 0;background:var(--card);">
-      <i class="bi bi-tag text-primary"></i>
-      <span class="fw-semibold" style="font-size:0.9rem;">Configuração da Etiqueta</span>
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-tag text-primary"></i>
+        <span class="fw-semibold" style="font-size:0.9rem;">Configuração da Etiqueta</span>
+      </div>
+      <div id="modelosSalvosBar" class="d-flex align-items-center gap-2" style="display:none!important;">
+        <span class="text-muted" style="font-size:0.8rem;">Modelo salvo:</span>
+        <select class="form-select form-select-sm" id="selectModeloSalvo"
+                style="border-radius:8px;min-width:200px;font-size:0.8rem;"></select>
+        <button class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius:8px;font-size:0.75rem;"
+                onclick="carregarModeloSelecionado()">
+          <i class="bi bi-upload me-1"></i>Carregar
+        </button>
+        <button class="btn btn-outline-danger btn-sm" style="border-radius:8px;font-size:0.75rem;"
+                onclick="excluirModeloSelecionado()" title="Excluir modelo">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
     </div>
     <div class="card-body p-3">
       <div class="row g-3">
@@ -319,7 +335,7 @@
 
   <!-- Área de preview na tela -->
   <div id="previewArea" style="display:none;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
       <div class="fw-semibold" style="font-size:0.95rem;">
         <i class="bi bi-printer me-2 text-primary"></i>
         Preview — <span id="labelTotal"></span> etiqueta(s)
@@ -328,6 +344,24 @@
         <i class="bi bi-printer me-1"></i>Imprimir
       </button>
     </div>
+
+    <!-- Prompt de salvar modelo -->
+    <div id="savePrompt" class="card mb-3" style="display:none;border-radius:10px;border-color:var(--border);background:#f8faff;">
+      <div class="card-body py-2 px-3 d-flex align-items-center gap-3 flex-wrap">
+        <span style="font-size:0.85rem;"><i class="bi bi-floppy text-primary me-1"></i>Deseja salvar este modelo para reutilizar?</span>
+        <input type="text" id="inputModeloNome" class="form-control form-control-sm"
+               placeholder="Nome do modelo (ex: HIKVISION SMD)" maxlength="60"
+               style="border-radius:8px;max-width:280px;font-size:0.8rem;"
+               onkeydown="if(event.key==='Enter')salvarModeloAtual()">
+        <button class="btn btn-success btn-sm fw-semibold" style="border-radius:8px;font-size:0.8rem;"
+                onclick="salvarModeloAtual()">
+          <i class="bi bi-floppy me-1"></i>Salvar
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:0.8rem;"
+                onclick="fecharSavePrompt()">Não</button>
+      </div>
+    </div>
+
     <div id="etiquetasGrid" class="etiquetas-grid"></div>
   </div>
 
@@ -415,6 +449,9 @@
     const pa = document.getElementById('previewArea');
     pa.style.display = '';
     pa.scrollIntoView({ behavior: 'smooth' });
+
+    document.getElementById('inputModeloNome').value = '';
+    document.getElementById('savePrompt').style.display = '';
   };
 
   function buildEtiqueta(d) {
@@ -548,7 +585,7 @@
       .chk-item { display: inline-flex; align-items: center; gap: 2px; }
       .chk-box { display: inline-block; width: 7px; height: 7px; border: 1px solid #000; flex-shrink: 0; }
       .etq-footer {
-        display: flex; align-items: center; padding: 2mm 3px;
+        display: flex; align-items: center; border-top: 1px solid #000; padding: 10mm 3px;
         gap: 4px; flex-shrink: 0;
       }
       .etq-footer-obs {
@@ -573,6 +610,115 @@
       `<\/script></body></html>`);
     win.document.close();
   };
+
+  /* ── Modelos salvos (localStorage) ─────────────────────────────── */
+  const STORAGE_KEY = 'etq_modelos_v1';
+
+  function carregarModelos() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function persistirModelos(lista) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+  }
+
+  function atualizarBarraModelos() {
+    const lista  = carregarModelos();
+    const bar    = document.getElementById('modelosSalvosBar');
+    const select = document.getElementById('selectModeloSalvo');
+    if (lista.length === 0) {
+      bar.style.setProperty('display', 'none', 'important');
+      return;
+    }
+    bar.style.removeProperty('display');
+    const anterior = select.value;
+    select.innerHTML = lista
+      .map(m => `<option value="${esc(m.nome)}">${esc(m.nome)}</option>`)
+      .join('');
+    if (lista.find(m => m.nome === anterior)) select.value = anterior;
+  }
+
+  window.fecharSavePrompt = function () {
+    document.getElementById('savePrompt').style.display = 'none';
+  };
+
+  window.salvarModeloAtual = function () {
+    const nome = document.getElementById('inputModeloNome').value.trim();
+    if (!nome) { document.getElementById('inputModeloNome').focus(); return; }
+
+    const dados = {
+      nome,
+      titulo:       document.getElementById('selectTitulo').value,
+      tituloCustom: document.getElementById('inputTituloCustom').value.trim(),
+      cod:          document.getElementById('inputCod').value.trim(),
+      modelo:       document.getElementById('inputModelo').value.trim(),
+      linha:        document.getElementById('inputLinha').value.trim(),
+      turno:        document.getElementById('selectTurno').value,
+      cliente:      document.getElementById('inputCliente').value.trim(),
+      loteIni:      document.getElementById('inputLoteInicial').value,
+      qtdMagazine:  document.getElementById('inputQtdMagazine').value,
+      totalProducao:document.getElementById('inputTotalProducao').value,
+      loteRef:      document.getElementById('inputLoteRef').value.trim(),
+      obs:          document.getElementById('inputObs').value.trim(),
+    };
+
+    const lista = carregarModelos().filter(m => m.nome !== nome);
+    lista.unshift(dados);
+    persistirModelos(lista);
+    atualizarBarraModelos();
+    document.getElementById('selectModeloSalvo').value = nome;
+
+    fecharSavePrompt();
+    const area = document.getElementById('alertArea');
+    const div  = document.createElement('div');
+    div.className = 'alert alert-success alert-dismissible d-flex align-items-center gap-2 mb-3';
+    div.role = 'alert';
+    div.innerHTML = `<i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
+      <div>Modelo "<strong>${esc(nome)}</strong>" salvo com sucesso.</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+    area.prepend(div);
+    setTimeout(() => div.remove(), 4000);
+  };
+
+  window.carregarModeloSelecionado = function () {
+    const nome  = document.getElementById('selectModeloSalvo').value;
+    const lista = carregarModelos();
+    const m     = lista.find(x => x.nome === nome);
+    if (!m) return;
+
+    const selTitulo = document.getElementById('selectTitulo');
+    selTitulo.value = m.titulo;
+    if (m.titulo === '_custom') {
+      document.getElementById('inputTituloCustom').style.display = '';
+      document.getElementById('inputTituloCustom').value = m.tituloCustom || '';
+    } else {
+      document.getElementById('inputTituloCustom').style.display = 'none';
+      document.getElementById('inputTituloCustom').value = '';
+    }
+
+    document.getElementById('inputCod').value           = m.cod;
+    document.getElementById('inputModelo').value        = m.modelo;
+    document.getElementById('inputLinha').value         = m.linha;
+    document.getElementById('selectTurno').value        = m.turno;
+    document.getElementById('inputCliente').value       = m.cliente;
+    document.getElementById('inputLoteInicial').value   = m.loteIni;
+    document.getElementById('inputQtdMagazine').value   = m.qtdMagazine;
+    document.getElementById('inputTotalProducao').value = m.totalProducao;
+    document.getElementById('inputLoteRef').value       = m.loteRef;
+    document.getElementById('inputObs').value           = m.obs;
+    atualizarContador();
+  };
+
+  window.excluirModeloSelecionado = function () {
+    const nome  = document.getElementById('selectModeloSalvo').value;
+    if (!nome) return;
+    const lista = carregarModelos().filter(m => m.nome !== nome);
+    persistirModelos(lista);
+    atualizarBarraModelos();
+  };
+
+  atualizarBarraModelos();
 
   function esc(str) {
     return String(str ?? '')
