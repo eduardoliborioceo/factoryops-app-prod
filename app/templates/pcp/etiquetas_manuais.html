@@ -3,218 +3,188 @@
 
 {% block styles %}
 <style>
-/* ── Formulário ────────────────────────────────────────────── */
-.titulo-select-wrapper { display: flex; gap: 8px; align-items: flex-end; }
-.titulo-select-wrapper select { flex: 0 0 auto; min-width: 260px; }
-.titulo-select-wrapper input  { flex: 1; }
+/* ── Formulário ─────────────────────────────────────────────────── */
+.titulo-select-wrapper { display:flex; gap:8px; align-items:flex-end; }
+.titulo-select-wrapper select { flex:0 0 auto; min-width:260px; }
+.titulo-select-wrapper input  { flex:1; }
 
-/* ── Folha de impressão ────────────────────────────────────── */
-.etiquetas-sheet {
-  display: none;
-}
-
-/* ── Etiqueta individual ───────────────────────────────────── */
-.etiqueta {
-  width: 145mm;
-  height: 96mm;
+/* ── Etiqueta ───────────────────────────────────────────────────── */
+.etq {
+  width: 144mm;
+  height: 49mm;
   border: 1.5px solid #000;
   box-sizing: border-box;
-  font-family: Arial, sans-serif;
-  font-size: 8pt;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 6.5pt;
   color: #000;
-  page-break-inside: avoid;
-}
-
-.etiqueta-header {
-  display: flex;
-  border-bottom: 1px solid #000;
-  flex-shrink: 0;
-}
-
-.etiqueta-left {
-  width: 50%;
-  border-right: 1px solid #000;
-  padding: 3px 5px;
+  background: #fff;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.etiqueta-right {
-  width: 50%;
-  padding: 3px 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.etiqueta-right-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 4px;
-  border-bottom: 1px solid #000;
-  padding-bottom: 3px;
-  margin-bottom: 2px;
-}
-
-.etiqueta-logo {
-  font-size: 7pt;
-  font-weight: bold;
-  line-height: 1.2;
-  text-align: right;
-  color: #1a1a6e;
-}
-
-.etiqueta-titulo {
-  font-size: 6pt;
-  font-weight: bold;
-  text-align: right;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-}
-
-.etiqueta-field {
-  display: flex;
-  gap: 3px;
-  align-items: baseline;
-  font-size: 7.5pt;
-}
-
-.etiqueta-field label {
-  font-weight: bold;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.etiqueta-field span {
-  font-weight: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* cabeçalho */
+.etq-header {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #000;
+  padding: 1.5px 3px;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.etq-logo {
+  height: 13px;
+  width: auto;
+  display: block;
+}
+.etq-header-title {
+  flex: 1;
+  font-size: 7.5pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
 
-.etiqueta-cliente {
+/* tabela de informações */
+.etq-table {
+  width: 100%;
+  border-collapse: collapse;
+  flex-shrink: 0;
+  table-layout: fixed;
+}
+.etq-table td {
+  border: 0.7px solid #000;
+  padding: 1px 3px;
+  vertical-align: middle;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+/* remover bordas externas (cobertas pela borda da etiqueta) */
+.etq-table td:first-child  { border-left: none; }
+.etq-table td:last-child   { border-right: none; }
+.etq-table tr:last-child td { border-bottom: none; }
+.etq-table tr:first-child td { border-top: none; }
+
+.etq-col1 { width: 31%; }
+.etq-col2 { width: 46%; }
+.etq-col3 { width: 23%; }
+
+.etq-lbl { font-weight: bold; }
+
+/* linha do LOTE grande */
+.etq-lote-row { white-space: nowrap; }
+.etq-lote-num {
+  font-size: 8.5pt;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+/* cliente */
+.etq-cliente {
   border-top: 1px solid #000;
   border-bottom: 1px solid #000;
   text-align: center;
-  font-size: 11pt;
+  font-size: 10.5pt;
   font-weight: bold;
-  padding: 2px 4px;
+  padding: 1px 3px;
   flex-shrink: 0;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
-.etiqueta-bottom {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.etiqueta-bottom-left {
-  width: 28mm;
-  border-right: 1px solid #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px;
-  flex-shrink: 0;
-}
-
-.etiqueta-codigo-grande {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
-  font-size: 11pt;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.etiqueta-bottom-right {
-  flex: 1;
+/* checkboxes */
+.etq-checks {
   display: flex;
   flex-direction: column;
-  font-size: 6.5pt;
+  flex-shrink: 0;
 }
-
-.etiqueta-check-row {
+.etq-check-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 4px;
-  border-bottom: 1px solid #ccc;
-  flex-wrap: wrap;
+  gap: 5px;
+  padding: 1px 3px;
+  border-bottom: 0.5px solid #aaa;
+  font-size: 6pt;
+  white-space: nowrap;
 }
-
-.etiqueta-check-row label { font-weight: bold; }
-
-.check-item {
+.etq-check-lbl {
+  font-weight: bold;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+.chk-item {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  white-space: nowrap;
 }
-
-.check-box {
+.chk-box {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border: 1px solid #000;
   flex-shrink: 0;
 }
 
-.etiqueta-obs-row {
+/* rodapé */
+.etq-footer {
   display: flex;
+  align-items: center;
+  padding: 1px 3px 1px 3px;
+  gap: 4px;
   flex: 1;
-  align-items: flex-start;
-  padding: 2px 4px;
-  gap: 12px;
+  min-height: 0;
+}
+.etq-footer-obs {
+  flex: 1;
+  font-size: 6pt;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.etq-cod-box {
+  border: 1.5px solid #000;
+  font-size: 14pt;
+  font-weight: bold;
+  padding: 0 5px;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.etq-footer-resp {
+  font-size: 5.5pt;
+  white-space: nowrap;
+  align-self: flex-end;
+  padding-bottom: 1px;
 }
 
-.etiqueta-obs-row span { font-weight: bold; }
+/* ── Grid de impressão ──────────────────────────────────────────── */
+.etiquetas-sheet { display: none; }
 
-/* ── @print ────────────────────────────────────────────────── */
 @media print {
   body > * { display: none !important; }
   .etiquetas-sheet { display: block !important; }
 
-  @page {
-    size: A4 landscape;
-    margin: 5mm;
-  }
+  @page { size: A4 landscape; margin: 3mm; }
 
   .etiquetas-grid {
     display: grid;
-    grid-template-columns: 145mm 145mm;
-    grid-template-rows: repeat(4, 96mm);
-    gap: 3mm;
-    width: 100%;
-  }
-
-  .etiqueta {
-    break-inside: avoid;
+    grid-template-columns: 144mm 144mm;
+    gap: 1.5mm;
   }
 }
 
-/* ── Preview (tela) ────────────────────────────────────────── */
+/* ── Preview (tela) ─────────────────────────────────────────────── */
 #previewArea .etiquetas-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 960px;
+  grid-template-columns: repeat(2, 144mm);
+  gap: 12px;
 }
-
-#previewArea .etiqueta {
-  transform-origin: top left;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  border-radius: 2px;
-  width: 100%;
-  height: auto;
-  min-height: 200px;
+#previewArea .etq {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 }
 </style>
 {% endblock %}
@@ -237,7 +207,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid"
+     id="etq-root"
+     data-logo="{{ url_for('static', filename='images/logos/logo.png') }}">
 
   <div id="alertArea"></div>
 
@@ -252,11 +224,11 @@
       <div class="row g-3">
 
         <div class="col-12">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Título da Etiqueta <span class="text-danger">*</span></label>
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Título <span class="text-danger">*</span></label>
           <div class="titulo-select-wrapper">
             <select class="form-select form-select-sm" id="selectTitulo" onchange="toggleTituloCustom()" style="border-radius:8px;">
-              <option value="ETIQUETA DE IDENTIFICAÇÃO">ETIQUETA DE IDENTIFICAÇÃO</option>
               <option value="ETIQUETA DE IDENTIFICAÇÃO SEMI-ACABADO">ETIQUETA DE IDENTIFICAÇÃO SEMI-ACABADO</option>
+              <option value="ETIQUETA DE IDENTIFICAÇÃO">ETIQUETA DE IDENTIFICAÇÃO</option>
               <option value="_custom">Outro (digitar)…</option>
             </select>
             <input type="text" class="form-control form-control-sm" id="inputTituloCustom"
@@ -265,64 +237,81 @@
           </div>
         </div>
 
-        <div class="col-6 col-md-3">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Cód. do Modelo <span class="text-danger">*</span></label>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Cód. <span class="text-danger">*</span></label>
           <input type="text" class="form-control form-control-sm" id="inputCod"
-                 placeholder="Ex: 20311066" style="border-radius:8px;">
+                 placeholder="Ex: 200454354" style="border-radius:8px;">
         </div>
 
-        <div class="col-6 col-md-3">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo (Nome) <span class="text-danger">*</span></label>
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Modelo <span class="text-danger">*</span></label>
           <input type="text" class="form-control form-control-sm" id="inputModelo"
-                 placeholder="Ex: DS-238V7 V1.5" style="border-radius:8px;">
+                 placeholder="Ex: DS-2D068(V1.1)-I2.5-NM-E-E9-V" style="border-radius:8px;">
         </div>
 
         <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno <span class="text-danger">*</span></label>
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Linha <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm" id="inputLinha"
+                 placeholder="Ex: SMD" style="border-radius:8px;">
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">Turno</label>
           <select class="form-select form-select-sm" id="selectTurno" style="border-radius:8px;">
+            <option value="">— deixar em branco —</option>
             <option value="1° Turno">1° Turno</option>
             <option value="2° Turno">2° Turno</option>
             <option value="3° Turno">3° Turno</option>
           </select>
         </div>
 
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-md-2">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
           <input type="text" class="form-control form-control-sm" id="inputCliente"
                  placeholder="Ex: HIKVISION" style="border-radius:8px;text-transform:uppercase;"
                  oninput="this.value=this.value.toUpperCase()">
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Lote Inicial <span class="text-danger">*</span></label>
           <input type="number" class="form-control form-control-sm" id="inputLoteInicial"
                  placeholder="Ex: 1" min="1" style="border-radius:8px;">
-          <div class="form-text" style="font-size:0.72rem;">Número da 1ª etiqueta; as seguintes incrementam.</div>
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Qtd. por Magazine <span class="text-danger">*</span></label>
           <input type="number" class="form-control form-control-sm" id="inputQtdMagazine"
                  placeholder="Ex: 504" min="1" style="border-radius:8px;">
-          <div class="form-text" style="font-size:0.72rem;">Peças por magazine — aparece no lote como "X / <em>Qtd</em>".</div>
         </div>
 
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
           <label class="form-label fw-semibold" style="font-size:0.8rem;">Total da Produção <span class="text-danger">*</span></label>
           <input type="number" class="form-control form-control-sm" id="inputTotalProducao"
                  placeholder="Ex: 4000" min="1" style="border-radius:8px;">
-          <div class="form-text" style="font-size:0.72rem;">Sistema calcula o número de etiquetas necessárias.</div>
         </div>
 
-        <div class="col-6 col-md-3 d-flex align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">N° Lote (código)</label>
+          <input type="text" class="form-control form-control-sm" id="inputLoteRef"
+                 placeholder="Ex: 2511550016" style="border-radius:8px;">
+          <div class="form-text" style="font-size:0.72rem;">Aparece em destaque na etiqueta.</div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.8rem;">OP / Observação</label>
+          <input type="text" class="form-control form-control-sm" id="inputObs"
+                 placeholder="Ex: OP. EBRUFR01004" style="border-radius:8px;">
+        </div>
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
           <div class="w-100">
             <div class="text-muted mb-2" style="font-size:0.8rem;">
-              Etiquetas a gerar: <strong id="contadorEtiquetas">—</strong>
+              Etiquetas: <strong id="contadorEtiquetas">—</strong>
               <span class="text-muted" style="font-size:0.72rem;" id="infoFolhas"></span>
             </div>
             <button class="btn btn-primary btn-sm fw-semibold w-100" style="border-radius:8px;"
                     onclick="gerarEtiquetas()">
-              <i class="bi bi-eye me-1"></i>Visualizar Etiquetas
+              <i class="bi bi-eye me-1"></i>Visualizar
             </button>
           </div>
         </div>
@@ -331,32 +320,7 @@
     </div>
   </div>
 
-  <!-- Contador dinâmico -->
-  <script>
-  (function() {
-    const fields = ['inputQtdMagazine', 'inputTotalProducao'];
-    fields.forEach(id => {
-      document.getElementById(id).addEventListener('input', atualizarContador);
-    });
-    function atualizarContador() {
-      const qty   = parseInt(document.getElementById('inputQtdMagazine').value) || 0;
-      const total = parseInt(document.getElementById('inputTotalProducao').value) || 0;
-      const cont  = document.getElementById('contadorEtiquetas');
-      const info  = document.getElementById('infoFolhas');
-      if (qty > 0 && total > 0) {
-        const n = Math.ceil(total / qty);
-        cont.textContent = n;
-        const folhas = Math.ceil(n / 8);
-        info.textContent = ` (${folhas} folha${folhas !== 1 ? 's' : ''})`;
-      } else {
-        cont.textContent = '—';
-        info.textContent = '';
-      }
-    }
-  })();
-  </script>
-
-  <!-- Área de preview -->
+  <!-- Área de preview na tela -->
   <div id="previewArea" style="display:none;">
     <div class="d-flex align-items-center justify-content-between mb-3">
       <div class="fw-semibold" style="font-size:0.95rem;">
@@ -372,137 +336,182 @@
 
 </div>
 
-<!-- Área de impressão (oculta na tela) -->
+<!-- Folha para impressão (oculta na tela) -->
 <div class="etiquetas-sheet">
   <div id="etiquetasGridPrint" class="etiquetas-grid"></div>
 </div>
 
 <script>
-function toggleTituloCustom() {
-  const sel   = document.getElementById('selectTitulo');
-  const input = document.getElementById('inputTituloCustom');
-  input.style.display = sel.value === '_custom' ? '' : 'none';
-  if (sel.value !== '_custom') input.value = '';
-}
+(function () {
+  const LOGO_URL = document.getElementById('etq-root').dataset.logo;
 
-function getTitulo() {
-  const sel = document.getElementById('selectTitulo');
-  if (sel.value === '_custom') {
-    return document.getElementById('inputTituloCustom').value.trim().toUpperCase();
-  }
-  return sel.value;
-}
+  /* contador dinâmico */
+  ['inputQtdMagazine', 'inputTotalProducao'].forEach(id => {
+    document.getElementById(id).addEventListener('input', atualizarContador);
+  });
 
-function gerarEtiquetas() {
-  const titulo   = getTitulo();
-  const cod      = document.getElementById('inputCod').value.trim();
-  const modelo   = document.getElementById('inputModelo').value.trim();
-  const turno    = document.getElementById('selectTurno').value;
-  const cliente  = document.getElementById('inputCliente').value.trim();
-  const loteIni  = parseInt(document.getElementById('inputLoteInicial').value) || 0;
-  const qtdMag   = parseInt(document.getElementById('inputQtdMagazine').value) || 0;
-  const totalProd = parseInt(document.getElementById('inputTotalProducao').value) || 0;
-
-  if (!titulo) { mostrarAlerta('danger', 'Informe o título da etiqueta.'); return; }
-  if (!cod)    { mostrarAlerta('danger', 'Informe o Cód. do modelo.'); return; }
-  if (!modelo) { mostrarAlerta('danger', 'Informe o nome do modelo.'); return; }
-  if (!cliente){ mostrarAlerta('danger', 'Informe o cliente.'); return; }
-  if (loteIni <= 0) { mostrarAlerta('danger', 'Lote inicial deve ser maior que zero.'); return; }
-  if (qtdMag <= 0)  { mostrarAlerta('danger', 'Quantidade por magazine deve ser maior que zero.'); return; }
-  if (totalProd <= 0){ mostrarAlerta('danger', 'Total de produção deve ser maior que zero.'); return; }
-
-  const nEtiquetas = Math.ceil(totalProd / qtdMag);
-  document.getElementById('labelTotal').textContent = nEtiquetas;
-
-  const htmlEtiquetas = [];
-  for (let i = 0; i < nEtiquetas; i++) {
-    htmlEtiquetas.push(buildEtiqueta({
-      titulo, cod, modelo, turno, cliente,
-      lote: loteIni + i,
-      qtdMag,
-    }));
+  function atualizarContador() {
+    const qty   = parseInt(document.getElementById('inputQtdMagazine').value)   || 0;
+    const total = parseInt(document.getElementById('inputTotalProducao').value)  || 0;
+    const cont  = document.getElementById('contadorEtiquetas');
+    const info  = document.getElementById('infoFolhas');
+    if (qty > 0 && total > 0) {
+      const n = Math.ceil(total / qty);
+      cont.textContent = n;
+      const f = Math.ceil(n / 8);
+      info.textContent = ` (${f} folha${f !== 1 ? 's' : ''})`;
+    } else {
+      cont.textContent = '—';
+      info.textContent = '';
+    }
   }
 
-  const html = htmlEtiquetas.join('');
-  document.getElementById('etiquetasGrid').innerHTML = html;
-  document.getElementById('etiquetasGridPrint').innerHTML = html;
+  /* toggle título custom */
+  window.toggleTituloCustom = function () {
+    const sel   = document.getElementById('selectTitulo');
+    const input = document.getElementById('inputTituloCustom');
+    input.style.display = sel.value === '_custom' ? '' : 'none';
+    if (sel.value !== '_custom') input.value = '';
+  };
 
-  const previewArea = document.getElementById('previewArea');
-  previewArea.style.display = '';
-  previewArea.scrollIntoView({ behavior: 'smooth' });
-}
+  function getTitulo() {
+    const sel = document.getElementById('selectTitulo');
+    return sel.value === '_custom'
+      ? document.getElementById('inputTituloCustom').value.trim().toUpperCase()
+      : sel.value;
+  }
 
-function buildEtiqueta(d) {
-  return `
-<div class="etiqueta">
-  <div class="etiqueta-header">
-    <div class="etiqueta-left">
-      <div class="etiqueta-field"><label>Cód.:</label><span>${escHtml(d.cod)}</span></div>
-      <div class="etiqueta-field"><label>Modelo:</label><span>${escHtml(d.modelo)}</span></div>
-      <div class="etiqueta-field"><label>Linha:</label><span>&nbsp;</span></div>
-      <div class="etiqueta-field"><label>Turno:</label><span>${escHtml(d.turno)}</span></div>
-      <div class="etiqueta-field"><label>Lote:</label><span>${d.lote} / ${d.qtdMag}</span></div>
-      <div class="etiqueta-field"><label>Horário:</label><span>&nbsp;</span></div>
+  /* gerar etiquetas */
+  window.gerarEtiquetas = function () {
+    const titulo    = getTitulo();
+    const cod       = document.getElementById('inputCod').value.trim();
+    const modelo    = document.getElementById('inputModelo').value.trim();
+    const linha     = document.getElementById('inputLinha').value.trim();
+    const turno     = document.getElementById('selectTurno').value;
+    const cliente   = document.getElementById('inputCliente').value.trim();
+    const loteIni   = parseInt(document.getElementById('inputLoteInicial').value)  || 0;
+    const qtdMag    = parseInt(document.getElementById('inputQtdMagazine').value)  || 0;
+    const totalProd = parseInt(document.getElementById('inputTotalProducao').value) || 0;
+    const loteRef   = document.getElementById('inputLoteRef').value.trim();
+    const obs       = document.getElementById('inputObs').value.trim();
+
+    if (!titulo)         { alerta('Informe o título.'); return; }
+    if (!cod)            { alerta('Informe o Cód.'); return; }
+    if (!modelo)         { alerta('Informe o Modelo.'); return; }
+    if (!linha)          { alerta('Informe a Linha.'); return; }
+    if (!cliente)        { alerta('Informe o Cliente.'); return; }
+    if (loteIni <= 0)    { alerta('Lote inicial deve ser maior que zero.'); return; }
+    if (qtdMag  <= 0)    { alerta('Qtd. por magazine deve ser maior que zero.'); return; }
+    if (totalProd <= 0)  { alerta('Total da produção deve ser maior que zero.'); return; }
+
+    const n = Math.ceil(totalProd / qtdMag);
+    document.getElementById('labelTotal').textContent = n;
+
+    const html = Array.from({ length: n }, (_, i) =>
+      buildEtiqueta({ titulo, cod, modelo, linha, turno, cliente, loteRef, obs,
+                      lote: loteIni + i, qtdMag })
+    ).join('');
+
+    document.getElementById('etiquetasGrid').innerHTML      = html;
+    document.getElementById('etiquetasGridPrint').innerHTML = html;
+
+    const pa = document.getElementById('previewArea');
+    pa.style.display = '';
+    pa.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  function buildEtiqueta(d) {
+    const turnoCell = d.turno ? esc(d.turno) : '';
+    return `
+<div class="etq">
+
+  <!-- cabeçalho: logo + título -->
+  <div class="etq-header">
+    <img class="etq-logo" src="${esc(LOGO_URL)}" alt="Venttos">
+    <div class="etq-header-title">${esc(d.titulo)}</div>
+  </div>
+
+  <!-- tabela de informações -->
+  <table class="etq-table">
+    <colgroup>
+      <col class="etq-col1"><col class="etq-col2"><col class="etq-col3">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td><span class="etq-lbl">Cód.:</span> ${esc(d.cod)}</td>
+        <td><span class="etq-lbl">Modelo:</span> ${esc(d.modelo)}</td>
+        <td rowspan="2"><span class="etq-lbl">Data:</span></td>
+      </tr>
+      <tr>
+        <td><span class="etq-lbl">Linha:</span> ${esc(d.linha)}</td>
+        <td><span class="etq-lbl">Turno:</span> ${turnoCell}</td>
+      </tr>
+      <tr>
+        <td><span class="etq-lbl">Lote:</span> ${d.lote} / ${d.qtdMag}</td>
+        <td><span class="etq-lbl">Quant:</span></td>
+        <td><span class="etq-lbl">Revisora:</span></td>
+      </tr>
+      <tr>
+        <td><span class="etq-lbl">Horário:</span></td>
+        <td colspan="2" class="etq-lote-row">
+          <span class="etq-lbl">LOTE</span>
+          <span class="etq-lote-num">${esc(d.loteRef)}</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- cliente -->
+  <div class="etq-cliente">Cliente: ${esc(d.cliente)}</div>
+
+  <!-- checkboxes -->
+  <div class="etq-checks">
+    <div class="etq-check-row">
+      <span class="etq-check-lbl">ALTERAÇÃO:</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;SIM</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;NÃO</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;N° DESVIO</span>
     </div>
-    <div class="etiqueta-right">
-      <div class="etiqueta-right-top">
-        <div class="etiqueta-titulo">${escHtml(d.titulo)}</div>
-        <div class="etiqueta-logo">Venttos<br>Electronics</div>
-      </div>
-      <div class="etiqueta-field"><label>Revisor(a):</label><span>&nbsp;</span></div>
-      <div class="etiqueta-field"><label>Data:</label><span>&nbsp;</span></div>
+    <div class="etq-check-row">
+      <span class="etq-check-lbl">PROCESSO:</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;TOP</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;BOT</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;IOI</span>
+    </div>
+    <div class="etq-check-row">
+      <span class="etq-check-lbl">STATUS CQ.</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;APROVADO</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;REJEITADO</span>
+      <span class="chk-item"><span class="chk-box"></span>&nbsp;TESTE FUNCIONAL</span>
     </div>
   </div>
-  <div class="etiqueta-cliente">Cliente: ${escHtml(d.cliente)}</div>
-  <div class="etiqueta-bottom">
-    <div class="etiqueta-bottom-left">
-      <div class="etiqueta-codigo-grande">${escHtml(d.cod)}</div>
-    </div>
-    <div class="etiqueta-bottom-right">
-      <div class="etiqueta-check-row">
-        <label>ALTERAÇÃO</label>
-        <span class="check-item"><span class="check-box"></span> SIM</span>
-        <span class="check-item"><span class="check-box"></span> NÃO</span>
-      </div>
-      <div class="etiqueta-check-row">
-        <label>PROCESSO</label>
-        <span class="check-item"><span class="check-box"></span> TOP</span>
-        <span class="check-item"><span class="check-box"></span> BOT</span>
-        <span class="check-item"><span class="check-box"></span> AOI</span>
-      </div>
-      <div class="etiqueta-check-row">
-        <label>STATUS CQ</label>
-        <span class="check-item"><span class="check-box"></span> APROVADO</span>
-        <span class="check-item"><span class="check-box"></span> REJEITADO</span>
-        <span class="check-item"><span class="check-box"></span> N° DESVIO</span>
-        <span class="check-item"><span class="check-box"></span> TESTE FUNCIONAL</span>
-      </div>
-      <div class="etiqueta-obs-row">
-        <span>Obs.:</span>
-        <span style="margin-left:auto;">Resp. CQ:</span>
-      </div>
-    </div>
+
+  <!-- rodapé -->
+  <div class="etq-footer">
+    <div class="etq-footer-obs"><span class="etq-lbl">Obs.:</span> ${esc(d.obs)}</div>
+    <div class="etq-cod-box">${esc(d.cod)}</div>
+    <div class="etq-footer-resp">Resp. CQ</div>
   </div>
+
 </div>`;
-}
+  }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
-function mostrarAlerta(tipo, msg) {
-  const area = document.getElementById('alertArea');
-  const div  = document.createElement('div');
-  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2 mb-3`;
-  div.role = 'alert';
-  div.innerHTML = `<i class="bi bi-exclamation-circle-fill fs-5 flex-shrink-0"></i>
-    <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
-  area.prepend(div);
-  setTimeout(() => div.remove(), 5000);
-}
+  function alerta(msg) {
+    const area = document.getElementById('alertArea');
+    const div  = document.createElement('div');
+    div.className = 'alert alert-danger alert-dismissible d-flex align-items-center gap-2 mb-3';
+    div.role = 'alert';
+    div.innerHTML = `<i class="bi bi-exclamation-circle-fill fs-5 flex-shrink-0"></i>
+      <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+    area.prepend(div);
+    setTimeout(() => div.remove(), 5000);
+  }
+})();
 </script>
 {% endblock %}
