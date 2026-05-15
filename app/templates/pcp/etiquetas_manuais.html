@@ -10,7 +10,7 @@
 
 /* ── Etiqueta ───────────────────────────────────────────────────── */
 .etq {
-  width: 97mm;
+  width: 99mm;
   border: 1.5px solid #000;
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
@@ -184,13 +184,13 @@
   .content { padding: 0 !important; }
   .etiquetas-sheet { display: block !important; }
   @page { size: A4 portrait; margin: 5mm; }
-  .etiquetas-grid { display: grid; grid-template-columns: 97mm 97mm; gap: 2mm; }
+  .etiquetas-grid { display: grid; grid-template-columns: 99mm 99mm; gap: 2mm; }
 }
 
 /* ── Preview (tela) ─────────────────────────────────────────────── */
 #previewArea .etiquetas-grid {
   display: grid;
-  grid-template-columns: repeat(2, 97mm);
+  grid-template-columns: repeat(2, 99mm);
   gap: 12px;
 }
 #previewArea .etq {
@@ -232,10 +232,10 @@
         <span class="fw-semibold" style="font-size:0.9rem;">Configuração da Etiqueta</span>
       </div>
       <div id="modelosSalvosBar" class="d-flex align-items-center gap-2" style="display:none!important;">
-        <span class="text-muted" style="font-size:0.8rem;">Modelo salvo:</span>
+        <span class="text-muted" style="font-size:0.8rem;white-space:nowrap;">Modelo salvo:</span>
         <select class="form-select form-select-sm" id="selectModeloSalvo"
                 style="border-radius:8px;min-width:200px;font-size:0.8rem;"></select>
-        <button class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius:8px;font-size:0.75rem;"
+        <button class="btn btn-outline-primary btn-sm fw-semibold" style="border-radius:8px;font-size:0.75rem;white-space:nowrap;"
                 onclick="carregarModeloSelecionado()">
           <i class="bi bi-upload me-1"></i>Carregar
         </button>
@@ -567,9 +567,9 @@
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: Arial, Helvetica, sans-serif; background: #fff; }
       @page { size: A4 portrait; margin: 5mm; }
-      .etiquetas-grid { display: grid; grid-template-columns: 97mm 97mm; gap: 2mm; }
+      .etiquetas-grid { display: grid; grid-template-columns: 99mm 99mm; gap: 2mm; }
       .etq {
-        width: 97mm; border: 1.5px solid #000;
+        width: 99mm; border: 1.5px solid #000;
         font-size: 6pt; color: #000; background: #fff;
         display: flex; flex-direction: column;
         page-break-inside: avoid; break-inside: avoid;
