@@ -105,6 +105,16 @@ def create_app():
     def load_user(user_id):
         return User.get(user_id)
 
+    @app.template_filter("fmt_local")
+    def fmt_local_filter(dt, fmt="%d/%m/%Y %H:%M"):
+        if not dt:
+            return "—"
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("America/Manaus")
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        return dt.astimezone(tz).strftime(fmt)
+
     @app.context_processor
     def inject_globals():
         return {

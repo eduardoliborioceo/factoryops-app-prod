@@ -1838,17 +1838,26 @@ def logistica_conferencia_material_confirmar():
 @login_required
 def logistica_conferencia_material_historico(planejamento_id):
     from flask import jsonify
+    from zoneinfo import ZoneInfo
     from app.services import conferencia_material_service as svc
 
+    MANAUS = ZoneInfo("America/Manaus")
     historico = svc.historico_por_plano(planejamento_id)
     result = []
     for h in historico:
+        dt = h["conferido_em"]
+        if dt:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+            dt_fmt = dt.astimezone(MANAUS).strftime("%d/%m/%Y %H:%M")
+        else:
+            dt_fmt = None
         result.append({
-            "id":                     h["id"],
-            "status":                 h["status"],
-            "observacao":             h["observacao"],
-            "conferido_por":          h["conferido_por"],
-            "conferido_em":           h["conferido_em"].strftime("%d/%m/%Y %H:%M") if h["conferido_em"] else None,
+            "id":                      h["id"],
+            "status":                  h["status"],
+            "observacao":              h["observacao"],
+            "conferido_por":           h["conferido_por"],
+            "conferido_em":            dt_fmt,
             "componentes_confirmados": h["componentes_confirmados"],
         })
     return jsonify({"ok": True, "historico": result})
