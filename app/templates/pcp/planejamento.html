@@ -256,7 +256,7 @@
                     {% if p.status_material %}
                     <span class="badge bg-{{ mat_cor.get(p.status_material,'secondary') }}"
                           style="font-size:0.68rem;"
-                          title="{{ p.material_conferido_por }} — {{ p.material_conferido_em.strftime('%d/%m %H:%M') if p.material_conferido_em else '' }}">
+                          title="{{ p.material_conferido_por }} — {{ p.material_conferido_em | fmt_local('%d/%m %H:%M') }}">
                       {{ mat_lb.get(p.status_material, p.status_material) }}
                     </span>
                     {% else %}
