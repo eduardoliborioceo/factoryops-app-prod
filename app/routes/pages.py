@@ -1866,10 +1866,10 @@ def logistica_conferencia_material_upload(planejamento_id):
     try:
         resultado = svc.upload_arquivo(planejamento_id, arquivo, current_user.username)
         return jsonify({"ok": True, "componentes": resultado["componentes"]})
-    except ValueError as e:
-        return jsonify({"erro": str(e)}), 400
     except Exception as e:
-        return jsonify({"erro": "Erro interno ao processar arquivo."}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"erro": str(e)}), 400
 
 
 @bp.route("/logistica/conferencia-material/componentes/<int:planejamento_id>")
