@@ -165,7 +165,19 @@
 .etiquetas-sheet { display: none; }
 
 @media print {
-  body > * { display: none !important; }
+  /* ocultar chrome do layout sem esconder os containers pai */
+  .mobile-header,
+  .desktop-header,
+  .sidebar,
+  .bottom-nav,
+  #etq-root,
+  #alertArea { display: none !important; }
+
+  /* resetar containers do layout para não interferir */
+  .app  { display: block !important; }
+  .main { margin: 0 !important; padding: 0 !important; }
+
+  /* mostrar folha de impressão */
   .etiquetas-sheet { display: block !important; }
 
   @page { size: A4 landscape; margin: 3mm; }
