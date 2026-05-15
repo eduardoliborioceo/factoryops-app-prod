@@ -73,16 +73,17 @@ def arquivo_por_plano(planejamento_id: int) -> dict | None:
 
 def salvar_arquivo(planejamento_id: int, filename: str, mimetype: str,
                    conteudo: bytes, componentes: list, uploaded_por: str) -> int:
+    import json
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO conferencia_arquivo
                     (planejamento_id, filename, mimetype, conteudo, componentes, uploaded_por)
                 VALUES (%s, %s, %s, %s, %s::jsonb, %s)
                 RETURNING id
             """, (planejamento_id, filename, mimetype,
-                  conteudo, __import__('json').dumps(componentes), uploaded_por))
-            return cur.fetchone()[0]
+                  conteudo, json.dumps(componentes), uploaded_por))
+            return cur.fetchone()["id"]
 
 
 def listar_datas_com_planos() -> list:
@@ -101,7 +102,7 @@ def registrar(planejamento_id: int, status: str, observacao: str | None,
               conferido_por: str, componentes_confirmados: list | None) -> int:
     import json
     with get_db() as conn:
-        with conn.cursor() as cur:
+        with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO conferencia_material
                     (planejamento_id, status, observacao, conferido_por, componentes_confirmados)
@@ -109,7 +110,7 @@ def registrar(planejamento_id: int, status: str, observacao: str | None,
                 RETURNING id
             """, (planejamento_id, status, observacao or None, conferido_por,
                   json.dumps(componentes_confirmados) if componentes_confirmados is not None else None))
-            return cur.fetchone()[0]
+            return cur.fetchone()["id"]
 
 
 def historico_por_plano(planejamento_id: int) -> list:
