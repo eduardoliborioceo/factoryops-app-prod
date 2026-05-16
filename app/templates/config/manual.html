@@ -186,40 +186,33 @@
           </div>
           <div class="mermaid">
 graph TD
-    A[FactoryOps] --> B[Engenharia / SMT]
+    A[FactoryOps] --> B[Engenharia e SMT]
     A --> C[Produção]
     A --> D[PCP]
     A --> E[Entregas]
     A --> F[Logística]
     A --> G[Configurações]
     A --> H[Administração]
-
     B --> B1[Cadastro de Modelos]
     B --> B2[Calculadora]
     B --> B3[Estudo de Tempo]
-
     C --> C1[Medição Pasta Solda]
     C --> C2[Checklist de Linha]
     C --> C3[Limpeza de Stencil]
     C --> C4[Monitor SMD]
-
     D --> D1[Controle de OPs]
     D --> D2[Apontamento]
     D --> D3[Planejamento]
     D --> D4[Etiquetas Manuais]
     D --> D5[Roteiros]
-
     E --> E1[Pedidos]
     E --> E2[Remessas]
     E --> E3[Rastreamento]
-
     F --> F1[Resumo do Dia]
     F --> F2[Conferência de Material]
-
     G --> G1[Turnos]
     G --> G2[Linhas e Setores]
     G --> G3[Paradas]
-
     H --> H1[Usuários]
     H --> H2[Backup]
     H --> H3[Chamados]
@@ -238,24 +231,22 @@ graph TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo de Login — FLOW-02</p>
           <div class="mermaid">
 flowchart TD
-    A([Usuário acessa o sistema]) --> B{Tem conta?}
-    B -- Não --> C[Clica em Registrar]
-    C --> D[Preenche nome, email, senha, setor, função]
-    D --> E[Sistema envia notificação ao Admin]
+    A([Inicio]) --> B{Tem conta?}
+    B -- Sim --> I{Metodo de login}
+    B -- Nao --> C[Clica em Registrar]
+    C --> D[Preenche nome, email e senha]
+    D --> E[Notificacao ao Admin]
     E --> F{Admin aprova?}
-    F -- Sim --> G[Usuário recebe acesso]
-    F -- Não --> H([Acesso negado])
+    F -- Sim --> G[Acesso liberado]
+    F -- Nao --> H([Acesso negado])
     G --> I
-
-    B -- Sim --> I{Método de login}
-    I -- Usuário e senha --> J[Digita credenciais]
-    I -- Google --> K[Autentica via Google]
-    I -- GitHub --> L[Autentica via GitHub]
-
+    I -- Usuario e senha --> J[Digita credenciais]
+    I -- Google --> K[Google OAuth]
+    I -- GitHub --> L[GitHub OAuth]
     J --> M{Senha expirada?}
-    M -- Sim --> N[Redireciona para alterar senha]
+    M -- Sim --> N[Troca de senha obrigatoria]
+    M -- Nao --> O([Acesso ao sistema])
     N --> O
-    M -- Não --> O([Acesso ao sistema])
     K --> O
     L --> O
           </div>
@@ -308,7 +299,7 @@ graph LR
     style A fill:#0d6efd,color:#fff
     style B fill:#198754,color:#fff
     style C fill:#64748b,color:#fff
-              </div>
+          </div>
             </div>
           </div>
         </div>
@@ -350,7 +341,7 @@ graph TD
     end
     SB --> CT
     HD --> CT
-              </div>
+          </div>
             </div>
           </div>
           <div class="col-12 col-md-6">
@@ -365,7 +356,7 @@ graph TD
     end
     MH --> MC
     MC --> BN
-              </div>
+          </div>
             </div>
           </div>
         </div>
@@ -508,7 +499,7 @@ flowchart TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Checklist de Verificação de Linha — FLOW-10</p>
           <div class="mermaid">
 flowchart TD
-    A([Início do mês / turno]) --> B[Cria nova sessão de checklist]
+    A([Inicio do mes ou turno]) --> B[Cria nova sessao de checklist]
     B --> C[Preenche itens um por um]
     C --> D{Item OK?}
     D -- Sim --> E[Marca como conforme]
@@ -598,7 +589,7 @@ flowchart TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Apontamento de Produção — FLOW-13</p>
           <div class="mermaid">
 flowchart TD
-    A([Acessa Apontamento]) --> B[Filtra por data / setor / linha / turno]
+    A([Acessa Apontamento]) --> B[Filtra por data, setor, linha e turno]
     B --> C[Lista apontamentos importados]
     C --> D{Apontamento vinculado?}
     D -- Não --> E[Seleciona OP correspondente]
@@ -615,7 +606,7 @@ flowchart TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Planejamento / Plano de Voo — FLOW-14</p>
           <div class="mermaid">
 flowchart TD
-    A([Acessa Planejamento]) --> B[Define: data, turno, setor, linha]
+    A([Acessa Planejamento]) --> B[Define data, turno, setor e linha]
     B --> C{Criar plano como?}
     C -- Unitario --> D[Seleciona OP e informa quantidade]
     C -- Em lote --> E[Seleciona multiplas OPs]
@@ -700,12 +691,12 @@ flowchart TD
 flowchart TD
     A([Acessa Entregas]) --> B[Cria Pedido do Cliente]
     B --> C[Define cliente, modelo, quantidade e data de entrega]
-    C --> D[Pedido criado — Status: Aberto]
+    C --> D[Pedido criado - Aberto]
     D --> E[Cria Remessa vinculada ao Pedido]
-    E --> F[Define: quantidade, nota fiscal]
-    F --> G[Status: Em Carregamento]
-    G --> H[Atualiza para Em Trânsito]
-    H --> I[Sistema registra saída com horário]
+    E --> F[Define quantidade e nota fiscal]
+    F --> G[Em Carregamento]
+    G --> H[Em Transito]
+    H --> I[Sistema registra saida]
     I --> J[Motorista atualiza localização via app]
     J --> K[Atualiza para Entregue]
     K --> L{Quantidade total entregue?}
@@ -777,7 +768,7 @@ flowchart TD
     E --> F[Operador confere item por item]
     F --> G{Item disponível?}
     G -- Sim --> H[Confirma componente]
-    G -- Não --> I[Registra falta / divergência]
+    G -- Não --> I[Registra falta ou divergencia]
     H --> J{Mais itens?}
     I --> J
     J -- Sim --> F
@@ -891,7 +882,7 @@ flowchart TD
     B --> C[Acessa Gestão de Usuários]
     C --> D[Visualiza dados do solicitante]
     D --> E{Aprovar?}
-    E -- Sim --> F[Define role: admin, padrao ou viewer]
+    E -- Sim --> F[Define perfil admin, padrao ou viewer]
     F --> G[Usuário recebe acesso]
     E -- Não --> H[Nega o acesso]
     H --> I([Usuário bloqueado])
@@ -903,7 +894,7 @@ flowchart TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Backup do Banco de Dados — FLOW-20</p>
           <div class="mermaid">
 flowchart TD
-    A([Agendado / Manual]) --> B[pg_dump executa]
+    A([Agendado ou Manual]) --> B[pg_dump executa]
     B --> C[Gera arquivo .sql.gz]
     C --> D[Calcula checksum SHA-256]
     D --> E{Checksum OK?}
