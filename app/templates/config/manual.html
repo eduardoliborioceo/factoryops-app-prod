@@ -19,566 +19,926 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  .manual-tab-btn {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .manual-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+  .manual-tab-btn:hover:not(.active) {
+    color: var(--text);
+  }
+  .manual-tab-bar {
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 12px 12px 0 0;
+    padding: 0 8px;
+    scrollbar-width: none;
+  }
+  .manual-tab-bar::-webkit-scrollbar { display: none; }
+  .manual-tab-panel { display: none; }
+  .manual-tab-panel.active { display: block; }
+
+  .flow-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .flow-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .info-box {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .info-box.warning {
+    background: rgba(255,193,7,0.08);
+    border-color: rgba(255,193,7,0.25);
+  }
+  .info-box.danger {
+    background: rgba(220,53,69,0.07);
+    border-color: rgba(220,53,69,0.20);
+  }
+  .info-box.info {
+    background: rgba(13,110,253,0.06);
+    border-color: rgba(13,110,253,0.15);
+  }
+  .info-box.success {
+    background: rgba(25,135,84,0.07);
+    border-color: rgba(25,135,84,0.18);
+  }
+  .step-list { font-size: 0.83rem; color: var(--text); line-height: 1.75; padding-left: 1.2rem; margin-bottom: 0; }
+  .sec-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .sec-sub {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+  .mermaid { min-height: 40px; }
+</style>
+
 <div class="container-fluid">
 
-  <!-- Índice rápido -->
+  <!-- Tab wrapper -->
   <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-body py-3 px-4">
-      <p class="fw-semibold mb-2" style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">
-        <i class="bi bi-list-ul me-1"></i>Índice
-      </p>
-      <div class="d-flex flex-wrap gap-2">
-        <a href="#sec-pcp" class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-size:0.8rem;">1. PCP</a>
-        <a href="#sec-smt" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:0.8rem;">2. SMT</a>
-        <a href="#sec-sfc" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:0.8rem;">3. SFC</a>
-        <a href="#sec-logistica" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:0.8rem;">4. Logística</a>
-        <a href="#sec-config" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:0.8rem;">5. Configurações</a>
-        <a href="#sec-acesso" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-size:0.8rem;">6. Acesso e Perfil</a>
-      </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 1. PCP                                                  -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-pcp" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(13,110,253,0.10);">
-        <i class="bi bi-diagram-3 text-primary fs-5"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">1. PCP — Planejamento e Controle da Produção</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Gestão de Ordens de Produção, roteiros, apontamentos e dados coletados</p>
-      </div>
+    <!-- Tab bar -->
+    <div class="manual-tab-bar" id="manualTabBar">
+      <button class="manual-tab-btn active" onclick="showTab('t1',this)">1. Visão Geral</button>
+      <button class="manual-tab-btn" onclick="showTab('t2',this)">2. Acesso</button>
+      <button class="manual-tab-btn" onclick="showTab('t3',this)">3. Navegação</button>
+      <button class="manual-tab-btn" onclick="showTab('t4',this)">4. Engenharia / SMT</button>
+      <button class="manual-tab-btn" onclick="showTab('t5',this)">5. Produção</button>
+      <button class="manual-tab-btn" onclick="showTab('t6',this)">6. PCP</button>
+      <button class="manual-tab-btn" onclick="showTab('t7',this)">7. Entregas</button>
+      <button class="manual-tab-btn" onclick="showTab('t8',this)">8. Estoque</button>
+      <button class="manual-tab-btn" onclick="showTab('t9',this)">9. Configurações</button>
+      <button class="manual-tab-btn" onclick="showTab('t10',this)">10. Administração</button>
+      <button class="manual-tab-btn" onclick="showTab('t11',this)">11. Suporte</button>
     </div>
+
     <div class="card-body px-4 py-4">
 
-      <!-- 1.1 Controle de OPs -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.1</span>
-          Controle de OPs
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Cadastro e gestão das Ordens de Produção ativas.</p>
-        <div class="row g-3 mt-1">
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  1. VISÃO GERAL DO SISTEMA               ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t1" class="manual-tab-panel active">
+        <p class="sec-title"><i class="bi bi-grid-3x3-gap text-primary me-2"></i>Visão Geral do Sistema</p>
+        <p class="sec-sub">
+          O FactoryOps é um sistema web de gestão industrial desenvolvido para a Venttos Electronics.
+          Ele concentra em um único lugar o controle de produção, planejamento de turno, entregas,
+          qualidade e engenharia. É acessado por navegador (computador ou celular) e não requer instalação.
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6 col-lg-3">
+            <div class="info-box info">
+              <p class="fw-bold mb-1" style="font-size:0.85rem;"><i class="bi bi-diagram-3 text-primary me-1"></i>PCP</p>
+              <p style="font-size:0.82rem;margin-bottom:0;">Controle de OPs, apontamentos, roteiros, planejamento e etiquetas.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <div class="info-box success">
+              <p class="fw-bold mb-1" style="font-size:0.85rem;"><i class="bi bi-cpu text-success me-1"></i>Engenharia / SMT</p>
+              <p style="font-size:0.82rem;margin-bottom:0;">Modelos, calculadora de UPH, estudo de tempo e cronometragem.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <div class="info-box warning">
+              <p class="fw-bold mb-1" style="font-size:0.85rem;"><i class="bi bi-truck" style="color:#fd7e14;"></i> Entregas</p>
+              <p style="font-size:0.82rem;margin-bottom:0;">Pedidos, remessas, rastreamento e expedição com GPS.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-lg-3">
+            <div class="info-box danger">
+              <p class="fw-bold mb-1" style="font-size:0.85rem;"><i class="bi bi-gear text-danger me-1"></i>Admin / Config</p>
+              <p style="font-size:0.82rem;margin-bottom:0;">Turnos, linhas, paradas, usuários e backup do banco de dados.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Mapa de Módulos — FLOW-01</p>
+          <div class="mermaid">
+graph TD
+    A[🏭 FactoryOps] --> B[Engenharia / SMT]
+    A --> C[Produção]
+    A --> D[PCP]
+    A --> E[Entregas]
+    A --> F[Logística]
+    A --> G[Configurações]
+    A --> H[Administração]
+
+    B --> B1[Cadastro de Modelos]
+    B --> B2[Calculadora]
+    B --> B3[Estudo de Tempo]
+
+    C --> C1[Medição Pasta Solda]
+    C --> C2[Checklist de Linha]
+    C --> C3[Limpeza de Stencil]
+    C --> C4[Monitor SMD]
+
+    D --> D1[Controle de OPs]
+    D --> D2[Apontamento]
+    D --> D3[Planejamento]
+    D --> D4[Etiquetas Manuais]
+    D --> D5[Roteiros]
+
+    E --> E1[Pedidos]
+    E --> E2[Remessas]
+    E --> E3[Rastreamento]
+
+    F --> F1[Resumo do Dia]
+    F --> F2[Conferência de Material]
+
+    G --> G1[Turnos]
+    G --> G2[Linhas e Setores]
+    G --> G3[Paradas]
+
+    H --> H1[Usuários]
+    H --> H2[Backup]
+    H --> H3[Chamados]
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  2. ACESSO E AUTENTICAÇÃO                ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t2" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-person-lock text-primary me-2"></i>Acesso e Autenticação</p>
+        <p class="sec-sub">Como entrar no sistema, recuperar senha e entender os níveis de acesso.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo de Login — FLOW-02</p>
+          <div class="mermaid">
+flowchart TD
+    A([Usuário acessa o sistema]) --> B{Tem conta?}
+    B -- Não --> C[Clica em Registrar]
+    C --> D[Preenche nome, email, senha, setor, função]
+    D --> E[Sistema envia notificação ao Admin]
+    E --> F{Admin aprova?}
+    F -- Sim --> G[Usuário recebe acesso]
+    F -- Não --> H([Acesso negado])
+    G --> I
+
+    B -- Sim --> I{Método de login}
+    I -- Usuário e senha --> J[Digita credenciais]
+    I -- Google --> K[Autentica via Google]
+    I -- GitHub --> L[Autentica via GitHub]
+
+    J --> M{Senha expirada? +180 dias}
+    M -- Sim --> N[Redireciona para alterar senha]
+    N --> O
+    M -- Não --> O([Acesso ao sistema])
+    K --> O
+    L --> O
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Recuperação de Senha — FLOW-03</p>
+          <div class="mermaid">
+flowchart LR
+    A([Usuário esqueceu a senha]) --> B[Clica em Esqueci minha senha]
+    B --> C[Digita o e-mail cadastrado]
+    C --> D[Sistema envia link por e-mail]
+    D --> E[Usuário clica no link]
+    E --> F[Define nova senha]
+    F --> G{Senha atende os requisitos?}
+    G -- Não --> F
+    G -- Sim --> H([Login liberado])
+          </div>
+        </div>
+
+        <div class="row g-3 mb-4">
           <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-plus-circle text-primary me-1"></i>Como cadastrar uma OP</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Acesse <strong>PCP → Controle de OPs</strong>.</li>
-                <li>Clique em <strong>Nova OP</strong>.</li>
-                <li>Preencha: número da OP, modelo/produto, quantidade e setor.</li>
-                <li>O sistema verifica automaticamente se o número de OP já existe.</li>
-                <li>Confirme clicando em <strong>Salvar</strong>.</li>
-              </ol>
+            <p class="fw-bold mb-2" style="font-size:0.88rem;"><i class="bi bi-key text-primary me-1"></i>Requisitos de Senha</p>
+            <table class="table table-sm" style="font-size:0.82rem;">
+              <thead style="background:var(--bg);">
+                <tr>
+                  <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Requisito</th>
+                  <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Detalhe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Comprimento mínimo</td><td>10 caracteres</td></tr>
+                <tr><td>Letra maiúscula</td><td>Ao menos 1</td></tr>
+                <tr><td>Letra minúscula</td><td>Ao menos 1</td></tr>
+                <tr><td>Número</td><td>Ao menos 1</td></tr>
+                <tr><td>Caractere especial</td><td>Ao menos 1 (ex: @$#!%&)</td></tr>
+                <tr><td>Proibido conter</td><td>Nome de usuário ou "venttos"</td></tr>
+                <tr><td>Validade</td><td>180 dias (6 meses)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="flow-card" style="margin-bottom:0;">
+              <p class="flow-title"><i class="bi bi-diagram-2"></i>Perfis de Acesso — FLOW-04</p>
+              <div class="mermaid">
+graph LR
+    A[Administrador] -->|Acesso total + gestão| S[Sistema]
+    B[Usuário Padrão] -->|Acesso ao seu módulo| S
+    C[Viewer] -->|Somente leitura| S
+    style A fill:#0d6efd,color:#fff
+    style B fill:#198754,color:#fff
+    style C fill:#64748b,color:#fff
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box warning">
+          <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Troca de senha obrigatória</p>
+          <p style="font-size:0.83rem;margin-bottom:0;">
+            O sistema solicita nova senha a cada 180 dias automaticamente.
+            A nova senha não pode ser idêntica à anterior.
+          </p>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  3. NAVEGAÇÃO E INTERFACE                ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t3" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-layout-sidebar text-primary me-2"></i>Navegação e Interface</p>
+        <p class="sec-sub">Layout do sistema, menu lateral e navegação mobile.</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-6">
+            <div class="flow-card" style="margin-bottom:0;">
+              <p class="flow-title"><i class="bi bi-diagram-2"></i>Desktop — FLOW-05</p>
+              <div class="mermaid">
+graph TD
+    subgraph Desktop
+        SB[Sidebar esquerda 240px\nMenu de navegação]
+        HD[Header fixo 56px\nUsuário + Logout]
+        CT[Área de conteúdo\nmargin-left 240px]
+    end
+    SB --> CT
+    HD --> CT
+              </div>
             </div>
           </div>
           <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-info-circle text-primary me-1"></i>Campos importantes</p>
-              <ul style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li><strong>Número da OP:</strong> identificador único — geralmente termina em dois dígitos que indicam o setor.</li>
-                <li><strong>Modelo:</strong> código do produto (ex.: <code>240170</code>).</li>
-                <li><strong>Saldo:</strong> quantidade ainda disponível para apontamento.</li>
-                <li><strong>Status:</strong> calculado automaticamente conforme os apontamentos.</li>
+            <div class="flow-card" style="margin-bottom:0;">
+              <p class="flow-title"><i class="bi bi-diagram-2"></i>Mobile — FLOW-06</p>
+              <div class="mermaid">
+graph TD
+    subgraph Mobile
+        MH[Header escuro 56px\nLogo + título + logout]
+        MC[Conteúdo\nrola verticalmente]
+        BN[Barra inferior 64px\n5 atalhos principais]
+    end
+    MH --> MC
+    MC --> BN
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-display text-primary me-1"></i>Desktop</p>
+              <ul class="step-list">
+                <li>Menu lateral escuro à esquerda com grupos expansíveis.</li>
+                <li>Item ativo tem destaque azul com barra lateral esquerda.</li>
+                <li>Header branco fixo no topo com usuário e botão de logout.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-phone text-primary me-1"></i>Mobile</p>
+              <ul class="step-list">
+                <li>Header escuro no topo com o nome da página.</li>
+                <li>Menu lateral oculto — use a barra de navegação inferior.</li>
+                <li>5 atalhos principais fixos na parte de baixo da tela.</li>
               </ul>
             </div>
           </div>
           <div class="col-12">
-            <div class="p-3" style="background:rgba(255,193,7,0.08);border-radius:10px;border:1px solid rgba(255,193,7,0.25);">
-              <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Atenção — OPs em família</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                OPs de uma mesma produção compartilham a base do número (ex.: <code>12345-01</code> e <code>12345-02</code>).
-                O sistema valida a sequência do roteiro: não é possível apontar um setor posterior sem produção registrada no setor anterior.
+            <div class="info-box success">
+              <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-arrows-fullscreen text-success me-1"></i>Modo Tela Cheia</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                O botão <i class="bi bi-arrows-fullscreen"></i> no canto superior direito de cada página
+                oculta o menu lateral e maximiza a área de trabalho. O estado é salvo automaticamente.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 1.2 Roteiros -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.2</span>
-          Roteiros de Produção
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Define a sequência de setores que cada modelo deve percorrer.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-signpost-split text-success me-1"></i>O que é um roteiro?</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                O roteiro lista os setores pelos quais um modelo passa na ordem correta — por exemplo:
-                <code>PTH → SMD → IM → PA</code>. O sistema usa o roteiro para bloquear apontamentos fora de sequência.
-              </p>
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  4. ENGENHARIA / SMT                     ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t4" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-cpu text-success me-2"></i>Engenharia / SMT</p>
+        <p class="sec-sub">Cadastro de modelos, calculadora de UPH, estudo de tempo e cronometragem.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Cadastro e Cálculo de Modelo — FLOW-07</p>
+          <div class="mermaid">
+flowchart TD
+    A([Usuário acessa Engenharia]) --> B[Cadastro de Modelos]
+    B --> C{Modelo existe?}
+    C -- Não --> D[Preenche: código, nome, família,\nsetor, UPH, dados de processo]
+    C -- Sim --> E[Edita dados existentes]
+    D --> F[Salva modelo]
+    E --> F
+    F --> G[Calculadora]
+    G --> H[Informa: UPH alvo, turno, paradas]
+    H --> I[Sistema calcula:\nMeta/hora, Meta/turno, Tempo ciclo]
+    I --> J([Resultado exibido])
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Estudo de Tempo — FLOW-08</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Estudo de Tempo]) --> B[Cria novo estudo]
+    B --> C[Define modelo e operador]
+    C --> D[Adiciona operações]
+    D --> E[Registra tempos de cada operação]
+    E --> F{Mais operações?}
+    F -- Sim --> D
+    F -- Não --> G[Sistema calcula totais e UPH]
+    G --> H[Imprime relatório]
+    H --> I([Estudo arquivado])
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-boxes text-success me-1"></i>Modelos Cadastrados</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">Modelos SMT com parâmetros de produção. Cada modelo pode ter fases (TOP/BOTTOM) e tempo de ciclo.</p>
             </div>
           </div>
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-pencil text-success me-1"></i>Como cadastrar</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Acesse <strong>PCP → Roteiros</strong>.</li>
-                <li>Selecione o modelo e adicione os setores na ordem correta.</li>
-                <li>Salve — o roteiro passa a valer imediatamente para novos apontamentos.</li>
-              </ol>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-calculator text-success me-1"></i>Calculadora UPH</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">Calcula meta/hora e meta/turno com base no UPH alvo e nas paradas programadas.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-stopwatch text-success me-1"></i>Estudo de Tempo</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">Cronometragem de operações para calcular UPH real. Gera relatório imprimível com totais.</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 1.3 Apontamento -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.3</span>
-          Apontamento de Produção
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Vincule a produção coletada a uma OP específica.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-link-45deg text-primary me-1"></i>Como vincular uma produção a uma OP</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Acesse <strong>PCP → Apontamento</strong>.</li>
-                <li>Use os filtros para encontrar a linha/turno/data desejada.</li>
-                <li>Clique em <strong>Vincular</strong> na linha de produção.</li>
-                <li>Selecione a OP correta na lista de OPs abertas.</li>
-                <li>Informe a quantidade e, se for SMD, informe a fase (<strong>TOP</strong> ou <strong>BOTTOM</strong>).</li>
-                <li>Confirme com <strong>Vincular</strong>.</li>
-              </ol>
-            </div>
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  5. PRODUÇÃO                             ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t5" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-activity text-warning me-2"></i>Produção</p>
+        <p class="sec-sub">Medição de pasta de solda, checklist de linha, limpeza de stencil e monitor SMD.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Medição de Pasta de Solda — FLOW-09</p>
+          <div class="mermaid">
+flowchart TD
+    A([Início do turno]) --> B[Operador acessa Medição Pasta]
+    B --> C[Seleciona linha e data]
+    C --> D[Registra medições por ponto de solda]
+    D --> E{Medição fora do limite?}
+    E -- Sim --> F[Cria Plano de Ação]
+    F --> G[Define responsável e prazo]
+    G --> H[Acompanha resolução]
+    E -- Não --> I([Registro salvo])
+    H --> I
           </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Checklist de Verificação de Linha — FLOW-10</p>
+          <div class="mermaid">
+flowchart TD
+    A([Início do mês / turno]) --> B[Cria nova sessão de checklist]
+    B --> C[Preenche itens um por um]
+    C --> D{Item OK?}
+    D -- Sim --> E[Marca como conforme]
+    D -- Não --> F[Marca como não conforme]
+    F --> G[Abre Plano de Ação]
+    E --> H{Mais itens?}
+    G --> H
+    H -- Sim --> C
+    H -- Não --> I[Finaliza sessão]
+    I --> J([Checklist arquivado])
+          </div>
+        </div>
+
+        <div class="row g-3">
           <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-layers text-primary me-1"></i>Vincular a múltiplas OPs</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                Uma mesma produção pode ser vinculada a mais de uma OP. Após a primeira vinculação,
-                o modal permanece aberto para que você adicione outra OP sem precisar reabrir.
-                O saldo de cada OP é atualizado em tempo real.
+            <div class="info-box success">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-display text-success me-1"></i>Monitor SMD — TV</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Painel projetado para TVs no chão de fábrica. Exibe status das linhas SMT em tempo real:
+                modelo, quantidade produzida, paradas ativas e eficiência do turno.
               </p>
             </div>
           </div>
-          <div class="col-12">
-            <div class="p-3" style="background:rgba(220,53,69,0.07);border-radius:10px;border:1px solid rgba(220,53,69,0.2);">
-              <p class="fw-semibold mb-2" style="font-size:0.83rem;"><i class="bi bi-shield-exclamation text-danger me-1"></i>Validações automáticas do sistema</p>
-              <ul style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li><strong>Modelo compatível:</strong> a OP deve ser do mesmo modelo da produção.</li>
-                <li><strong>Saldo suficiente:</strong> a quantidade não pode exceder o saldo da OP.</li>
-                <li><strong>Sequência do roteiro:</strong> o setor anterior deve ter produção registrada antes.</li>
-                <li><strong>Fase SMD:</strong> OPs SMD exigem a informação de TOP ou BOTTOM.</li>
+          <div class="col-12 col-md-6">
+            <div class="info-box warning">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-shield-exclamation text-warning me-1"></i>Limpeza de Stencil</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Registro das limpezas de stencil por linha e turno. Permite rastrear a frequência e
+                identificar desvios no processo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  6. PCP                                  ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t6" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-diagram-3 text-primary me-2"></i>PCP — Planejamento e Controle da Produção</p>
+        <p class="sec-sub">Roteiros, controle de OPs, apontamento, planejamento e etiquetas.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Visão Geral do Fluxo PCP — FLOW-11</p>
+          <div class="mermaid">
+flowchart TD
+    R[Roteiros\nDefine sequência de setores] --> OP
+    OP[Controle de OPs\nCria e gerencia OPs] --> AP
+    AP[Apontamento\nVincula produção às OPs] --> PL
+    PL[Planejamento\nDistribui por hora e linha] --> ET
+    ET[Etiquetas Manuais\nGera etiquetas de identificação]
+    style R fill:#e0f2fe,stroke:#0284c7
+    style OP fill:#dcfce7,stroke:#16a34a
+    style AP fill:#fef9c3,stroke:#ca8a04
+    style PL fill:#fce7f3,stroke:#db2777
+    style ET fill:#f3e8ff,stroke:#9333ea
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Controle de OPs — FLOW-12</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Controle de OPs]) --> B{Criar OP como?}
+    B -- Manual --> C[Preenche: número, produto,\nsetor, quantidade, filial]
+    B -- Por Roteiro --> D[Seleciona roteiro existente]
+    D --> E[Sistema preenche automaticamente]
+    C --> F[Salva OP]
+    E --> F
+    F --> G{Status da OP}
+    G --> G1[Aberta]
+    G --> G2[Em produção]
+    G --> G3[Finalizada]
+    G --> G4[Cancelada]
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Apontamento de Produção — FLOW-13</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Apontamento]) --> B[Filtra por data / setor / linha / turno]
+    B --> C[Lista apontamentos importados]
+    C --> D{Apontamento vinculado?}
+    D -- Não --> E[Seleciona OP correspondente]
+    E --> F[Vincula apontamento à OP]
+    D -- Sim --> G{Modelo correto?}
+    G -- Não --> H[Corrige modelo]
+    G -- Sim --> I([Apontamento OK])
+    F --> I
+    H --> I
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Planejamento / Plano de Voo — FLOW-14</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Planejamento]) --> B[Define: data, turno, setor, linha]
+    B --> C{Criar plano como?}
+    C -- Unitário --> D[Seleciona OP, informa quantidade\ne hora de início]
+    C -- Em lote --> E[Seleciona múltiplas OPs]
+    D --> F[Sistema calcula:\nhora de término, UPH, meta]
+    E --> F
+    F --> G[Exibe plano de voo hora a hora]
+    G --> H{Imprimir?}
+    H -- Sim --> I[Abre PDF do plano de voo]
+    H -- Não --> J[Acompanha status em tempo real]
+    I --> K([Plano de voo impresso])
+    J --> K
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Etiquetas Manuais — FLOW-15</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Etiquetas Manuais]) --> B{Usar modelo salvo?}
+    B -- Sim --> C[Seleciona modelo na lista]
+    C --> D[Campos preenchidos automaticamente]
+    B -- Não --> D2[Preenche manualmente:\ncódigo, modelo, linha, cliente, lote]
+    D --> E[Clica Visualizar]
+    D2 --> E
+    E --> F[Preview das etiquetas na tela]
+    F --> G{Salvar modelo?}
+    G -- Sim --> H[Nomeia e salva no banco\ndisponível para todos os usuários]
+    G -- Não --> I
+    H --> I[Clica Imprimir]
+    I --> J([Etiquetas impressas em A4])
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="info-box warning">
+              <p class="fw-semibold mb-2" style="font-size:0.83rem;"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Validação de roteiro</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Não é possível apontar um setor posterior sem produção registrada no setor anterior.
+                OPs de família compartilham base do número (ex: <code>12345-01</code> e <code>12345-02</code>).
+              </p>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.83rem;"><i class="bi bi-info-circle text-primary me-1"></i>Modelos de etiqueta compartilhados</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Modelos salvos ficam disponíveis para todos os usuários do sistema.
+                Qualquer usuário pode criar, carregar ou excluir modelos.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  7. ENTREGAS                             ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t7" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-truck me-2" style="color:#fd7e14;"></i>Entregas</p>
+        <p class="sec-sub">Pedidos, remessas, rastreamento em tempo real e expedição.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo Completo de Entregas — FLOW-16</p>
+          <div class="mermaid">
+flowchart TD
+    A([Acessa Entregas]) --> B[Cria Pedido do Cliente]
+    B --> C[Define: cliente, modelo, quantidade,\ndata de entrega, local]
+    C --> D[Pedido criado — Status: Aberto]
+    D --> E[Cria Remessa vinculada ao Pedido]
+    E --> F[Define: quantidade, nota fiscal]
+    F --> G[Status: Em Carregamento]
+    G --> H[Atualiza para Em Trânsito]
+    H --> I[Sistema registra saída com horário]
+    I --> J[Motorista atualiza localização via app]
+    J --> K[Atualiza para Entregue]
+    K --> L{Quantidade total entregue?}
+    L -- Sim --> M[Pedido fechado automaticamente]
+    L -- Não --> E
+    M --> N([Entrega concluída])
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Rastreamento em Mapa — FLOW-17</p>
+          <div class="mermaid">
+flowchart LR
+    A[Entrega Em Trânsito] --> B[Mapa de Rastreamento]
+    B --> C[Exibe localização\ndo motorista em tempo real]
+    C --> D[Exibe rota até o destino]
+    D --> E[Atualiza a cada check-in]
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-1" style="font-size:0.85rem;"><i class="bi bi-box-seam me-1" style="color:#fd7e14;"></i>Pedidos</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">Registro de pedidos do cliente com data de entrega, modelo e quantidade.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-1" style="font-size:0.85rem;"><i class="bi bi-truck me-1" style="color:#fd7e14;"></i>Remessas</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">Cada pedido pode ter múltiplas remessas. Controladas individualmente por nota fiscal.</p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-1" style="font-size:0.85rem;"><i class="bi bi-pin-map me-1" style="color:#fd7e14;"></i>Rastreamento</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">GPS em tempo real via app do motorista. Mapa atualizado a cada check-in de localização.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  8. ESTOQUE E LOGÍSTICA                  ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t8" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-boxes me-2" style="color:#6f42c1;"></i>Estoque e Logística</p>
+        <p class="sec-sub">Resumo do dia e conferência de material para o plano de produção.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Conferência de Material — FLOW-18</p>
+          <div class="mermaid">
+flowchart TD
+    A([Início da conferência]) --> B[Acessa Conferência de Material]
+    B --> C[Seleciona plano de produção do dia]
+    C --> D[Faz upload da lista de componentes\narquivo CSV/Excel]
+    D --> E[Sistema importa componentes\nnecessários para o plano]
+    E --> F[Operador confere item por item]
+    F --> G{Item disponível?}
+    G -- Sim --> H[Confirma componente]
+    G -- Não --> I[Registra falta / divergência]
+    H --> J{Mais itens?}
+    I --> J
+    J -- Sim --> F
+    J -- Não --> K[Finaliza conferência]
+    K --> L([Relatório de conferência gerado])
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-calendar-day me-1" style="color:#6f42c1;"></i>Resumo do Dia</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Visão consolidada da produção do dia: planejado vs. realizado por linha, turno e setor.
+                Disponível para todos os usuários.
+              </p>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="info-box warning">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Divergências</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Componentes marcados como em falta são registrados no relatório de conferência.
+                O supervisor deve resolver as divergências antes de iniciar a produção.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  9. CONFIGURAÇÕES                        ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t9" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-gear me-2" style="color:var(--text-muted);"></i>Configurações do Sistema</p>
+        <p class="sec-sub">Turnos, linhas, setores e paradas — requer perfil Administrador.</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-clock text-primary me-1"></i>Turnos</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Define horários de início e fim de cada turno por setor.
+                Usado pelo sistema para classificar registros de produção no turno correto.
+              </p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-layout-three-columns text-primary me-1"></i>Linhas e Setores</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Cadastro das linhas de produção por setor e filial.
+                Toda linha usada em apontamentos ou planejamento deve estar cadastrada aqui.
+              </p>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-pause-circle text-primary me-1"></i>Paradas</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Tipos de parada programada (intervalo, refeição, ginástica, DDS, setup),
+                responsáveis e headcount por linha e turno.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box danger">
+          <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-shield-lock text-danger me-1"></i>Acesso restrito</p>
+          <p style="font-size:0.83rem;margin-bottom:0;">
+            As telas de Turnos, Linhas e Paradas são acessíveis apenas por usuários com perfil
+            <strong>Administrador</strong>. Se não vê essas opções no menu, solicite acesso ao responsável.
+          </p>
+        </div>
+      </div>
+
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  10. ADMINISTRAÇÃO                       ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t10" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-person-gear text-danger me-2"></i>Administração</p>
+        <p class="sec-sub">Gestão de usuários, aprovações e backup do banco de dados.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Aprovação de Usuários — FLOW-19</p>
+          <div class="mermaid">
+flowchart TD
+    A([Novo usuário se registra]) --> B[Admin recebe notificação]
+    B --> C[Acessa Gestão de Usuários]
+    C --> D[Visualiza dados do solicitante]
+    D --> E{Aprovar?}
+    E -- Sim --> F[Define role:\nadmin / padrão / viewer]
+    F --> G[Usuário recebe acesso]
+    E -- Não --> H[Nega o acesso]
+    H --> I([Usuário bloqueado])
+    G --> J([Usuário ativo no sistema])
+          </div>
+        </div>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Backup do Banco de Dados — FLOW-20</p>
+          <div class="mermaid">
+flowchart TD
+    A([Agendado / Manual]) --> B[pg_dump executa]
+    B --> C[Gera arquivo .sql.gz]
+    C --> D[Calcula checksum SHA-256]
+    D --> E{Checksum OK?}
+    E -- Não --> F[Marca backup como inválido]
+    F --> G[Registra erro no log]
+    E -- Sim --> H[Criptografa AES-256]
+    H --> I[Armazena localmente]
+    I --> J[Transfere para offsite]
+    J --> K[Registra sucesso no log]
+    K --> L([Backup concluído])
+    G --> L
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="info-box info">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-people text-primary me-1"></i>Gestão de Usuários</p>
+              <ul class="step-list">
+                <li>Aprovar ou negar solicitações de registro.</li>
+                <li>Definir perfil de acesso: admin, padrão ou viewer.</li>
+                <li>Forçar troca de senha imediata se necessário.</li>
+                <li>Bloquear ou reativar usuários.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="info-box success">
+              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-cloud-arrow-down text-success me-1"></i>Backup Automático</p>
+              <ul class="step-list">
+                <li>Executado automaticamente pelo agendador do sistema.</li>
+                <li>Arquivo comprimido (.sql.gz) + checksum SHA-256.</li>
+                <li>Criptografado com AES-256 antes de armazenar.</li>
+                <li>Retenção: 30 dias (diário), 3 meses (semanal), 1 ano (mensal).</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 1.4 Planejamento -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.4</span>
-          Planejamento (Plano de Voo)
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Planejamento diário da produção por linha e turno.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-calendar-check text-primary me-1"></i>Como criar um planejamento</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Acesse <strong>PCP → Planejamento</strong>.</li>
-                <li>Selecione a data, turno, setor e linha.</li>
-                <li>Informe o modelo e a meta de produção.</li>
-                <li>Salve — o planejamento aparece no resumo do dia.</li>
-              </ol>
-            </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-graph-up text-primary me-1"></i>Resumo planejado vs. realizado</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                O sistema compara automaticamente o que foi planejado com o que foi produzido,
-                exibindo a eficiência (%) e os gaps de produção por linha e turno.
-              </p>
-            </div>
+      <!-- ╔══════════════════════════════════════════╗ -->
+      <!-- ║  11. SUPORTE                             ║ -->
+      <!-- ╚══════════════════════════════════════════╝ -->
+      <div id="t11" class="manual-tab-panel">
+        <p class="sec-title"><i class="bi bi-headset text-primary me-2"></i>Suporte e Ajuda</p>
+        <p class="sec-sub">Central de conhecimento, ouvidoria e suporte especializado.</p>
+
+        <div class="flow-card">
+          <p class="flow-title"><i class="bi bi-diagram-2"></i>Abertura de Chamado — FLOW-21</p>
+          <div class="mermaid">
+flowchart TD
+    A([Usuário tem dúvida ou problema]) --> B{Encontrou na\nCentral de FAQs?}
+    B -- Sim --> C([Problema resolvido])
+    B -- Não --> D[Acessa Suporte Especializado]
+    D --> E[Descreve o problema]
+    E --> F[Equipe técnica recebe notificação]
+    F --> G[Técnico responde no chat]
+    G --> H{Problema resolvido?}
+    H -- Sim --> I[Chamado fechado]
+    H -- Não --> G
+    I --> C
           </div>
         </div>
-      </div>
 
-      <!-- 1.5 Produção Input BI -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.5</span>
-          Produção Coletada — Input BI
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Visualização dos dados de produção importados automaticamente pelo coletor.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-funnel text-primary me-1"></i>Filtros disponíveis</p>
-              <ul style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li><strong>Data inicial / Data final:</strong> período desejado.</li>
-                <li><strong>Setor:</strong> filtra por área produtiva (PTH, SMD, IM, PA…).</li>
-                <li><strong>Linha:</strong> filtra por linha de produção.</li>
-                <li><strong>Turno:</strong> 1º, 2º ou 3º turno.</li>
-              </ul>
-            </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-upload text-primary me-1"></i>Importação manual</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                Caso o coletor não tenha enviado os dados, é possível importar manualmente um arquivo
-                <code>.json</code> exportado do BI. Use o botão <strong>Importar JSON</strong> e acompanhe
-                o progresso em tempo real.
-              </p>
-            </div>
+        <div class="row g-3">
+          <div class="col-12">
+            <p class="fw-bold mb-2" style="font-size:0.88rem;"><i class="bi bi-telephone text-primary me-1"></i>Canais de Suporte</p>
+            <table class="table table-sm" style="font-size:0.82rem;">
+              <thead style="background:var(--bg);">
+                <tr>
+                  <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Canal</th>
+                  <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Como acessar</th>
+                  <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;">Para que serve</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><i class="bi bi-book text-primary me-1"></i>Centro de Conhecimento</td>
+                  <td>Menu Suporte → Centro de Conhecimento</td>
+                  <td>FAQs e dúvidas comuns</td>
+                </tr>
+                <tr>
+                  <td><i class="bi bi-megaphone text-warning me-1"></i>Ouvidoria</td>
+                  <td>Menu Suporte → Ouvidoria</td>
+                  <td>Feedback e sugestões</td>
+                </tr>
+                <tr>
+                  <td><i class="bi bi-chat-dots text-success me-1"></i>Suporte Especializado</td>
+                  <td>Menu Suporte → Suporte Especializado</td>
+                  <td>Chat com a equipe técnica</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
           <div class="col-12">
-            <div class="p-3" style="background:rgba(13,110,253,0.06);border-radius:10px;border:1px solid rgba(13,110,253,0.15);">
-              <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-info-circle text-primary me-1"></i>Origem dos dados</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                Os registros do Input BI têm origem <code>NULL</code> ou sem marcação especial.
-                Registros com origem <code>mes</code> pertencem à aba de Produção MES e não aparecem aqui.
+            <div class="info-box info">
+              <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-info-circle text-primary me-1"></i>Dica</p>
+              <p style="font-size:0.83rem;margin-bottom:0;">
+                Antes de abrir um chamado, consulte a Central de Conhecimento — a maioria das dúvidas
+                operacionais já está documentada com passo a passo e exemplos visuais.
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 1.6 Produção MES -->
-      <div class="mb-5">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.6</span>
-          Produção MES
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Dados de produção importados do sistema MES, com meta e eficiência.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-bar-chart text-success me-1"></i>O que aparece aqui?</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                Registros com origem <code>mes</code> — importados mensalmente via JSON do MES.
-                Incluem campo de <strong>meta</strong> por hora, permitindo calcular a eficiência real (% meta x real).
-              </p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-upload text-success me-1"></i>Como importar</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Exporte o arquivo do MES no formato <code>.json</code>.</li>
-                <li>Acesse <strong>PCP → Produção MES</strong>.</li>
-                <li>Clique em <strong>Importar JSON</strong> e selecione o arquivo.</li>
-                <li>Acompanhe o progresso — registros duplicados são atualizados automaticamente.</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div><!-- /card-body -->
+  </div><!-- /card -->
 
-      <!-- 1.7 Lançamento PTH -->
-      <div class="mb-4">
-        <h2 class="fw-bold mb-1" style="font-size:0.95rem;color:var(--text);">
-          <span class="badge bg-primary me-2" style="font-size:0.75rem;border-radius:6px;">1.7</span>
-          Lançamento de Produção — PTH / Manual
-        </h2>
-        <p style="font-size:0.875rem;color:var(--text-muted);">Registro manual de produção para linhas que não têm coleta automática.</p>
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-pencil-square text-warning me-1"></i>Quando usar</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                Use o Lançamento Manual para setores como PTH, IM e PA quando não há coleta automática
-                via coletor ou quando for necessário registrar um lote avulso que não consta no Input BI.
-              </p>
-            </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-              <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-list-check text-warning me-1"></i>Como lançar</p>
-              <ol style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-                <li>Acesse <strong>PCP → Lançamento de Produção</strong>.</li>
-                <li>Preencha: data, turno, setor, linha, modelo e quantidade produzida.</li>
-                <li>Opcionalmente informe perdas, defeitos e observação.</li>
-                <li>Salve — o lançamento fica disponível para apontamento imediatamente.</li>
-              </ol>
-            </div>
-          </div>
-          <div class="col-12">
-            <div class="p-3" style="background:rgba(255,193,7,0.08);border-radius:10px;border:1px solid rgba(255,193,7,0.25);">
-              <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Validação de roteiro</p>
-              <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-                O lançamento manual também é considerado na validação de sequência do roteiro.
-                Se o setor anterior não tem produção no Input BI, o sistema verifica se existe um lançamento
-                manual para liberar o apontamento no setor seguinte.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 2. SMT                                                  -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-smt" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(25,135,84,0.10);">
-        <i class="bi bi-cpu text-success fs-5"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">2. SMT — Surface Mount Technology</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Gestão de modelos, horas coletadas e relatórios do setor SMT</p>
-      </div>
-    </div>
-    <div class="card-body px-4 py-4">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-boxes text-success me-1"></i>Modelos Cadastrados</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Cadastro dos modelos que passam pelo setor SMT com seus parâmetros de produção.
-              Cada modelo pode ter configurações específicas de tempo de ciclo e fases (TOP/BOTTOM).
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-clock-history text-success me-1"></i>Horas Coletadas</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Visualização das horas produtivas e paradas coletadas pelo sistema.
-              Permite identificar gargalos e calcular a eficiência real das linhas SMT.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-file-earmark-bar-graph text-success me-1"></i>Relatório de Horas</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Relatório consolidado das horas por turno, linha e período.
-              Exportável para análise de OEE e eficiência do setor.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-activity text-success me-1"></i>Monitor em Tempo Real</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Painel que exibe o status atual das linhas SMT: modelo em produção,
-              quantidade produzida, paradas ativas e eficiência do turno corrente.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 3. SFC                                                  -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-sfc" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(111,66,193,0.10);">
-        <i class="bi bi-speedometer2 text-purple fs-5" style="color:#6f42c1;"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">3. SFC — Shop Floor Control</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Monitoramento do chão de fábrica com coleta de dados em tempo real</p>
-      </div>
-    </div>
-    <div class="card-body px-4 py-4">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-display me-1" style="color:#6f42c1;"></i>Painel de Acompanhamento</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Tela de monitoramento projetada para TVs no chão de fábrica. Exibe a produção por linha
-              em tempo real, com indicadores visuais de status (produzindo, parada, setup).
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-collection me-1" style="color:#6f42c1;"></i>Relatório de Horas SFC</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Consolidado das horas coletadas pelo SFC, com separação por turno, linha e tipo de evento
-              (produção, parada programada, parada não programada).
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 4. Logística                                            -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-logistica" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(253,126,20,0.10);">
-        <i class="bi bi-truck fs-5" style="color:#fd7e14;"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">4. Logística — Entregas e Expedição</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Controle de entregas, lotes e rastreabilidade</p>
-      </div>
-    </div>
-    <div class="card-body px-4 py-4">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-box-seam me-1" style="color:#fd7e14;"></i>Entregas</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Registro e acompanhamento das entregas programadas. Permite associar lotes a ordens de entrega
-              e gerar o comprovante de expedição.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-qr-code me-1" style="color:#fd7e14;"></i>Rastreabilidade</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Consulta de lotes e rastreamento do histórico de cada produto:
-              por qual linha passou, em que turno e qual operador registrou.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 5. Configurações                                        -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-config" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(15,23,42,0.07);">
-        <i class="bi bi-gear fs-5" style="color:var(--text-muted);"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">5. Configurações do Sistema</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Administração de turnos, linhas e paradas — requer perfil Administrador</p>
-      </div>
-    </div>
-    <div class="card-body px-4 py-4">
-      <div class="row g-3">
-        <div class="col-12 col-md-4">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-clock text-muted me-1"></i>Turnos</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Define os horários de início e fim de cada turno por setor.
-              Esses horários são usados para classificar os registros de produção no turno correto.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-layout-three-columns text-muted me-1"></i>Linhas</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Cadastro e manutenção das linhas de produção por setor.
-              Toda linha usada em apontamentos deve estar cadastrada aqui.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-pause-circle text-muted me-1"></i>Paradas</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              Configuração dos tipos de parada programada (intervalo, refeição, ginástica, DDS, setup).
-              Também permite cadastrar responsáveis (líder) e headcount por linha e turno.
-            </p>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="p-3" style="background:rgba(220,53,69,0.07);border-radius:10px;border:1px solid rgba(220,53,69,0.2);">
-            <p class="fw-semibold mb-1" style="font-size:0.83rem;"><i class="bi bi-shield-lock text-danger me-1"></i>Acesso restrito</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              As telas de Turnos, Linhas e Paradas são acessíveis apenas por usuários com perfil
-              <strong>Administrador</strong>. Caso não veja essas opções no menu, solicite acesso ao responsável do sistema.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- 6. Acesso e Perfil                                      -->
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <div id="sec-acesso" class="card mb-4" style="border-radius:12px;border-color:var(--border);">
-    <div class="card-header py-3 px-4 d-flex align-items-center gap-2"
-         style="border-radius:12px 12px 0 0;border-color:var(--border);background:var(--bg);">
-      <div class="d-flex align-items-center justify-content-center"
-           style="width:36px;height:36px;border-radius:10px;background:rgba(13,110,253,0.10);">
-        <i class="bi bi-person-circle text-primary fs-5"></i>
-      </div>
-      <div>
-        <p class="mb-0 fw-bold" style="font-size:1.05rem;">6. Acesso e Perfil de Usuário</p>
-        <p class="mb-0" style="font-size:0.8rem;color:var(--text-muted);">Login, senha e navegação no sistema</p>
-      </div>
-    </div>
-    <div class="card-body px-4 py-4">
-      <div class="row g-3">
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-box-arrow-in-right text-primary me-1"></i>Login</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              O acesso é feito com usuário e senha cadastrados pelo administrador.
-              A senha deve ter no mínimo 10 caracteres, com letras maiúsculas, minúsculas,
-              números e caractere especial.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-key text-primary me-1"></i>Troca de senha</p>
-            <p style="font-size:0.83rem;color:var(--text);margin-bottom:0;">
-              O sistema exige troca de senha a cada 180 dias.
-              Quando o prazo vencer, o sistema solicitará automaticamente a criação de uma nova senha
-              antes de liberar o acesso.
-            </p>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-layout-sidebar text-primary me-1"></i>Navegação no menu</p>
-            <ul style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-              <li>No <strong>desktop</strong>: use o menu lateral à esquerda com grupos expansíveis.</li>
-              <li>No <strong>mobile</strong>: use a barra de navegação inferior com os atalhos principais.</li>
-              <li>O botão <i class="bi bi-arrows-fullscreen"></i> ativa o modo tela cheia (oculta sidebar).</li>
-            </ul>
-          </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <div class="p-3" style="background:var(--bg);border-radius:10px;border:1px solid var(--border);">
-            <p class="fw-semibold mb-2" style="font-size:0.85rem;"><i class="bi bi-shield-person text-primary me-1"></i>Perfis de acesso</p>
-            <ul style="font-size:0.83rem;color:var(--text);line-height:1.7;padding-left:1.2rem;margin-bottom:0;">
-              <li><strong>Usuário comum:</strong> acesso às telas operacionais (PCP, SMT, SFC, Logística).</li>
-              <li><strong>Administrador:</strong> acesso completo, incluindo Configurações do Sistema e gestão de usuários.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rodapé do manual -->
+  <!-- Rodapé -->
   <div class="text-center py-3 mb-2" style="color:var(--text-muted);font-size:0.78rem;">
     <i class="bi bi-book me-1"></i>
-    Manual do Sistema · FactoryOps Venttos · v1.0
+    Manual do Sistema · FactoryOps Venttos · v2.0
     <span class="mx-2">·</span>
     Em caso de dúvidas, contate o administrador do sistema.
   </div>
 
 </div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'Inter, system-ui, sans-serif' });
+</script>
+
+<script>
+  function showTab(id, btn) {
+    document.querySelectorAll('.manual-tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.manual-tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+</script>
 {% endblock %}
