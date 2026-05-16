@@ -361,7 +361,7 @@ def fila_producao() -> list:
                 SELECT setor, id, numero_op, produto, descricao, fase_modelo,
                        quantidade, produzido, saldo,
                        top_feito, bottom_feito, aguardando_bottom, aguardando_top,
-                       blank
+                       blank, lotes
                 FROM (
                     SELECT
                         sub.*,
@@ -387,7 +387,14 @@ def fila_producao() -> list:
                                 COALESCE(SUM(CASE WHEN a.fase = 'TOP'    THEN a.quantidade ELSE 0 END), 0)
                             ) AS aguardando_top,
                             COALESCE(m_blank.blank, 1) AS blank,
-                            COALESCE(manual_lote.total, 0) AS manual_nao_vinculado
+                            COALESCE(manual_lote.total, 0) AS manual_nao_vinculado,
+                            (
+                                SELECT STRING_AGG(DISTINCT al.lote, ', ' ORDER BY al.lote)
+                                FROM apontamento al
+                                WHERE al.op_id = co.id
+                                  AND al.lote IS NOT NULL
+                                  AND al.lote <> ''
+                            ) AS lotes
                         FROM controle_ops co
                         LEFT JOIN apontamento a ON a.op_id = co.id
                         LEFT JOIN LATERAL (

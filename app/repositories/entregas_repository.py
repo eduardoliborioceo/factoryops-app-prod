@@ -72,6 +72,14 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         WHERE e.pedido_id = p.id AND e.status = 'entregue'
                     ), 0) AS qtd_entregue,
                     (SELECT COUNT(*) FROM entrega e WHERE e.pedido_id = p.id) AS total_remessas,
+                    (
+                        SELECT STRING_AGG(DISTINCT a.lote, ', ' ORDER BY a.lote)
+                        FROM apontamento a
+                        JOIN controle_ops co ON co.id = a.op_id
+                        WHERE (co.produto = p.modelo OR p.modelo LIKE co.produto || ' %')
+                          AND a.lote IS NOT NULL
+                          AND a.lote <> ''
+                    ) AS lotes,
                     p.local_entrega_id,
                     l.nome_local AS local_nome,
                     l.lat AS local_lat,
