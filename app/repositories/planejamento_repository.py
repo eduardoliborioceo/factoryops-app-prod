@@ -31,7 +31,14 @@ def listar(data: str, turno: str = "", setor: str = "", linha: str = "") -> list
                     (co.quantidade - co.produzido) AS saldo_op,
                     cm.status      AS status_material,
                     cm.conferido_por AS material_conferido_por,
-                    cm.conferido_em  AS material_conferido_em
+                    cm.conferido_em  AS material_conferido_em,
+                    (
+                        SELECT STRING_AGG(DISTINCT a.lote, ', ' ORDER BY a.lote)
+                        FROM apontamento a
+                        WHERE a.op_id = p.op_id
+                          AND a.lote IS NOT NULL
+                          AND a.lote <> ''
+                    ) AS lotes
                 FROM planejamento p
                 LEFT JOIN controle_ops co ON co.id = p.op_id
                 LEFT JOIN LATERAL (

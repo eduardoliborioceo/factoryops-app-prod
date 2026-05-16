@@ -148,6 +148,15 @@
                   <td>
                     <div class="fw-semibold">{{ p.modelo }}</div>
                     {% if p.familia %}<div class="text-muted small">{{ p.familia }}</div>{% endif %}
+                    {% if p.lotes %}
+                    <div class="mt-1">
+                      {% for lote in p.lotes.split(', ') %}
+                      <span class="badge bg-light text-muted border" style="font-size:0.6rem;font-weight:600;letter-spacing:0.2px;">
+                        <i class="bi bi-tag me-1"></i>{{ lote }}
+                      </span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
                   </td>
                   <td>
                     {% if p.ops %}

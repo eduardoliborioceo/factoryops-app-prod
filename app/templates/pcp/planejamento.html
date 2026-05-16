@@ -218,7 +218,18 @@
                   <td class="text-muted small">{{ p.turno }}</td>
                   <td class="fw-semibold">{{ p.linha }}</td>
                   <td class="text-nowrap">{{ p.modelo }}</td>
-                  <td class="text-muted small">{{ p.numero_op or '—' }}</td>
+                  <td class="text-muted small">
+                    {{ p.numero_op or '—' }}
+                    {% if p.lotes %}
+                    <div class="mt-1">
+                      {% for lote in p.lotes.split(', ') %}
+                      <span class="badge bg-light text-muted border" style="font-size:0.6rem;font-weight:600;">
+                        <i class="bi bi-tag me-1"></i>{{ lote }}
+                      </span>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                  </td>
                   <td class="text-end fw-bold">
                     {% if p.quantidade_planejada == 0 %}
                       {% if p.quantidade_calculada %}
@@ -564,6 +575,15 @@
                       {{ op.numero_op }}
                       {% if concluida %}
                       <span class="badge bg-success ms-1" style="font-size:0.62rem;vertical-align:middle;">Concluída</span>
+                      {% endif %}
+                      {% if op.lotes %}
+                      <div class="mt-1">
+                        {% for lote in op.lotes.split(', ') %}
+                        <span class="badge bg-light text-muted border" style="font-size:0.6rem;font-weight:600;letter-spacing:0.2px;">
+                          <i class="bi bi-tag me-1"></i>{{ lote }}
+                        </span>
+                        {% endfor %}
+                      </div>
                       {% endif %}
                     </td>
                     <td class="fw-semibold">
