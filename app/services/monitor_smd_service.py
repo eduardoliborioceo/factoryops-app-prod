@@ -1,10 +1,12 @@
 from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 from app.repositories import linha_config_repository as lc_repo
 from app.repositories import turno_config_repository as tc_repo
 from app.extensions import get_db
 from psycopg.rows import dict_row
 
 SETOR = "SMD"
+_TZ = ZoneInfo("America/Manaus")
 
 _CHAR_FIX = str.maketrans({"§": "º", "\xa7": "º"})
 
@@ -36,7 +38,7 @@ def _consolidar_turnos(rows: list) -> list:
 
 
 def _turno_atual(turnos: list) -> dict | None:
-    agora = datetime.now().time()
+    agora = datetime.now(_TZ).time()
     for t in turnos:
         ini = _to_time(t["hora_inicio"])
         fim = _to_time(t["hora_fim"])
@@ -70,8 +72,9 @@ def _slots_turno(turno: dict) -> list[tuple[time, bool]]:
 
 
 def get_status_atual() -> dict:
-    hoje = date.today()
-    agora = datetime.now().time()
+    _agora_local = datetime.now(_TZ)
+    hoje = _agora_local.date()
+    agora = _agora_local.time()
     dia = hoje.day
     mes = hoje.month
     ano = hoje.year
@@ -152,6 +155,6 @@ def get_status_atual() -> dict:
         "turno_nome": _sanitizar_turno(turno["turno"]) if turno else "Fora de turno",
         "slots": [{"hora": s.strftime("%H:%M"), "proximo_dia": pd} for s, pd in slots],
         "hoje": hoje.strftime("%d/%m/%Y"),
-        "atualizado_em": datetime.now().strftime("%H:%M:%S"),
+        "atualizado_em": datetime.now(_TZ).strftime("%H:%M:%S"),
         "tem_turno": turno is not None,
     }
