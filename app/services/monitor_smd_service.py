@@ -22,6 +22,19 @@ def _to_time(val) -> time:
     return time(int(parts[0]), int(parts[1]))
 
 
+def _consolidar_turnos(rows: list) -> list:
+    """Reduz múltiplos intervalos por turno a um único registro com
+    hora_inicio do primeiro intervalo e hora_fim do último."""
+    visto: dict[str, dict] = {}
+    for row in rows:  # já ordenado por ordem
+        nome = row["turno"]
+        if nome not in visto:
+            visto[nome] = {"turno": nome, "hora_inicio": row["hora_inicio"], "hora_fim": row["hora_fim"]}
+        else:
+            visto[nome]["hora_fim"] = row["hora_fim"]
+    return list(visto.values())
+
+
 def _turno_atual(turnos: list) -> dict | None:
     agora = datetime.now().time()
     for t in turnos:
@@ -65,7 +78,7 @@ def get_status_atual() -> dict:
 
     linhas_por_setor = lc_repo.listar_por_setor()
     linhas = [r["linha"] for r in linhas_por_setor.get(SETOR, [])]
-    turnos = tc_repo.listar()
+    turnos = _consolidar_turnos(tc_repo.listar())
     turno = _turno_atual(turnos)
     _raw_slots = _slots_turno(turno) if turno else []
     slots = _raw_slots if len(_raw_slots) > 1 else []
