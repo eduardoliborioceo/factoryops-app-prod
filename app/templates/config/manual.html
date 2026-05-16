@@ -140,6 +140,14 @@
           qualidade e engenharia. É acessado por navegador (computador ou celular) e não requer instalação.
         </p>
 
+        <div class="text-center mb-4">
+          <img src="{{ url_for('static', filename='images/manual/img-01-capa.png') }}"
+               alt="FactoryOps — visão geral do sistema"
+               class="img-fluid"
+               style="border-radius:12px;max-height:340px;object-fit:cover;width:100%;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 1 — Painel de gestão industrial FactoryOps Venttos</p>
+        </div>
+
         <div class="row g-3 mb-4">
           <div class="col-12 col-md-6 col-lg-3">
             <div class="info-box info">
@@ -169,6 +177,13 @@
 
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Mapa de Módulos — FLOW-01</p>
+          <div class="text-center mb-3">
+            <img src="{{ url_for('static', filename='images/manual/img-02-mapa-modulos.png') }}"
+                 alt="Mapa de módulos do sistema"
+                 class="img-fluid"
+                 style="border-radius:10px;max-height:280px;object-fit:contain;">
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Figura 2 — Mapa de módulos gerado por IA</p>
+          </div>
           <div class="mermaid">
 graph TD
     A[🏭 FactoryOps] --> B[Engenharia / SMT]
@@ -305,6 +320,14 @@ graph LR
             A nova senha não pode ser idêntica à anterior.
           </p>
         </div>
+
+        <div class="text-center mt-4">
+          <img src="{{ url_for('static', filename='images/manual/img-03-roles.png') }}"
+               alt="Perfis de acesso do sistema"
+               class="img-fluid"
+               style="border-radius:12px;max-height:280px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 3 — Representação dos perfis: Administrador, Usuário Padrão e Viewer</p>
+        </div>
       </div>
 
       <!-- ╔══════════════════════════════════════════╗ -->
@@ -378,6 +401,14 @@ graph TD
             </div>
           </div>
         </div>
+
+        <div class="text-center mt-4">
+          <img src="{{ url_for('static', filename='images/manual/img-04-layout.png') }}"
+               alt="Layout desktop vs mobile"
+               class="img-fluid"
+               style="border-radius:12px;max-height:300px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 4 — Comparação do layout em desktop e mobile</p>
+        </div>
       </div>
 
       <!-- ╔══════════════════════════════════════════╗ -->
@@ -439,6 +470,14 @@ flowchart TD
               <p style="font-size:0.83rem;margin-bottom:0;">Cronometragem de operações para calcular UPH real. Gera relatório imprimível com totais.</p>
             </div>
           </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <img src="{{ url_for('static', filename='images/manual/img-05-engenharia.png') }}"
+               alt="Engenheiro cronometrando linha SMT"
+               class="img-fluid"
+               style="border-radius:12px;max-height:300px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 5 — Engenheiro realizando estudo de tempo na linha SMT</p>
         </div>
       </div>
 
@@ -502,6 +541,14 @@ flowchart TD
               </p>
             </div>
           </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <img src="{{ url_for('static', filename='images/manual/img-06-producao.png') }}"
+               alt="Técnico de qualidade conferindo PCB"
+               class="img-fluid"
+               style="border-radius:12px;max-height:300px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 6 — Técnico de qualidade verificando placa de circuito impresso</p>
         </div>
       </div>
 
@@ -583,6 +630,14 @@ flowchart TD
           </div>
         </div>
 
+        <div class="text-center mb-4">
+          <img src="{{ url_for('static', filename='images/manual/img-07-planejamento.png') }}"
+               alt="Planejador com Gantt de produção"
+               class="img-fluid"
+               style="border-radius:12px;max-height:300px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 7 — Planejador visualizando o plano de voo hora a hora</p>
+        </div>
+
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Etiquetas Manuais — FLOW-15</p>
           <div class="mermaid">
@@ -621,6 +676,14 @@ flowchart TD
               </p>
             </div>
           </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <img src="{{ url_for('static', filename='images/manual/img-08-etiqueta.png') }}"
+               alt="Etiqueta de identificação impressa"
+               class="img-fluid"
+               style="border-radius:12px;max-height:300px;object-fit:contain;">
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 8 — Etiqueta de identificação de lote impressa em folha A4</p>
         </div>
       </div>
 
@@ -683,6 +746,17 @@ flowchart LR
             </div>
           </div>
         </div>
+
+        <div class="flow-card mt-4" style="border:2px dashed rgba(15,23,42,0.12);background:none;">
+          <p class="flow-title" style="color:var(--text-muted);"><i class="bi bi-image me-1"></i>IMG-09 — Imagem pendente de geração</p>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">
+            Salve como <code>img-09-entregas.png</code> em <code>app/static/images/manual/</code>
+          </p>
+          <details>
+            <summary style="font-size:0.8rem;color:var(--text-muted);cursor:pointer;">Ver prompt de geração (DALL-E / Midjourney)</summary>
+            <pre style="font-size:0.78rem;background:var(--bg);padding:10px;border-radius:8px;white-space:pre-wrap;margin-top:8px;color:var(--text);">Flat design illustration of a delivery truck leaving an electronics factory. Digital map on a tablet screen showing the truck route with a GPS pin at destination. Small icons of circuit board boxes being loaded. Color palette: navy blue, white, orange for the truck, green for the route. Corporate logistics manual illustration, no text.</pre>
+          </details>
+        </div>
       </div>
 
       <!-- ╔══════════════════════════════════════════╗ -->
@@ -732,6 +806,17 @@ flowchart TD
             </div>
           </div>
         </div>
+
+        <div class="flow-card mt-4" style="border:2px dashed rgba(15,23,42,0.12);background:none;">
+          <p class="flow-title" style="color:var(--text-muted);"><i class="bi bi-image me-1"></i>IMG-10 — Imagem pendente de geração</p>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">
+            Salve como <code>img-10-estoque.png</code> em <code>app/static/images/manual/</code>
+          </p>
+          <details>
+            <summary style="font-size:0.8rem;color:var(--text-muted);cursor:pointer;">Ver prompt de geração (DALL-E / Midjourney)</summary>
+            <pre style="font-size:0.78rem;background:var(--bg);padding:10px;border-radius:8px;white-space:pre-wrap;margin-top:8px;color:var(--text);">Flat design illustration of a warehouse worker with a tablet scanning electronic components (capacitors, ICs, reels of SMD components) against a checklist. Background shows organized shelving with labeled component reels. Color palette: navy blue, white, yellow warning icons for missing items. Professional factory manual illustration style, no text.</pre>
+          </details>
+        </div>
       </div>
 
       <!-- ╔══════════════════════════════════════════╗ -->
@@ -777,6 +862,17 @@ flowchart TD
             As telas de Turnos, Linhas e Paradas são acessíveis apenas por usuários com perfil
             <strong>Administrador</strong>. Se não vê essas opções no menu, solicite acesso ao responsável.
           </p>
+        </div>
+
+        <div class="flow-card mt-4" style="border:2px dashed rgba(15,23,42,0.12);background:none;">
+          <p class="flow-title" style="color:var(--text-muted);"><i class="bi bi-image me-1"></i>IMG-11 — Imagem pendente de geração</p>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:8px;">
+            Salve como <code>img-11-admin.png</code> em <code>app/static/images/manual/</code>
+          </p>
+          <details>
+            <summary style="font-size:0.8rem;color:var(--text-muted);cursor:pointer;">Ver prompt de geração (DALL-E / Midjourney)</summary>
+            <pre style="font-size:0.78rem;background:var(--bg);padding:10px;border-radius:8px;white-space:pre-wrap;margin-top:8px;color:var(--text);">Flat design illustration of a system administrator at a desktop computer configuring settings for a factory management system. Screen shows configuration panels with toggles, dropdowns and save buttons. Clean interface mockup visible on screen. Color palette: navy blue, white, blue accents. Corporate software manual style, no text.</pre>
+          </details>
         </div>
       </div>
 
