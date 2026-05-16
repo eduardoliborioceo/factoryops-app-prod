@@ -36,9 +36,7 @@
     color: var(--primary);
     border-bottom-color: var(--primary);
   }
-  .manual-tab-btn:hover:not(.active) {
-    color: var(--text);
-  }
+  .manual-tab-btn:hover:not(.active) { color: var(--text); }
   .manual-tab-bar {
     display: flex;
     overflow-x: auto;
@@ -65,7 +63,7 @@
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -76,43 +74,44 @@
     border: 1px solid var(--border);
     margin-bottom: 0;
   }
-  .info-box.warning {
-    background: rgba(255,193,7,0.08);
-    border-color: rgba(255,193,7,0.25);
-  }
-  .info-box.danger {
-    background: rgba(220,53,69,0.07);
-    border-color: rgba(220,53,69,0.20);
-  }
-  .info-box.info {
-    background: rgba(13,110,253,0.06);
-    border-color: rgba(13,110,253,0.15);
-  }
-  .info-box.success {
-    background: rgba(25,135,84,0.07);
-    border-color: rgba(25,135,84,0.18);
-  }
+  .info-box.warning  { background: rgba(255,193,7,0.08);   border-color: rgba(255,193,7,0.25); }
+  .info-box.danger   { background: rgba(220,53,69,0.07);   border-color: rgba(220,53,69,0.20); }
+  .info-box.info     { background: rgba(13,110,253,0.06);  border-color: rgba(13,110,253,0.15); }
+  .info-box.success  { background: rgba(25,135,84,0.07);   border-color: rgba(25,135,84,0.18); }
+
   .step-list { font-size: 0.83rem; color: var(--text); line-height: 1.75; padding-left: 1.2rem; margin-bottom: 0; }
-  .sec-title {
-    font-size: 0.95rem;
-    font-weight: 700;
+  .sec-title { font-size: 0.95rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  .sec-sub   { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* ── Flowchart HTML/CSS ── */
+  .fc { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .fc-n {
+    border: 1.5px solid rgba(15,23,42,0.15);
+    border-radius: 8px;
+    padding: 7px 20px;
+    font-size: 0.79rem;
+    font-weight: 600;
     color: var(--text);
-    margin-bottom: 6px;
+    text-align: center;
+    min-width: 170px;
+    max-width: 260px;
+    background: var(--card);
+    line-height: 1.4;
   }
-  .sec-sub {
-    font-size: 0.83rem;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-  }
-  .mermaid { min-height: 40px; }
+  .fc-n.start { border-radius: 999px; background: rgba(13,110,253,0.08); border-color: rgba(13,110,253,0.3); color: #0369a1; }
+  .fc-n.end   { border-radius: 999px; background: rgba(25,135,84,0.08);  border-color: rgba(25,135,84,0.3);  color: #166534; }
+  .fc-n.dec   { background: rgba(255,193,7,0.12); border-color: rgba(202,138,4,0.35); color: #7c5300; font-style: italic; }
+  .fc-arr     { color: rgba(15,23,42,0.3); font-size: 1.05rem; line-height: 1; }
+  .fc-lbl     { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
+  .fc-row     { display: flex; gap: 16px; align-items: flex-start; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
+  .fc-col     { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .fc-hr      { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
 </style>
 
 <div class="container-fluid">
 
-  <!-- Tab wrapper -->
   <div class="card mb-4" style="border-radius:12px;border-color:var(--border);">
 
-    <!-- Tab bar -->
     <div class="manual-tab-bar" id="manualTabBar">
       <button class="manual-tab-btn active" onclick="showTab('t1',this)">1. Visão Geral</button>
       <button class="manual-tab-btn" onclick="showTab('t2',this)">2. Acesso</button>
@@ -129,9 +128,7 @@
 
     <div class="card-body px-4 py-4">
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  1. VISÃO GERAL DO SISTEMA               ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 1. VISÃO GERAL ══ -->
       <div id="t1" class="manual-tab-panel active">
         <p class="sec-title"><i class="bi bi-grid-3x3-gap text-primary me-2"></i>Visão Geral do Sistema</p>
         <p class="sec-sub">
@@ -175,6 +172,7 @@
           </div>
         </div>
 
+        <!-- FLOW-01 — Mapa de Módulos -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Mapa de Módulos — FLOW-01</p>
           <div class="text-center mb-3">
@@ -184,86 +182,146 @@
                  style="border-radius:10px;max-height:280px;object-fit:contain;">
             <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Figura 2 — Mapa de módulos gerado por IA</p>
           </div>
-          <div class="mermaid">
-graph TD
-    A[FactoryOps] --> B[Engenharia e SMT]
-    A --> C[Produção]
-    A --> D[PCP]
-    A --> E[Entregas]
-    A --> F[Logística]
-    A --> G[Configurações]
-    A --> H[Administração]
-    B --> B1[Cadastro de Modelos]
-    B --> B2[Calculadora]
-    B --> B3[Estudo de Tempo]
-    C --> C1[Medição Pasta Solda]
-    C --> C2[Checklist de Linha]
-    C --> C3[Limpeza de Stencil]
-    C --> C4[Monitor SMD]
-    D --> D1[Controle de OPs]
-    D --> D2[Apontamento]
-    D --> D3[Planejamento]
-    D --> D4[Etiquetas Manuais]
-    D --> D5[Roteiros]
-    E --> E1[Pedidos]
-    E --> E2[Remessas]
-    E --> E3[Rastreamento]
-    F --> F1[Resumo do Dia]
-    F --> F2[Conferência de Material]
-    G --> G1[Turnos]
-    G --> G2[Linhas e Setores]
-    G --> G3[Paradas]
-    H --> H1[Usuários]
-    H --> H2[Backup]
-    H --> H3[Chamados]
+          <div class="row g-2">
+            <div class="col-12 col-md-3">
+              <p class="fc-lbl text-uppercase mb-2" style="letter-spacing:0.5px;">Engenharia / SMT</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(25,135,84,0.06);border-color:rgba(25,135,84,0.2);">Cadastro de Modelos</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(25,135,84,0.06);border-color:rgba(25,135,84,0.2);">Calculadora UPH</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(25,135,84,0.06);border-color:rgba(25,135,84,0.2);">Estudo de Tempo</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <p class="fc-lbl text-uppercase mb-2" style="letter-spacing:0.5px;">Produção</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(255,193,7,0.08);border-color:rgba(255,193,7,0.25);">Medição Pasta Solda</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(255,193,7,0.08);border-color:rgba(255,193,7,0.25);">Checklist de Linha</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(255,193,7,0.08);border-color:rgba(255,193,7,0.25);">Limpeza de Stencil</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(255,193,7,0.08);border-color:rgba(255,193,7,0.25);">Monitor SMD</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <p class="fc-lbl text-uppercase mb-2" style="letter-spacing:0.5px;">PCP</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);">Controle de OPs</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);">Apontamento</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);">Planejamento</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);">Etiquetas Manuais</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);">Roteiros</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <p class="fc-lbl text-uppercase mb-2" style="letter-spacing:0.5px;">Admin / Config</p>
+              <div class="d-flex flex-column gap-1">
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(220,53,69,0.06);border-color:rgba(220,53,69,0.15);">Usuários</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(220,53,69,0.06);border-color:rgba(220,53,69,0.15);">Backup</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(220,53,69,0.06);border-color:rgba(220,53,69,0.15);">Turnos</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(220,53,69,0.06);border-color:rgba(220,53,69,0.15);">Linhas e Setores</div>
+                <div class="fc-n" style="min-width:auto;width:100%;background:rgba(220,53,69,0.06);border-color:rgba(220,53,69,0.15);">Chamados</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  2. ACESSO E AUTENTICAÇÃO                ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 2. ACESSO E AUTENTICAÇÃO ══ -->
       <div id="t2" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-person-lock text-primary me-2"></i>Acesso e Autenticação</p>
         <p class="sec-sub">Como entrar no sistema, recuperar senha e entender os níveis de acesso.</p>
 
+        <!-- FLOW-02 — Login -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo de Login — FLOW-02</p>
-          <div class="mermaid">
-graph TD
-    A(Inicio) --> B{Tem conta?}
-    B -->|Sim| I{Metodo de login}
-    B -->|Nao| C[Clica em Registrar]
-    C --> D[Preenche nome, email e senha]
-    D --> E[Notificacao ao Admin]
-    E --> F{Admin aprova?}
-    F -->|Sim| G[Acesso liberado]
-    F -->|Nao| H(Acesso negado)
-    G --> I
-    I -->|Usuario e senha| J[Digita credenciais]
-    I -->|Google| K[Google OAuth]
-    I -->|GitHub| L[GitHub OAuth]
-    J --> M{Senha expirada?}
-    M -->|Sim| N[Troca de senha obrigatoria]
-    M -->|Nao| O(Acesso ao sistema)
-    N --> O
-    K --> O
-    L --> O
+          <div class="fc">
+            <div class="fc-n start">Início</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Possui conta cadastrada?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Clica em Registrar</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Preenche nome, e-mail e senha</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n dec">Admin aprova?</div>
+                <div class="fc-row mt-1">
+                  <div class="fc-col">
+                    <span class="fc-lbl">Não</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n" style="background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Acesso negado</div>
+                  </div>
+                  <div class="fc-col">
+                    <span class="fc-lbl">Sim</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n end">Acesso liberado</div>
+                  </div>
+                </div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n dec">Método de login</div>
+                <div class="fc-row mt-1">
+                  <div class="fc-col">
+                    <span class="fc-lbl">E-mail/senha</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n">Digita credenciais</div>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n dec">Senha expirada?</div>
+                    <div class="fc-row mt-1">
+                      <div class="fc-col">
+                        <span class="fc-lbl">Sim</span>
+                        <i class="bi bi-arrow-down fc-arr"></i>
+                        <div class="fc-n">Troca obrigatória</div>
+                      </div>
+                      <div class="fc-col">
+                        <span class="fc-lbl">Não</span>
+                        <i class="bi bi-arrow-down fc-arr"></i>
+                        <div class="fc-n end">Acesso ao sistema</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="fc-col">
+                    <span class="fc-lbl">Google / GitHub</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n">OAuth</div>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n end">Acesso ao sistema</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-03 — Recuperação de Senha -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Recuperação de Senha — FLOW-03</p>
-          <div class="mermaid">
-graph LR
-    A(Usuário esqueceu a senha) --> B[Clica em Esqueci minha senha]
-    B --> C[Digita o e-mail cadastrado]
-    C --> D[Sistema envia link por e-mail]
-    D --> E[Usuário clica no link]
-    E --> F[Define nova senha]
-    F --> G{Senha atende os requisitos?}
-    G -->|Não| F
-    G -->|Sim| H(Login liberado)
+          <div class="fc">
+            <div class="fc-n start">Usuário esqueceu a senha</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Clica em "Esqueci minha senha"</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Digita o e-mail cadastrado</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Sistema envia link por e-mail</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Usuário clica no link e define nova senha</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Senha atende os requisitos?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Ajusta a senha</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Login liberado</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -289,17 +347,26 @@ graph LR
             </table>
           </div>
           <div class="col-12 col-md-6">
+            <!-- FLOW-04 — Perfis de Acesso -->
             <div class="flow-card" style="margin-bottom:0;">
               <p class="flow-title"><i class="bi bi-diagram-2"></i>Perfis de Acesso — FLOW-04</p>
-              <div class="mermaid">
-graph LR
-    A[Administrador] -->|Acesso total| S[Sistema]
-    B[Padrao] -->|Modulo do setor| S
-    C[Viewer] -->|Somente leitura| S
-    style A fill:#0d6efd,color:#fff
-    style B fill:#198754,color:#fff
-    style C fill:#64748b,color:#fff
-          </div>
+              <div class="d-flex flex-column gap-2">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge px-3 py-2" style="background:#0d6efd;font-size:0.78rem;min-width:110px;">Administrador</span>
+                  <i class="bi bi-arrow-right fc-arr"></i>
+                  <span class="fc-n" style="min-width:auto;flex:1;font-size:0.78rem;">Acesso total ao sistema</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge px-3 py-2" style="background:#198754;font-size:0.78rem;min-width:110px;">Padrão</span>
+                  <i class="bi bi-arrow-right fc-arr"></i>
+                  <span class="fc-n" style="min-width:auto;flex:1;font-size:0.78rem;">Módulo do seu setor</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge px-3 py-2" style="background:#64748b;font-size:0.78rem;min-width:110px;">Viewer</span>
+                  <i class="bi bi-arrow-right fc-arr"></i>
+                  <span class="fc-n" style="min-width:auto;flex:1;font-size:0.78rem;">Somente leitura</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -321,42 +388,48 @@ graph LR
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  3. NAVEGAÇÃO E INTERFACE                ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 3. NAVEGAÇÃO E INTERFACE ══ -->
       <div id="t3" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-layout-sidebar text-primary me-2"></i>Navegação e Interface</p>
         <p class="sec-sub">Layout do sistema, menu lateral e navegação mobile.</p>
 
         <div class="row g-3 mb-4">
+          <!-- FLOW-05 — Desktop -->
           <div class="col-12 col-md-6">
             <div class="flow-card" style="margin-bottom:0;">
-              <p class="flow-title"><i class="bi bi-diagram-2"></i>Desktop — FLOW-05</p>
-              <div class="mermaid">
-graph TD
-    subgraph Desktop
-        SB[Sidebar esquerda 240px]
-        HD[Header fixo 56px]
-        CT[Area de conteudo]
-    end
-    SB --> CT
-    HD --> CT
-          </div>
+              <p class="flow-title"><i class="bi bi-display"></i>Layout Desktop — FLOW-05</p>
+              <div class="fc">
+                <div class="fc-n" style="background:rgba(15,23,42,0.05);border-color:rgba(15,23,42,0.2);width:100%;max-width:280px;">
+                  <i class="bi bi-layout-sidebar text-muted me-1"></i>Sidebar esquerda — 240px
+                </div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);width:100%;max-width:280px;">
+                  <i class="bi bi-layout-text-window-reverse text-primary me-1"></i>Header fixo — 56px
+                </div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end" style="width:100%;max-width:280px;border-radius:8px;">
+                  <i class="bi bi-file-earmark-text me-1"></i>Área de conteúdo
+                </div>
+              </div>
             </div>
           </div>
+          <!-- FLOW-06 — Mobile -->
           <div class="col-12 col-md-6">
             <div class="flow-card" style="margin-bottom:0;">
-              <p class="flow-title"><i class="bi bi-diagram-2"></i>Mobile — FLOW-06</p>
-              <div class="mermaid">
-graph TD
-    subgraph Mobile
-        MH[Header escuro 56px]
-        MC[Conteudo rolavel]
-        BN[Barra inferior 64px]
-    end
-    MH --> MC
-    MC --> BN
-          </div>
+              <p class="flow-title"><i class="bi bi-phone"></i>Layout Mobile — FLOW-06</p>
+              <div class="fc">
+                <div class="fc-n" style="background:rgba(15,23,42,0.05);border-color:rgba(15,23,42,0.2);width:100%;max-width:280px;">
+                  <i class="bi bi-layout-text-window text-muted me-1"></i>Header escuro — 56px
+                </div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(13,110,253,0.06);border-color:rgba(13,110,253,0.15);width:100%;max-width:280px;">
+                  <i class="bi bi-file-earmark-text text-primary me-1"></i>Conteúdo rolável
+                </div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(15,23,42,0.05);border-color:rgba(15,23,42,0.2);width:100%;max-width:280px;">
+                  <i class="bi bi-layout-text-sidebar-reverse text-muted me-1"></i>Barra inferior — 64px
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -402,43 +475,70 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  4. ENGENHARIA / SMT                     ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 4. ENGENHARIA / SMT ══ -->
       <div id="t4" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-cpu text-success me-2"></i>Engenharia / SMT</p>
         <p class="sec-sub">Cadastro de modelos, calculadora de UPH, estudo de tempo e cronometragem.</p>
 
+        <!-- FLOW-07 — Cadastro e Cálculo de Modelo -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Cadastro e Cálculo de Modelo — FLOW-07</p>
-          <div class="mermaid">
-graph TD
-    A(Usuário acessa Engenharia) --> B[Cadastro de Modelos]
-    B --> C{Modelo existe?}
-    C -->|Não| D[Preenche codigo, nome, setor e UPH]
-    C -->|Sim| E[Edita dados existentes]
-    D --> F[Salva modelo]
-    E --> F
-    F --> G[Calculadora]
-    G --> H[Informa UPH alvo, turno e paradas]
-    H --> I[Sistema calcula meta por hora e turno]
-    I --> J(Resultado exibido)
+          <div class="fc">
+            <div class="fc-n start">Usuário acessa Engenharia</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Acessa Cadastro de Modelos</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Modelo já existe?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Preenche código, nome, setor e UPH</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Edita dados existentes</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n">Salva modelo</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Acessa a Calculadora</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Informa UPH alvo, turno e paradas</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n end">Sistema calcula meta por hora e turno</div>
           </div>
         </div>
 
+        <!-- FLOW-08 — Estudo de Tempo -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Estudo de Tempo — FLOW-08</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Estudo de Tempo) --> B[Cria novo estudo]
-    B --> C[Define modelo e operador]
-    C --> D[Adiciona operações]
-    D --> E[Registra tempos de cada operação]
-    E --> F{Mais operações?}
-    F -->|Sim| D
-    F -->|Não| G[Sistema calcula totais e UPH]
-    G --> H[Imprime relatório]
-    H --> I(Estudo arquivado)
+          <div class="fc">
+            <div class="fc-n start">Acessa Estudo de Tempo</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Cria novo estudo</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Define modelo e operador</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Adiciona operação e registra o tempo</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Mais operações a registrar?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="font-size:0.75rem;color:var(--text-muted);">↩ Volta ao passo anterior</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Sistema calcula totais e UPH</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Imprime relatório e arquiva</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -472,44 +572,82 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  5. PRODUÇÃO                             ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 5. PRODUÇÃO ══ -->
       <div id="t5" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-activity text-warning me-2"></i>Produção</p>
         <p class="sec-sub">Medição de pasta de solda, checklist de linha, limpeza de stencil e monitor SMD.</p>
 
+        <!-- FLOW-09 — Medição de Pasta de Solda -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Medição de Pasta de Solda — FLOW-09</p>
-          <div class="mermaid">
-graph TD
-    A(Início do turno) --> B[Operador acessa Medição Pasta]
-    B --> C[Seleciona linha e data]
-    C --> D[Registra medições por ponto de solda]
-    D --> E{Medição fora do limite?}
-    E -->|Sim| F[Cria Plano de Ação]
-    F --> G[Define responsável e prazo]
-    G --> H[Acompanha resolução]
-    E -->|Não| I(Registro salvo)
-    H --> I
+          <div class="fc">
+            <div class="fc-n start">Início do turno</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Operador acessa Medição de Pasta</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Seleciona linha e data</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Registra medições por ponto de solda</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Medição fora do limite?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Cria Plano de Ação</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Define responsável e prazo</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Acompanha resolução</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Registro salvo</div>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-10 — Checklist -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Checklist de Verificação de Linha — FLOW-10</p>
-          <div class="mermaid">
-graph TD
-    A(Inicio do mes ou turno) --> B[Cria nova sessao de checklist]
-    B --> C[Preenche itens um por um]
-    C --> D{Item OK?}
-    D -->|Sim| E[Marca como conforme]
-    D -->|Não| F[Marca como não conforme]
-    F --> G[Abre Plano de Ação]
-    E --> H{Mais itens?}
-    G --> H
-    H -->|Sim| C
-    H -->|Não| I[Finaliza sessão]
-    I --> J(Checklist arquivado)
+          <div class="fc">
+            <div class="fc-n start">Início do mês ou do turno</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Cria nova sessão de checklist</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Preenche itens um por um</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Item conforme?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Marca como conforme</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Marca como não conforme</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Abre Plano de Ação</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n dec">Mais itens?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="font-size:0.75rem;color:var(--text-muted);">↩ Próximo item</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Finaliza e arquiva sessão</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -543,81 +681,140 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  6. PCP                                  ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 6. PCP ══ -->
       <div id="t6" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-diagram-3 text-primary me-2"></i>PCP — Planejamento e Controle da Produção</p>
         <p class="sec-sub">Roteiros, controle de OPs, apontamento, planejamento e etiquetas.</p>
 
+        <!-- FLOW-11 — Visão Geral PCP -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Visão Geral do Fluxo PCP — FLOW-11</p>
-          <div class="mermaid">
-graph TD
-    R[Roteiros] --> OP
-    OP[Controle de OPs] --> AP
-    AP[Apontamento] --> PL
-    PL[Planejamento] --> ET
-    ET[Etiquetas Manuais]
-    style R fill:#e0f2fe,stroke:#0284c7
-    style OP fill:#dcfce7,stroke:#16a34a
-    style AP fill:#fef9c3,stroke:#ca8a04
-    style PL fill:#fce7f3,stroke:#db2777
-    style ET fill:#f3e8ff,stroke:#9333ea
+          <div class="fc-hr">
+            <div class="fc-n" style="background:#e0f2fe;border-color:#0284c7;color:#0369a1;">Roteiros</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n" style="background:#dcfce7;border-color:#16a34a;color:#166534;">Controle de OPs</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n" style="background:#fef9c3;border-color:#ca8a04;color:#7c5300;">Apontamento</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n" style="background:#fce7f3;border-color:#db2777;color:#831843;">Planejamento</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n" style="background:#f3e8ff;border-color:#9333ea;color:#6b21a8;">Etiquetas</div>
           </div>
         </div>
 
+        <!-- FLOW-12 — Controle de OPs -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Controle de OPs — FLOW-12</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Controle de OPs) --> B{Criar OP como?}
-    B -->|Manual| C[Preenche numero, produto, setor e quantidade]
-    B -->|Por Roteiro| D[Seleciona roteiro existente]
-    D --> E[Sistema preenche automaticamente]
-    C --> F[Salva OP]
-    E --> F
-    F --> G{Status da OP}
-    G --> G1[Aberta]
-    G --> G2[Em produção]
-    G --> G3[Finalizada]
-    G --> G4[Cancelada]
+          <div class="fc">
+            <div class="fc-n start">Acessa Controle de OPs</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Criar OP como?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Manual</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Preenche número, produto, setor e quantidade</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Por Roteiro</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Seleciona roteiro existente</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Sistema preenche automaticamente</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n">Salva OP</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Status da OP</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col"><div class="fc-n" style="min-width:100px;font-size:0.76rem;background:#e0f2fe;border-color:#0284c7;">Aberta</div></div>
+              <div class="fc-col"><div class="fc-n" style="min-width:100px;font-size:0.76rem;background:#fef9c3;border-color:#ca8a04;">Em produção</div></div>
+              <div class="fc-col"><div class="fc-n" style="min-width:100px;font-size:0.76rem;background:#dcfce7;border-color:#16a34a;">Finalizada</div></div>
+              <div class="fc-col"><div class="fc-n" style="min-width:100px;font-size:0.76rem;background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Cancelada</div></div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-13 — Apontamento -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Apontamento de Produção — FLOW-13</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Apontamento) --> B[Filtra por data, setor, linha e turno]
-    B --> C[Lista apontamentos importados]
-    C --> D{Apontamento vinculado?}
-    D -->|Não| E[Seleciona OP correspondente]
-    E --> F[Vincula apontamento à OP]
-    D -->|Sim| G{Modelo correto?}
-    G -->|Não| H[Corrige modelo]
-    G -->|Sim| I(Apontamento OK)
-    F --> I
-    H --> I
+          <div class="fc">
+            <div class="fc-n start">Acessa Apontamento</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Filtra por data, setor, linha e turno</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Lista apontamentos importados</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Apontamento já vinculado a uma OP?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Seleciona OP correspondente</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Vincula apontamento à OP</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n dec">Modelo correto?</div>
+                <div class="fc-row mt-1">
+                  <div class="fc-col">
+                    <span class="fc-lbl">Não</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n">Corrige o modelo</div>
+                  </div>
+                  <div class="fc-col">
+                    <span class="fc-lbl">Sim</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n end">Apontamento OK</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-14 — Planejamento -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Planejamento / Plano de Voo — FLOW-14</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Planejamento) --> B[Define data, turno, setor e linha]
-    B --> C{Criar plano como?}
-    C -->|Unitario| D[Seleciona OP e informa quantidade]
-    C -->|Em lote| E[Seleciona multiplas OPs]
-    D --> F[Sistema calcula hora de termino e meta]
-    E --> F
-    F --> G[Exibe plano de voo hora a hora]
-    G --> H{Imprimir?}
-    H -->|Sim| I[Abre PDF do plano de voo]
-    H -->|Não| J[Acompanha status em tempo real]
-    I --> K(Plano de voo impresso)
-    J --> K
+          <div class="fc">
+            <div class="fc-n start">Acessa Planejamento</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Define data, turno, setor e linha</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Criar plano como?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Unitário</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Seleciona OP e informa quantidade</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Em lote</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Seleciona múltiplas OPs</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n">Sistema calcula hora de término e meta</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Exibe plano de voo hora a hora</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Imprimir?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Abre PDF do plano de voo</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Acompanha em tempo real</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -629,22 +826,45 @@ graph TD
           <p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;">Figura 7 — Planejador visualizando o plano de voo hora a hora</p>
         </div>
 
+        <!-- FLOW-15 — Etiquetas Manuais -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Etiquetas Manuais — FLOW-15</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Etiquetas Manuais) --> B{Usar modelo salvo?}
-    B -->|Sim| C[Seleciona modelo na lista]
-    C --> D[Campos preenchidos automaticamente]
-    B -->|Não| D2[Preenche codigo, modelo, linha e lote]
-    D --> E[Clica Visualizar]
-    D2 --> E
-    E --> F[Preview das etiquetas na tela]
-    F --> G{Salvar modelo?}
-    G -->|Sim| H[Nomeia e salva para todos os usuarios]
-    G -->|Não| I
-    H --> I[Clica Imprimir]
-    I --> J(Etiquetas impressas em A4)
+          <div class="fc">
+            <div class="fc-n start">Acessa Etiquetas Manuais</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Usar modelo salvo?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Seleciona modelo na lista</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Campos preenchidos automaticamente</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Preenche código, modelo, linha e lote</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n">Clica em Visualizar</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Preview das etiquetas na tela</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Salvar modelo para reutilizar?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Nomeia e salva para todos os usuários</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Clica Imprimir → Etiquetas em A4</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -678,42 +898,62 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  7. ENTREGAS                             ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 7. ENTREGAS ══ -->
       <div id="t7" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-truck me-2" style="color:#fd7e14;"></i>Entregas</p>
         <p class="sec-sub">Pedidos, remessas, rastreamento em tempo real e expedição.</p>
 
+        <!-- FLOW-16 — Fluxo Completo de Entregas -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo Completo de Entregas — FLOW-16</p>
-          <div class="mermaid">
-graph TD
-    A(Acessa Entregas) --> B[Cria Pedido do Cliente]
-    B --> C[Define cliente, modelo, quantidade e data de entrega]
-    C --> D[Pedido criado - Aberto]
-    D --> E[Cria Remessa vinculada ao Pedido]
-    E --> F[Define quantidade e nota fiscal]
-    F --> G[Em Carregamento]
-    G --> H[Em Transito]
-    H --> I[Sistema registra saida]
-    I --> J[Motorista atualiza localização via app]
-    J --> K[Atualiza para Entregue]
-    K --> L{Quantidade total entregue?}
-    L -->|Sim| M[Pedido fechado automaticamente]
-    L -->|Não| E
-    M --> N(Entrega concluída)
+          <div class="fc">
+            <div class="fc-n start">Acessa Entregas</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Cria Pedido do Cliente</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Define cliente, modelo, quantidade e data de entrega</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n" style="background:#e0f2fe;border-color:#0284c7;">Pedido criado — Status: Aberto</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Cria Remessa vinculada ao Pedido</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Define quantidade e nota fiscal</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n" style="background:#fef9c3;border-color:#ca8a04;">Status: Em Carregamento</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n" style="background:#fce7f3;border-color:#db2777;">Status: Em Trânsito</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Motorista atualiza localização via app</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n" style="background:#dcfce7;border-color:#16a34a;">Status: Entregue</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Quantidade total do pedido entregue?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="font-size:0.75rem;color:var(--text-muted);">↩ Nova remessa</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Pedido fechado automaticamente</div>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-17 — Rastreamento -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Rastreamento em Mapa — FLOW-17</p>
-          <div class="mermaid">
-graph LR
-    A[Entrega Em Trânsito] --> B[Mapa de Rastreamento]
-    B --> C[Exibe localizacao do motorista em tempo real]
-    C --> D[Exibe rota até o destino]
-    D --> E[Atualiza a cada check-in]
+          <div class="fc-hr">
+            <div class="fc-n" style="background:#fce7f3;border-color:#db2777;color:#831843;">Remessa Em Trânsito</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n">Abre Mapa de Rastreamento</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n">Localização do motorista em tempo real</div>
+            <i class="bi bi-arrow-right fc-arr"></i>
+            <div class="fc-n end">Atualiza a cada check-in</div>
           </div>
         </div>
 
@@ -750,30 +990,52 @@ graph LR
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  8. ESTOQUE E LOGÍSTICA                  ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 8. ESTOQUE E LOGÍSTICA ══ -->
       <div id="t8" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-boxes me-2" style="color:#6f42c1;"></i>Estoque e Logística</p>
         <p class="sec-sub">Resumo do dia e conferência de material para o plano de produção.</p>
 
+        <!-- FLOW-18 — Conferência de Material -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Conferência de Material — FLOW-18</p>
-          <div class="mermaid">
-graph TD
-    A(Início da conferência) --> B[Acessa Conferência de Material]
-    B --> C[Seleciona plano de produção do dia]
-    C --> D[Faz upload da lista de componentes CSV]
-    D --> E[Sistema importa componentes necessarios]
-    E --> F[Operador confere item por item]
-    F --> G{Item disponível?}
-    G -->|Sim| H[Confirma componente]
-    G -->|Não| I[Registra falta ou divergencia]
-    H --> J{Mais itens?}
-    I --> J
-    J -->|Sim| F
-    J -->|Não| K[Finaliza conferência]
-    K --> L(Relatório de conferência gerado)
+          <div class="fc">
+            <div class="fc-n start">Início da conferência</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Acessa Conferência de Material</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Seleciona plano de produção do dia</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Faz upload da lista de componentes (CSV)</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Confere item por item</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Item disponível no estoque?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Confirma componente</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Registra falta ou divergência</div>
+              </div>
+            </div>
+            <i class="bi bi-arrow-down fc-arr mt-2"></i>
+            <div class="fc-n dec">Mais itens?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="font-size:0.75rem;color:var(--text-muted);">↩ Próximo item</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Finaliza — relatório gerado</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -810,9 +1072,7 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  9. CONFIGURAÇÕES                        ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 9. CONFIGURAÇÕES ══ -->
       <div id="t9" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-gear me-2" style="color:var(--text-muted);"></i>Configurações do Sistema</p>
         <p class="sec-sub">Turnos, linhas, setores e paradas — requer perfil Administrador.</p>
@@ -867,45 +1127,76 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  10. ADMINISTRAÇÃO                       ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 10. ADMINISTRAÇÃO ══ -->
       <div id="t10" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-person-gear text-danger me-2"></i>Administração</p>
         <p class="sec-sub">Gestão de usuários, aprovações e backup do banco de dados.</p>
 
+        <!-- FLOW-19 — Aprovação de Usuários -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Aprovação de Usuários — FLOW-19</p>
-          <div class="mermaid">
-graph TD
-    A(Novo usuário se registra) --> B[Admin recebe notificação]
-    B --> C[Acessa Gestão de Usuários]
-    C --> D[Visualiza dados do solicitante]
-    D --> E{Aprovar?}
-    E -->|Sim| F[Define perfil admin, padrao ou viewer]
-    F --> G[Usuário recebe acesso]
-    E -->|Não| H[Nega o acesso]
-    H --> I(Usuário bloqueado)
-    G --> J(Usuário ativo no sistema)
+          <div class="fc">
+            <div class="fc-n start">Novo usuário se registra</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Admin recebe notificação</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Acessa Gestão de Usuários</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Visualiza dados do solicitante</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Aprovar acesso?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Define perfil: admin, padrão ou viewer</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Usuário ativo no sistema</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Nega o acesso</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Usuário bloqueado</div>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- FLOW-20 — Backup -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Backup do Banco de Dados — FLOW-20</p>
-          <div class="mermaid">
-graph TD
-    A(Agendado ou Manual) --> B[pg_dump executa]
-    B --> C[Gera arquivo .sql.gz]
-    C --> D[Calcula checksum SHA-256]
-    D --> E{Checksum OK?}
-    E -->|Não| F[Marca backup como inválido]
-    F --> G[Registra erro no log]
-    E -->|Sim| H[Criptografa AES-256]
-    H --> I[Armazena localmente]
-    I --> J[Transfere para offsite]
-    J --> K[Registra sucesso no log]
-    K --> L(Backup concluído)
-    G --> L
+          <div class="fc">
+            <div class="fc-n start">Agendado ou manual</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n"><code>pg_dump</code> executa</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Gera arquivo <code>.sql.gz</code></div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Calcula checksum SHA-256</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Checksum válido?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Marca backup como inválido</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n" style="background:rgba(220,53,69,0.07);border-color:rgba(220,53,69,0.2);">Registra erro no log</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Criptografa AES-256</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Armazena localmente</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Transfere para offsite</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Registra sucesso no log</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -935,27 +1226,52 @@ graph TD
         </div>
       </div>
 
-      <!-- ╔══════════════════════════════════════════╗ -->
-      <!-- ║  11. SUPORTE                             ║ -->
-      <!-- ╚══════════════════════════════════════════╝ -->
+      <!-- ══ 11. SUPORTE ══ -->
       <div id="t11" class="manual-tab-panel">
         <p class="sec-title"><i class="bi bi-headset text-primary me-2"></i>Suporte e Ajuda</p>
         <p class="sec-sub">Central de conhecimento, ouvidoria e suporte especializado.</p>
 
+        <!-- FLOW-21 — Abertura de Chamado -->
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Abertura de Chamado — FLOW-21</p>
-          <div class="mermaid">
-graph TD
-    A(Usuário tem dúvida ou problema) --> B{Encontrou na\nCentral de FAQs?}
-    B -->|Sim| C(Problema resolvido)
-    B -->|Não| D[Acessa Suporte Especializado]
-    D --> E[Descreve o problema]
-    E --> F[Equipe técnica recebe notificação]
-    F --> G[Técnico responde no chat]
-    G --> H{Problema resolvido?}
-    H -->|Sim| I[Chamado fechado]
-    H -->|Não| G
-    I --> C
+          <div class="fc">
+            <div class="fc-n start">Usuário tem dúvida ou problema</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n">Consulta a Central de Conhecimento</div>
+            <i class="bi bi-arrow-down fc-arr"></i>
+            <div class="fc-n dec">Encontrou a resposta nos FAQs?</div>
+            <div class="fc-row mt-1">
+              <div class="fc-col">
+                <span class="fc-lbl">Sim</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n end">Problema resolvido</div>
+              </div>
+              <div class="fc-col">
+                <span class="fc-lbl">Não</span>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Acessa Suporte Especializado</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Descreve o problema</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Equipe técnica recebe notificação</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n">Técnico responde no chat</div>
+                <i class="bi bi-arrow-down fc-arr"></i>
+                <div class="fc-n dec">Problema resolvido?</div>
+                <div class="fc-row mt-1">
+                  <div class="fc-col">
+                    <span class="fc-lbl">Não</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n" style="font-size:0.75rem;color:var(--text-muted);">↩ Continua o atendimento</div>
+                  </div>
+                  <div class="fc-col">
+                    <span class="fc-lbl">Sim</span>
+                    <i class="bi bi-arrow-down fc-arr"></i>
+                    <div class="fc-n end">Chamado fechado</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1001,10 +1317,9 @@ graph TD
         </div>
       </div>
 
-    </div><!-- /card-body -->
-  </div><!-- /card -->
+    </div>
+  </div>
 
-  <!-- Rodapé -->
   <div class="text-center py-3 mb-2" style="color:var(--text-muted);font-size:0.78rem;">
     <i class="bi bi-book me-1"></i>
     Manual do Sistema · FactoryOps Venttos · v2.0
@@ -1013,11 +1328,6 @@ graph TD
   </div>
 
 </div>
-
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral', fontFamily: 'Inter, system-ui, sans-serif' });
-</script>
 
 <script>
   function showTab(id, btn) {
