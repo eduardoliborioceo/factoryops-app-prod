@@ -497,7 +497,7 @@
               <i class="bi bi-search text-muted"></i>
             </span>
             <input type="text" id="filaBusca" class="form-control form-control-sm"
-                   placeholder="Buscar por OP, produto ou descrição…"
+                   placeholder="Buscar por OP, produto, descrição ou lote…"
                    style="border-radius:0 8px 8px 0;border-color:var(--border);"
                    oninput="filtrarFila(this.value)">
           </div>
@@ -569,7 +569,7 @@
                   {% set pct = ((op.produzido / op.quantidade) * 100) | int if op.quantidade > 0 else 0 %}
                   {% set concluida = op.saldo <= 0 %}
                   {% set planos_op = planos | selectattr('op_id', 'equalto', op.id) | list %}
-                  <tr class="fila-row" data-busca="{{ op.numero_op }} {{ op.produto }} {{ op.descricao or '' }}"
+                  <tr class="fila-row" data-busca="{{ op.numero_op }} {{ op.produto }} {{ op.descricao or '' }} {{ op.lotes or '' }}"
                       style="{{ 'opacity:0.65;' if concluida else '' }}">
                     <td class="ps-3 fw-semibold">
                       {{ op.numero_op }}
