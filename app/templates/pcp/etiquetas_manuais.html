@@ -641,116 +641,122 @@
     win.document.close();
   };
 
-  /* ── Modelos salvos (localStorage) ─────────────────────────────── */
-  const STORAGE_KEY = 'etq_modelos_v1';
+  /* ── Modelos salvos (banco de dados) ───────────────────────────── */
+  const MODELOS_API = '/api/etiquetas/modelos';
+  let _modelos = [];
 
-  function carregarModelos() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch { return []; }
+  async function carregarModelosServidor() {
+    try {
+      const res = await fetch(MODELOS_API);
+      _modelos = await res.json();
+    } catch { _modelos = []; }
+    renderizarBarraModelos();
   }
 
-  function persistirModelos(lista) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-  }
-
-  function atualizarBarraModelos() {
-    const lista  = carregarModelos();
+  function renderizarBarraModelos() {
     const bar    = document.getElementById('modelosSalvosBar');
     const select = document.getElementById('selectModeloSalvo');
-    if (lista.length === 0) {
+    if (_modelos.length === 0) {
       bar.style.setProperty('display', 'none', 'important');
       return;
     }
     bar.style.removeProperty('display');
-    const anterior = select.value;
-    select.innerHTML = lista
-      .map(m => `<option value="${esc(m.nome)}">${esc(m.nome)}</option>`)
+    const anteriorId = select.value;
+    select.innerHTML = _modelos
+      .map(m => `<option value="${m.id}">${esc(m.nome)}</option>`)
       .join('');
-    if (lista.find(m => m.nome === anterior)) select.value = anterior;
+    if (_modelos.find(m => String(m.id) === anteriorId)) select.value = anteriorId;
   }
 
   window.fecharSavePrompt = function () {
     document.getElementById('savePrompt').style.display = 'none';
   };
 
-  window.salvarModeloAtual = function () {
+  window.salvarModeloAtual = async function () {
     const nome = document.getElementById('inputModeloNome').value.trim();
     if (!nome) { document.getElementById('inputModeloNome').focus(); return; }
 
     const dados = {
-      nome,
-      titulo:       document.getElementById('selectTitulo').value,
-      tituloCustom: document.getElementById('inputTituloCustom').value.trim(),
-      cod:          document.getElementById('inputCod').value.trim(),
-      modelo:       document.getElementById('inputModelo').value.trim(),
-      linha:        document.getElementById('inputLinha').value.trim(),
-      setor:        document.getElementById('selectSetor').value,
-      turno:        document.getElementById('selectTurno').value,
-      cliente:      document.getElementById('inputCliente').value.trim(),
-      loteIni:      document.getElementById('inputLoteInicial').value,
-      qtdMagazine:  document.getElementById('inputQtdMagazine').value,
-      totalProducao:document.getElementById('inputTotalProducao').value,
-      loteRef:      document.getElementById('inputLoteRef').value.trim(),
-      obs:          document.getElementById('inputObs').value.trim(),
+      titulo:        document.getElementById('selectTitulo').value,
+      tituloCustom:  document.getElementById('inputTituloCustom').value.trim(),
+      cod:           document.getElementById('inputCod').value.trim(),
+      modelo:        document.getElementById('inputModelo').value.trim(),
+      linha:         document.getElementById('inputLinha').value.trim(),
+      setor:         document.getElementById('selectSetor').value,
+      turno:         document.getElementById('selectTurno').value,
+      cliente:       document.getElementById('inputCliente').value.trim(),
+      loteIni:       document.getElementById('inputLoteInicial').value,
+      qtdMagazine:   document.getElementById('inputQtdMagazine').value,
+      totalProducao: document.getElementById('inputTotalProducao').value,
+      loteRef:       document.getElementById('inputLoteRef').value.trim(),
+      obs:           document.getElementById('inputObs').value.trim(),
     };
 
-    const lista = carregarModelos().filter(m => m.nome !== nome);
-    lista.unshift(dados);
-    persistirModelos(lista);
-    atualizarBarraModelos();
-    document.getElementById('selectModeloSalvo').value = nome;
+    try {
+      const res = await fetch(MODELOS_API, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ nome, dados }),
+      });
+      const json = await res.json();
+      if (!res.ok) { alerta(json.erro || 'Erro ao salvar modelo.'); return; }
 
-    fecharSavePrompt();
-    const area = document.getElementById('alertArea');
-    const div  = document.createElement('div');
-    div.className = 'alert alert-success alert-dismissible d-flex align-items-center gap-2 mb-3';
-    div.role = 'alert';
-    div.innerHTML = `<i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
-      <div>Modelo "<strong>${esc(nome)}</strong>" salvo com sucesso.</div>
-      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
-    area.prepend(div);
-    setTimeout(() => div.remove(), 4000);
+      await carregarModelosServidor();
+      document.getElementById('selectModeloSalvo').value = String(json.id);
+      fecharSavePrompt();
+
+      const area = document.getElementById('alertArea');
+      const div  = document.createElement('div');
+      div.className = 'alert alert-success alert-dismissible d-flex align-items-center gap-2 mb-3';
+      div.role = 'alert';
+      div.innerHTML = `<i class="bi bi-check-circle-fill fs-5 flex-shrink-0"></i>
+        <div>Modelo "<strong>${esc(nome)}</strong>" salvo com sucesso.</div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+      area.prepend(div);
+      setTimeout(() => div.remove(), 4000);
+    } catch { alerta('Erro ao salvar modelo.'); }
   };
 
   window.carregarModeloSelecionado = function () {
-    const nome  = document.getElementById('selectModeloSalvo').value;
-    const lista = carregarModelos();
-    const m     = lista.find(x => x.nome === nome);
+    const id = parseInt(document.getElementById('selectModeloSalvo').value);
+    const m  = _modelos.find(x => x.id === id);
     if (!m) return;
+    const d = m.dados;
 
     const selTitulo = document.getElementById('selectTitulo');
-    selTitulo.value = m.titulo;
-    if (m.titulo === '_custom') {
+    selTitulo.value = d.titulo || '';
+    if (d.titulo === '_custom') {
       document.getElementById('inputTituloCustom').style.display = '';
-      document.getElementById('inputTituloCustom').value = m.tituloCustom || '';
+      document.getElementById('inputTituloCustom').value = d.tituloCustom || '';
     } else {
       document.getElementById('inputTituloCustom').style.display = 'none';
       document.getElementById('inputTituloCustom').value = '';
     }
 
-    document.getElementById('inputCod').value           = m.cod;
-    document.getElementById('inputModelo').value        = m.modelo;
-    document.getElementById('inputLinha').value         = m.linha;
-    document.getElementById('selectSetor').value        = m.setor || '';
-    document.getElementById('selectTurno').value        = m.turno;
-    document.getElementById('inputCliente').value       = m.cliente;
-    document.getElementById('inputLoteInicial').value   = m.loteIni;
-    document.getElementById('inputQtdMagazine').value   = m.qtdMagazine;
-    document.getElementById('inputTotalProducao').value = m.totalProducao;
-    document.getElementById('inputLoteRef').value       = m.loteRef;
-    document.getElementById('inputObs').value           = m.obs;
+    document.getElementById('inputCod').value           = d.cod || '';
+    document.getElementById('inputModelo').value        = d.modelo || '';
+    document.getElementById('inputLinha').value         = d.linha || '';
+    document.getElementById('selectSetor').value        = d.setor || '';
+    document.getElementById('selectTurno').value        = d.turno || '';
+    document.getElementById('inputCliente').value       = d.cliente || '';
+    document.getElementById('inputLoteInicial').value   = d.loteIni || '';
+    document.getElementById('inputQtdMagazine').value   = d.qtdMagazine || '';
+    document.getElementById('inputTotalProducao').value = d.totalProducao || '';
+    document.getElementById('inputLoteRef').value       = d.loteRef || '';
+    document.getElementById('inputObs').value           = d.obs || '';
     atualizarContador();
   };
 
-  window.excluirModeloSelecionado = function () {
-    const nome  = document.getElementById('selectModeloSalvo').value;
-    if (!nome) return;
-    const lista = carregarModelos().filter(m => m.nome !== nome);
-    persistirModelos(lista);
-    atualizarBarraModelos();
+  window.excluirModeloSelecionado = async function () {
+    const id = document.getElementById('selectModeloSalvo').value;
+    if (!id) return;
+    try {
+      await fetch(`${MODELOS_API}/${id}`, { method: 'DELETE' });
+      await carregarModelosServidor();
+    } catch { alerta('Erro ao excluir modelo.'); }
   };
 
-  atualizarBarraModelos();
+  carregarModelosServidor();
 
   function esc(str) {
     return String(str ?? '')

@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 
 logger = logging.getLogger(__name__)
 
-from app.services import modelos_service, production_lines_service, time_studies_service
+from app.services import modelos_service, production_lines_service, time_studies_service, etiqueta_modelo_service
 from app.services.employees_service import buscar_funcionario
 from app.auth.service import confirm_employee_extra
 
@@ -396,6 +396,34 @@ def medicao_pasta_update(registro_id: int):
         return jsonify({"sucesso": False, "erro": str(e)}), 404
     except Exception:
         return jsonify({"sucesso": False, "erro": "Erro ao atualizar medição"}), 500
+
+
+# ─── Modelos de Etiqueta Manual ───────────────────────────────────────────────
+
+@bp.route("/etiquetas/modelos", methods=["GET"])
+@login_required
+def etiqueta_modelos_listar():
+    return jsonify(etiqueta_modelo_service.listar_modelos())
+
+
+@bp.route("/etiquetas/modelos", methods=["POST"])
+@login_required
+def etiqueta_modelos_salvar():
+    data = request.get_json(silent=True) or {}
+    try:
+        modelo_id = etiqueta_modelo_service.salvar_modelo(
+            data.get("nome", ""), data.get("dados", {})
+        )
+        return jsonify({"id": modelo_id}), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+
+
+@bp.route("/etiquetas/modelos/<int:modelo_id>", methods=["DELETE"])
+@login_required
+def etiqueta_modelos_excluir(modelo_id: int):
+    etiqueta_modelo_service.excluir_modelo(modelo_id)
+    return jsonify({"ok": True})
 
 
 @bp.route("/medicao-pasta/plano-acao", methods=["POST"])
