@@ -186,7 +186,7 @@
           </div>
           <div class="mermaid">
 graph TD
-    A[🏭 FactoryOps] --> B[Engenharia / SMT]
+    A[FactoryOps] --> B[Engenharia / SMT]
     A --> C[Produção]
     A --> D[PCP]
     A --> E[Entregas]
@@ -252,7 +252,7 @@ flowchart TD
     I -- Google --> K[Autentica via Google]
     I -- GitHub --> L[Autentica via GitHub]
 
-    J --> M{Senha expirada? +180 dias}
+    J --> M{Senha expirada?}
     M -- Sim --> N[Redireciona para alterar senha]
     N --> O
     M -- Não --> O([Acesso ao sistema])
@@ -302,8 +302,8 @@ flowchart LR
               <p class="flow-title"><i class="bi bi-diagram-2"></i>Perfis de Acesso — FLOW-04</p>
               <div class="mermaid">
 graph LR
-    A[Administrador] -->|Acesso total + gestão| S[Sistema]
-    B[Usuário Padrão] -->|Acesso ao seu módulo| S
+    A[Administrador] -->|Acesso total| S[Sistema]
+    B[Padrao] -->|Modulo do setor| S
     C[Viewer] -->|Somente leitura| S
     style A fill:#0d6efd,color:#fff
     style B fill:#198754,color:#fff
@@ -344,9 +344,9 @@ graph LR
               <div class="mermaid">
 graph TD
     subgraph Desktop
-        SB[Sidebar esquerda 240px\nMenu de navegação]
-        HD[Header fixo 56px\nUsuário + Logout]
-        CT[Área de conteúdo\nmargin-left 240px]
+        SB[Sidebar esquerda 240px]
+        HD[Header fixo 56px]
+        CT[Area de conteudo]
     end
     SB --> CT
     HD --> CT
@@ -359,9 +359,9 @@ graph TD
               <div class="mermaid">
 graph TD
     subgraph Mobile
-        MH[Header escuro 56px\nLogo + título + logout]
-        MC[Conteúdo\nrola verticalmente]
-        BN[Barra inferior 64px\n5 atalhos principais]
+        MH[Header escuro 56px]
+        MC[Conteudo rolavel]
+        BN[Barra inferior 64px]
     end
     MH --> MC
     MC --> BN
@@ -424,13 +424,13 @@ graph TD
 flowchart TD
     A([Usuário acessa Engenharia]) --> B[Cadastro de Modelos]
     B --> C{Modelo existe?}
-    C -- Não --> D[Preenche: código, nome, família,\nsetor, UPH, dados de processo]
+    C -- Não --> D[Preenche codigo, nome, setor e UPH]
     C -- Sim --> E[Edita dados existentes]
     D --> F[Salva modelo]
     E --> F
     F --> G[Calculadora]
-    G --> H[Informa: UPH alvo, turno, paradas]
-    H --> I[Sistema calcula:\nMeta/hora, Meta/turno, Tempo ciclo]
+    G --> H[Informa UPH alvo, turno e paradas]
+    H --> I[Sistema calcula meta por hora e turno]
     I --> J([Resultado exibido])
           </div>
         </div>
@@ -563,11 +563,11 @@ flowchart TD
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Visão Geral do Fluxo PCP — FLOW-11</p>
           <div class="mermaid">
 flowchart TD
-    R[Roteiros\nDefine sequência de setores] --> OP
-    OP[Controle de OPs\nCria e gerencia OPs] --> AP
-    AP[Apontamento\nVincula produção às OPs] --> PL
-    PL[Planejamento\nDistribui por hora e linha] --> ET
-    ET[Etiquetas Manuais\nGera etiquetas de identificação]
+    R[Roteiros] --> OP
+    OP[Controle de OPs] --> AP
+    AP[Apontamento] --> PL
+    PL[Planejamento] --> ET
+    ET[Etiquetas Manuais]
     style R fill:#e0f2fe,stroke:#0284c7
     style OP fill:#dcfce7,stroke:#16a34a
     style AP fill:#fef9c3,stroke:#ca8a04
@@ -581,7 +581,7 @@ flowchart TD
           <div class="mermaid">
 flowchart TD
     A([Acessa Controle de OPs]) --> B{Criar OP como?}
-    B -- Manual --> C[Preenche: número, produto,\nsetor, quantidade, filial]
+    B -- Manual --> C[Preenche numero, produto, setor e quantidade]
     B -- Por Roteiro --> D[Seleciona roteiro existente]
     D --> E[Sistema preenche automaticamente]
     C --> F[Salva OP]
@@ -617,9 +617,9 @@ flowchart TD
 flowchart TD
     A([Acessa Planejamento]) --> B[Define: data, turno, setor, linha]
     B --> C{Criar plano como?}
-    C -- Unitário --> D[Seleciona OP, informa quantidade\ne hora de início]
-    C -- Em lote --> E[Seleciona múltiplas OPs]
-    D --> F[Sistema calcula:\nhora de término, UPH, meta]
+    C -- Unitario --> D[Seleciona OP e informa quantidade]
+    C -- Em lote --> E[Seleciona multiplas OPs]
+    D --> F[Sistema calcula hora de termino e meta]
     E --> F
     F --> G[Exibe plano de voo hora a hora]
     G --> H{Imprimir?}
@@ -645,12 +645,12 @@ flowchart TD
     A([Acessa Etiquetas Manuais]) --> B{Usar modelo salvo?}
     B -- Sim --> C[Seleciona modelo na lista]
     C --> D[Campos preenchidos automaticamente]
-    B -- Não --> D2[Preenche manualmente:\ncódigo, modelo, linha, cliente, lote]
+    B -- Não --> D2[Preenche codigo, modelo, linha e lote]
     D --> E[Clica Visualizar]
     D2 --> E
     E --> F[Preview das etiquetas na tela]
     F --> G{Salvar modelo?}
-    G -- Sim --> H[Nomeia e salva no banco\ndisponível para todos os usuários]
+    G -- Sim --> H[Nomeia e salva para todos os usuarios]
     G -- Não --> I
     H --> I[Clica Imprimir]
     I --> J([Etiquetas impressas em A4])
@@ -699,7 +699,7 @@ flowchart TD
           <div class="mermaid">
 flowchart TD
     A([Acessa Entregas]) --> B[Cria Pedido do Cliente]
-    B --> C[Define: cliente, modelo, quantidade,\ndata de entrega, local]
+    B --> C[Define cliente, modelo, quantidade e data de entrega]
     C --> D[Pedido criado — Status: Aberto]
     D --> E[Cria Remessa vinculada ao Pedido]
     E --> F[Define: quantidade, nota fiscal]
@@ -720,7 +720,7 @@ flowchart TD
           <div class="mermaid">
 flowchart LR
     A[Entrega Em Trânsito] --> B[Mapa de Rastreamento]
-    B --> C[Exibe localização\ndo motorista em tempo real]
+    B --> C[Exibe localizacao do motorista em tempo real]
     C --> D[Exibe rota até o destino]
     D --> E[Atualiza a cada check-in]
           </div>
@@ -772,8 +772,8 @@ flowchart LR
 flowchart TD
     A([Início da conferência]) --> B[Acessa Conferência de Material]
     B --> C[Seleciona plano de produção do dia]
-    C --> D[Faz upload da lista de componentes\narquivo CSV/Excel]
-    D --> E[Sistema importa componentes\nnecessários para o plano]
+    C --> D[Faz upload da lista de componentes CSV]
+    D --> E[Sistema importa componentes necessarios]
     E --> F[Operador confere item por item]
     F --> G{Item disponível?}
     G -- Sim --> H[Confirma componente]
@@ -891,7 +891,7 @@ flowchart TD
     B --> C[Acessa Gestão de Usuários]
     C --> D[Visualiza dados do solicitante]
     D --> E{Aprovar?}
-    E -- Sim --> F[Define role:\nadmin / padrão / viewer]
+    E -- Sim --> F[Define role: admin, padrao ou viewer]
     F --> G[Usuário recebe acesso]
     E -- Não --> H[Nega o acesso]
     H --> I([Usuário bloqueado])
