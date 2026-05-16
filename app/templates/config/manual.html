@@ -230,22 +230,22 @@ graph TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo de Login — FLOW-02</p>
           <div class="mermaid">
-flowchart TD
-    A([Inicio]) --> B{Tem conta?}
-    B -- Sim --> I{Metodo de login}
-    B -- Nao --> C[Clica em Registrar]
+graph TD
+    A(Inicio) --> B{Tem conta?}
+    B -->|Sim| I{Metodo de login}
+    B -->|Nao| C[Clica em Registrar]
     C --> D[Preenche nome, email e senha]
     D --> E[Notificacao ao Admin]
     E --> F{Admin aprova?}
-    F -- Sim --> G[Acesso liberado]
-    F -- Nao --> H([Acesso negado])
+    F -->|Sim| G[Acesso liberado]
+    F -->|Nao| H(Acesso negado)
     G --> I
-    I -- Usuario e senha --> J[Digita credenciais]
-    I -- Google --> K[Google OAuth]
-    I -- GitHub --> L[GitHub OAuth]
+    I -->|Usuario e senha| J[Digita credenciais]
+    I -->|Google| K[Google OAuth]
+    I -->|GitHub| L[GitHub OAuth]
     J --> M{Senha expirada?}
-    M -- Sim --> N[Troca de senha obrigatoria]
-    M -- Nao --> O([Acesso ao sistema])
+    M -->|Sim| N[Troca de senha obrigatoria]
+    M -->|Nao| O(Acesso ao sistema)
     N --> O
     K --> O
     L --> O
@@ -255,15 +255,15 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Recuperação de Senha — FLOW-03</p>
           <div class="mermaid">
-flowchart LR
-    A([Usuário esqueceu a senha]) --> B[Clica em Esqueci minha senha]
+graph LR
+    A(Usuário esqueceu a senha) --> B[Clica em Esqueci minha senha]
     B --> C[Digita o e-mail cadastrado]
     C --> D[Sistema envia link por e-mail]
     D --> E[Usuário clica no link]
     E --> F[Define nova senha]
     F --> G{Senha atende os requisitos?}
-    G -- Não --> F
-    G -- Sim --> H([Login liberado])
+    G -->|Não| F
+    G -->|Sim| H(Login liberado)
           </div>
         </div>
 
@@ -412,33 +412,33 @@ graph TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Cadastro e Cálculo de Modelo — FLOW-07</p>
           <div class="mermaid">
-flowchart TD
-    A([Usuário acessa Engenharia]) --> B[Cadastro de Modelos]
+graph TD
+    A(Usuário acessa Engenharia) --> B[Cadastro de Modelos]
     B --> C{Modelo existe?}
-    C -- Não --> D[Preenche codigo, nome, setor e UPH]
-    C -- Sim --> E[Edita dados existentes]
+    C -->|Não| D[Preenche codigo, nome, setor e UPH]
+    C -->|Sim| E[Edita dados existentes]
     D --> F[Salva modelo]
     E --> F
     F --> G[Calculadora]
     G --> H[Informa UPH alvo, turno e paradas]
     H --> I[Sistema calcula meta por hora e turno]
-    I --> J([Resultado exibido])
+    I --> J(Resultado exibido)
           </div>
         </div>
 
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Estudo de Tempo — FLOW-08</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Estudo de Tempo]) --> B[Cria novo estudo]
+graph TD
+    A(Acessa Estudo de Tempo) --> B[Cria novo estudo]
     B --> C[Define modelo e operador]
     C --> D[Adiciona operações]
     D --> E[Registra tempos de cada operação]
     E --> F{Mais operações?}
-    F -- Sim --> D
-    F -- Não --> G[Sistema calcula totais e UPH]
+    F -->|Sim| D
+    F -->|Não| G[Sistema calcula totais e UPH]
     G --> H[Imprime relatório]
-    H --> I([Estudo arquivado])
+    H --> I(Estudo arquivado)
           </div>
         </div>
 
@@ -482,15 +482,15 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Medição de Pasta de Solda — FLOW-09</p>
           <div class="mermaid">
-flowchart TD
-    A([Início do turno]) --> B[Operador acessa Medição Pasta]
+graph TD
+    A(Início do turno) --> B[Operador acessa Medição Pasta]
     B --> C[Seleciona linha e data]
     C --> D[Registra medições por ponto de solda]
     D --> E{Medição fora do limite?}
-    E -- Sim --> F[Cria Plano de Ação]
+    E -->|Sim| F[Cria Plano de Ação]
     F --> G[Define responsável e prazo]
     G --> H[Acompanha resolução]
-    E -- Não --> I([Registro salvo])
+    E -->|Não| I(Registro salvo)
     H --> I
           </div>
         </div>
@@ -498,18 +498,18 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Checklist de Verificação de Linha — FLOW-10</p>
           <div class="mermaid">
-flowchart TD
-    A([Inicio do mes ou turno]) --> B[Cria nova sessao de checklist]
+graph TD
+    A(Inicio do mes ou turno) --> B[Cria nova sessao de checklist]
     B --> C[Preenche itens um por um]
     C --> D{Item OK?}
-    D -- Sim --> E[Marca como conforme]
-    D -- Não --> F[Marca como não conforme]
+    D -->|Sim| E[Marca como conforme]
+    D -->|Não| F[Marca como não conforme]
     F --> G[Abre Plano de Ação]
     E --> H{Mais itens?}
     G --> H
-    H -- Sim --> C
-    H -- Não --> I[Finaliza sessão]
-    I --> J([Checklist arquivado])
+    H -->|Sim| C
+    H -->|Não| I[Finaliza sessão]
+    I --> J(Checklist arquivado)
           </div>
         </div>
 
@@ -553,7 +553,7 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Visão Geral do Fluxo PCP — FLOW-11</p>
           <div class="mermaid">
-flowchart TD
+graph TD
     R[Roteiros] --> OP
     OP[Controle de OPs] --> AP
     AP[Apontamento] --> PL
@@ -570,10 +570,10 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Controle de OPs — FLOW-12</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Controle de OPs]) --> B{Criar OP como?}
-    B -- Manual --> C[Preenche numero, produto, setor e quantidade]
-    B -- Por Roteiro --> D[Seleciona roteiro existente]
+graph TD
+    A(Acessa Controle de OPs) --> B{Criar OP como?}
+    B -->|Manual| C[Preenche numero, produto, setor e quantidade]
+    B -->|Por Roteiro| D[Seleciona roteiro existente]
     D --> E[Sistema preenche automaticamente]
     C --> F[Salva OP]
     E --> F
@@ -588,15 +588,15 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Apontamento de Produção — FLOW-13</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Apontamento]) --> B[Filtra por data, setor, linha e turno]
+graph TD
+    A(Acessa Apontamento) --> B[Filtra por data, setor, linha e turno]
     B --> C[Lista apontamentos importados]
     C --> D{Apontamento vinculado?}
-    D -- Não --> E[Seleciona OP correspondente]
+    D -->|Não| E[Seleciona OP correspondente]
     E --> F[Vincula apontamento à OP]
-    D -- Sim --> G{Modelo correto?}
-    G -- Não --> H[Corrige modelo]
-    G -- Sim --> I([Apontamento OK])
+    D -->|Sim| G{Modelo correto?}
+    G -->|Não| H[Corrige modelo]
+    G -->|Sim| I(Apontamento OK)
     F --> I
     H --> I
           </div>
@@ -605,18 +605,18 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Planejamento / Plano de Voo — FLOW-14</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Planejamento]) --> B[Define data, turno, setor e linha]
+graph TD
+    A(Acessa Planejamento) --> B[Define data, turno, setor e linha]
     B --> C{Criar plano como?}
-    C -- Unitario --> D[Seleciona OP e informa quantidade]
-    C -- Em lote --> E[Seleciona multiplas OPs]
+    C -->|Unitario| D[Seleciona OP e informa quantidade]
+    C -->|Em lote| E[Seleciona multiplas OPs]
     D --> F[Sistema calcula hora de termino e meta]
     E --> F
     F --> G[Exibe plano de voo hora a hora]
     G --> H{Imprimir?}
-    H -- Sim --> I[Abre PDF do plano de voo]
-    H -- Não --> J[Acompanha status em tempo real]
-    I --> K([Plano de voo impresso])
+    H -->|Sim| I[Abre PDF do plano de voo]
+    H -->|Não| J[Acompanha status em tempo real]
+    I --> K(Plano de voo impresso)
     J --> K
           </div>
         </div>
@@ -632,19 +632,19 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Etiquetas Manuais — FLOW-15</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Etiquetas Manuais]) --> B{Usar modelo salvo?}
-    B -- Sim --> C[Seleciona modelo na lista]
+graph TD
+    A(Acessa Etiquetas Manuais) --> B{Usar modelo salvo?}
+    B -->|Sim| C[Seleciona modelo na lista]
     C --> D[Campos preenchidos automaticamente]
-    B -- Não --> D2[Preenche codigo, modelo, linha e lote]
+    B -->|Não| D2[Preenche codigo, modelo, linha e lote]
     D --> E[Clica Visualizar]
     D2 --> E
     E --> F[Preview das etiquetas na tela]
     F --> G{Salvar modelo?}
-    G -- Sim --> H[Nomeia e salva para todos os usuarios]
-    G -- Não --> I
+    G -->|Sim| H[Nomeia e salva para todos os usuarios]
+    G -->|Não| I
     H --> I[Clica Imprimir]
-    I --> J([Etiquetas impressas em A4])
+    I --> J(Etiquetas impressas em A4)
           </div>
         </div>
 
@@ -688,8 +688,8 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Fluxo Completo de Entregas — FLOW-16</p>
           <div class="mermaid">
-flowchart TD
-    A([Acessa Entregas]) --> B[Cria Pedido do Cliente]
+graph TD
+    A(Acessa Entregas) --> B[Cria Pedido do Cliente]
     B --> C[Define cliente, modelo, quantidade e data de entrega]
     C --> D[Pedido criado - Aberto]
     D --> E[Cria Remessa vinculada ao Pedido]
@@ -700,16 +700,16 @@ flowchart TD
     I --> J[Motorista atualiza localização via app]
     J --> K[Atualiza para Entregue]
     K --> L{Quantidade total entregue?}
-    L -- Sim --> M[Pedido fechado automaticamente]
-    L -- Não --> E
-    M --> N([Entrega concluída])
+    L -->|Sim| M[Pedido fechado automaticamente]
+    L -->|Não| E
+    M --> N(Entrega concluída)
           </div>
         </div>
 
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Rastreamento em Mapa — FLOW-17</p>
           <div class="mermaid">
-flowchart LR
+graph LR
     A[Entrega Em Trânsito] --> B[Mapa de Rastreamento]
     B --> C[Exibe localizacao do motorista em tempo real]
     C --> D[Exibe rota até o destino]
@@ -760,20 +760,20 @@ flowchart LR
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Conferência de Material — FLOW-18</p>
           <div class="mermaid">
-flowchart TD
-    A([Início da conferência]) --> B[Acessa Conferência de Material]
+graph TD
+    A(Início da conferência) --> B[Acessa Conferência de Material]
     B --> C[Seleciona plano de produção do dia]
     C --> D[Faz upload da lista de componentes CSV]
     D --> E[Sistema importa componentes necessarios]
     E --> F[Operador confere item por item]
     F --> G{Item disponível?}
-    G -- Sim --> H[Confirma componente]
-    G -- Não --> I[Registra falta ou divergencia]
+    G -->|Sim| H[Confirma componente]
+    G -->|Não| I[Registra falta ou divergencia]
     H --> J{Mais itens?}
     I --> J
-    J -- Sim --> F
-    J -- Não --> K[Finaliza conferência]
-    K --> L([Relatório de conferência gerado])
+    J -->|Sim| F
+    J -->|Não| K[Finaliza conferência]
+    K --> L(Relatório de conferência gerado)
           </div>
         </div>
 
@@ -877,34 +877,34 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Aprovação de Usuários — FLOW-19</p>
           <div class="mermaid">
-flowchart TD
-    A([Novo usuário se registra]) --> B[Admin recebe notificação]
+graph TD
+    A(Novo usuário se registra) --> B[Admin recebe notificação]
     B --> C[Acessa Gestão de Usuários]
     C --> D[Visualiza dados do solicitante]
     D --> E{Aprovar?}
-    E -- Sim --> F[Define perfil admin, padrao ou viewer]
+    E -->|Sim| F[Define perfil admin, padrao ou viewer]
     F --> G[Usuário recebe acesso]
-    E -- Não --> H[Nega o acesso]
-    H --> I([Usuário bloqueado])
-    G --> J([Usuário ativo no sistema])
+    E -->|Não| H[Nega o acesso]
+    H --> I(Usuário bloqueado)
+    G --> J(Usuário ativo no sistema)
           </div>
         </div>
 
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Backup do Banco de Dados — FLOW-20</p>
           <div class="mermaid">
-flowchart TD
-    A([Agendado ou Manual]) --> B[pg_dump executa]
+graph TD
+    A(Agendado ou Manual) --> B[pg_dump executa]
     B --> C[Gera arquivo .sql.gz]
     C --> D[Calcula checksum SHA-256]
     D --> E{Checksum OK?}
-    E -- Não --> F[Marca backup como inválido]
+    E -->|Não| F[Marca backup como inválido]
     F --> G[Registra erro no log]
-    E -- Sim --> H[Criptografa AES-256]
+    E -->|Sim| H[Criptografa AES-256]
     H --> I[Armazena localmente]
     I --> J[Transfere para offsite]
     J --> K[Registra sucesso no log]
-    K --> L([Backup concluído])
+    K --> L(Backup concluído)
     G --> L
           </div>
         </div>
@@ -945,16 +945,16 @@ flowchart TD
         <div class="flow-card">
           <p class="flow-title"><i class="bi bi-diagram-2"></i>Abertura de Chamado — FLOW-21</p>
           <div class="mermaid">
-flowchart TD
-    A([Usuário tem dúvida ou problema]) --> B{Encontrou na\nCentral de FAQs?}
-    B -- Sim --> C([Problema resolvido])
-    B -- Não --> D[Acessa Suporte Especializado]
+graph TD
+    A(Usuário tem dúvida ou problema) --> B{Encontrou na\nCentral de FAQs?}
+    B -->|Sim| C(Problema resolvido)
+    B -->|Não| D[Acessa Suporte Especializado]
     D --> E[Descreve o problema]
     E --> F[Equipe técnica recebe notificação]
     F --> G[Técnico responde no chat]
     G --> H{Problema resolvido?}
-    H -- Sim --> I[Chamado fechado]
-    H -- Não --> G
+    H -->|Sim| I[Chamado fechado]
+    H -->|Não| G
     I --> C
           </div>
         </div>
