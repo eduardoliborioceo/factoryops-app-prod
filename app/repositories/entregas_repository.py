@@ -76,7 +76,7 @@ def listar_pedidos(status: str = "", modelo: str = "", data_inicial: str = "", d
                         SELECT STRING_AGG(DISTINCT a.lote, ', ' ORDER BY a.lote)
                         FROM apontamento a
                         JOIN controle_ops co ON co.id = a.op_id
-                        WHERE (co.produto = p.modelo OR p.modelo LIKE co.produto || ' %')
+                        WHERE (co.produto = p.modelo OR p.modelo LIKE co.produto || ' %%')
                           AND a.lote IS NOT NULL
                           AND a.lote <> ''
                     ) AS lotes,
