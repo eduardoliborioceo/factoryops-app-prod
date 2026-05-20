@@ -338,7 +338,7 @@ def my_profile():
     if request.method == "POST":
 
         file = request.files.get("profile_image")
-        if file:
+        if file and file.filename:
             from app.auth.service import save_profile_image
             try:
                 save_profile_image(current_user.id, file)
@@ -347,18 +347,20 @@ def my_profile():
 
         attach_employee_and_profile(current_user.id, request.form)
 
-        try:
-            change_user_password(
-                user_id=current_user.id,
-                current_password=request.form.get("current_password"),
-                new_password=request.form.get("new_password"),
-                confirm_password=request.form.get("confirm_password"),
-            )
-            flash("Dados atualizados com sucesso", "success")
+        new_password = request.form.get("new_password")
+        if new_password:
+            try:
+                change_user_password(
+                    user_id=current_user.id,
+                    current_password=request.form.get("current_password"),
+                    new_password=new_password,
+                    confirm_password=request.form.get("confirm_password"),
+                )
+            except ValueError as e:
+                flash(str(e), "danger")
+                return redirect(url_for("auth.my_profile"))
 
-        except ValueError as e:
-            flash(str(e), "danger")
-
+        flash("Dados atualizados com sucesso", "success")
         return redirect(url_for("auth.my_profile"))
 
     from app.auth.profile_repository import get_profile

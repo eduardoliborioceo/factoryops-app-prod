@@ -54,7 +54,7 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
 
         except Exception as e:
             current_app.logger.error(f"SendGrid error: {e}")
-
+            return False
 
     # -----------------------
     # SMTP fallback
@@ -89,5 +89,5 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
             current_app.logger.error(f"SMTP error: {e}")
             return False
 
-    current_app.logger.warning("Email not sent: no SENDGRID or SMTP configured.")
+    current_app.logger.warning("Email not sent: no email provider configured (SENDGRID_API_KEY or SMTP_HOST missing).")
     return False
