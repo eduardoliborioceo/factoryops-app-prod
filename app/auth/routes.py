@@ -268,6 +268,41 @@ def register():
 
     return redirect(url_for("auth.login"))
 
+@bp.route("/admin/email-test")
+@login_required
+@admin_required
+def admin_email_test():
+    from flask import jsonify
+    from app.services.email_service import send_email
+
+    config = current_app.config
+    provider = None
+    if config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM"):
+        provider = "sendgrid"
+    elif config.get("SMTP_HOST"):
+        provider = "smtp"
+
+    if not provider:
+        return jsonify({
+            "ok": False,
+            "provider": None,
+            "error": "Nenhum provider configurado. Defina SENDGRID_API_KEY+SENDGRID_FROM ou SMTP_HOST no Railway."
+        })
+
+    to = current_user.email
+    try:
+        ok = send_email(
+            to,
+            "Teste de email — FactoryOps",
+            f"Se você recebeu este email, o provider '{provider}' está funcionando corretamente."
+        )
+        if ok:
+            return jsonify({"ok": True, "provider": provider, "sent_to": to})
+        return jsonify({"ok": False, "provider": provider, "error": "send_email retornou False — verifique os logs do Railway para o erro detalhado."})
+    except Exception as e:
+        return jsonify({"ok": False, "provider": provider, "error": str(e)})
+
+
 @bp.route("/admin/users")
 @login_required
 @admin_required
