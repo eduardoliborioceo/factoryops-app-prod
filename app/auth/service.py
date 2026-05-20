@@ -330,6 +330,7 @@ def _build_external_url(path: str) -> str:
 
 
 def request_password_reset(email: str):
+    import threading
     from app.extensions import get_db
     from psycopg.rows import dict_row
     from app.services.email_service import send_email
@@ -366,10 +367,16 @@ Este link expira em 1 hora.
 Se você não solicitou isso, ignore este email.
 """
 
-    ok = send_email(user["email"], subject, body)
+    app = current_app._get_current_object()
+    to = user["email"]
 
-    if not ok:
-        current_app.logger.error("Password reset email failed to send (SendGrid/SMTP).")
+    def _send():
+        with app.app_context():
+            ok = send_email(to, subject, body)
+            if not ok:
+                app.logger.error("Password reset email failed to send (SendGrid/SMTP).")
+
+    threading.Thread(target=_send, daemon=True).start()
 
     return token
 
