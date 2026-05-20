@@ -200,6 +200,12 @@ def change_user_password(user_id, current_password, new_password, confirm_passwo
 
     user = get_user_by_id(user_id)
 
+    if not user.get("password_hash"):
+        raise ValueError("Sua conta não possui senha local. Use 'Esqueci minha senha' para definir uma.")
+
+    if not current_password:
+        raise ValueError("Informe a senha atual")
+
     if not check_password_hash(user["password_hash"], current_password):
         raise ValueError("Senha atual incorreta")
 
