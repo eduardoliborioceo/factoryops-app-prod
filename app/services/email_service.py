@@ -69,7 +69,8 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
 
             with smtplib.SMTP(
                 config["SMTP_HOST"],
-                config.get("SMTP_PORT", 587)
+                config.get("SMTP_PORT", 587),
+                timeout=15
             ) as server:
 
                 if config.get("SMTP_USE_TLS", True):
