@@ -272,35 +272,58 @@ def register():
 @login_required
 @admin_required
 def admin_email_test():
+    import smtplib
     from flask import jsonify
-    from app.services.email_service import send_email
 
     config = current_app.config
-    provider = None
-    if config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM"):
-        provider = "sendgrid"
-    elif config.get("SMTP_HOST"):
-        provider = "smtp"
 
-    if not provider:
+    if config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM"):
+        return jsonify({
+            "ok": False,
+            "provider": "sendgrid",
+            "error": "SENDGRID_API_KEY está definida — remova-a no Railway para usar SMTP."
+        })
+
+    if not config.get("SMTP_HOST"):
         return jsonify({
             "ok": False,
             "provider": None,
-            "error": "Nenhum provider configurado. Defina SENDGRID_API_KEY+SENDGRID_FROM ou SMTP_HOST no Railway."
+            "error": "Nenhum provider configurado. Defina SMTP_HOST no Railway."
         })
 
-    to = current_user.email
+    diag = {
+        "provider": "smtp",
+        "smtp_host": config.get("SMTP_HOST"),
+        "smtp_port": config.get("SMTP_PORT", 587),
+        "smtp_username": config.get("SMTP_USERNAME"),
+        "smtp_from": config.get("SMTP_FROM"),
+        "smtp_use_tls": config.get("SMTP_USE_TLS", True),
+        "smtp_password_set": bool(config.get("SMTP_PASSWORD")),
+        "sent_to": current_user.email,
+    }
+
     try:
-        ok = send_email(
-            to,
-            "Teste de email — FactoryOps",
-            f"Se você recebeu este email, o provider '{provider}' está funcionando corretamente."
-        )
-        if ok:
-            return jsonify({"ok": True, "provider": provider, "sent_to": to})
-        return jsonify({"ok": False, "provider": provider, "error": "send_email retornou False — verifique os logs do Railway para o erro detalhado."})
+        from email.message import EmailMessage
+        msg = EmailMessage()
+        msg["From"] = config.get("SMTP_FROM") or config.get("SMTP_USERNAME") or ""
+        msg["To"] = current_user.email
+        msg["Subject"] = "Teste de email — FactoryOps"
+        msg.set_content("Se você recebeu este email, o SMTP está funcionando corretamente.")
+
+        with smtplib.SMTP(config["SMTP_HOST"], config.get("SMTP_PORT", 587), timeout=15) as server:
+            if config.get("SMTP_USE_TLS", True):
+                server.starttls()
+            if config.get("SMTP_USERNAME"):
+                server.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
+            server.send_message(msg)
+
+        diag["ok"] = True
+        return jsonify(diag)
+
     except Exception as e:
-        return jsonify({"ok": False, "provider": provider, "error": str(e)})
+        diag["ok"] = False
+        diag["error"] = str(e)
+        return jsonify(diag)
 
 
 @bp.route("/admin/users")
