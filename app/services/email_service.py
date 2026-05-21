@@ -7,15 +7,10 @@ from email.message import EmailMessage
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
     """
-    Serviço centralizado de envio de email.
-
-    Estratégia:
-    1) Se SENDGRID_API_KEY + SENDGRID_FROM estiverem configurados -> usa SendGrid
-    2) Caso contrário -> tenta SMTP
-    3) Nunca quebra fluxo de recuperação de senha (retorna True/False e loga erro)
-
-    Observação:
-    - body é enviado como plain text (suficiente para reset de senha)
+    Estratégia de providers (em ordem de prioridade):
+    1) Resend API  — usa HTTPS, funciona no Railway
+    2) SendGrid    — usa HTTPS, funciona no Railway
+    3) SMTP        — bloqueado pelo Railway (Network unreachable)
     """
 
     config = current_app.config
@@ -25,6 +20,39 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
     if not to_email or not subject:
         current_app.logger.warning("Email not sent: missing recipient or subject.")
         return False
+
+    # -----------------------
+    # Resend (recomendado)
+    # -----------------------
+    if config.get("RESEND_API_KEY") and config.get("RESEND_FROM"):
+        try:
+            import requests as http_client
+            payload = {
+                "from": config["RESEND_FROM"],
+                "to": [to_email],
+                "subject": subject,
+                "text": body or "",
+            }
+            reply_to = config.get("RESEND_REPLY_TO")
+            if reply_to:
+                payload["reply_to"] = reply_to
+
+            response = http_client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {config['RESEND_API_KEY']}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=15,
+            )
+            if response.status_code in (200, 201):
+                return True
+            current_app.logger.error(f"Resend error: {response.status_code} {response.text}")
+            return False
+        except Exception as e:
+            current_app.logger.error(f"Resend error: {e}")
+            return False
 
     # -----------------------
     # SendGrid

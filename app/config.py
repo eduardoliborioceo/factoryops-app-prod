@@ -37,6 +37,10 @@ class Config:
     SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
     SMTP_FROM = os.getenv("SMTP_FROM")
 
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+    RESEND_FROM = os.getenv("RESEND_FROM")
+    RESEND_REPLY_TO = os.getenv("RESEND_REPLY_TO")
+
     SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
     SENDGRID_FROM = os.getenv("SENDGRID_FROM")
     SENDGRID_SANDBOX_MODE = os.getenv("SENDGRID_SANDBOX_MODE", "false").lower() == "true"

@@ -277,53 +277,55 @@ def admin_email_test():
 
     config = current_app.config
 
-    if config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM"):
-        return jsonify({
-            "ok": False,
-            "provider": "sendgrid",
-            "error": "SENDGRID_API_KEY está definida — remova-a no Railway para usar SMTP."
-        })
-
-    if not config.get("SMTP_HOST"):
-        return jsonify({
-            "ok": False,
-            "provider": None,
-            "error": "Nenhum provider configurado. Defina SMTP_HOST no Railway."
-        })
-
     diag = {
-        "provider": "smtp",
-        "smtp_host": config.get("SMTP_HOST"),
-        "smtp_port": config.get("SMTP_PORT", 587),
-        "smtp_username": config.get("SMTP_USERNAME"),
-        "smtp_from": config.get("SMTP_FROM"),
-        "smtp_use_tls": config.get("SMTP_USE_TLS", True),
-        "smtp_password_set": bool(config.get("SMTP_PASSWORD")),
+        "resend_configured": bool(config.get("RESEND_API_KEY") and config.get("RESEND_FROM")),
+        "sendgrid_configured": bool(config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM")),
+        "smtp_configured": bool(config.get("SMTP_HOST")),
+        "resend_from": config.get("RESEND_FROM"),
         "sent_to": current_user.email,
     }
 
-    try:
-        from email.message import EmailMessage
-        msg = EmailMessage()
-        msg["From"] = config.get("SMTP_FROM") or config.get("SMTP_USERNAME") or ""
-        msg["To"] = current_user.email
-        msg["Subject"] = "Teste de email — FactoryOps"
-        msg.set_content("Se você recebeu este email, o SMTP está funcionando corretamente.")
+    if config.get("RESEND_API_KEY") and config.get("RESEND_FROM"):
+        try:
+            import requests as http_client
+            response = http_client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {config['RESEND_API_KEY']}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": config["RESEND_FROM"],
+                    "to": [current_user.email],
+                    "subject": "Teste de email — FactoryOps",
+                    "text": "Se você recebeu este email, o Resend está funcionando.",
+                },
+                timeout=15,
+            )
+            if response.status_code in (200, 201):
+                diag["ok"] = True
+                diag["provider"] = "resend"
+                return jsonify(diag)
+            diag["ok"] = False
+            diag["provider"] = "resend"
+            diag["error"] = f"HTTP {response.status_code}: {response.text}"
+            return jsonify(diag)
+        except Exception as e:
+            diag["ok"] = False
+            diag["provider"] = "resend"
+            diag["error"] = str(e)
+            return jsonify(diag)
 
-        with smtplib.SMTP(config["SMTP_HOST"], config.get("SMTP_PORT", 587), timeout=15) as server:
-            if config.get("SMTP_USE_TLS", True):
-                server.starttls()
-            if config.get("SMTP_USERNAME"):
-                server.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
-            server.send_message(msg)
-
-        diag["ok"] = True
-        return jsonify(diag)
-
-    except Exception as e:
+    if not config.get("SMTP_HOST") and not (config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM")):
         diag["ok"] = False
-        diag["error"] = str(e)
+        diag["provider"] = None
+        diag["error"] = "Nenhum provider configurado. Defina RESEND_API_KEY + RESEND_FROM no Railway."
         return jsonify(diag)
+
+    diag["ok"] = False
+    diag["provider"] = "smtp" if config.get("SMTP_HOST") else "sendgrid"
+    diag["error"] = "Railway bloqueia SMTP (Network unreachable). Use Resend: defina RESEND_API_KEY + RESEND_FROM."
+    return jsonify(diag)
 
 
 @bp.route("/admin/users")
