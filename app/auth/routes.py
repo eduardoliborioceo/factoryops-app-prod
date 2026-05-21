@@ -272,58 +272,45 @@ def register():
 @login_required
 @admin_required
 def admin_email_test():
-    import smtplib
     from flask import jsonify
+    import requests as http_client
 
     config = current_app.config
 
-    if config.get("SENDGRID_API_KEY") and config.get("SENDGRID_FROM"):
-        return jsonify({
-            "ok": False,
-            "provider": "sendgrid",
-            "error": "SENDGRID_API_KEY está definida — remova-a no Railway para usar SMTP."
-        })
-
-    if not config.get("SMTP_HOST"):
+    if not (config.get("BREVO_API_KEY") and config.get("BREVO_FROM")):
         return jsonify({
             "ok": False,
             "provider": None,
-            "error": "Nenhum provider configurado. Defina SMTP_HOST no Railway."
+            "error": "Defina BREVO_API_KEY e BREVO_FROM no Railway.",
+            "brevo_api_key_set": bool(config.get("BREVO_API_KEY")),
+            "brevo_from_set": bool(config.get("BREVO_FROM")),
         })
 
-    diag = {
-        "provider": "smtp",
-        "smtp_host": config.get("SMTP_HOST"),
-        "smtp_port": config.get("SMTP_PORT", 587),
-        "smtp_username": config.get("SMTP_USERNAME"),
-        "smtp_from": config.get("SMTP_FROM"),
-        "smtp_use_tls": config.get("SMTP_USE_TLS", True),
-        "smtp_password_set": bool(config.get("SMTP_PASSWORD")),
-        "sent_to": current_user.email,
-    }
-
     try:
-        from email.message import EmailMessage
-        msg = EmailMessage()
-        msg["From"] = config.get("SMTP_FROM") or config.get("SMTP_USERNAME") or ""
-        msg["To"] = current_user.email
-        msg["Subject"] = "Teste de email — FactoryOps"
-        msg.set_content("Se você recebeu este email, o SMTP está funcionando corretamente.")
-
-        with smtplib.SMTP(config["SMTP_HOST"], config.get("SMTP_PORT", 587), timeout=15) as server:
-            if config.get("SMTP_USE_TLS", True):
-                server.starttls()
-            if config.get("SMTP_USERNAME"):
-                server.login(config["SMTP_USERNAME"], config["SMTP_PASSWORD"])
-            server.send_message(msg)
-
-        diag["ok"] = True
-        return jsonify(diag)
-
+        response = http_client.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": config["BREVO_API_KEY"],
+                "Content-Type": "application/json",
+            },
+            json={
+                "sender": {"email": config["BREVO_FROM"], "name": "FactoryOps"},
+                "to": [{"email": current_user.email}],
+                "subject": "Teste de email — FactoryOps",
+                "textContent": "Se você recebeu este email, o Brevo está funcionando corretamente.",
+            },
+            timeout=15,
+        )
+        if response.status_code in (200, 201):
+            return jsonify({"ok": True, "provider": "brevo", "sent_to": current_user.email})
+        return jsonify({
+            "ok": False,
+            "provider": "brevo",
+            "http_status": response.status_code,
+            "error": response.text,
+        })
     except Exception as e:
-        diag["ok"] = False
-        diag["error"] = str(e)
-        return jsonify(diag)
+        return jsonify({"ok": False, "provider": "brevo", "error": str(e)})
 
 
 @bp.route("/admin/users")
