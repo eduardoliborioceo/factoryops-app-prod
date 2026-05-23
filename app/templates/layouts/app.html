@@ -51,7 +51,7 @@
   'logistica_resumo','logistica_entregas','logistica_conferencia_material'
 ] %}
 {% set _config_menus = [
-  'config_turnos','config_linhas','config_paradas','config_manual'
+  'config_turnos','config_linhas','config_paradas','config_manual','admin_sync'
 ] %}
 {% set _sup_menus = [
   'suporte_centro_conhecimento','suporte_ouvidoria','suporte_especializado'
@@ -352,6 +352,10 @@
             <a href="{{ url_for('pages.config_paradas') }}"
                class="{% if active_menu == 'config_paradas' %}active{% endif %}">
               <i class="bi bi-pause-circle"></i> Paradas de Linha
+            </a>
+            <a href="{{ url_for('pages.admin_sync') }}"
+               class="{% if active_menu == 'admin_sync' %}active{% endif %}">
+              <i class="bi bi-arrow-repeat"></i> Sync Automático
             </a>
             <a href="{{ url_for('pages.config_manual') }}"
                class="{% if active_menu == 'config_manual' %}active{% endif %}">
