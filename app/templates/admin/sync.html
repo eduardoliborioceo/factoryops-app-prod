@@ -1,0 +1,198 @@
+{% extends "layouts/app.html" %}
+{% block title %}Sincronização Automática{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Admin</span>
+    <h1 class="page-header-name">Sincronização Automática</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="row g-4 mb-4">
+
+    <div class="col-lg-4">
+      <div class="card p-4 h-100" style="border-radius:12px;">
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <div class="stat-icon-{% if habilitado %}success{% else %}slate{% endif %}" style="width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-{% if habilitado %}arrow-repeat{% else %}pause-circle{% endif %} fs-5 {% if habilitado %}text-success{% else %}text-muted{% endif %}"></i>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Status</div>
+            <div class="fw-bold fs-5 {% if habilitado %}text-success{% else %}text-muted{% endif %}">
+              {% if habilitado %}Automático ativo{% else %}Somente manual{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <p class="text-muted mb-4" style="font-size:.85rem;">
+          {% if habilitado %}
+            O sincronizador está rodando no PC da fábrica e enviando dados a cada 30 minutos, das 06:30 às 04:30 (horário de Manaus).
+          {% else %}
+            A sincronização automática está desabilitada. Os dados serão importados apenas manualmente pelas páginas de Produção Coletada e MES.
+          {% endif %}
+        </p>
+
+        <form method="post" action="{{ url_for('pages.admin_sync') }}">
+          <input type="hidden" name="action" value="toggle">
+          <button type="submit" class="btn w-100 {% if habilitado %}btn-outline-danger{% else %}btn-success{% endif %}"
+                  style="border-radius:8px;font-weight:600;"
+                  onclick="return confirm('{% if habilitado %}Desabilitar a sincronização automática?{% else %}Habilitar a sincronização automática?{% endif %}')">
+            <i class="bi bi-{% if habilitado %}pause-circle{% else %}play-circle{% endif %} me-2"></i>
+            {% if habilitado %}Desabilitar automático{% else %}Habilitar automático{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="row g-3 h-100">
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="stat-icon-success"><i class="bi bi-check-circle"></i></div>
+              <div>
+                <div class="stat-value">{{ resumo.total_sucesso or 0 }}</div>
+                <div class="stat-label">Sucesso (7 dias)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="stat-icon-blue"><i class="bi bi-x-circle"></i></div>
+              <div>
+                <div class="stat-value">{{ resumo.total_erro or 0 }}</div>
+                <div class="stat-label">Erros (7 dias)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="stat-card">
+            <div class="d-flex align-items-center gap-3">
+              <div class="stat-icon-slate"><i class="bi bi-skip-forward"></i></div>
+              <div>
+                <div class="stat-value">{{ resumo.total_skip or 0 }}</div>
+                <div class="stat-label">Ignorados (7 dias)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card p-3" style="border-radius:12px;">
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <div class="text-muted mb-1" style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Última execução</div>
+                <div class="fw-600" style="font-size:.9rem;">
+                  {{ resumo.ultima_execucao | fmt_local if resumo.ultima_execucao else '—' }}
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <div class="text-muted mb-1" style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Último sucesso</div>
+                <div class="fw-600" style="font-size:.9rem;">
+                  {{ resumo.ultimo_sucesso | fmt_local if resumo.ultimo_sucesso else '—' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card" style="border-radius:12px;">
+    <div class="card-body p-0">
+      <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+        <h6 class="fw-bold mb-0">Histórico de Execuções</h6>
+        <span class="text-muted" style="font-size:.8rem;">últimas 50 entradas</span>
+      </div>
+
+      {% if historico %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Data / Hora</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Tipo</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Status</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Buscados</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Salvos</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Erros</th>
+              <th style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;font-weight:700;background:#f8fafc;color:var(--text-muted);">Mensagem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in historico %}
+            <tr>
+              <td style="font-size:.875rem;padding:10px 16px;white-space:nowrap;">
+                {{ h.executado_em | fmt_local }}
+              </td>
+              <td style="font-size:.875rem;padding:10px 16px;">
+                <span class="badge {% if h.tipo == 'coletada' %}bg-primary{% else %}bg-secondary{% endif %} bg-opacity-10 {% if h.tipo == 'coletada' %}text-primary{% else %}text-secondary{% endif %}" style="font-weight:600;">
+                  {{ h.tipo | upper }}
+                </span>
+              </td>
+              <td style="padding:10px 16px;">
+                {% if h.status == 'done' %}
+                  <span class="badge bg-success bg-opacity-10 text-success" style="font-weight:600;">
+                    <i class="bi bi-check-circle me-1"></i>OK
+                  </span>
+                {% elif h.status == 'error' %}
+                  <span class="badge bg-danger bg-opacity-10 text-danger" style="font-weight:600;">
+                    <i class="bi bi-x-circle me-1"></i>Erro
+                  </span>
+                {% elif h.status == 'skip' %}
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-weight:600;">
+                    <i class="bi bi-skip-forward me-1"></i>Skip
+                  </span>
+                {% else %}
+                  <span class="badge bg-warning bg-opacity-10 text-warning" style="font-weight:600;">{{ h.status }}</span>
+                {% endif %}
+              </td>
+              <td style="font-size:.875rem;padding:10px 16px;text-align:right;">{{ h.registros_buscados }}</td>
+              <td style="font-size:.875rem;padding:10px 16px;text-align:right;color:var(--success-color);font-weight:600;">{{ h.salvos }}</td>
+              <td style="font-size:.875rem;padding:10px 16px;text-align:right;{% if h.erros > 0 %}color:#dc3545;font-weight:600;{% endif %}">{{ h.erros }}</td>
+              <td style="font-size:.8rem;padding:10px 16px;color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ h.mensagem or '—' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-clock-history fs-1 d-block mb-3 opacity-25"></i>
+        <p class="mb-0">Nenhuma execução registrada ainda.</p>
+        <p class="mb-0" style="font-size:.85rem;">O histórico será preenchido conforme o sincronizador executa.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
