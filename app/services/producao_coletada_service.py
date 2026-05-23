@@ -51,12 +51,14 @@ def iniciar_importacao(conteudo_bytes: bytes) -> str:
         registros = json.loads(conteudo_bytes.decode("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
         raise ValueError(f"Arquivo inválido: {e}")
+    return iniciar_importacao_lista(registros)
 
+
+def iniciar_importacao_lista(registros: list) -> str:
     if not isinstance(registros, list):
-        raise ValueError("O arquivo deve conter uma lista JSON de registros.")
-
+        raise ValueError("O payload deve ser uma lista JSON de registros.")
     if not registros:
-        raise ValueError("O arquivo está vazio.")
+        raise ValueError("A lista está vazia.")
 
     app = current_app._get_current_object()
     job_id = str(uuid.uuid4())

@@ -7,6 +7,7 @@ from app.extensions import login_manager
 
 from app.routes.pages import bp as pages_bp
 from app.routes.api import bp as api_bp
+from app.routes.sync import bp as sync_bp
 from app.auth.routes import bp as auth_bp
 from app.auth.models import User
 
@@ -181,6 +182,7 @@ def create_app():
 
     app.register_blueprint(pages_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
+    app.register_blueprint(sync_bp, url_prefix="/api/sync")
     app.register_blueprint(auth_bp, url_prefix="/auth")
 
     _register_error_handlers(app)
