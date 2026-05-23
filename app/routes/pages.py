@@ -696,6 +696,36 @@ def pcp_producao_mes_progresso(job_id):
     return jsonify(svc.status_importacao(job_id))
 
 
+# ─── SYNC ADMIN ──────────────────────────────────────────────────────────────
+
+@bp.route("/admin/sync", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_sync():
+    from flask import request, flash, redirect, url_for
+    from app.services import sync_service as svc
+
+    if request.method == "POST" and request.form.get("action") == "toggle":
+        habilitado = svc.toggle_automatico()
+        flash(
+            "Sincronização automática habilitada." if habilitado else "Sincronização automática desabilitada.",
+            "success",
+        )
+        return redirect(url_for("pages.admin_sync"))
+
+    habilitado = svc.automatico_habilitado()
+    historico  = svc.listar_historico(50)
+    resumo     = svc.resumo()
+
+    return render_template(
+        "admin/sync.html",
+        active_menu="admin_sync",
+        habilitado=habilitado,
+        historico=historico,
+        resumo=resumo,
+    )
+
+
 # ─── CONFIGURAÇÕES DO SISTEMA ────────────────────────────────────────────────
 
 @bp.route("/pcp/turnos")

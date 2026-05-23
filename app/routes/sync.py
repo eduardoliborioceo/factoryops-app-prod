@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.auth.decorators import api_key_required
 from app.services import producao_coletada_service as pc_svc
 from app.services import producao_mes_service as mes_svc
+from app.services import sync_service as svc
 
 bp = Blueprint("sync", __name__)
 
@@ -48,3 +49,27 @@ def sync_producao_mes():
 @api_key_required
 def sync_producao_mes_progresso(job_id):
     return jsonify(mes_svc.status_importacao(job_id))
+
+
+@bp.route("/config")
+@api_key_required
+def sync_config():
+    return jsonify({"automatico_habilitado": svc.automatico_habilitado()})
+
+
+@bp.route("/historico", methods=["POST"])
+@api_key_required
+def sync_registrar_historico():
+    dados = request.get_json(force=True, silent=True) or {}
+    try:
+        svc.registrar_execucao(
+            tipo=dados.get("tipo", "coletada"),
+            status=dados.get("status", "error"),
+            buscados=int(dados.get("registros_buscados", 0)),
+            salvos=int(dados.get("salvos", 0)),
+            erros=int(dados.get("erros", 0)),
+            mensagem=dados.get("mensagem"),
+        )
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
