@@ -286,7 +286,8 @@ def importar_registros_mes(registros: list) -> dict:
                             defeitos         = EXCLUDED.defeitos,
                             meta             = EXCLUDED.meta,
                             observacao       = EXCLUDED.observacao,
-                            coletado_em      = NOW()
+                            coletado_em      = NOW(),
+                            origem           = 'mes'
                     """, (
                         r.get("id"),
                         r.get("data"),
