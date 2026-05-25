@@ -309,8 +309,8 @@ def importar_registros_mes(registros: list) -> dict:
                         r.get("observacao"),
                     ))
         return {"salvos": len(registros), "erros": 0}
-    except Exception:
-        return {"salvos": 0, "erros": len(registros)}
+    except Exception as e:
+        raise RuntimeError(str(e)) from e
 
 
 def importar_registros(registros: list) -> dict:

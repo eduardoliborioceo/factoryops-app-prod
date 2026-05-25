@@ -3,7 +3,6 @@
 # =============================================================
 .env
 .env.*
-!.env.example
 *.key
 *.pem
 *.p12
@@ -80,7 +79,6 @@ instrucoes.md
 coletor.py
 coletor_mes.py
 rodar_coletor.bat
-sincronizador.py
 sincronizador.ini
 manual_plano.md
 
