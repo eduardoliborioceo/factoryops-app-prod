@@ -79,7 +79,9 @@ instrucoes.md
 coletor.py
 coletor_mes.py
 rodar_coletor.bat
+sincronizador.py
 sincronizador.ini
+instalar_tarefa.ps1
 manual_plano.md
 
 # =============================================================
