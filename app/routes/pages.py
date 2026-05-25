@@ -407,6 +407,7 @@ def pcp_etiquetas_manuais():
 def pcp_roteiros():
     from flask import request
     from app.services import roteiro_service as svc
+    from app.repositories import linha_config_repository as lc_repo
 
     cliente = request.args.get("cliente", "")
 
@@ -414,11 +415,13 @@ def pcp_roteiros():
         roteiros          = svc.listar(cliente)
         clientes_roteiros = svc.clientes_roteiros()
         clientes_modelos  = svc.clientes_modelos()
+        linhas_config     = lc_repo.listar_por_filial_setor()
         erro              = None
     except Exception as e:
         roteiros          = []
         clientes_roteiros = []
         clientes_modelos  = []
+        linhas_config     = {}
         erro              = str(e)
 
     return render_template(
@@ -428,6 +431,7 @@ def pcp_roteiros():
         roteiros=roteiros,
         clientes_roteiros=clientes_roteiros,
         clientes_modelos=clientes_modelos,
+        linhas_config=linhas_config,
         erro=erro,
     )
 

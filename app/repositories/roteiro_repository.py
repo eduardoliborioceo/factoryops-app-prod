@@ -1,6 +1,29 @@
 from app.extensions import get_db
 from psycopg.rows import dict_row
 
+_ETAPAS_SQL = """
+    COALESCE(
+        (SELECT json_agg(sub ORDER BY sub.ordem)
+         FROM (
+             SELECT e.id, e.setor, e.ordem, e.observacao,
+                    COALESCE(
+                        (SELECT json_agg(rl ORDER BY rl.ordem)
+                         FROM (
+                             SELECT linha, ordem
+                             FROM roteiro_etapa_linhas
+                             WHERE etapa_id = e.id
+                             ORDER BY ordem
+                         ) rl),
+                        '[]'::json
+                    ) AS linhas
+             FROM roteiro_etapas e
+             WHERE e.roteiro_id = r.id
+             ORDER BY e.ordem
+         ) sub),
+        '[]'::json
+    ) AS etapas
+"""
+
 
 def listar(cliente: str = "") -> list:
     params = []
@@ -13,22 +36,8 @@ def listar(cliente: str = "") -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT
-                    r.id,
-                    r.nome,
-                    r.cliente,
-                    r.descricao,
-                    r.ativo,
-                    r.criado_em,
-                    COALESCE(
-                        (SELECT json_agg(sub ORDER BY sub.ordem)
-                         FROM (
-                             SELECT DISTINCT ON (e.setor) e.setor, e.ordem, e.observacao
-                             FROM roteiro_etapas e
-                             WHERE e.roteiro_id = r.id
-                             ORDER BY e.setor, e.ordem
-                         ) sub),
-                        '[]'::json
-                    ) AS etapas,
+                    r.id, r.nome, r.cliente, r.filial, r.descricao, r.ativo, r.criado_em,
+                    {_ETAPAS_SQL},
                     (SELECT COUNT(*) FROM roteiro_modelos m WHERE m.roteiro_id = r.id) AS total_modelos
                 FROM roteiros r
                 {where}
@@ -40,24 +49,9 @@ def listar(cliente: str = "") -> list:
 def buscar_por_id(roteiro_id: int) -> dict | None:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""
-                SELECT
-                    r.id,
-                    r.nome,
-                    r.cliente,
-                    r.descricao,
-                    r.ativo,
-                    r.criado_em,
-                    COALESCE(
-                        (SELECT json_agg(sub ORDER BY sub.ordem)
-                         FROM (
-                             SELECT DISTINCT ON (e.setor) e.setor, e.ordem, e.observacao
-                             FROM roteiro_etapas e
-                             WHERE e.roteiro_id = r.id
-                             ORDER BY e.setor, e.ordem
-                         ) sub),
-                        '[]'::json
-                    ) AS etapas
+            cur.execute(f"""
+                SELECT r.id, r.nome, r.cliente, r.filial, r.descricao, r.ativo, r.criado_em,
+                       {_ETAPAS_SQL}
                 FROM roteiros r
                 WHERE r.id = %s
             """, (roteiro_id,))
@@ -68,8 +62,7 @@ def listar_clientes() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT DISTINCT cliente
-                FROM roteiros
+                SELECT DISTINCT cliente FROM roteiros
                 WHERE cliente IS NOT NULL AND cliente <> ''
                 ORDER BY cliente
             """)
@@ -80,8 +73,7 @@ def listar_clientes_modelos() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT DISTINCT cliente
-                FROM modelos
+                SELECT DISTINCT cliente FROM modelos
                 WHERE cliente IS NOT NULL AND cliente <> ''
                 ORDER BY cliente
             """)
@@ -92,8 +84,7 @@ def listar_codigos_por_cliente(cliente: str) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT DISTINCT codigo
-                FROM modelos
+                SELECT DISTINCT codigo FROM modelos
                 WHERE cliente = %s
                 ORDER BY codigo
             """, (cliente,))
@@ -104,12 +95,11 @@ def inserir(dados: dict) -> int:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                INSERT INTO roteiros (nome, cliente, descricao)
-                VALUES (%s, %s, %s)
+                INSERT INTO roteiros (nome, cliente, filial, descricao)
+                VALUES (%s, %s, %s, %s)
                 RETURNING id
-            """, (dados["nome"], dados["cliente"], dados.get("descricao") or None))
+            """, (dados["nome"], dados["cliente"], dados.get("filial") or "VTE", dados.get("descricao") or None))
             roteiro_id = cur.fetchone()["id"]
-
             _salvar_etapas(cur, roteiro_id, dados.get("etapas", []))
             return roteiro_id
 
@@ -119,10 +109,9 @@ def atualizar(roteiro_id: int, dados: dict) -> None:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 UPDATE roteiros
-                SET nome = %s, cliente = %s, descricao = %s
+                SET nome = %s, cliente = %s, filial = %s, descricao = %s
                 WHERE id = %s
-            """, (dados["nome"], dados["cliente"], dados.get("descricao") or None, roteiro_id))
-
+            """, (dados["nome"], dados["cliente"], dados.get("filial") or "VTE", dados.get("descricao") or None, roteiro_id))
             cur.execute("DELETE FROM roteiro_etapas WHERE roteiro_id = %s", (roteiro_id,))
             _salvar_etapas(cur, roteiro_id, dados.get("etapas", []))
 
@@ -188,7 +177,15 @@ def _salvar_etapas(cur, roteiro_id: int, etapas: list) -> None:
         cur.execute("""
             INSERT INTO roteiro_etapas (roteiro_id, setor, ordem, observacao)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (roteiro_id, setor) DO UPDATE
-                SET ordem = EXCLUDED.ordem,
-                    observacao = EXCLUDED.observacao
+            RETURNING id
         """, (roteiro_id, setor, i, etapa.get("observacao") or None))
+        etapa_id = cur.fetchone()["id"]
+
+        for j, linha_item in enumerate(etapa.get("linhas") or [], start=1):
+            linha_nome = (linha_item.get("linha") or "").strip()
+            if not linha_nome:
+                continue
+            cur.execute("""
+                INSERT INTO roteiro_etapa_linhas (etapa_id, linha, ordem)
+                VALUES (%s, %s, %s)
+            """, (etapa_id, linha_nome, j))

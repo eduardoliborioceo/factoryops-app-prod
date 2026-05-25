@@ -28,7 +28,8 @@
      data-url-vincular-tpl="{{ url_for('pages.pcp_roteiros_vincular_modelo', roteiro_id=0) }}"
      data-url-desvincular-tpl="{{ url_for('pages.pcp_roteiros_desvincular_modelo', roteiro_id=0) }}"
      data-url-codigos-tpl="{{ url_for('pages.pcp_roteiros_codigos_cliente', roteiro_id=0) }}"
-     data-clientes-modelos='{{ clientes_modelos | tojson }}'>
+     data-clientes-modelos='{{ clientes_modelos | tojson }}'
+     data-linhas-config='{{ linhas_config | tojson }}'>
 
   <div id="alertArea"></div>
 
@@ -66,6 +67,8 @@
   <!-- KPIs -->
   {% set total_roteiros = roteiros | length %}
   {% set clientes_distintos = roteiros | map(attribute='cliente') | unique | list | length %}
+  {% set total_vte = roteiros | selectattr('filial', 'equalto', 'VTE') | list | length %}
+  {% set total_vtt = roteiros | selectattr('filial', 'equalto', 'VTT') | list | length %}
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
       <div class="stat-card">
@@ -79,6 +82,20 @@
         <div class="stat-icon-success"><i class="bi bi-building"></i></div>
         <div class="stat-value">{{ clientes_distintos }}</div>
         <div class="stat-label">Clientes</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-primary"><i class="bi bi-building-fill"></i></div>
+        <div class="stat-value">{{ total_vte }}</div>
+        <div class="stat-label">Filial VTE</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-icon-success"><i class="bi bi-building"></i></div>
+        <div class="stat-value">{{ total_vtt }}</div>
+        <div class="stat-label">Filial VTT</div>
       </div>
     </div>
   </div>
@@ -108,6 +125,8 @@
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-diagram-3 text-primary" style="font-size:0.9rem;"></i>
             <span class="fw-bold" style="font-size:0.9rem;">{{ r.nome }}</span>
+            <span class="badge {% if r.filial == 'VTT' %}bg-success{% else %}bg-primary{% endif %}"
+                  style="font-size:0.65rem;padding:2px 6px;">{{ r.filial or 'VTE' }}</span>
           </div>
           <div class="d-flex gap-1">
             <button class="btn btn-outline-primary btn-sm" style="border-radius:6px;padding:2px 7px;font-size:0.72rem;"
@@ -132,13 +151,20 @@
             <div class="fw-semibold mb-1" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);">
               Etapas de produção
             </div>
-            {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger','VTT':'info'} %}
+            {% set scor = {'PTH':'primary','IM':'warning','SMD':'success','PA':'danger'} %}
             {% if r.etapas %}
             <div class="d-flex align-items-center flex-wrap gap-1">
               {% for e in r.etapas %}
               <span class="badge bg-{{ scor.get(e.setor,'secondary') }}" style="font-size:0.72rem;">
                 {{ e.ordem }}. {{ e.setor }}
               </span>
+              {% set linhas = e.linhas if e.linhas else [] %}
+              {% for l in linhas %}
+              <i class="bi bi-chevron-right text-muted" style="font-size:0.55rem;"></i>
+              <span class="badge" style="font-size:0.65rem;background:rgba(15,23,42,0.07);color:var(--text);border:1px solid var(--border);padding:2px 6px;">
+                {{ l.linha }}
+              </span>
+              {% endfor %}
               {% if not loop.last %}
               <i class="bi bi-arrow-right text-muted" style="font-size:0.65rem;"></i>
               {% endif %}
@@ -199,13 +225,21 @@
         <input type="hidden" id="roteiroId" value="">
 
         <div class="row g-3 mb-3">
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
+            <label class="form-label fw-semibold" style="font-size:0.8rem;">Filial <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" id="roteiroFilial" style="border-radius:8px;"
+                    onchange="onFilialChange()">
+              <option value="VTE">VTE — Principal</option>
+              <option value="VTT">VTT — Filial</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Nome <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm" id="roteiroNome"
-                   placeholder="Ex: Roteiro Padrão, Roteiro SMD-only…" style="border-radius:8px;"
+                   placeholder="Ex: Roteiro Padrão SMD…" style="border-radius:8px;"
                    maxlength="120">
           </div>
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
             <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
             <input type="text" class="form-control form-control-sm" id="roteiroCliente"
                    list="clientesSugestoes" placeholder="Nome do cliente"
@@ -229,13 +263,13 @@
           <hr class="flex-grow-1 m-0">
         </div>
         <div class="mb-2 text-muted" style="font-size:0.78rem;">
-          Adicione os setores em ordem de execução. A sequência importa.
+          Adicione os setores em ordem de execução. Para setores com múltiplas máquinas (ex: PTH), configure as linhas em sequência.
         </div>
 
         <div id="etapasList" class="mb-2"></div>
 
         <div class="d-flex gap-2 flex-wrap mb-1">
-          {% for setor in ['SMD','PTH','IM','PA','VTT'] %}
+          {% for setor in ['SMD','PTH','IM','PA'] %}
           <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;font-size:0.78rem;"
                   onclick="adicionarEtapa('{{ setor }}')">
             <i class="bi bi-plus-circle me-1"></i>{{ setor }}
