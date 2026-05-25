@@ -1,6 +1,7 @@
 from app.repositories import roteiro_repository as repo
 
-_SETORES_VALIDOS = {"SMD", "PTH", "IM", "PA", "VTT"}
+_SETORES_VALIDOS = {"SMD", "PTH", "IM", "PA"}
+_FILIAIS_VALIDAS = {"VTE", "VTT"}
 
 
 def listar(cliente: str = "") -> list:
@@ -71,11 +72,14 @@ def desvincular_modelo(roteiro_id: int, modelo_codigo: str) -> None:
 def _validar(dados: dict) -> None:
     nome = (dados.get("nome") or "").strip()
     cliente = (dados.get("cliente") or "").strip()
+    filial = (dados.get("filial") or "VTE").strip().upper()
 
     if not nome:
         raise ValueError("Nome do roteiro é obrigatório.")
     if not cliente:
         raise ValueError("Cliente é obrigatório.")
+    if filial not in _FILIAIS_VALIDAS:
+        raise ValueError(f"Filial inválida: {filial}.")
 
     etapas = dados.get("etapas") or []
     setores_vistos = set()

@@ -2,15 +2,16 @@
 
 const _root = () => document.getElementById("roteiros-root");
 
-const URL_CRIAR        = () => _root().dataset.urlCriar;
-const URL_EDITAR_TPL   = () => _root().dataset.urlEditarTpl;
-const URL_EXCLUIR_TPL  = () => _root().dataset.urlExcluirTpl;
-const URL_MODELOS_TPL  = () => _root().dataset.urlModelosTpl;
-const URL_VINCULAR_TPL = () => _root().dataset.urlVincularTpl;
+const URL_CRIAR           = () => _root().dataset.urlCriar;
+const URL_EDITAR_TPL      = () => _root().dataset.urlEditarTpl;
+const URL_EXCLUIR_TPL     = () => _root().dataset.urlExcluirTpl;
+const URL_MODELOS_TPL     = () => _root().dataset.urlModelosTpl;
+const URL_VINCULAR_TPL    = () => _root().dataset.urlVincularTpl;
 const URL_DESVINCULAR_TPL = () => _root().dataset.urlDesvincularTpl;
-const URL_CODIGOS_TPL  = () => _root().dataset.urlCodigosTpl;
+const URL_CODIGOS_TPL     = () => _root().dataset.urlCodigosTpl;
 
 const CLIENTES_MODELOS = () => JSON.parse(_root().dataset.clientesModelos || "[]");
+const LINHAS_CONFIG    = () => JSON.parse(_root().dataset.linhasConfig    || "{}");
 
 function _url(tpl, id) {
   return tpl.replace("/0/", `/${id}/`).replace("/0", `/${id}`);
@@ -30,11 +31,21 @@ function mostrarAlerta(tipo, msg) {
   setTimeout(() => div.remove(), 5000);
 }
 
-// ─── Etapas (modal criar/editar) ─────────────────────────────────────────────
+// ─── Filial ───────────────────────────────────────────────────────────────────
+function _getFilial() {
+  return document.getElementById("roteiroFilial")?.value || "VTE";
+}
+
+function onFilialChange() {
+  _limparEtapas();
+}
+
+// ─── Cores por setor ──────────────────────────────────────────────────────────
 const _SETOR_CORES = {
-  SMD: "success", PTH: "primary", IM: "warning", PA: "danger", VTT: "info"
+  SMD: "success", PTH: "primary", IM: "warning", PA: "danger"
 };
 
+// ─── Etapas (modal criar/editar) ─────────────────────────────────────────────
 function adicionarEtapa(setor) {
   const list = document.getElementById("etapasList");
   const existente = list.querySelector(`[data-setor="${setor}"]`);
@@ -44,23 +55,54 @@ function adicionarEtapa(setor) {
     return;
   }
 
-  const cor = _SETOR_CORES[setor] || "secondary";
-  const ordem = list.children.length + 1;
+  const filial = _getFilial();
+  const cor    = _SETOR_CORES[setor] || "secondary";
+  const ordem  = list.children.length + 1;
+
+  const linhasDisp = (LINHAS_CONFIG()[filial] || {})[setor] || [];
 
   const div = document.createElement("div");
-  div.className = "d-flex align-items-center gap-2 mb-2 etapa-item";
+  div.className = "mb-2 etapa-item border rounded p-2";
   div.dataset.setor = setor;
+  div.style.cssText = "border-color:var(--border) !important;border-radius:8px !important;";
+
+  let linhasHTML = "";
+  if (linhasDisp.length > 0) {
+    const btns = linhasDisp.map(l =>
+      `<button type="button"
+               class="btn btn-outline-secondary btn-sm linha-disp-btn"
+               style="border-radius:6px;font-size:0.72rem;padding:2px 8px;"
+               data-linha="${l.linha}"
+               onclick="adicionarLinha(this, '${l.linha.replace(/'/g,"\\'")}')">
+         <i class="bi bi-plus-circle me-1"></i>${l.linha}
+       </button>`
+    ).join("");
+
+    linhasHTML = `
+      <div class="mt-2 pt-2" style="border-top:1px dashed var(--border);">
+        <div class="fw-semibold mb-1" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);">
+          <i class="bi bi-diagram-2 me-1"></i>Linhas / Máquinas (sequência de passagem)
+        </div>
+        <div class="linhas-disp d-flex flex-wrap gap-1 mb-2">${btns}</div>
+        <div class="linhas-selecionadas d-flex flex-wrap align-items-center gap-1"></div>
+      </div>`;
+  }
+
   div.innerHTML = `
-    <span class="badge bg-${cor}" style="font-size:0.78rem;min-width:42px;">${setor}</span>
-    <span class="text-muted small etapa-ordem">#${ordem}</span>
-    <input type="text" class="form-control form-control-sm flex-grow-1 etapa-obs"
-           placeholder="Observação (opcional)" style="border-radius:6px;font-size:0.78rem;"
-           maxlength="200">
-    <button type="button" class="btn btn-outline-danger btn-sm" style="border-radius:6px;padding:2px 6px;"
-            onclick="removerEtapa(this)">
-      <i class="bi bi-x-lg"></i>
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-${cor}" style="font-size:0.78rem;min-width:42px;">${setor}</span>
+      <span class="text-muted small etapa-ordem">#${ordem}</span>
+      <input type="text" class="form-control form-control-sm flex-grow-1 etapa-obs"
+             placeholder="Observação (opcional)" style="border-radius:6px;font-size:0.78rem;"
+             maxlength="200">
+      <button type="button" class="btn btn-outline-danger btn-sm" style="border-radius:6px;padding:2px 6px;"
+              onclick="removerEtapa(this)">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    ${linhasHTML}
   `;
+
   list.appendChild(div);
   _atualizarOrdens();
 }
@@ -77,12 +119,67 @@ function _atualizarOrdens() {
   });
 }
 
+// ─── Linhas dentro de uma etapa ───────────────────────────────────────────────
+function adicionarLinha(btn, linha) {
+  const etapaItem   = btn.closest(".etapa-item");
+  const linhasSel   = etapaItem.querySelector(".linhas-selecionadas");
+  if (!linhasSel) return;
+
+  if (linhasSel.querySelector(`[data-linha="${linha}"]`)) {
+    btn.classList.add("btn-warning");
+    setTimeout(() => btn.classList.remove("btn-warning"), 700);
+    return;
+  }
+
+  const ordem = linhasSel.querySelectorAll("[data-linha]").length + 1;
+
+  const span = document.createElement("span");
+  span.className = "d-inline-flex align-items-center gap-1 badge";
+  span.dataset.linha = linha;
+  span.style.cssText =
+    "background:rgba(13,110,253,0.08);color:var(--primary);" +
+    "border:1px solid rgba(13,110,253,0.25);border-radius:6px;" +
+    "font-size:0.72rem;padding:4px 8px;font-weight:600;";
+  span.innerHTML = `
+    <span class="linha-ordem" style="opacity:0.6;">${ordem}.</span>
+    ${linha}
+    <button type="button" onclick="removerLinha(this)"
+            style="background:none;border:none;padding:0;margin:0;line-height:1;cursor:pointer;color:inherit;opacity:0.6;"
+            aria-label="Remover">
+      <i class="bi bi-x-lg" style="font-size:0.6rem;"></i>
+    </button>
+  `;
+  linhasSel.appendChild(span);
+  _atualizarOrdemLinhas(linhasSel);
+}
+
+function removerLinha(btn) {
+  const linhasSel = btn.closest(".linhas-selecionadas");
+  btn.closest("[data-linha]").remove();
+  _atualizarOrdemLinhas(linhasSel);
+}
+
+function _atualizarOrdemLinhas(container) {
+  Array.from(container.querySelectorAll("[data-linha]")).forEach(function(el, i) {
+    const ordemEl = el.querySelector(".linha-ordem");
+    if (ordemEl) ordemEl.textContent = `${i + 1}.`;
+  });
+}
+
+// ─── Coletar/limpar etapas ────────────────────────────────────────────────────
 function _coletarEtapas() {
   return Array.from(document.querySelectorAll("#etapasList .etapa-item")).map(function(item, i) {
+    const linhasSel = item.querySelector(".linhas-selecionadas");
+    const linhas    = linhasSel
+      ? Array.from(linhasSel.querySelectorAll("[data-linha]")).map(function(el, j) {
+          return { linha: el.dataset.linha, ordem: j + 1 };
+        })
+      : [];
     return {
-      setor: item.dataset.setor,
-      ordem: i + 1,
-      observacao: item.querySelector(".etapa-obs").value.trim() || null,
+      setor:      item.dataset.setor,
+      ordem:      i + 1,
+      observacao: item.querySelector(".etapa-obs")?.value.trim() || null,
+      linhas,
     };
   });
 }
@@ -95,11 +192,22 @@ function _carregarEtapas(etapas) {
   _limparEtapas();
   (etapas || []).forEach(function(e) {
     adicionarEtapa(e.setor);
-    const list = document.getElementById("etapasList");
+    const list   = document.getElementById("etapasList");
     const ultimo = list.lastElementChild;
-    if (ultimo && e.observacao) {
-      ultimo.querySelector(".etapa-obs").value = e.observacao;
+    if (!ultimo) return;
+
+    if (e.observacao) {
+      const obsEl = ultimo.querySelector(".etapa-obs");
+      if (obsEl) obsEl.value = e.observacao;
     }
+
+    const linhas = typeof e.linhas === "string" ? JSON.parse(e.linhas) : (e.linhas || []);
+    linhas.forEach(function(l) {
+      const dispBtn = ultimo.querySelector(`.linhas-disp [data-linha="${l.linha}"]`);
+      if (dispBtn) {
+        adicionarLinha(dispBtn, l.linha);
+      }
+    });
   });
 }
 
@@ -117,9 +225,10 @@ function _popularClientesSugestoes() {
 
 // ─── Modal Novo ───────────────────────────────────────────────────────────────
 function abrirModalNovo() {
-  document.getElementById("roteiroId").value = "";
-  document.getElementById("roteiroNome").value = "";
-  document.getElementById("roteiroCliente").value = "";
+  document.getElementById("roteiroId").value       = "";
+  document.getElementById("roteiroFilial").value   = "VTE";
+  document.getElementById("roteiroNome").value     = "";
+  document.getElementById("roteiroCliente").value  = "";
   document.getElementById("roteiroDescricao").value = "";
   _limparEtapas();
   _popularClientesSugestoes();
@@ -132,9 +241,10 @@ function abrirModalNovo() {
 
 // ─── Modal Editar ─────────────────────────────────────────────────────────────
 function abrirModalEditar(id, roteiro) {
-  document.getElementById("roteiroId").value = id;
-  document.getElementById("roteiroNome").value = roteiro.nome || "";
-  document.getElementById("roteiroCliente").value = roteiro.cliente || "";
+  document.getElementById("roteiroId").value        = id;
+  document.getElementById("roteiroFilial").value    = roteiro.filial || "VTE";
+  document.getElementById("roteiroNome").value      = roteiro.nome || "";
+  document.getElementById("roteiroCliente").value   = roteiro.cliente || "";
   document.getElementById("roteiroDescricao").value = roteiro.descricao || "";
   _popularClientesSugestoes();
 
@@ -152,6 +262,7 @@ function abrirModalEditar(id, roteiro) {
 // ─── Salvar (criar ou editar) ─────────────────────────────────────────────────
 function salvarRoteiro() {
   const id      = document.getElementById("roteiroId").value;
+  const filial  = document.getElementById("roteiroFilial").value;
   const nome    = document.getElementById("roteiroNome").value.trim();
   const cliente = document.getElementById("roteiroCliente").value.trim();
   const descr   = document.getElementById("roteiroDescricao").value.trim();
@@ -168,7 +279,7 @@ function salvarRoteiro() {
   fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nome, cliente, descricao: descr || null, etapas }),
+    body: JSON.stringify({ filial, nome, cliente, descricao: descr || null, etapas }),
   })
     .then(r => r.json())
     .then(function(data) {
@@ -210,26 +321,6 @@ function abrirModalModelos(roteiroId, nome, cliente) {
   _carregarModelosVinculados(roteiroId);
 
   bootstrap.Modal.getOrCreateInstance(document.getElementById("modalModelos")).show();
-}
-
-function _carregarCodigosCliente(roteiroId) {
-  const sel = document.getElementById("novoModeloCodigo");
-  sel.innerHTML = '<option value="">Carregando…</option>';
-
-  fetch(_url(URL_CODIGOS_TPL(), roteiroId))
-    .then(r => r.json())
-    .then(function(data) {
-      sel.innerHTML = '<option value="">Selecione um modelo…</option>';
-      (data.codigos || []).forEach(function(c) {
-        const opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        sel.appendChild(opt);
-      });
-    })
-    .catch(function() {
-      sel.innerHTML = '<option value="">Erro ao carregar</option>';
-    });
 }
 
 function _carregarModelosVinculados(roteiroId) {
