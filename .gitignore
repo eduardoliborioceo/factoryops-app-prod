@@ -83,6 +83,7 @@ sincronizador.py
 sincronizador.ini
 instalar_tarefa.ps1
 manual_plano.md
+debug_mes.py
 
 # =============================================================
 # CLAUDE.md is local-only (not shared via repo)
