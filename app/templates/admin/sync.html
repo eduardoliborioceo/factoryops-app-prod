@@ -153,7 +153,7 @@
               </td>
               <td style="font-size:.875rem;padding:10px 16px;">
                 <span class="badge {% if h.tipo == 'coletada' %}bg-primary{% else %}bg-secondary{% endif %} bg-opacity-10 {% if h.tipo == 'coletada' %}text-primary{% else %}text-secondary{% endif %}" style="font-weight:600;">
-                  {{ h.tipo | upper }}
+                  {% if h.tipo == 'coletada' %}INPUT{% elif h.tipo == 'mes' %}MES{% else %}{{ h.tipo | upper }}{% endif %}
                 </span>
               </td>
               <td style="padding:10px 16px;">
