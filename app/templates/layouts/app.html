@@ -33,11 +33,15 @@
   </script>
 </head>
 
+{% set _func_vte_menus = ['funcionalidades_im_pa','smt_modelos','funcionalidades_pth'] %}
+{% set _func_vtt_menus = ['funcionalidades_vtt'] %}
 {% set _func_menus = [
-  'smt_cadastro','smt_calcular','smt_modelos',
-  'funcionalidades_im_pa','funcionalidades_pth','funcionalidades_vtt',
+  'smt_cadastro','smt_calcular',
+  'funcionalidades_im_pa','smt_modelos','funcionalidades_pth',
+  'funcionalidades_vtt',
   'funcionalidades_resumo_producao','pcp_etiquetas_manuais'
 ] %}
+{% set _prod_smd_menus = ['producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil'] %}
 {% set _prod_menus = [
   'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil','smd_monitor_tv'
 ] %}
@@ -160,22 +164,57 @@
                class="{% if active_menu == 'smt_calcular' %}active{% endif %}">
               <i class="bi bi-calculator"></i> Cálculos
             </a>
-            <a href="{{ url_for('pages.funcionalidades_im_pa') }}"
-               class="{% if active_menu == 'funcionalidades_im_pa' %}active{% endif %}">
-              <i class="bi bi-cpu"></i> IM/PA
-            </a>
-            <a href="{{ url_for('pages.smt_modelos') }}"
-               class="{% if active_menu == 'smt_modelos' %}active{% endif %}">
-              <i class="bi bi-table"></i> SMD
-            </a>
-            <a href="{{ url_for('pages.funcionalidades_pth') }}"
-               class="{% if active_menu == 'funcionalidades_pth' %}active{% endif %}">
-              <i class="bi bi-diagram-3"></i> PTH
-            </a>
-            <a href="{{ url_for('pages.funcionalidades_vtt') }}"
-               class="{% if active_menu == 'funcionalidades_vtt' %}active{% endif %}">
-              <i class="bi bi-arrow-repeat"></i> VTT
-            </a>
+
+            <div class="sidebar-subgroup">
+              <button class="sidebar-subgroup-toggle {% if active_menu in _func_vte_menus %}active{% endif %}"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#nav-func-vte"
+                      aria-expanded="{{ 'true' if active_menu in _func_vte_menus else 'false' }}">
+                <i class="bi bi-building"></i>
+                <span>VTE</span>
+                <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+              </button>
+              <div class="collapse {% if active_menu in _func_vte_menus %}show{% endif %}"
+                   id="nav-func-vte">
+                <div class="sidebar-subgroup-items">
+                  <a href="{{ url_for('pages.funcionalidades_im_pa') }}"
+                     class="{% if active_menu == 'funcionalidades_im_pa' %}active{% endif %}">
+                    <i class="bi bi-cpu"></i> IM / PA
+                  </a>
+                  <a href="{{ url_for('pages.smt_modelos') }}"
+                     class="{% if active_menu == 'smt_modelos' %}active{% endif %}">
+                    <i class="bi bi-table"></i> SMD
+                  </a>
+                  <a href="{{ url_for('pages.funcionalidades_pth') }}"
+                     class="{% if active_menu == 'funcionalidades_pth' %}active{% endif %}">
+                    <i class="bi bi-diagram-3"></i> PTH
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-subgroup">
+              <button class="sidebar-subgroup-toggle {% if active_menu in _func_vtt_menus %}active{% endif %}"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#nav-func-vtt"
+                      aria-expanded="{{ 'true' if active_menu in _func_vtt_menus else 'false' }}">
+                <i class="bi bi-building-fill"></i>
+                <span>VTT</span>
+                <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+              </button>
+              <div class="collapse {% if active_menu in _func_vtt_menus %}show{% endif %}"
+                   id="nav-func-vtt">
+                <div class="sidebar-subgroup-items">
+                  <a href="{{ url_for('pages.funcionalidades_vtt') }}"
+                     class="{% if active_menu == 'funcionalidades_vtt' %}active{% endif %}">
+                    <i class="bi bi-table"></i> SMD
+                  </a>
+                </div>
+              </div>
+            </div>
+
             <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
                class="{% if active_menu == 'funcionalidades_resumo_producao' %}active{% endif %}">
               <i class="bi bi-bar-chart-steps"></i> Resumo de Produção
@@ -184,6 +223,7 @@
                class="{% if active_menu == 'pcp_etiquetas_manuais' %}active{% endif %}">
               <i class="bi bi-tag"></i> Etiquetas Manuais
             </a>
+
           </div>
         </div>
       </div>
@@ -201,22 +241,41 @@
         <div class="collapse {% if active_menu in _prod_menus %}show{% endif %}"
              id="nav-producao">
           <div class="sidebar-group-items">
-            <a href="{{ url_for('pages.producao_medicao_pasta') }}"
-               class="{% if active_menu == 'producao_medicao_pasta' %}active{% endif %}">
-              <i class="bi bi-rulers"></i> Medição Pasta de Solda
-            </a>
-            <a href="{{ url_for('pages.producao_checklist_linha') }}"
-               class="{% if active_menu == 'producao_checklist_linha' %}active{% endif %}">
-              <i class="bi bi-clipboard-check"></i> Checklist de Linha
-            </a>
-            <a href="{{ url_for('pages.producao_limpeza_stencil') }}"
-               class="{% if active_menu == 'producao_limpeza_stencil' %}active{% endif %}">
-              <i class="bi bi-eraser"></i> Limpeza do Stencil
-            </a>
+
+            <div class="sidebar-subgroup">
+              <button class="sidebar-subgroup-toggle {% if active_menu in _prod_smd_menus %}active{% endif %}"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#nav-producao-smd"
+                      aria-expanded="{{ 'true' if active_menu in _prod_smd_menus else 'false' }}">
+                <i class="bi bi-cpu"></i>
+                <span>SMD</span>
+                <i class="bi bi-chevron-down sidebar-chevron ms-auto"></i>
+              </button>
+              <div class="collapse {% if active_menu in _prod_smd_menus %}show{% endif %}"
+                   id="nav-producao-smd">
+                <div class="sidebar-subgroup-items">
+                  <a href="{{ url_for('pages.producao_medicao_pasta') }}"
+                     class="{% if active_menu == 'producao_medicao_pasta' %}active{% endif %}">
+                    <i class="bi bi-rulers"></i> Medição Pasta de Solda
+                  </a>
+                  <a href="{{ url_for('pages.producao_checklist_linha') }}"
+                     class="{% if active_menu == 'producao_checklist_linha' %}active{% endif %}">
+                    <i class="bi bi-clipboard-check"></i> Checklist de Linha
+                  </a>
+                  <a href="{{ url_for('pages.producao_limpeza_stencil') }}"
+                     class="{% if active_menu == 'producao_limpeza_stencil' %}active{% endif %}">
+                    <i class="bi bi-eraser"></i> Limpeza do Stencil
+                  </a>
+                </div>
+              </div>
+            </div>
+
             <a href="{{ url_for('pages.smd_monitor_tv') }}"
                class="{% if active_menu == 'smd_monitor_tv' %}active{% endif %}">
               <i class="bi bi-display"></i> Monitor SMD (TV)
             </a>
+
           </div>
         </div>
       </div>

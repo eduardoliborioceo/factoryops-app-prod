@@ -1002,6 +1002,110 @@ body.fullscreen-mode .content {
 }
 
 /* =========================
+   SIDEBAR — SUBGRUPOS ANINHADOS (VTE, VTT, SMD dentro de Produção)
+========================= */
+.sidebar-subgroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-subgroup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
+  color: var(--sidebar-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+  width: 100%;
+}
+
+.sidebar-subgroup-toggle i:first-child {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-subgroup-toggle:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-subgroup-toggle.active {
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-subgroup-toggle .sidebar-chevron {
+  transition: transform 0.2s ease;
+}
+
+.sidebar-subgroup-toggle[aria-expanded="true"] .sidebar-chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-subgroup-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px 16px;
+}
+
+.sidebar-subgroup-items a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  color: var(--sidebar-text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+.sidebar-subgroup-items a i {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar-subgroup-items a:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-hover);
+}
+
+.sidebar-subgroup-items a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  font-weight: 600;
+}
+
+.sidebar-subgroup-items a.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-active-accent);
+}
+
+/* =========================
    HEADER — DROPDOWN SEM SETA
 ========================= */
 .dropdown-toggle-no-arrow {
