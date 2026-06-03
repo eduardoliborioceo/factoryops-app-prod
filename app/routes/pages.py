@@ -2161,6 +2161,90 @@ def manifest():
     return resp
 
 
+@bp.route("/funcionalidades/sistemas/input", methods=["GET", "POST"])
+@login_required
+def funcionalidades_sistema_input():
+    from flask import request, flash, redirect, url_for
+    from app.services import sistema_input_service as svc
+
+    setor = request.args.get("setor", "")
+    linha = request.args.get("linha", "")
+    turno = request.args.get("turno", "")
+    erro = None
+    sucesso = None
+
+    if request.method == "POST":
+        try:
+            svc.registrar(request.form)
+            sucesso = "Produção registrada com sucesso."
+        except ValueError as e:
+            erro = str(e)
+        except Exception as e:
+            erro = "Erro ao salvar registro. Tente novamente."
+
+    try:
+        filtros = svc.filtros_disponiveis(setor)
+        registros = svc.listar_recentes(setor=setor, linha=linha, turno=turno)
+    except Exception:
+        filtros = {"setores": [], "linhas": [], "turnos": []}
+        registros = []
+
+    return render_template(
+        "funcionalidades/sistema_input.html",
+        active_menu="funcionalidades_sistema_input",
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        filtros=filtros,
+        registros=registros,
+        erro=erro,
+        sucesso=sucesso,
+    )
+
+
+@bp.route("/funcionalidades/sistemas/input/linhas")
+@login_required
+def funcionalidades_sistema_input_linhas():
+    from flask import request, jsonify
+    from app.services import sistema_input_service as svc
+
+    setor = request.args.get("setor", "").strip()
+    try:
+        linhas = svc.linhas_do_setor(setor)
+        return jsonify({"ok": True, "linhas": linhas})
+    except Exception:
+        return jsonify({"ok": False, "linhas": []})
+
+
+@bp.route("/funcionalidades/sistemas/input/modelos")
+@login_required
+def funcionalidades_sistema_input_modelos():
+    from flask import request, jsonify
+    from app.services import sistema_input_service as svc
+
+    termo = request.args.get("q", "").strip()
+    try:
+        modelos = svc.modelos_autocomplete(termo)
+        return jsonify({"ok": True, "modelos": modelos})
+    except Exception:
+        return jsonify({"ok": False, "modelos": []})
+
+
+@bp.route("/funcionalidades/sistemas/input/<int:registro_id>/excluir", methods=["POST"])
+@login_required
+def funcionalidades_sistema_input_excluir(registro_id):
+    from flask import jsonify
+    from app.services import sistema_input_service as svc
+
+    try:
+        svc.excluir(registro_id)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao excluir registro."}), 500
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, send_from_directory, make_response
