@@ -128,6 +128,7 @@ def create_app():
             "APP_THEME_COLOR": app.config.get("APP_THEME_COLOR", "#0f172a"),
             "APP_LANG": app.config.get("APP_LANG", "pt-BR"),
             "APP_VERSION": app.config.get("APP_VERSION", "dev"),
+            "GOOGLE_MAPS_API_KEY": app.config.get("GOOGLE_MAPS_API_KEY") or "",
         }
 
     @app.before_request
