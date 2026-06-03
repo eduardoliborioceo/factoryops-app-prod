@@ -433,6 +433,16 @@
                 <i class="bi bi-plus-circle me-1 text-success"></i>Novo Local
               </p>
               <div class="row g-3">
+                {% if GOOGLE_MAPS_API_KEY %}
+                <div class="col-12">
+                  <label class="form-label fw-semibold" style="font-size:0.8rem;">
+                    <i class="bi bi-search me-1 text-primary"></i>Buscar fábrica pelo nome
+                  </label>
+                  <input type="text" class="form-control form-control-sm" id="inputPlaceSearch"
+                         placeholder="Ex: Samsung Manaus, Foxconn, LG Electronics..." style="border-radius:8px;">
+                  <div class="form-text">Selecione a fábrica para preencher nome e endereço automaticamente.</div>
+                </div>
+                {% endif %}
                 <div class="col-12">
                   <label class="form-label fw-semibold" style="font-size:0.8rem;">Cliente <span class="text-danger">*</span></label>
                   <input type="text" class="form-control form-control-sm" id="inputLocalCliente"
@@ -758,6 +768,8 @@ function limparFormLocal() {
   ["inputLocalCliente", "inputLocalNome", "inputLocalEndereco"].forEach(id => {
     document.getElementById(id).value = "";
   });
+  const searchInput = document.getElementById("inputPlaceSearch");
+  if (searchInput) searchInput.value = "";
   document.getElementById("spanLat").textContent = "—";
   document.getElementById("spanLng").textContent = "—";
   document.getElementById("erroLocalModal").style.display = "none";
@@ -1122,5 +1134,39 @@ function mostrarAlerta(tipo, msg) {
   area.prepend(div);
   setTimeout(() => div.remove(), 4000);
 }
+
+{% if GOOGLE_MAPS_API_KEY %}
+function initGooglePlaces() {
+  const input = document.getElementById("inputPlaceSearch");
+  if (!input || typeof google === "undefined") return;
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ["establishment"],
+    componentRestrictions: { country: "br" },
+    fields: ["name", "formatted_address", "geometry"],
+  });
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place || !place.geometry) return;
+    const nome = document.getElementById("inputLocalNome");
+    const endereco = document.getElementById("inputLocalEndereco");
+    if (nome && !nome.value) nome.value = place.name || "";
+    if (endereco) endereco.value = place.formatted_address || "";
+    const lat = place.geometry.location.lat();
+    const lng = place.geometry.location.lng();
+    if (_mapaLocal) {
+      setPinLocal(lat, lng);
+    } else {
+      _latLocal = lat;
+      _lngLocal = lng;
+    }
+    input.value = "";
+  });
+}
+{% endif %}
 </script>
+{% if GOOGLE_MAPS_API_KEY %}
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places&callback=initGooglePlaces&loading=async">
+</script>
+{% endif %}
 {% endblock %}
