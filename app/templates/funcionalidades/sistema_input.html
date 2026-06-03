@@ -1,0 +1,337 @@
+{% extends "layouts/app.html" %}
+{% block title %}Funcionalidades · Sistema INPUT{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades · Sistemas</span>
+    <h1 class="page-header-name">Sistema INPUT</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if erro %}
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>{{ erro }}</div>
+  </div>
+  {% endif %}
+
+  {% if sucesso %}
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div>{{ sucesso }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Formulário de apontamento -->
+  <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+    <div class="card-body p-4">
+      <h6 class="fw-700 mb-3" style="font-size:0.875rem;color:var(--text);">
+        <i class="bi bi-plus-circle me-2 text-primary"></i>Registrar Produção Manual
+      </h6>
+      <form method="POST" autocomplete="off" id="formInput">
+        <div class="row g-3">
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Data</label>
+            <input type="date" class="form-control form-control-sm" name="data" id="inputData"
+                   value="{{ request.form.get('data', '') }}"
+                   required style="border-radius:8px;">
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
+            <select class="form-select form-select-sm" name="setor" id="inputSetor"
+                    required style="border-radius:8px;">
+              <option value="">Selecione</option>
+              {% for s in filtros.setores %}
+              <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
+            <select class="form-select form-select-sm" name="linha" id="inputLinha"
+                    required style="border-radius:8px;">
+              <option value="">Selecione o setor</option>
+              {% for l in filtros.linhas %}
+              <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Turno</label>
+            <select class="form-select form-select-sm" name="turno" id="inputTurno"
+                    required style="border-radius:8px;">
+              <option value="">Selecione</option>
+              {% for t in filtros.turnos %}
+              <option value="{{ t }}" {% if t == turno %}selected{% endif %}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-12 col-md-4 position-relative">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Modelo</label>
+            <input type="text" class="form-control form-control-sm" name="modelo" id="inputModelo"
+                   placeholder="Digite o código..." required style="border-radius:8px;"
+                   value="{{ request.form.get('modelo', '') }}" autocomplete="off">
+            <div id="modeloSuggestions" class="autocomplete-dropdown d-none"></div>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Fase</label>
+            <select class="form-select form-select-sm" name="fase" id="inputFase" style="border-radius:8px;">
+              <option value="">Auto</option>
+              <option value="SMD" {% if request.form.get('fase') == 'SMD' %}selected{% endif %}>SMD</option>
+              <option value="PTH" {% if request.form.get('fase') == 'PTH' %}selected{% endif %}>PTH</option>
+              <option value="IM/PA" {% if request.form.get('fase') == 'IM/PA' %}selected{% endif %}>IM/PA</option>
+            </select>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Produção</label>
+            <input type="number" class="form-control form-control-sm" name="producao_real"
+                   id="inputProducao" min="0" placeholder="0" required style="border-radius:8px;"
+                   value="{{ request.form.get('producao_real', '') }}">
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Perda</label>
+            <input type="number" class="form-control form-control-sm" name="qtd_perda"
+                   min="0" placeholder="0" style="border-radius:8px;"
+                   value="{{ request.form.get('qtd_perda', '') }}">
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Defeitos</label>
+            <input type="number" class="form-control form-control-sm" name="defeitos"
+                   min="0" placeholder="0" style="border-radius:8px;"
+                   value="{{ request.form.get('defeitos', '') }}">
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Observação</label>
+            <input type="text" class="form-control form-control-sm" name="observacao"
+                   placeholder="Opcional..." style="border-radius:8px;"
+                   value="{{ request.form.get('observacao', '') }}">
+          </div>
+
+          <div class="col-12 col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100" style="border-radius:8px;">
+              <i class="bi bi-check2-circle me-1"></i> Registrar
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabela de registros recentes -->
+  <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+    <div class="card-body p-0">
+      <div class="d-flex align-items-center justify-content-between px-4 py-3"
+           style="border-bottom:1px solid var(--border);">
+        <h6 class="mb-0 fw-700" style="font-size:0.875rem;color:var(--text);">
+          <i class="bi bi-clock-history me-2 text-primary"></i>Registros Manuais Recentes (7 dias)
+        </h6>
+        <form method="GET" class="d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm" name="setor" onchange="this.form.submit()"
+                  style="border-radius:8px;font-size:0.8rem;width:auto;">
+            <option value="">Todos setores</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      {% if registros %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0" style="font-size:0.875rem;">
+          <thead>
+            <tr style="background:rgba(15,23,42,0.04);">
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 16px;border-color:var(--border);">Data</th>
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Setor</th>
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Linha</th>
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Turno</th>
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Modelo</th>
+              <th class="text-end" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Produção</th>
+              <th class="text-end" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Perda</th>
+              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Obs.</th>
+              <th style="padding:10px 16px;border-color:var(--border);"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in registros %}
+            <tr id="row-{{ r.id }}">
+              <td style="padding:10px 16px;border-color:var(--border);">{{ r.data | string | truncate(10, True, '') }}</td>
+              <td style="padding:10px 8px;border-color:var(--border);">
+                <span class="badge" style="background:rgba(13,110,253,0.10);color:#0d6efd;font-size:0.75rem;">{{ r.setor }}</span>
+              </td>
+              <td style="padding:10px 8px;border-color:var(--border);">{{ r.linha or '—' }}</td>
+              <td style="padding:10px 8px;border-color:var(--border);">{{ r.turno or '—' }}</td>
+              <td style="padding:10px 8px;border-color:var(--border);font-weight:600;">{{ r.modelo }}</td>
+              <td class="text-end fw-600" style="padding:10px 8px;border-color:var(--border);color:var(--success-color);">{{ r.producao_real or 0 }}</td>
+              <td class="text-end" style="padding:10px 8px;border-color:var(--border);color:var(--text-muted);">{{ r.qtd_perda or 0 }}</td>
+              <td style="padding:10px 8px;border-color:var(--border);color:var(--text-muted);font-size:0.8rem;">{{ r.observacao or '—' }}</td>
+              <td style="padding:10px 16px;border-color:var(--border);">
+                <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;font-size:0.75rem;padding:3px 8px;"
+                        onclick="excluirRegistro({{ r.id }})">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5" style="color:var(--text-muted);">
+        <i class="bi bi-inbox fs-2 mb-2 d-block"></i>
+        <span style="font-size:0.875rem;">Nenhum registro manual nos últimos 7 dias.</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.10);
+  z-index: 1000;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.1s;
+}
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: rgba(13,110,253,0.07);
+}
+.autocomplete-item .badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const inputSetor = document.getElementById('inputSetor');
+  const inputLinha = document.getElementById('inputLinha');
+  const inputModelo = document.getElementById('inputModelo');
+  const inputFase = document.getElementById('inputFase');
+  const suggestions = document.getElementById('modeloSuggestions');
+  const inputData = document.getElementById('inputData');
+
+  if (!inputData.value) {
+    inputData.value = new Date().toISOString().split('T')[0];
+  }
+
+  inputSetor.addEventListener('change', function () {
+    const setor = this.value;
+    inputLinha.innerHTML = '<option value="">Carregando...</option>';
+    if (!setor) {
+      inputLinha.innerHTML = '<option value="">Selecione o setor</option>';
+      return;
+    }
+    fetch('/funcionalidades/sistemas/input/linhas?setor=' + encodeURIComponent(setor))
+      .then(r => r.json())
+      .then(data => {
+        inputLinha.innerHTML = '<option value="">Selecione</option>';
+        (data.linhas || []).forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l;
+          opt.textContent = l;
+          inputLinha.appendChild(opt);
+        });
+      })
+      .catch(() => { inputLinha.innerHTML = '<option value="">Erro ao carregar</option>'; });
+  });
+
+  let acTimeout = null;
+  inputModelo.addEventListener('input', function () {
+    clearTimeout(acTimeout);
+    const termo = this.value.trim();
+    if (termo.length < 2) { suggestions.classList.add('d-none'); return; }
+    acTimeout = setTimeout(() => {
+      fetch('/funcionalidades/sistemas/input/modelos?q=' + encodeURIComponent(termo))
+        .then(r => r.json())
+        .then(data => {
+          suggestions.innerHTML = '';
+          if (!data.modelos || data.modelos.length === 0) {
+            suggestions.classList.add('d-none');
+            return;
+          }
+          data.modelos.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            div.innerHTML = `<span>${m.codigo}</span><span class="badge bg-secondary">${m.fase || ''}</span>`;
+            div.addEventListener('click', () => {
+              inputModelo.value = m.codigo;
+              if (m.fase) {
+                const opt = Array.from(inputFase.options).find(o => o.value === m.fase);
+                if (opt) inputFase.value = m.fase;
+              }
+              suggestions.classList.add('d-none');
+            });
+            suggestions.appendChild(div);
+          });
+          suggestions.classList.remove('d-none');
+        });
+    }, 220);
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!inputModelo.contains(e.target) && !suggestions.contains(e.target)) {
+      suggestions.classList.add('d-none');
+    }
+  });
+
+  window.excluirRegistro = function (id) {
+    if (!confirm('Excluir este registro?')) return;
+    fetch('/funcionalidades/sistemas/input/' + id + '/excluir', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const row = document.getElementById('row-' + id);
+          if (row) row.remove();
+        } else {
+          alert(data.erro || 'Erro ao excluir.');
+        }
+      })
+      .catch(() => alert('Erro ao excluir registro.'));
+  };
+})();
+</script>
+{% endblock %}
