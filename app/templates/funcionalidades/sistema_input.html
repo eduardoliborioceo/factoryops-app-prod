@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}Funcionalidades · Sistema INPUT{% endblock %}
+{% block title %}Sistema INPUT{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
@@ -15,323 +15,700 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+.input-nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(15,23,42,0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.input-nav-btn {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.input-nav-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.10);
+}
+.input-nav-btn:hover:not(.active) { color: var(--text); }
+
+.slot-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.slot-card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.07); }
+.slot-card.slot-salvo { border-color: rgba(25,135,84,0.4); }
+.slot-card.slot-salvo .slot-header { background: rgba(25,135,84,0.04); }
+.slot-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; cursor: pointer;
+  background: rgba(15,23,42,0.02);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.slot-hora { font-size: 1rem; font-weight: 700; min-width: 110px; }
+.slot-modelo { font-size: 0.82rem; color: var(--text-muted); flex: 1; }
+.slot-meta { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-align: right; min-width: 80px; }
+.slot-status { font-size: 0.7rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+.slot-chevron { transition: transform 0.2s; color: var(--text-muted); }
+.slot-card.open .slot-chevron { transform: rotate(180deg); }
+.slot-body { padding: 16px; }
+
+.just-row, .def-row {
+  display: flex; gap: 8px; align-items: flex-end;
+  margin-bottom: 8px; padding: 10px;
+  background: rgba(15,23,42,0.025);
+  border-radius: 8px; border: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.just-row .form-control, .def-row .form-control,
+.just-row .form-select, .def-row .form-select { font-size: 0.82rem; }
+
+.perda-display {
+  background: rgba(220,53,69,0.06);
+  border-radius: 8px; padding: 8px 12px; font-size: 0.82rem;
+}
+.perda-ok { background: rgba(25,135,84,0.06); }
+.eficiencia-bar { height: 6px; border-radius: 3px; background: rgba(15,23,42,0.08); overflow: hidden; margin-top: 6px; }
+.eficiencia-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
 
-  {% if erro %}
-  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
-    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-    <div>{{ erro }}</div>
+  <!-- Navegação interna -->
+  <div class="input-nav">
+    <button class="input-nav-btn active" id="navHxH" onclick="setTab('hxh')">
+      <i class="bi bi-table me-1"></i>Lançamento H×H
+    </button>
+    <button class="input-nav-btn" id="navHist" onclick="setTab('historico')">
+      <i class="bi bi-clock-history me-1"></i>Histórico
+    </button>
   </div>
-  {% endif %}
 
-  {% if sucesso %}
-  <div class="alert alert-success d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
-    <i class="bi bi-check-circle-fill fs-5"></i>
-    <div>{{ sucesso }}</div>
-  </div>
-  {% endif %}
+  <!-- ── ABA: LANÇAMENTO H×H ── -->
+  <div id="tabHxH">
 
-  <!-- Formulário de apontamento -->
-  <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
-    <div class="card-body p-4">
-      <h6 class="fw-700 mb-3" style="font-size:0.875rem;color:var(--text);">
-        <i class="bi bi-plus-circle me-2 text-primary"></i>Registrar Produção Manual
-      </h6>
-      <form method="POST" autocomplete="off" id="formInput">
-        <div class="row g-3">
-
+    <!-- Filtros -->
+    <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-end">
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Data</label>
-            <input type="date" class="form-control form-control-sm" name="data" id="inputData"
-                   value="{{ request.form.get('data', '') }}"
-                   required style="border-radius:8px;">
+            <input type="date" class="form-control form-control-sm" id="filtroData" style="border-radius:8px;">
           </div>
-
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
+            <select class="form-select form-select-sm" id="filtroFilial" style="border-radius:8px;">
+              <option value="">Selecione</option>
+              <option value="VTE">VTE</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
-            <select class="form-select form-select-sm" name="setor" id="inputSetor"
-                    required style="border-radius:8px;">
-              <option value="">Selecione</option>
-              {% for s in filtros.setores %}
-              <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
-              {% endfor %}
+            <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
+              <option value="">Selecione a filial</option>
             </select>
           </div>
-
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
-            <select class="form-select form-select-sm" name="linha" id="inputLinha"
-                    required style="border-radius:8px;">
+            <select class="form-select form-select-sm" id="filtroLinha" style="border-radius:8px;">
               <option value="">Selecione o setor</option>
-              {% for l in filtros.linhas %}
-              <option value="{{ l }}" {% if l == linha %}selected{% endif %}>{{ l }}</option>
-              {% endfor %}
             </select>
           </div>
-
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Turno</label>
-            <select class="form-select form-select-sm" name="turno" id="inputTurno"
-                    required style="border-radius:8px;">
+            <select class="form-select form-select-sm" id="filtroTurno" style="border-radius:8px;">
               <option value="">Selecione</option>
-              {% for t in filtros.turnos %}
-              <option value="{{ t }}" {% if t == turno %}selected{% endif %}>{{ t }}</option>
+              {% for t in turnos %}
+              <option value="{{ t }}">{{ t }}</option>
               {% endfor %}
             </select>
           </div>
-
-          <div class="col-12 col-md-4 position-relative">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Modelo</label>
-            <input type="text" class="form-control form-control-sm" name="modelo" id="inputModelo"
-                   placeholder="Digite o código..." required style="border-radius:8px;"
-                   value="{{ request.form.get('modelo', '') }}" autocomplete="off">
-            <div id="modeloSuggestions" class="autocomplete-dropdown d-none"></div>
-          </div>
-
           <div class="col-6 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Fase</label>
-            <select class="form-select form-select-sm" name="fase" id="inputFase" style="border-radius:8px;">
-              <option value="">Auto</option>
-              <option value="SMD" {% if request.form.get('fase') == 'SMD' %}selected{% endif %}>SMD</option>
-              <option value="PTH" {% if request.form.get('fase') == 'PTH' %}selected{% endif %}>PTH</option>
-              <option value="IM/PA" {% if request.form.get('fase') == 'IM/PA' %}selected{% endif %}>IM/PA</option>
-            </select>
-          </div>
-
-          <div class="col-6 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Produção</label>
-            <input type="number" class="form-control form-control-sm" name="producao_real"
-                   id="inputProducao" min="0" placeholder="0" required style="border-radius:8px;"
-                   value="{{ request.form.get('producao_real', '') }}">
-          </div>
-
-          <div class="col-6 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Perda</label>
-            <input type="number" class="form-control form-control-sm" name="qtd_perda"
-                   min="0" placeholder="0" style="border-radius:8px;"
-                   value="{{ request.form.get('qtd_perda', '') }}">
-          </div>
-
-          <div class="col-6 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Defeitos</label>
-            <input type="number" class="form-control form-control-sm" name="defeitos"
-                   min="0" placeholder="0" style="border-radius:8px;"
-                   value="{{ request.form.get('defeitos', '') }}">
-          </div>
-
-          <div class="col-12 col-md-4">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Observação</label>
-            <input type="text" class="form-control form-control-sm" name="observacao"
-                   placeholder="Opcional..." style="border-radius:8px;"
-                   value="{{ request.form.get('observacao', '') }}">
-          </div>
-
-          <div class="col-12 col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary btn-sm w-100" style="border-radius:8px;">
-              <i class="bi bi-check2-circle me-1"></i> Registrar
+            <button class="btn btn-primary btn-sm w-100 fw-600" style="border-radius:8px;" onclick="carregarSlots()">
+              <i class="bi bi-play-fill me-1"></i>Carregar Plano
             </button>
           </div>
-
         </div>
-      </form>
+      </div>
     </div>
+
+    <!-- Resumo + slots -->
+    <div id="slotsArea"></div>
+
   </div>
 
-  <!-- Tabela de registros recentes -->
-  <div class="card" style="border-radius:12px;border:1px solid var(--border);">
-    <div class="card-body p-0">
-      <div class="d-flex align-items-center justify-content-between px-4 py-3"
-           style="border-bottom:1px solid var(--border);">
-        <h6 class="mb-0 fw-700" style="font-size:0.875rem;color:var(--text);">
-          <i class="bi bi-clock-history me-2 text-primary"></i>Registros Manuais Recentes (7 dias)
-        </h6>
-        <form method="GET" class="d-flex gap-2 align-items-center">
-          <select class="form-select form-select-sm" name="setor" onchange="this.form.submit()"
-                  style="border-radius:8px;font-size:0.8rem;width:auto;">
-            <option value="">Todos setores</option>
-            {% for s in filtros.setores %}
-            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </form>
+  <!-- ── ABA: HISTÓRICO ── -->
+  <div id="tabHistorico" class="d-none">
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        <div class="d-flex align-items-center justify-content-between px-4 py-3"
+             style="border-bottom:1px solid var(--border);">
+          <h6 class="mb-0 fw-700" style="font-size:0.875rem;">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Lançamentos Recentes (7 dias)
+          </h6>
+          <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" id="histFiltroSetor" style="width:auto;border-radius:8px;font-size:0.8rem;">
+              <option value="">Todos setores</option>
+              {% for s in setores %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="carregarHistorico()">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+        </div>
+        <div id="historicoBody" class="p-0">
+          <div class="text-center py-5 text-muted" style="font-size:0.875rem;">
+            <i class="bi bi-clock-history fs-2 mb-2 d-block"></i>Carregando histórico...
+          </div>
+        </div>
       </div>
-
-      {% if registros %}
-      <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:0.875rem;">
-          <thead>
-            <tr style="background:rgba(15,23,42,0.04);">
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 16px;border-color:var(--border);">Data</th>
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Setor</th>
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Linha</th>
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Turno</th>
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Modelo</th>
-              <th class="text-end" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Produção</th>
-              <th class="text-end" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Perda</th>
-              <th style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;padding:10px 8px;border-color:var(--border);">Obs.</th>
-              <th style="padding:10px 16px;border-color:var(--border);"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in registros %}
-            <tr id="row-{{ r.id }}">
-              <td style="padding:10px 16px;border-color:var(--border);">{{ r.data | string | truncate(10, True, '') }}</td>
-              <td style="padding:10px 8px;border-color:var(--border);">
-                <span class="badge" style="background:rgba(13,110,253,0.10);color:#0d6efd;font-size:0.75rem;">{{ r.setor }}</span>
-              </td>
-              <td style="padding:10px 8px;border-color:var(--border);">{{ r.linha or '—' }}</td>
-              <td style="padding:10px 8px;border-color:var(--border);">{{ r.turno or '—' }}</td>
-              <td style="padding:10px 8px;border-color:var(--border);font-weight:600;">{{ r.modelo }}</td>
-              <td class="text-end fw-600" style="padding:10px 8px;border-color:var(--border);color:var(--success-color);">{{ r.producao_real or 0 }}</td>
-              <td class="text-end" style="padding:10px 8px;border-color:var(--border);color:var(--text-muted);">{{ r.qtd_perda or 0 }}</td>
-              <td style="padding:10px 8px;border-color:var(--border);color:var(--text-muted);font-size:0.8rem;">{{ r.observacao or '—' }}</td>
-              <td style="padding:10px 16px;border-color:var(--border);">
-                <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;font-size:0.75rem;padding:3px 8px;"
-                        onclick="excluirRegistro({{ r.id }})">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="text-center py-5" style="color:var(--text-muted);">
-        <i class="bi bi-inbox fs-2 mb-2 d-block"></i>
-        <span style="font-size:0.875rem;">Nenhum registro manual nos últimos 7 dias.</span>
-      </div>
-      {% endif %}
     </div>
   </div>
 
 </div>
-{% endblock %}
 
-{% block styles %}
-<style>
-.autocomplete-dropdown {
-  position: absolute;
-  top: calc(100% + 2px);
-  left: 0;
-  right: 0;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(15,23,42,0.10);
-  z-index: 1000;
-  max-height: 220px;
-  overflow-y: auto;
-}
-.autocomplete-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  transition: background 0.1s;
-}
-.autocomplete-item:hover, .autocomplete-item.active {
-  background: rgba(13,110,253,0.07);
-}
-.autocomplete-item .badge {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-}
-</style>
-{% endblock %}
-
-{% block scripts %}
 <script>
-(function () {
-  const inputSetor = document.getElementById('inputSetor');
-  const inputLinha = document.getElementById('inputLinha');
-  const inputModelo = document.getElementById('inputModelo');
-  const inputFase = document.getElementById('inputFase');
-  const suggestions = document.getElementById('modeloSuggestions');
-  const inputData = document.getElementById('inputData');
+const MOTIVOS  = {{ catalogos.motivos | tojson }};
+const DEFEITOS = {{ catalogos.defeitos | tojson }};
+const URL_SLOTS   = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
+const URL_SALVAR  = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
+const URL_HIST    = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
+const URL_LINHAS  = "{{ url_for('pages.funcionalidades_sistema_input_linhas') }}";
+const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
 
-  if (!inputData.value) {
-    inputData.value = new Date().toISOString().split('T')[0];
+const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
+let _slotsState = [];
+let _tabAtiva   = 'hxh';
+
+/* ── Configuração dos setores por filial ── */
+const SETORES_POR_FILIAL = {
+  VTE: {{ setores | tojson }},
+  VTT: {{ setores | tojson }},
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('filtroData').value = new Date().toISOString().split('T')[0];
+
+  document.getElementById('filtroFilial').addEventListener('change', function () {
+    const filial = this.value;
+    const setorEl = document.getElementById('filtroSetor');
+    const linhaEl = document.getElementById('filtroLinha');
+    setorEl.innerHTML = '<option value="">Selecione</option>';
+    linhaEl.innerHTML = '<option value="">Selecione o setor</option>';
+    if (!filial) return;
+    (SETORES_POR_FILIAL[filial] || []).forEach(s => {
+      setorEl.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+  });
+
+  document.getElementById('filtroSetor').addEventListener('change', function () {
+    const setor = this.value;
+    const linhaEl = document.getElementById('filtroLinha');
+    linhaEl.innerHTML = '<option value="">Carregando...</option>';
+    if (!setor) { linhaEl.innerHTML = '<option value="">Selecione o setor</option>'; return; }
+    fetch(URL_LINHAS + '?setor=' + encodeURIComponent(setor))
+      .then(r => r.json())
+      .then(d => {
+        linhaEl.innerHTML = '<option value="">Selecione</option>';
+        (d.linhas || []).forEach(l => { linhaEl.innerHTML += `<option value="${l}">${l}</option>`; });
+      })
+      .catch(() => { linhaEl.innerHTML = '<option value="">Erro ao carregar</option>'; });
+  });
+});
+
+function setTab(tab) {
+  _tabAtiva = tab;
+  document.getElementById('tabHxH').classList.toggle('d-none', tab !== 'hxh');
+  document.getElementById('tabHistorico').classList.toggle('d-none', tab !== 'historico');
+  document.getElementById('navHxH').classList.toggle('active', tab === 'hxh');
+  document.getElementById('navHist').classList.toggle('active', tab === 'historico');
+  if (tab === 'historico') carregarHistorico();
+}
+
+/* ─────────────── SLOTS ─────────────── */
+function carregarSlots() {
+  const data   = document.getElementById('filtroData').value;
+  const filial = document.getElementById('filtroFilial').value;
+  const setor  = document.getElementById('filtroSetor').value;
+  const linha  = document.getElementById('filtroLinha').value;
+  const turno  = document.getElementById('filtroTurno').value;
+
+  if (!data || !filial || !setor || !linha || !turno) {
+    alerta('warning', 'Preencha todos os campos antes de carregar o plano.');
+    return;
   }
 
-  inputSetor.addEventListener('change', function () {
-    const setor = this.value;
-    inputLinha.innerHTML = '<option value="">Carregando...</option>';
-    if (!setor) {
-      inputLinha.innerHTML = '<option value="">Selecione o setor</option>';
-      return;
-    }
-    fetch('/funcionalidades/sistemas/input/linhas?setor=' + encodeURIComponent(setor))
-      .then(r => r.json())
-      .then(data => {
-        inputLinha.innerHTML = '<option value="">Selecione</option>';
-        (data.linhas || []).forEach(l => {
-          const opt = document.createElement('option');
-          opt.value = l;
-          opt.textContent = l;
-          inputLinha.appendChild(opt);
-        });
-      })
-      .catch(() => { inputLinha.innerHTML = '<option value="">Erro ao carregar</option>'; });
-  });
+  const area = document.getElementById('slotsArea');
+  area.innerHTML = `<div class="text-center py-5 text-muted">
+    <div class="spinner-border spinner-border-sm me-2"></div>Carregando plano de produção...
+  </div>`;
 
-  let acTimeout = null;
-  inputModelo.addEventListener('input', function () {
-    clearTimeout(acTimeout);
-    const termo = this.value.trim();
-    if (termo.length < 2) { suggestions.classList.add('d-none'); return; }
-    acTimeout = setTimeout(() => {
-      fetch('/funcionalidades/sistemas/input/modelos?q=' + encodeURIComponent(termo))
-        .then(r => r.json())
-        .then(data => {
-          suggestions.innerHTML = '';
-          if (!data.modelos || data.modelos.length === 0) {
-            suggestions.classList.add('d-none');
-            return;
-          }
-          data.modelos.forEach(m => {
-            const div = document.createElement('div');
-            div.className = 'autocomplete-item';
-            div.innerHTML = `<span>${m.codigo}</span><span class="badge bg-secondary">${m.fase || ''}</span>`;
-            div.addEventListener('click', () => {
-              inputModelo.value = m.codigo;
-              if (m.fase) {
-                const opt = Array.from(inputFase.options).find(o => o.value === m.fase);
-                if (opt) inputFase.value = m.fase;
-              }
-              suggestions.classList.add('d-none');
-            });
-            suggestions.appendChild(div);
-          });
-          suggestions.classList.remove('d-none');
-        });
-    }, 220);
-  });
+  fetch(URL_SLOTS + '?' + new URLSearchParams({ data, setor, linha, turno }))
+    .then(r => r.json())
+    .then(resp => {
+      if (!resp.ok) { area.innerHTML = `<div class="alert alert-warning">${resp.erro||'Erro.'}</div>`; return; }
+      if (!resp.slots?.length) {
+        area.innerHTML = `<div class="card p-4 text-center text-muted" style="border-radius:12px;border:1px solid var(--border);">
+          <i class="bi bi-calendar-x fs-2 mb-2 d-block"></i>
+          Nenhum slot encontrado. Verifique se há turno configurado para esta linha.</div>`;
+        return;
+      }
+      _slotsState = resp.slots.map((s, i) => ({ ...s, _idx: i, _data: data, _filial: filial, _setor: setor, _linha: linha, _turno: turno }));
+      renderSlots();
+    })
+    .catch(() => { area.innerHTML = `<div class="alert alert-danger">Erro de conexão.</div>`; });
+}
 
-  document.addEventListener('click', function (e) {
-    if (!inputModelo.contains(e.target) && !suggestions.contains(e.target)) {
-      suggestions.classList.add('d-none');
-    }
-  });
+function renderSlots() {
+  const area = document.getElementById('slotsArea');
+  const totalProd = _slotsState.reduce((s, sl) => s + (sl.lancamento?.producao_real || 0), 0);
+  const totalMeta = _slotsState.reduce((s, sl) => s + (sl.meta_hora || 0), 0);
+  const pctGlobal = totalMeta > 0 ? Math.min(100, Math.round(totalProd / totalMeta * 100)) : 0;
+  const corGlobal = pctGlobal >= 95 ? '#198754' : pctGlobal >= 80 ? '#fd7e14' : '#dc3545';
 
-  window.excluirRegistro = function (id) {
-    if (!confirm('Excluir este registro?')) return;
-    fetch('/funcionalidades/sistemas/input/' + id + '/excluir', { method: 'POST' })
-      .then(r => r.json())
-      .then(data => {
-        if (data.ok) {
-          const row = document.getElementById('row-' + id);
-          if (row) row.remove();
-        } else {
-          alert(data.erro || 'Erro ao excluir.');
-        }
-      })
-      .catch(() => alert('Erro ao excluir registro.'));
+  let html = `<div class="d-flex align-items-center gap-3 mb-3 p-3" style="background:var(--card);border:1px solid var(--border);border-radius:12px;">
+    <div><strong style="font-size:1rem;">${totalProd}</strong> <span class="text-muted" style="font-size:0.8rem;">produzido</span></div>
+    <span class="text-muted">|</span>
+    <div><strong style="font-size:1rem;">${totalMeta}</strong> <span class="text-muted" style="font-size:0.8rem;">meta</span></div>
+    <span class="text-muted">|</span>
+    <div><strong style="font-size:1rem;color:${corGlobal};">${pctGlobal}%</strong> <span class="text-muted" style="font-size:0.8rem;">eficiência</span></div>
+    <div class="flex-fill eficiencia-bar"><div class="eficiencia-fill" style="width:${pctGlobal}%;background:${corGlobal};"></div></div>
+    <button class="btn btn-success btn-sm fw-600" style="border-radius:8px;" onclick="salvarTodos()">
+      <i class="bi bi-check2-all me-1"></i>Salvar Todos
+    </button>
+  </div>`;
+
+  _slotsState.forEach((slot, i) => { html += buildSlotCard(slot, i); });
+  area.innerHTML = html;
+}
+
+function buildSlotCard(slot, i) {
+  const lc = slot.lancamento;
+  const prodReal = lc ? (lc.producao_real || 0) : 0;
+  const meta = slot.meta_hora || 0;
+  const salvo = !!lc;
+  const pct = meta > 0 ? Math.min(100, Math.round(prodReal / meta * 100)) : 0;
+  const cor = pct >= 95 ? '#198754' : pct >= 80 ? '#fd7e14' : '#dc3545';
+  const badge = salvo
+    ? `<span class="slot-status" style="background:rgba(25,135,84,0.1);color:#198754;"><i class="bi bi-check-circle-fill me-1"></i>Salvo</span>`
+    : `<span class="slot-status" style="background:rgba(15,23,42,0.06);color:var(--text-muted);">Pendente</span>`;
+  const modeloLabel = slot.modelo
+    ? `${slot.modelo}${slot.op ? ' · OP '+slot.op : ''}${slot.fase ? ' · '+slot.fase : ''}`
+    : '<em style="color:var(--text-muted);">Sem plano de voo — preencher manualmente</em>';
+
+  return `<div class="slot-card${salvo?' slot-salvo':''}" id="slot-card-${i}">
+    <div class="slot-header" onclick="toggleSlot(${i})">
+      <div class="slot-hora"><i class="bi bi-clock me-1 text-muted" style="font-size:0.75rem;"></i>${slot.hora_inicio} → ${slot.hora_fim}</div>
+      <div class="slot-modelo">${modeloLabel}</div>
+      ${meta > 0 ? `<div class="slot-meta">Meta: <strong>${meta}</strong></div>` : ''}
+      ${badge}
+      <i class="bi bi-chevron-down slot-chevron"></i>
+    </div>
+    <div class="slot-body d-none" id="slot-body-${i}">
+      <div class="row g-3">
+
+        <div class="col-12">
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Modelo</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_modelo"
+                     value="${esc(lc?.modelo||slot.modelo||'')}" style="border-radius:8px;text-transform:uppercase;"
+                     oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Cliente</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_cliente"
+                     value="${esc(lc?.cliente||slot.cliente||'')}" style="border-radius:8px;">
+            </div>
+            <div class="col-4 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">OP</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_op"
+                     value="${esc(lc?.op||slot.op||'')}" style="border-radius:8px;">
+            </div>
+            <div class="col-4 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Fase</label>
+              <select class="form-select form-select-sm" id="s${i}_fase" style="border-radius:8px;">
+                <option value="">—</option>
+                ${['SMD','PTH','IM/PA'].map(f=>`<option value="${f}" ${(lc?.fase||slot.fase)===f?'selected':''}>${f}</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-4 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Meta/hora</label>
+              <input type="number" class="form-control form-control-sm" id="s${i}_meta"
+                     value="${lc?.meta_hora??slot.meta_hora??''}" min="0" style="border-radius:8px;"
+                     oninput="calcPerda(${i})">
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Produção Real</label>
+              <input type="number" class="form-control form-control-sm" id="s${i}_prod"
+                     value="${prodReal}" min="0" style="border-radius:8px;font-size:1.1rem;font-weight:700;"
+                     oninput="calcPerda(${i})">
+            </div>
+            <div class="col-12 col-md-10">
+              <div class="perda-display${meta>0&&prodReal>=meta?' perda-ok':''}" id="s${i}_perda"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="fw-700 mb-0" style="font-size:0.8rem;">
+              <i class="bi bi-exclamation-triangle me-1" style="color:#fd7e14;"></i>Justificativas de Parada
+            </label>
+            <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                    onclick="addJust(${i})"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+          </div>
+          <div id="s${i}_justs">${buildJusts(lc?.justificativas||[], i)}</div>
+          <div id="s${i}_jmin" style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;"></div>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="fw-700 mb-0" style="font-size:0.8rem;">
+              <i class="bi bi-bug me-1 text-danger"></i>Controle de Qualidade — Defeitos
+            </label>
+            <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                    onclick="addDef(${i})"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+          </div>
+          <div id="s${i}_defs">${buildDefs(lc?.defeitos||[], i)}</div>
+          <div id="s${i}_dtotal" style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;"></div>
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-2">
+          ${salvo ? `<button class="btn btn-outline-danger btn-sm" style="border-radius:8px;"
+            onclick="excluirSlot(${lc?.id},${i})"><i class="bi bi-trash3 me-1"></i>Excluir</button>` : ''}
+          <button class="btn btn-primary btn-sm fw-600" style="border-radius:8px;min-width:120px;"
+                  onclick="salvarSlot(${i})">
+            <i class="bi bi-check2-circle me-1"></i>Salvar Slot
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildJusts(justs, i) {
+  return justs.map((j, ji) => buildJustRow(j, i, ji)).join('');
+}
+
+function buildJustRow(j, i, ji) {
+  return `<div class="just-row" id="s${i}_just_${ji}">
+    <div style="min-width:180px;flex:1.5;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Motivo</label>
+      <select class="form-select form-select-sm" id="s${i}_just_${ji}_cod"
+              onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
+        <option value="">Selecione</option>
+        ${MOTIVOS.map(m=>`<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
+      </select>
+    </div>
+    <div style="min-width:100px;flex:0.8;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Origem</label>
+      <input class="form-control form-control-sm" id="s${i}_just_${ji}_orig" value="${esc(j.origem||'')}"
+             readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+    </div>
+    <div style="min-width:100px;flex:0.8;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Responsável</label>
+      <input class="form-control form-control-sm" id="s${i}_just_${ji}_resp" value="${esc(j.responsavel||'')}"
+             readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+    </div>
+    <div style="min-width:80px;flex:0.5;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Perda (min)</label>
+      <input type="number" class="form-control form-control-sm" id="s${i}_just_${ji}_min"
+             value="${j.perda_minutos||0}" min="0" max="60" style="border-radius:6px;"
+             oninput="calcJmin(${i})">
+    </div>
+    <div style="min-width:160px;flex:2;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Justificativa</label>
+      <input class="form-control form-control-sm" id="s${i}_just_${ji}_txt"
+             value="${esc(j.justificativa_texto||'')}" placeholder="Descreva..." style="border-radius:6px;">
+    </div>
+    <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
+            onclick="rmJust(${i},${ji})"><i class="bi bi-trash3"></i></button>
+  </div>`;
+}
+
+function buildDefs(defs, i) {
+  return defs.map((d, di) => buildDefRow(d, i, di)).join('');
+}
+
+function buildDefRow(d, i, di) {
+  return `<div class="def-row" id="s${i}_def_${di}">
+    <div style="min-width:200px;flex:2;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Código Defeito</label>
+      <select class="form-select form-select-sm" id="s${i}_def_${di}_cod"
+              onchange="calcDtotal(${i})" style="border-radius:6px;">
+        <option value="">Selecione</option>
+        ${DEFEITOS.map(df=>`<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
+      </select>
+    </div>
+    <div style="min-width:140px;flex:1.5;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Posição Mecânica</label>
+      <input class="form-control form-control-sm" id="s${i}_def_${di}_pos"
+             value="${esc(d.posicao_mecanica||'')}" placeholder="Ex: U10, R3..." style="border-radius:6px;">
+    </div>
+    <div style="min-width:70px;flex:0.5;">
+      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Qtd</label>
+      <input type="number" class="form-control form-control-sm" id="s${i}_def_${di}_qtd"
+             value="${d.quantidade||1}" min="1" style="border-radius:6px;"
+             oninput="calcDtotal(${i})">
+    </div>
+    <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
+            onclick="rmDef(${i},${di})"><i class="bi bi-trash3"></i></button>
+  </div>`;
+}
+
+function toggleSlot(i) {
+  const body = document.getElementById(`slot-body-${i}`);
+  const card = document.getElementById(`slot-card-${i}`);
+  const aberto = !body.classList.contains('d-none');
+  body.classList.toggle('d-none', aberto);
+  card.classList.toggle('open', !aberto);
+  if (!aberto) { calcPerda(i); calcJmin(i); calcDtotal(i); }
+}
+
+function calcPerda(i) {
+  const meta = parseInt(document.getElementById(`s${i}_meta`)?.value||'0')||0;
+  const prod = parseInt(document.getElementById(`s${i}_prod`)?.value||'0')||0;
+  const el = document.getElementById(`s${i}_perda`);
+  if (!el) return;
+  if (meta <= 0) { el.className='perda-display'; el.innerHTML='<span class="text-muted">Meta não definida.</span>'; return; }
+  const pct = Math.min(100, Math.round(prod/meta*100));
+  const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
+  const perda = Math.max(0, meta-prod);
+  const perdaMin = Math.round((perda/meta)*60);
+  el.className = 'perda-display'+(prod>=meta?' perda-ok':'');
+  el.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${pct}%;background:${cor};"></div></div>
+    <span>Eficiência: <strong style="color:${cor};">${pct}%</strong>
+    ${perda>0?` — Perda: <strong>${perda} pcs</strong> (~${perdaMin} min)`
+            :' — <span style="color:#198754;font-weight:600;">Meta atingida ✓</span>'}</span>`;
+}
+
+function addJust(i) {
+  const c = document.getElementById(`s${i}_justs`);
+  const ji = c.querySelectorAll('.just-row').length;
+  c.insertAdjacentHTML('beforeend', buildJustRow({}, i, ji));
+}
+
+function addDef(i) {
+  const c = document.getElementById(`s${i}_defs`);
+  const di = c.querySelectorAll('.def-row').length;
+  c.insertAdjacentHTML('beforeend', buildDefRow({}, i, di));
+}
+
+function rmJust(i, ji) { document.getElementById(`s${i}_just_${ji}`)?.remove(); calcJmin(i); }
+function rmDef(i, di)  { document.getElementById(`s${i}_def_${di}`)?.remove();  calcDtotal(i); }
+
+function preencherMotivo(i, ji, cod) {
+  const m = motivoMap[cod]; if (!m) return;
+  const o = document.getElementById(`s${i}_just_${ji}_orig`);
+  const r = document.getElementById(`s${i}_just_${ji}_resp`);
+  if (o) o.value = m.origem;
+  if (r) r.value = m.responsavel;
+}
+
+function calcJmin(i) {
+  const c = document.getElementById(`s${i}_justs`);
+  const d = document.getElementById(`s${i}_jmin`);
+  if (!c||!d) return;
+  let t = 0; c.querySelectorAll('[id$="_min"]').forEach(e=>{ t+=parseInt(e.value||0)||0; });
+  d.textContent = t > 0 ? `Total justificado: ${t} min` : '';
+}
+
+function calcDtotal(i) {
+  const c = document.getElementById(`s${i}_defs`);
+  const d = document.getElementById(`s${i}_dtotal`);
+  if (!c||!d) return;
+  let t = 0; c.querySelectorAll('[id$="_qtd"]').forEach(e=>{ t+=parseInt(e.value||0)||0; });
+  d.textContent = t > 0 ? `Total de defeitos: ${t}` : '';
+}
+
+function coletarSlot(i) {
+  const sl = _slotsState[i];
+  const lancamento = {
+    data: sl._data, filial: sl._filial, setor: sl._setor, linha: sl._linha, turno: sl._turno,
+    hora_inicio: sl.hora_inicio, hora_fim: sl.hora_fim,
+    modelo: document.getElementById(`s${i}_modelo`)?.value?.trim()||null,
+    cliente: document.getElementById(`s${i}_cliente`)?.value?.trim()||null,
+    op: document.getElementById(`s${i}_op`)?.value?.trim()||null,
+    fase: document.getElementById(`s${i}_fase`)?.value||null,
+    meta_hora: parseFloat(document.getElementById(`s${i}_meta`)?.value||0)||null,
+    producao_real: parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0,
+    planejamento_id: sl.planejamento_id||null,
   };
-})();
+  const jRows = document.getElementById(`s${i}_justs`)?.querySelectorAll('.just-row')||[];
+  const justificativas = Array.from(jRows).map(row => {
+    const cod = row.querySelector('select')?.value||'';
+    const m = motivoMap[cod]||{};
+    return {
+      codigo_motivo: cod||null,
+      origem: row.querySelector('[id$="_orig"]')?.value||m.origem||null,
+      descricao: m.descricao||null,
+      responsavel: row.querySelector('[id$="_resp"]')?.value||m.responsavel||null,
+      perda_minutos: parseInt(row.querySelector('[id$="_min"]')?.value||0)||0,
+      justificativa_texto: row.querySelector('[id$="_txt"]')?.value?.trim()||null,
+    };
+  }).filter(j => j.codigo_motivo||j.justificativa_texto||j.perda_minutos>0);
+
+  const dRows = document.getElementById(`s${i}_defs`)?.querySelectorAll('.def-row')||[];
+  const defeitos = Array.from(dRows).map(row => ({
+    codigo_defeito: row.querySelector('select')?.value||null,
+    posicao_mecanica: row.querySelector('[id$="_pos"]')?.value?.trim()||null,
+    quantidade: parseInt(row.querySelector('[id$="_qtd"]')?.value||1)||1,
+  })).filter(d => d.codigo_defeito);
+
+  return { lancamento, justificativas, defeitos };
+}
+
+function salvarSlot(i) {
+  const btn = document.querySelector(`#slot-card-${i} button.btn-primary`);
+  if (btn) btn.disabled = true;
+  fetch(URL_SALVAR, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(coletarSlot(i)) })
+    .then(r=>r.json())
+    .then(d => {
+      if (btn) btn.disabled = false;
+      if (d.ok) {
+        const p = coletarSlot(i);
+        _slotsState[i].lancamento = { ...p.lancamento, id: d.id, justificativas: p.justificativas, defeitos: p.defeitos };
+        alerta('success', `Slot ${_slotsState[i].hora_inicio}→${_slotsState[i].hora_fim} salvo.`);
+        renderSlots();
+      } else { alerta('danger', d.erro||'Erro ao salvar.'); }
+    })
+    .catch(()=>{ if(btn) btn.disabled=false; alerta('danger','Erro de conexão.'); });
+}
+
+async function salvarTodos() {
+  for (let i = 0; i < _slotsState.length; i++) {
+    const prod = parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0;
+    if (prod===0 && !_slotsState[i].lancamento) continue;
+    try {
+      const r = await fetch(URL_SALVAR, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(coletarSlot(i)) });
+      const d = await r.json();
+      if (d.ok) { const p=coletarSlot(i); _slotsState[i].lancamento={...p.lancamento, id:d.id}; }
+    } catch {}
+  }
+  renderSlots();
+  alerta('success', 'Todos os slots foram salvos.');
+}
+
+function excluirSlot(id, i) {
+  if (!confirm('Excluir este lançamento?')) return;
+  fetch(URL_EXCLUIR(id), { method:'POST' }).then(r=>r.json()).then(d => {
+    if (d.ok) { _slotsState[i].lancamento=null; renderSlots(); alerta('success','Excluído.'); }
+    else alerta('danger', d.erro||'Erro ao excluir.');
+  });
+}
+
+/* ─────────────── HISTÓRICO ─────────────── */
+function carregarHistorico() {
+  const setor = document.getElementById('histFiltroSetor').value;
+  const body  = document.getElementById('historicoBody');
+  body.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+  fetch(URL_HIST + '?' + new URLSearchParams({ setor }))
+    .then(r=>r.json())
+    .then(d => {
+      if (!d.registros?.length) {
+        body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 mb-2 d-block"></i>Nenhum lançamento nos últimos 7 dias.</div>';
+        return;
+      }
+      let html = `<div class="table-responsive"><table class="table table-hover mb-0" style="font-size:0.84rem;">
+        <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;background:rgba(15,23,42,0.04);">
+          <tr>
+            <th style="padding:8px 16px;">Data</th><th>Horário</th><th>Filial/Setor</th><th>Linha</th>
+            <th>Turno</th><th>Modelo</th><th>OP</th>
+            <th class="text-end">Prod.</th><th class="text-end">Meta</th>
+            <th class="text-center">Just.</th><th class="text-center">Def.</th>
+            <th style="padding:8px 16px;"></th>
+          </tr>
+        </thead><tbody>`;
+      d.registros.forEach(r => {
+        const pct = r.meta_hora>0 ? Math.min(100,Math.round(r.producao_real/r.meta_hora*100)) : 0;
+        const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
+        html += `<tr>
+          <td style="padding:8px 16px;">${fmtDate(r.data)}</td>
+          <td>${r.hora_inicio}→${r.hora_fim}</td>
+          <td><span class="badge" style="background:rgba(13,110,253,0.08);color:#0d6efd;font-size:0.72rem;">${r.filial}</span>
+              <span class="ms-1 text-muted" style="font-size:0.8rem;">${r.setor}</span></td>
+          <td>${r.linha}</td>
+          <td style="font-size:0.8rem;">${r.turno}</td>
+          <td class="fw-600">${r.modelo||'—'}</td>
+          <td style="font-size:0.8rem;color:var(--text-muted);">${r.op||'—'}</td>
+          <td class="text-end fw-600" style="color:${cor};">${r.producao_real}</td>
+          <td class="text-end text-muted">${r.meta_hora||'—'}</td>
+          <td class="text-center">${r.qtd_justificativas>0?`<span class="badge" style="background:rgba(255,193,7,0.15);color:#856404;">${r.qtd_justificativas}</span>`:'—'}</td>
+          <td class="text-center">${r.total_defeitos>0?`<span class="badge" style="background:rgba(220,53,69,0.1);color:#dc3545;">${r.total_defeitos}</span>`:'—'}</td>
+          <td style="padding:8px 16px;">
+            <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:2px 8px;"
+                    onclick="excluirHist(${r.id})"><i class="bi bi-trash3" style="font-size:0.75rem;"></i></button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      body.innerHTML = html;
+    })
+    .catch(()=>{ body.innerHTML='<div class="text-danger text-center py-3">Erro ao carregar.</div>'; });
+}
+
+function excluirHist(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  fetch(URL_EXCLUIR(id), { method:'POST' }).then(r=>r.json()).then(d => {
+    if (d.ok) { carregarHistorico(); alerta('success','Excluído.'); }
+    else alerta('danger', d.erro||'Erro.');
+  });
+}
+
+/* ─────────────── UTILITÁRIOS ─────────────── */
+function alerta(tipo, msg) {
+  let area = document.getElementById('_ag');
+  if (!area) {
+    area = document.createElement('div');
+    area.id = '_ag';
+    area.style.cssText = 'position:fixed;top:68px;right:16px;z-index:9999;width:320px;';
+    document.body.appendChild(area);
+  }
+  const div = document.createElement('div');
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2`;
+  div.style.borderRadius = '10px';
+  div.innerHTML = `<i class="bi bi-${tipo==='success'?'check-circle-fill':'exclamation-triangle-fill'} flex-shrink-0"></i>
+    <div>${msg}</div><button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(()=>div.remove(), 4000);
+}
+
+function fmtDate(d) {
+  const p = String(d).split('T')[0].split('-');
+  return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 </script>
 {% endblock %}

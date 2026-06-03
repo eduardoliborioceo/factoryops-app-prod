@@ -2318,41 +2318,29 @@ def funcionalidades_sistema_input_lancamento_excluir(lancamento_id):
 @bp.route("/funcionalidades/sistemas/input", methods=["GET", "POST"])
 @login_required
 def funcionalidades_sistema_input():
-    from flask import request, flash, redirect, url_for
-    from app.services import sistema_input_service as svc
+    from flask import request
+    from app.services import sistema_input_lancamento_service as lsvc
+    from app.repositories import turno_config_repository as turno_repo
+    from app.repositories import producao_coletada_repository as pc_repo
 
     setor = request.args.get("setor", "")
-    linha = request.args.get("linha", "")
-    turno = request.args.get("turno", "")
-    erro = None
-    sucesso = None
-
-    if request.method == "POST":
-        try:
-            svc.registrar(request.form)
-            sucesso = "Produção registrada com sucesso."
-        except ValueError as e:
-            erro = str(e)
-        except Exception as e:
-            erro = "Erro ao salvar registro. Tente novamente."
 
     try:
-        filtros = svc.filtros_disponiveis(setor)
-        registros = svc.listar_recentes(setor=setor, linha=linha, turno=turno)
+        catalogos = lsvc.catalogos()
+        setores = pc_repo.setores_disponiveis() or []
+        turnos = sorted({t["turno"] for t in turno_repo.listar()})
     except Exception:
-        filtros = {"setores": [], "linhas": [], "turnos": []}
-        registros = []
+        catalogos = {"motivos": [], "defeitos": []}
+        setores = []
+        turnos = []
 
     return render_template(
         "funcionalidades/sistema_input.html",
         active_menu="funcionalidades_sistema_input",
         setor=setor,
-        linha=linha,
-        turno=turno,
-        filtros=filtros,
-        registros=registros,
-        erro=erro,
-        sucesso=sucesso,
+        catalogos=catalogos,
+        setores=setores,
+        turnos=turnos,
     )
 
 
