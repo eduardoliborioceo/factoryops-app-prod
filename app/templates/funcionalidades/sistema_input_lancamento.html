@@ -1,0 +1,759 @@
+{% extends "layouts/app.html" %}
+{% block title %}Sistema INPUT · Lançamento H×H{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Sistemas · Sistema INPUT</span>
+    <h1 class="page-header-name">Lançamento Hora a Hora</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" id="btnVerHistorico" title="Histórico">
+      <i class="bi bi-clock-history"></i>
+    </button>
+    <a href="{{ url_for('pages.funcionalidades_sistema_input') }}" class="btn-header-icon" title="Registro simples">
+      <i class="bi bi-input-cursor-text"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.slot-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+.slot-card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.07); }
+.slot-card.slot-salvo { border-color: rgba(25,135,84,0.35); }
+.slot-card.slot-salvo .slot-header { background: rgba(25,135,84,0.05); }
+.slot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: rgba(15,23,42,0.02);
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.slot-hora {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 110px;
+}
+.slot-modelo { font-size: 0.82rem; color: var(--text-muted); flex: 1; }
+.slot-meta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: right;
+  min-width: 80px;
+}
+.slot-status-badge {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.slot-body { padding: 16px; }
+.slot-chevron { transition: transform 0.2s ease; color: var(--text-muted); }
+.slot-card.open .slot-chevron { transform: rotate(180deg); }
+
+.just-row, .def-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+  padding: 10px;
+  background: rgba(15,23,42,0.03);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.just-row .form-control, .def-row .form-control,
+.just-row .form-select, .def-row .form-select {
+  font-size: 0.82rem;
+}
+.perda-display {
+  background: rgba(220,53,69,0.07);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+.perda-ok {
+  background: rgba(25,135,84,0.07);
+}
+.eficiencia-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(15,23,42,0.08);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.eficiencia-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" id="appLancamento">
+
+  <!-- Painel de filtros -->
+  <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Data</label>
+          <input type="date" class="form-control form-control-sm" id="filtroData" style="border-radius:8px;">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
+          <select class="form-select form-select-sm" id="filtroFilial" style="border-radius:8px;">
+            <option value="">Selecione</option>
+            <option value="VTE">VTE</option>
+            <option value="VTT">VTT</option>
+            <option value="SMD">SMD</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
+          <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
+            <option value="">Selecione</option>
+            {% for s in filtros.setores %}
+            <option value="{{ s }}" {% if s == setor %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
+          <select class="form-select form-select-sm" id="filtroLinha" style="border-radius:8px;">
+            <option value="">Selecione o setor</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Turno</label>
+          <select class="form-select form-select-sm" id="filtroTurno" style="border-radius:8px;">
+            <option value="">Selecione</option>
+            {% for t in turnos %}
+            <option value="{{ t }}" {% if t == turno %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <button class="btn btn-primary btn-sm w-100 fw-600" style="border-radius:8px;" onclick="carregarSlots()">
+            <i class="bi bi-play-fill me-1"></i>Carregar Plano
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Área de slots -->
+  <div id="slotsArea"></div>
+
+  <!-- Painel histórico (oculto por padrão) -->
+  <div id="historicoPanel" class="d-none">
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        <div class="d-flex align-items-center justify-content-between px-4 py-3"
+             style="border-bottom:1px solid var(--border);">
+          <h6 class="mb-0 fw-700" style="font-size:0.875rem;">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Histórico de Lançamentos (7 dias)
+          </h6>
+          <button class="btn btn-sm btn-outline-secondary" style="border-radius:6px;"
+                  onclick="fecharHistorico()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div id="historicoBody" class="p-3"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dados dos catálogos para JS -->
+<script>
+const MOTIVOS = {{ catalogos.motivos | tojson }};
+const DEFEITOS = {{ catalogos.defeitos | tojson }};
+const URL_SLOTS    = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
+const URL_SALVAR   = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
+const URL_HIST     = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
+const URL_LINHAS   = "{{ url_for('pages.funcionalidades_sistema_input_linhas') }}";
+const URL_EXCLUIR  = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
+
+const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
+const defeitoMap = Object.fromEntries(DEFEITOS.map(d => [d.codigo, d]));
+
+let _slotsState = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('filtroData').value = hoje;
+
+  document.getElementById('filtroSetor').addEventListener('change', function () {
+    const setor = this.value;
+    const linhaEl = document.getElementById('filtroLinha');
+    linhaEl.innerHTML = '<option value="">Carregando...</option>';
+    if (!setor) { linhaEl.innerHTML = '<option value="">Selecione o setor</option>'; return; }
+    fetch(URL_LINHAS + '?setor=' + encodeURIComponent(setor))
+      .then(r => r.json())
+      .then(d => {
+        linhaEl.innerHTML = '<option value="">Selecione</option>';
+        (d.linhas || []).forEach(l => {
+          linhaEl.innerHTML += `<option value="${l}">${l}</option>`;
+        });
+      })
+      .catch(() => { linhaEl.innerHTML = '<option value="">Erro</option>'; });
+  });
+
+  document.getElementById('btnVerHistorico').addEventListener('click', abrirHistorico);
+});
+
+function carregarSlots() {
+  const data   = document.getElementById('filtroData').value;
+  const filial = document.getElementById('filtroFilial').value;
+  const setor  = document.getElementById('filtroSetor').value;
+  const linha  = document.getElementById('filtroLinha').value;
+  const turno  = document.getElementById('filtroTurno').value;
+
+  if (!data || !setor || !linha || !turno) {
+    mostrarAlertaGlobal('warning', 'Preencha todos os filtros antes de carregar.');
+    return;
+  }
+
+  const area = document.getElementById('slotsArea');
+  area.innerHTML = `<div class="text-center py-5 text-muted">
+    <div class="spinner-border spinner-border-sm me-2"></div>Carregando plano de produção...
+  </div>`;
+
+  const params = new URLSearchParams({ data, setor, linha, turno });
+  fetch(URL_SLOTS + '?' + params)
+    .then(r => r.json())
+    .then(resp => {
+      if (!resp.ok) { area.innerHTML = `<div class="alert alert-warning">${resp.erro || 'Erro ao carregar slots.'}</div>`; return; }
+      if (!resp.slots || !resp.slots.length) {
+        area.innerHTML = `<div class="card p-4 text-center text-muted" style="border-radius:12px;border:1px solid var(--border);">
+          <i class="bi bi-calendar-x fs-2 mb-2 d-block"></i>
+          <span>Nenhum slot encontrado. Verifique se há turno configurado para esta linha.</span>
+        </div>`;
+        return;
+      }
+      _slotsState = resp.slots.map((s, i) => ({ ...s, _idx: i, _filial: filial, _setor: setor, _linha: linha, _turno: turno, _data: data }));
+      renderSlots();
+    })
+    .catch(() => { area.innerHTML = `<div class="alert alert-danger">Erro de conexão.</div>`; });
+}
+
+function renderSlots() {
+  const area = document.getElementById('slotsArea');
+  if (!_slotsState.length) return;
+
+  const total = _slotsState.reduce((s, sl) => s + (sl.lancamento?.producao_real || 0), 0);
+  const meta  = _slotsState.reduce((s, sl) => s + (sl.meta_hora || 0), 0);
+  const pct   = meta > 0 ? Math.min(100, Math.round(total / meta * 100)) : 0;
+  const cor   = pct >= 95 ? '#198754' : pct >= 80 ? '#fd7e14' : '#dc3545';
+
+  let html = `<div class="d-flex align-items-center gap-3 mb-3 p-3 rounded" style="background:var(--card);border:1px solid var(--border);border-radius:12px!important;">
+    <div><span class="fw-700" style="font-size:1rem;">${total}</span> <span class="text-muted" style="font-size:0.8rem;">prod. total</span></div>
+    <div>|</div>
+    <div><span class="fw-700" style="font-size:1rem;">${meta}</span> <span class="text-muted" style="font-size:0.8rem;">meta total</span></div>
+    <div>|</div>
+    <div><span class="fw-700" style="font-size:1rem;color:${cor};">${pct}%</span> <span class="text-muted" style="font-size:0.8rem;">eficiência</span></div>
+    <div class="flex-fill eficiencia-bar"><div class="eficiencia-fill" style="width:${pct}%;background:${cor};"></div></div>
+    <button class="btn btn-success btn-sm fw-600" style="border-radius:8px;" onclick="salvarTodos()">
+      <i class="bi bi-check2-all me-1"></i>Salvar Todos
+    </button>
+  </div>`;
+
+  _slotsState.forEach((slot, i) => {
+    html += renderSlotCard(slot, i);
+  });
+
+  area.innerHTML = html;
+}
+
+function renderSlotCard(slot, i) {
+  const lc = slot.lancamento;
+  const prodReal = lc ? lc.producao_real : 0;
+  const meta = slot.meta_hora || 0;
+  const salvo = !!lc;
+  const pct = meta > 0 ? Math.min(100, Math.round(prodReal / meta * 100)) : 0;
+  const cor = pct >= 95 ? '#198754' : pct >= 80 ? '#fd7e14' : '#dc3545';
+
+  const badgeHtml = salvo
+    ? `<span class="slot-status-badge" style="background:rgba(25,135,84,0.1);color:#198754;">
+        <i class="bi bi-check-circle-fill me-1"></i>Salvo</span>`
+    : `<span class="slot-status-badge" style="background:rgba(15,23,42,0.06);color:var(--text-muted);">Pendente</span>`;
+
+  const modeloLabel = slot.modelo ? `${slot.modelo}${slot.op ? ' · OP ' + slot.op : ''}${slot.fase ? ' · ' + slot.fase : ''}` : '<em>Sem plano de voo</em>';
+
+  const justificarHtml = renderJustificativas(lc?.justificativas || [], i);
+  const defeitosHtml = renderDefeitos(lc?.defeitos || [], i);
+
+  return `<div class="slot-card${salvo ? ' slot-salvo' : ''}" id="slot-card-${i}" data-idx="${i}">
+    <div class="slot-header" onclick="toggleSlot(${i})">
+      <div class="slot-hora"><i class="bi bi-clock me-1 text-muted" style="font-size:0.75rem;"></i>${slot.hora_inicio} → ${slot.hora_fim}</div>
+      <div class="slot-modelo">${modeloLabel}</div>
+      ${meta > 0 ? `<div class="slot-meta">Meta: <strong>${meta}</strong></div>` : ''}
+      ${badgeHtml}
+      <i class="bi bi-chevron-down slot-chevron"></i>
+    </div>
+    <div class="slot-body d-none" id="slot-body-${i}">
+      <div class="row g-3">
+
+        <!-- Dados do modelo -->
+        <div class="col-12">
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Modelo</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_modelo"
+                     value="${esc(lc?.modelo || slot.modelo || '')}" style="border-radius:8px;text-transform:uppercase;"
+                     oninput="this.value=this.value.toUpperCase()">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Cliente</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_cliente"
+                     value="${esc(lc?.cliente || slot.cliente || '')}" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">OP</label>
+              <input type="text" class="form-control form-control-sm" id="s${i}_op"
+                     value="${esc(lc?.op || slot.op || '')}" style="border-radius:8px;">
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Fase</label>
+              <select class="form-select form-select-sm" id="s${i}_fase" style="border-radius:8px;">
+                <option value="">—</option>
+                ${['SMD','PTH','IM/PA'].map(f => `<option value="${f}" ${(lc?.fase||slot.fase)===f?'selected':''}>${f}</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Meta/hora</label>
+              <input type="number" class="form-control form-control-sm" id="s${i}_meta"
+                     value="${lc?.meta_hora ?? slot.meta_hora ?? ''}" min="0" style="border-radius:8px;"
+                     oninput="atualizarPerda(${i})">
+            </div>
+          </div>
+        </div>
+
+        <!-- Produção real + perda -->
+        <div class="col-12">
+          <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+              <label class="form-label fw-600" style="font-size:0.75rem;">Produção Real</label>
+              <input type="number" class="form-control form-control-sm" id="s${i}_prod"
+                     value="${prodReal}" min="0" style="border-radius:8px;font-size:1rem;font-weight:700;"
+                     oninput="atualizarPerda(${i})">
+            </div>
+            <div class="col-12 col-md-9">
+              <div class="perda-display${meta > 0 && prodReal >= meta ? ' perda-ok' : ''}" id="s${i}_perda_display">
+                ${pct > 0 ? `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${pct}%;background:${cor};"></div></div>` : ''}
+                <span id="s${i}_perda_txt" style="font-size:0.82rem;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Justificativas -->
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="fw-700" style="font-size:0.8rem;color:var(--text);">
+              <i class="bi bi-exclamation-triangle me-1 text-warning"></i>Justificativas de Parada
+            </label>
+            <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                    onclick="addJustificativa(${i})">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar
+            </button>
+          </div>
+          <div id="s${i}_justs">${justificarHtml}</div>
+          <div id="s${i}_perda_mins_display" class="mt-1" style="font-size:0.75rem;color:var(--text-muted);"></div>
+        </div>
+
+        <!-- Defeitos -->
+        <div class="col-12">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <label class="fw-700" style="font-size:0.8rem;color:var(--text);">
+              <i class="bi bi-bug me-1 text-danger"></i>Controle de Qualidade — Defeitos
+            </label>
+            <button type="button" class="btn btn-outline-secondary btn-sm" style="border-radius:6px;font-size:0.75rem;"
+                    onclick="addDefeito(${i})">
+              <i class="bi bi-plus-lg me-1"></i>Adicionar
+            </button>
+          </div>
+          <div id="s${i}_defs">${defeitosHtml}</div>
+          <div id="s${i}_def_total" class="mt-1" style="font-size:0.75rem;color:var(--text-muted);"></div>
+        </div>
+
+        <!-- Ações do slot -->
+        <div class="col-12 d-flex justify-content-end gap-2">
+          ${salvo ? `<button class="btn btn-outline-danger btn-sm" style="border-radius:8px;"
+            onclick="excluirLancamento(${lc?.id}, ${i})">
+            <i class="bi bi-trash3 me-1"></i>Excluir
+          </button>` : ''}
+          <button class="btn btn-primary btn-sm fw-600" style="border-radius:8px;min-width:120px;"
+                  onclick="salvarSlot(${i})">
+            <i class="bi bi-check2-circle me-1"></i>Salvar Slot
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderJustificativas(justs, i) {
+  if (!justs || !justs.length) return '';
+  return justs.map((j, ji) => `
+    <div class="just-row" id="s${i}_just_${ji}">
+      <div style="min-width:160px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Motivo</label>
+        <select class="form-select form-select-sm" onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
+          <option value="">Selecione</option>
+          ${MOTIVOS.map(m => `<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
+        </select>
+      </div>
+      <div style="min-width:90px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Origem</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_origem" value="${esc(j.origem||'')}" readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+      </div>
+      <div style="min-width:90px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Responsável</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_resp" value="${esc(j.responsavel||'')}" readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+      </div>
+      <div style="min-width:80px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Perda (min)</label>
+        <input type="number" class="form-control form-control-sm" id="s${i}_just_${ji}_min"
+               value="${j.perda_minutos||0}" min="0" max="60" style="border-radius:6px;"
+               oninput="atualizarPerdaMinutos(${i})">
+      </div>
+      <div class="flex-fill">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Justificativa</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_texto"
+               value="${esc(j.justificativa_texto||'')}" placeholder="Descreva..." style="border-radius:6px;">
+      </div>
+      <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
+              onclick="removerJust(${i},${ji})"><i class="bi bi-trash3"></i></button>
+    </div>
+  `).join('');
+}
+
+function renderDefeitos(defs, i) {
+  if (!defs || !defs.length) return '';
+  return defs.map((d, di) => `
+    <div class="def-row" id="s${i}_def_${di}">
+      <div style="min-width:200px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Código Defeito</label>
+        <select class="form-select form-select-sm" style="border-radius:6px;" onchange="atualizarDefTotal(${i})">
+          <option value="">Selecione</option>
+          ${DEFEITOS.map(df => `<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
+        </select>
+      </div>
+      <div style="min-width:140px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Posição Mecânica</label>
+        <input class="form-control form-control-sm" value="${esc(d.posicao_mecanica||'')}"
+               placeholder="Ex: U10, R3..." style="border-radius:6px;">
+      </div>
+      <div style="min-width:80px;">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Qtd</label>
+        <input type="number" class="form-control form-control-sm" value="${d.quantidade||1}"
+               min="1" style="border-radius:6px;" oninput="atualizarDefTotal(${i})">
+      </div>
+      <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
+              onclick="removerDef(${i},${di})"><i class="bi bi-trash3"></i></button>
+    </div>
+  `).join('');
+}
+
+function toggleSlot(i) {
+  const card = document.getElementById(`slot-card-${i}`);
+  const body = document.getElementById(`slot-body-${i}`);
+  const aberto = !body.classList.contains('d-none');
+  body.classList.toggle('d-none', aberto);
+  card.classList.toggle('open', !aberto);
+  if (!aberto) {
+    atualizarPerda(i);
+    atualizarPerdaMinutos(i);
+    atualizarDefTotal(i);
+  }
+}
+
+function atualizarPerda(i) {
+  const meta = parseInt(document.getElementById(`s${i}_meta`)?.value || '0') || 0;
+  const prod = parseInt(document.getElementById(`s${i}_prod`)?.value || '0') || 0;
+  const display = document.getElementById(`s${i}_perda_display`);
+  const txt = document.getElementById(`s${i}_perda_txt`);
+  if (!display || !txt) return;
+  if (meta <= 0) { txt.textContent = 'Meta não definida.'; return; }
+  const pct = Math.min(100, Math.round(prod / meta * 100));
+  const cor = pct >= 95 ? '#198754' : pct >= 80 ? '#fd7e14' : '#dc3545';
+  const perda = Math.max(0, meta - prod);
+  const perdaMin = meta > 0 ? Math.round((perda / meta) * 60) : 0;
+  display.className = 'perda-display' + (prod >= meta ? ' perda-ok' : '');
+  display.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${pct}%;background:${cor};"></div></div>
+    <span style="font-size:0.82rem;">Eficiência: <strong style="color:${cor};">${pct}%</strong>
+    ${perda > 0 ? ` — Perda: <strong>${perda} pcs</strong> (~${perdaMin} min)` : ' — <span style="color:#198754;">Meta atingida ✓</span>'}</span>`;
+}
+
+function addJustificativa(i) {
+  const container = document.getElementById(`s${i}_justs`);
+  const ji = container.querySelectorAll('.just-row').length;
+  const div = document.createElement('div');
+  div.innerHTML = renderJustificativas([{
+    codigo_motivo: '', origem: '', responsavel: '', perda_minutos: 0, justificativa_texto: ''
+  }], i).replace(/just_0/g, `just_${ji}`);
+  container.appendChild(div.firstElementChild);
+}
+
+function addDefeito(i) {
+  const container = document.getElementById(`s${i}_defs`);
+  const di = container.querySelectorAll('.def-row').length;
+  const div = document.createElement('div');
+  div.innerHTML = renderDefeitos([{
+    codigo_defeito: '', posicao_mecanica: '', quantidade: 1
+  }], i).replace(/def_0/g, `def_${di}`);
+  container.appendChild(div.firstElementChild);
+}
+
+function removerJust(i, ji) {
+  document.getElementById(`s${i}_just_${ji}`)?.remove();
+  atualizarPerdaMinutos(i);
+}
+
+function removerDef(i, di) {
+  document.getElementById(`s${i}_def_${di}`)?.remove();
+  atualizarDefTotal(i);
+}
+
+function preencherMotivo(i, ji, codigo) {
+  const m = motivoMap[codigo];
+  if (!m) return;
+  const origemEl = document.getElementById(`s${i}_just_${ji}_origem`);
+  const respEl   = document.getElementById(`s${i}_just_${ji}_resp`);
+  if (origemEl) origemEl.value = m.origem;
+  if (respEl)   respEl.value   = m.responsavel;
+}
+
+function atualizarPerdaMinutos(i) {
+  const container = document.getElementById(`s${i}_justs`);
+  const display = document.getElementById(`s${i}_perda_mins_display`);
+  if (!container || !display) return;
+  let total = 0;
+  container.querySelectorAll('[id$="_min"]').forEach(el => { total += parseInt(el.value || '0') || 0; });
+  display.textContent = total > 0 ? `Total justificado: ${total} min` : '';
+}
+
+function atualizarDefTotal(i) {
+  const container = document.getElementById(`s${i}_defs`);
+  const display = document.getElementById(`s${i}_def_total`);
+  if (!container || !display) return;
+  let total = 0;
+  container.querySelectorAll('input[type="number"]').forEach(el => { total += parseInt(el.value || '0') || 0; });
+  display.textContent = total > 0 ? `Total defeitos: ${total}` : '';
+}
+
+function coletarSlot(i) {
+  const sl = _slotsState[i];
+  const lancamento = {
+    data: sl._data, filial: sl._filial, setor: sl._setor, linha: sl._linha, turno: sl._turno,
+    hora_inicio: sl.hora_inicio, hora_fim: sl.hora_fim,
+    modelo: document.getElementById(`s${i}_modelo`)?.value?.trim() || null,
+    cliente: document.getElementById(`s${i}_cliente`)?.value?.trim() || null,
+    op: document.getElementById(`s${i}_op`)?.value?.trim() || null,
+    fase: document.getElementById(`s${i}_fase`)?.value || null,
+    meta_hora: parseFloat(document.getElementById(`s${i}_meta`)?.value || '0') || null,
+    producao_real: parseInt(document.getElementById(`s${i}_prod`)?.value || '0') || 0,
+    planejamento_id: sl.planejamento_id || null,
+  };
+
+  const justRows = document.getElementById(`s${i}_justs`)?.querySelectorAll('.just-row') || [];
+  const justificativas = Array.from(justRows).map(row => {
+    const sel = row.querySelector('select');
+    const codigo = sel?.value || '';
+    const m = motivoMap[codigo] || {};
+    return {
+      codigo_motivo: codigo || null,
+      origem: row.querySelector('[id$="_origem"]')?.value || m.origem || null,
+      descricao: m.descricao || null,
+      responsavel: row.querySelector('[id$="_resp"]')?.value || m.responsavel || null,
+      perda_minutos: parseInt(row.querySelector('[id$="_min"]')?.value || '0') || 0,
+      justificativa_texto: row.querySelector('[id$="_texto"]')?.value?.trim() || null,
+    };
+  }).filter(j => j.codigo_motivo || j.justificativa_texto || j.perda_minutos > 0);
+
+  const defRows = document.getElementById(`s${i}_defs`)?.querySelectorAll('.def-row') || [];
+  const defeitos = Array.from(defRows).map(row => {
+    const sel = row.querySelector('select');
+    const inputs = row.querySelectorAll('input');
+    return {
+      codigo_defeito: sel?.value || null,
+      posicao_mecanica: inputs[0]?.value?.trim() || null,
+      quantidade: parseInt(inputs[1]?.value || '1') || 1,
+    };
+  }).filter(d => d.codigo_defeito);
+
+  return { lancamento, justificativas, defeitos };
+}
+
+function salvarSlot(i) {
+  const btn = document.querySelector(`#slot-card-${i} .btn-primary`);
+  if (btn) btn.disabled = true;
+  const payload = coletarSlot(i);
+  fetch(URL_SALVAR, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (btn) btn.disabled = false;
+      if (d.ok) {
+        _slotsState[i].lancamento = payload.lancamento;
+        _slotsState[i].lancamento.id = d.id;
+        _slotsState[i].lancamento.justificativas = payload.justificativas;
+        _slotsState[i].lancamento.defeitos = payload.defeitos;
+        document.getElementById(`slot-card-${i}`)?.classList.add('slot-salvo');
+        mostrarAlertaGlobal('success', `Slot ${_slotsState[i].hora_inicio}→${_slotsState[i].hora_fim} salvo.`);
+        renderSlots();
+      } else {
+        mostrarAlertaGlobal('danger', d.erro || 'Erro ao salvar.');
+      }
+    })
+    .catch(() => { if (btn) btn.disabled = false; mostrarAlertaGlobal('danger', 'Erro de conexão.'); });
+}
+
+async function salvarTodos() {
+  for (let i = 0; i < _slotsState.length; i++) {
+    const prod = parseInt(document.getElementById(`s${i}_prod`)?.value || '0') || 0;
+    if (prod === 0 && !_slotsState[i].lancamento) continue;
+    const payload = coletarSlot(i);
+    try {
+      const r = await fetch(URL_SALVAR, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        _slotsState[i].lancamento = { ...payload.lancamento, id: d.id };
+        document.getElementById(`slot-card-${i}`)?.classList.add('slot-salvo');
+      }
+    } catch {}
+  }
+  renderSlots();
+  mostrarAlertaGlobal('success', 'Todos os lançamentos foram salvos.');
+}
+
+function excluirLancamento(id, i) {
+  if (!confirm('Excluir este lançamento?')) return;
+  fetch(URL_EXCLUIR(id), { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        _slotsState[i].lancamento = null;
+        renderSlots();
+        mostrarAlertaGlobal('success', 'Lançamento excluído.');
+      } else {
+        mostrarAlertaGlobal('danger', d.erro || 'Erro ao excluir.');
+      }
+    });
+}
+
+function abrirHistorico() {
+  const panel = document.getElementById('historicoPanel');
+  const body = document.getElementById('historicoBody');
+  panel.classList.remove('d-none');
+  body.innerHTML = '<div class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
+  const setor = document.getElementById('filtroSetor').value;
+  const linha = document.getElementById('filtroLinha').value;
+  const turno = document.getElementById('filtroTurno').value;
+  const params = new URLSearchParams({ setor, linha, turno });
+  fetch(URL_HIST + '?' + params)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.registros || !d.registros.length) {
+        body.innerHTML = '<div class="text-center text-muted py-3">Nenhum lançamento nos últimos 7 dias.</div>';
+        return;
+      }
+      let html = `<div class="table-responsive"><table class="table table-hover mb-0" style="font-size:0.82rem;">
+        <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;background:rgba(15,23,42,0.04);">
+          <tr>
+            <th style="padding:8px 12px;">Data</th><th>Horário</th><th>Linha</th>
+            <th>Modelo</th><th class="text-end">Prod.</th><th class="text-end">Meta</th>
+            <th class="text-center">Justif.</th><th class="text-center">Def.</th>
+            <th></th>
+          </tr>
+        </thead><tbody>`;
+      d.registros.forEach(r => {
+        const pct = r.meta_hora > 0 ? Math.min(100, Math.round(r.producao_real / r.meta_hora * 100)) : 0;
+        const cor = pct >= 95 ? '#198754' : pct >= 80 ? '#fd7e14' : '#dc3545';
+        html += `<tr>
+          <td style="padding:8px 12px;">${fmtDate(r.data)}</td>
+          <td>${r.hora_inicio}→${r.hora_fim}</td>
+          <td>${r.linha} <span class="badge bg-light text-muted border" style="font-size:0.65rem;">${r.setor}</span></td>
+          <td class="fw-600">${r.modelo || '—'}</td>
+          <td class="text-end fw-600" style="color:${cor};">${r.producao_real}</td>
+          <td class="text-end text-muted">${r.meta_hora || '—'}</td>
+          <td class="text-center">${r.qtd_justificativas > 0 ? `<span class="badge" style="background:rgba(255,193,7,0.15);color:#856404;">${r.qtd_justificativas}</span>` : '—'}</td>
+          <td class="text-center">${r.total_defeitos > 0 ? `<span class="badge" style="background:rgba(220,53,69,0.1);color:#dc3545;">${r.total_defeitos}</span>` : '—'}</td>
+          <td><button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:2px 7px;"
+              onclick="excluirLancamentoHist(${r.id})"><i class="bi bi-trash3" style="font-size:0.75rem;"></i></button></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      body.innerHTML = html;
+    })
+    .catch(() => { body.innerHTML = '<div class="text-danger text-center py-2">Erro ao carregar.</div>'; });
+}
+
+function fecharHistorico() {
+  document.getElementById('historicoPanel').classList.add('d-none');
+}
+
+function excluirLancamentoHist(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  fetch(URL_EXCLUIR(id), { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) { abrirHistorico(); mostrarAlertaGlobal('success', 'Excluído.'); }
+      else mostrarAlertaGlobal('danger', d.erro || 'Erro.');
+    });
+}
+
+function mostrarAlertaGlobal(tipo, msg) {
+  let area = document.getElementById('_alertGlobal');
+  if (!area) {
+    area = document.createElement('div');
+    area.id = '_alertGlobal';
+    area.style.cssText = 'position:fixed;top:70px;right:16px;z-index:9999;min-width:260px;max-width:360px;';
+    document.body.appendChild(area);
+  }
+  const div = document.createElement('div');
+  div.className = `alert alert-${tipo} alert-dismissible d-flex align-items-center gap-2`;
+  div.style.borderRadius = '10px';
+  div.innerHTML = `<i class="bi bi-${tipo==='success'?'check-circle-fill':'exclamation-triangle-fill'} flex-shrink-0"></i>
+    <div>${msg}</div><button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>`;
+  area.prepend(div);
+  setTimeout(() => div.remove(), 4000);
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const parts = String(d).split('T')[0].split('-');
+  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
+}
+
+function esc(s) {
+  return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+</script>
+{% endblock %}
