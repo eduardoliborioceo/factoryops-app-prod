@@ -2212,6 +2212,109 @@ def config_empresa():
     )
 
 
+@bp.route("/funcionalidades/sistemas/input/lancamento", methods=["GET"])
+@login_required
+def funcionalidades_sistema_input_lancamento():
+    from flask import request
+    from app.services import sistema_input_lancamento_service as svc
+    from app.services import producao_coletada_service as pc_svc
+    from app.repositories import turno_config_repository as turno_repo
+
+    setor = request.args.get("setor", "")
+    linha = request.args.get("linha", "")
+    turno = request.args.get("turno", "")
+
+    try:
+        catalogos = svc.catalogos()
+        filtros = pc_svc.filtros_disponiveis(setor)
+        turnos = sorted({t["turno"] for t in turno_repo.listar()})
+    except Exception:
+        catalogos = {"motivos": [], "defeitos": []}
+        filtros = {"setores": [], "linhas": []}
+        turnos = []
+
+    return render_template(
+        "funcionalidades/sistema_input_lancamento.html",
+        active_menu="funcionalidades_sistema_input",
+        setor=setor,
+        linha=linha,
+        turno=turno,
+        catalogos=catalogos,
+        filtros=filtros,
+        turnos=turnos,
+    )
+
+
+@bp.route("/funcionalidades/sistemas/input/lancamento/slots")
+@login_required
+def funcionalidades_sistema_input_slots():
+    from flask import request, jsonify
+    from app.services import sistema_input_lancamento_service as svc
+
+    data_str = request.args.get("data", "")
+    setor = request.args.get("setor", "")
+    linha = request.args.get("linha", "")
+    turno = request.args.get("turno", "")
+
+    if not all([data_str, setor, linha, turno]):
+        return jsonify({"ok": False, "erro": "data, setor, linha e turno são obrigatórios"}), 400
+
+    try:
+        slots = svc.slots_do_turno(data_str, setor, linha, turno)
+        return jsonify({"ok": True, "slots": slots})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 500
+
+
+@bp.route("/funcionalidades/sistemas/input/lancamento/salvar", methods=["POST"])
+@login_required
+def funcionalidades_sistema_input_salvar():
+    from flask import request, jsonify
+    from app.services import sistema_input_lancamento_service as svc
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        lancamento_id = svc.salvar(payload, current_user.id)
+        return jsonify({"ok": True, "id": lancamento_id})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "erro": "Erro ao salvar lançamento."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/input/lancamento/historico")
+@login_required
+def funcionalidades_sistema_input_historico():
+    from flask import request, jsonify
+    from app.services import sistema_input_lancamento_service as svc
+
+    setor = request.args.get("setor", "")
+    linha = request.args.get("linha", "")
+    turno = request.args.get("turno", "")
+    dias = int(request.args.get("dias", "7") or "7")
+
+    try:
+        registros = svc.historico(setor=setor, linha=linha, turno=turno, dias=dias)
+        return jsonify({"ok": True, "registros": [dict(r) for r in registros]})
+    except Exception:
+        return jsonify({"ok": False, "registros": []})
+
+
+@bp.route("/funcionalidades/sistemas/input/lancamento/<int:lancamento_id>/excluir", methods=["POST"])
+@login_required
+def funcionalidades_sistema_input_lancamento_excluir(lancamento_id):
+    from flask import jsonify
+    from app.services import sistema_input_lancamento_service as svc
+
+    try:
+        svc.excluir(lancamento_id)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao excluir."}), 500
+
+
 @bp.route("/funcionalidades/sistemas/input", methods=["GET", "POST"])
 @login_required
 def funcionalidades_sistema_input():
