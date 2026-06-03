@@ -1,0 +1,217 @@
+{% extends "layouts/app.html" %}
+{% block title %}Configurações · Empresa{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Configurações</span>
+    <h1 class="page-header-name">Empresa</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.config_turnos') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if erro %}
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
+    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+    <div>{{ erro }}</div>
+  </div>
+  {% endif %}
+  {% if sucesso %}
+  <div class="alert alert-success d-flex align-items-center gap-2 mb-4" style="border-radius:10px;">
+    <i class="bi bi-check-circle-fill fs-5"></i>
+    <div>{{ sucesso }}</div>
+  </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Logo da empresa -->
+    <div class="col-12 col-lg-4">
+      <div class="card h-100" style="border-radius:12px;border:1px solid var(--border);">
+        <div class="card-body p-4">
+          <h6 class="fw-700 mb-3" style="font-size:0.875rem;">
+            <i class="bi bi-image me-2 text-primary"></i>Logo da Empresa
+          </h6>
+
+          <div class="text-center mb-3">
+            {% if config.logo_url %}
+            <img src="{{ config.logo_url }}" alt="Logo" class="img-fluid mb-2"
+                 style="max-height:100px;max-width:200px;object-fit:contain;border-radius:8px;border:1px solid var(--border);padding:8px;background:#fff;">
+            {% else %}
+            <div class="d-flex align-items-center justify-content-center mb-2"
+                 style="height:100px;background:rgba(15,23,42,0.04);border-radius:8px;border:1px dashed var(--border);">
+              <div class="text-center" style="color:var(--text-muted);">
+                <i class="bi bi-image fs-2 d-block mb-1"></i>
+                <span style="font-size:0.75rem;">Sem logo</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="upload_logo">
+            <div class="mb-3">
+              <label class="form-label fw-600" style="font-size:0.8rem;">Enviar nova logo</label>
+              <input type="file" class="form-control form-control-sm" name="logo"
+                     accept="image/png,image/jpeg,image/webp,image/svg+xml" style="border-radius:8px;">
+              <div class="form-text">PNG, JPG, WEBP ou SVG. Máx. 5MB.</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100" style="border-radius:8px;">
+              <i class="bi bi-upload me-1"></i>Enviar Logo
+            </button>
+          </form>
+
+          {% if config.logo_url %}
+          <form method="POST" class="mt-2">
+            <input type="hidden" name="action" value="remove_logo">
+            <button type="submit" class="btn btn-outline-danger btn-sm w-100" style="border-radius:8px;"
+                    onclick="return confirm('Remover a logo da empresa?')">
+              <i class="bi bi-trash3 me-1"></i>Remover Logo
+            </button>
+          </form>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Identidade e configurações gerais -->
+    <div class="col-12 col-lg-8">
+      <form method="POST">
+        <input type="hidden" name="action" value="config">
+
+        <!-- Identidade -->
+        <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+          <div class="card-body p-4">
+            <h6 class="fw-700 mb-3" style="font-size:0.875rem;">
+              <i class="bi bi-building me-2 text-primary"></i>Identidade da Empresa
+            </h6>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Nome da empresa <span class="text-danger">*</span></label>
+                <input type="text" class="form-control form-control-sm" name="nome_empresa"
+                       value="{{ config.nome_empresa }}" required maxlength="200" style="border-radius:8px;">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Nome exibido no sistema</label>
+                <input type="text" class="form-control form-control-sm" name="nome_exibicao"
+                       value="{{ config.nome_exibicao or '' }}" maxlength="100" style="border-radius:8px;"
+                       placeholder="Ex: Venttos">
+                <div class="form-text">Aparece no sidebar e cabeçalho mobile.</div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-600" style="font-size:0.8rem;">CNPJ</label>
+                <input type="text" class="form-control form-control-sm" name="cnpj"
+                       value="{{ config.cnpj or '' }}" maxlength="20" style="border-radius:8px;"
+                       placeholder="00.000.000/0000-00">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filiais ativas -->
+        <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+          <div class="card-body p-4">
+            <h6 class="fw-700 mb-1" style="font-size:0.875rem;">
+              <i class="bi bi-diagram-2 me-2 text-primary"></i>Filiais Ativas
+            </h6>
+            <p class="text-muted mb-3" style="font-size:0.8rem;">Filiais que esta instalação do sistema utiliza.</p>
+            <div class="d-flex gap-3 flex-wrap">
+              {% for filial in ['VTE', 'VTT', 'SMD'] %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="filiais" value="{{ filial }}"
+                       id="filial{{ filial }}"
+                       {% if filial in config.filiais %}checked{% endif %}>
+                <label class="form-check-label fw-600" for="filial{{ filial }}" style="font-size:0.875rem;">
+                  {{ filial }}
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Setores de produção por filial -->
+        <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+          <div class="card-body p-4">
+            <h6 class="fw-700 mb-1" style="font-size:0.875rem;">
+              <i class="bi bi-cpu me-2 text-primary"></i>Setores de Produção por Filial
+            </h6>
+            <p class="text-muted mb-3" style="font-size:0.8rem;">Quais setores de produção cada filial utiliza.</p>
+            <div class="row g-3">
+              {% for filial in ['VTE', 'VTT', 'SMD'] %}
+              <div class="col-12 col-md-4">
+                <div class="p-3 rounded" style="background:rgba(15,23,42,0.03);border:1px solid var(--border);">
+                  <div class="fw-700 mb-2" style="font-size:0.8rem;">{{ filial }}</div>
+                  {% for setor in ['SMD', 'PTH', 'IM/PA'] %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                           name="setores_{{ filial }}" value="{{ setor }}"
+                           id="setor_{{ filial }}_{{ loop.index }}"
+                           {% if setor in (config.setores_por_filial.get(filial) or []) %}checked{% endif %}>
+                    <label class="form-check-label" for="setor_{{ filial }}_{{ loop.index }}"
+                           style="font-size:0.82rem;">{{ setor }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu visível -->
+        <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
+          <div class="card-body p-4">
+            <h6 class="fw-700 mb-1" style="font-size:0.875rem;">
+              <i class="bi bi-layout-sidebar me-2 text-primary"></i>Grupos de Menu Visíveis
+            </h6>
+            <p class="text-muted mb-3" style="font-size:0.8rem;">Controle quais grupos aparecem no sidebar desta instalação.</p>
+            <div class="row g-2">
+              {% set grupos = [
+                ('funcionalidades', 'bi-grid', 'Funcionalidades'),
+                ('producao', 'bi-gear-wide-connected', 'Produção'),
+                ('engenharia', 'bi-stopwatch', 'Engenharia'),
+                ('pcp', 'bi-kanban', 'PCP'),
+                ('logistica', 'bi-box-seam', 'Estoque & Logística'),
+                ('configuracoes', 'bi-sliders', 'Configurações'),
+              ] %}
+              {% for key, icon, label in grupos %}
+              <div class="col-6 col-md-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="menu_visivel" value="{{ key }}"
+                         id="menu_{{ key }}"
+                         {% if config.menu_visivel.get(key, True) %}checked{% endif %}>
+                  <label class="form-check-label" for="menu_{{ key }}" style="font-size:0.875rem;">
+                    <i class="bi {{ icon }} me-1 text-muted"></i>{{ label }}
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary" style="border-radius:8px;min-width:160px;">
+            <i class="bi bi-check2-circle me-2"></i>Salvar Configurações
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

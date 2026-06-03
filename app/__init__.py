@@ -116,6 +116,14 @@ def create_app():
             dt = dt.replace(tzinfo=ZoneInfo("UTC"))
         return dt.astimezone(tz).strftime(fmt)
 
+    def _get_company_logo() -> str | None:
+        try:
+            from app.repositories import empresa_config_repository as ecr
+            cfg = ecr.get_config()
+            return cfg.get("logo_url") or None
+        except Exception:
+            return None
+
     @app.context_processor
     def inject_globals():
         return {
@@ -129,6 +137,7 @@ def create_app():
             "APP_LANG": app.config.get("APP_LANG", "pt-BR"),
             "APP_VERSION": app.config.get("APP_VERSION", "dev"),
             "GOOGLE_MAPS_API_KEY": app.config.get("GOOGLE_MAPS_API_KEY") or "",
+            "COMPANY_LOGO_URL": _get_company_logo(),
         }
 
     @app.before_request
