@@ -2161,6 +2161,57 @@ def manifest():
     return resp
 
 
+@bp.route("/config/empresa", methods=["GET", "POST"])
+@login_required
+@admin_required
+def config_empresa():
+    from flask import request, jsonify
+    from app.services import empresa_config_service as svc
+
+    if request.method == "POST" and request.content_type and "multipart" in request.content_type:
+        action = request.form.get("action", "")
+        if action == "remove_logo":
+            try:
+                svc.remove_logo()
+                from flask import redirect, url_for
+                return redirect(url_for("pages.config_empresa"))
+            except Exception as e:
+                config = svc.get_config()
+                return render_template("config/empresa.html", active_menu="config_empresa",
+                                       config=config, erro=str(e), sucesso=None)
+        if action == "upload_logo":
+            try:
+                svc.upload_logo(request.files.get("logo"))
+                from flask import redirect, url_for
+                return redirect(url_for("pages.config_empresa"))
+            except (ValueError, Exception) as e:
+                config = svc.get_config()
+                return render_template("config/empresa.html", active_menu="config_empresa",
+                                       config=config, erro=str(e), sucesso=None)
+
+    erro = None
+    sucesso = None
+
+    if request.method == "POST":
+        try:
+            svc.update_config(request.form)
+            sucesso = "Configurações salvas com sucesso."
+        except ValueError as e:
+            erro = str(e)
+        except Exception:
+            erro = "Erro ao salvar configurações. Tente novamente."
+
+    config = svc.get_config()
+
+    return render_template(
+        "config/empresa.html",
+        active_menu="config_empresa",
+        config=config,
+        erro=erro,
+        sucesso=sucesso,
+    )
+
+
 @bp.route("/funcionalidades/sistemas/input", methods=["GET", "POST"])
 @login_required
 def funcionalidades_sistema_input():

@@ -57,7 +57,7 @@
   'logistica_resumo','logistica_entregas','logistica_conferencia_material'
 ] %}
 {% set _config_menus = [
-  'config_turnos','config_linhas','config_paradas','config_manual','admin_sync'
+  'config_empresa','config_turnos','config_linhas','config_paradas','config_manual','admin_sync'
 ] %}
 {% set _sup_menus = [
   'suporte_centro_conhecimento','suporte_ouvidoria','suporte_especializado'
@@ -73,7 +73,7 @@
 <header class="mobile-header d-md-none">
   <div class="mobile-left">
     <div class="avatar">
-      <img src="{{ url_for('static', filename='images/logos/logo.jpeg') }}">
+      <img src="{{ COMPANY_LOGO_URL or url_for('static', filename='images/logos/logo.jpeg') }}">
     </div>
 
     {% set page_titles = {
@@ -114,7 +114,8 @@
       "admin_chamados": "Chamados de Suporte",
       "funcionalidades_resumo_producao": "Resumo de Produção",
       "pcp_etiquetas_manuais": "Etiquetas Manuais",
-      "funcionalidades_sistema_input": "Sistema INPUT"
+      "funcionalidades_sistema_input": "Sistema INPUT",
+      "config_empresa": "Empresa"
     } %}
 
     <span class="mobile-page-title">
@@ -137,7 +138,7 @@
 
   <aside class="sidebar d-none d-md-flex">
     <div class="logo">
-      <img src="{{ url_for('static', filename='images/logos/VenttosElectronics.png') }}">
+      <img src="{{ COMPANY_LOGO_URL or url_for('static', filename='images/logos/VenttosElectronics.png') }}">
     </div>
 
     <nav>
@@ -424,6 +425,10 @@
         <div class="collapse {% if active_menu in _config_menus %}show{% endif %}"
              id="nav-config">
           <div class="sidebar-group-items">
+            <a href="{{ url_for('pages.config_empresa') }}"
+               class="{% if active_menu == 'config_empresa' %}active{% endif %}">
+              <i class="bi bi-building-gear"></i> Empresa
+            </a>
             <a href="{{ url_for('pages.config_turnos') }}"
                class="{% if active_menu == 'config_turnos' %}active{% endif %}">
               <i class="bi bi-clock-history"></i> Turnos
