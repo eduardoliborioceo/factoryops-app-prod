@@ -1,0 +1,743 @@
+{% extends "layouts/app.html" %}
+{% block title %}Posto de Revisão — PCI Hub{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Operação</span>
+    <h1 class="page-header-name">Posto de Revisão</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar" id="btnVoltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" id="btnImprimir" onclick="imprimirRelatorio()" title="Imprimir" style="display:none;">
+      <i class="bi bi-printer"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ─── Lista ──────────────────────────────── */
+.rev-list-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem; cursor: pointer;
+  transition: background 0.1s;
+}
+.rev-list-row:hover { background: rgba(13,110,253,0.04); }
+.rev-list-row:last-child { border-bottom: none; }
+.rev-status {
+  font-size:0.7rem; padding:2px 8px; border-radius:10px; font-weight:700;
+}
+.st-rascunho { background:rgba(255,193,7,0.15);  color:#856404; }
+.st-finalizado{ background:rgba(25,135,84,0.10);  color:#198754; }
+
+/* ─── Formulário PRO010 ──────────────────── */
+.form-revisao {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.78rem;
+  color: #000;
+  max-width: 1100px;
+}
+.rev-doc-header {
+  display: grid;
+  grid-template-columns: 140px 1fr 160px;
+  border: 1px solid #000;
+  margin-bottom: 0;
+}
+.rev-logo-cell {
+  border-right: 1px solid #000;
+  padding: 6px 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 900; letter-spacing: 1px;
+}
+.rev-title-cell {
+  border-right: 1px solid #000;
+  padding: 4px 8px;
+  text-align: center;
+}
+.rev-title-cell .title-main { font-size:0.85rem; font-weight:700; }
+.rev-title-cell .title-sub  { font-size:0.72rem; color:#555; }
+.rev-code-cell { padding: 4px 8px; font-size:0.72rem; }
+.rev-code-cell div { margin-bottom:2px; }
+
+.rev-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid #000;
+  border-top: none;
+}
+.rev-field {
+  border-right: 1px solid #000;
+  border-bottom: 1px solid #000;
+  padding: 3px 6px;
+  min-height: 28px;
+}
+.rev-field:last-child, .rev-field.no-right { border-right: none; }
+.rev-field label {
+  display: block; font-size:0.65rem; color:#555; margin-bottom:1px; font-weight:600;
+}
+.rev-field input, .rev-field select {
+  border: none; outline: none; width: 100%;
+  font-size: 0.78rem; background: transparent; font-family: inherit;
+}
+.rev-field-full { grid-column: 1 / -1; }
+.rev-field-half { grid-column: span 2; }
+
+.rev-checkboxes {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 4px 8px;
+  display: flex; flex-wrap: wrap; gap: 8px 20px;
+}
+.rev-chk {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.78rem; cursor: pointer;
+}
+.rev-chk input[type=checkbox] { width:14px; height:14px; cursor:pointer; }
+.rev-chk-sep {
+  border-left: 1px solid #aaa;
+  margin: 0 4px;
+  height: 18px;
+}
+
+/* ─── Tabela produção ────────────────────── */
+.rev-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: 8px; font-size: 0.72rem;
+}
+.rev-table th, .rev-table td {
+  border: 1px solid #000;
+  padding: 2px 4px;
+  vertical-align: middle;
+}
+.rev-table thead th {
+  background: #e8e8e8;
+  font-weight: 700;
+  text-align: center;
+  font-size: 0.65rem;
+  line-height: 1.2;
+}
+.rev-table tbody tr:hover td { background: rgba(13,110,253,0.04); }
+.rev-table td input, .rev-table td select, .rev-table td textarea {
+  border: none; outline: none; width: 100%;
+  font-size: 0.72rem; background: transparent; font-family: inherit;
+  text-align: center;
+}
+.rev-table td textarea { resize: none; height: 28px; }
+.rev-cell-hora { font-size: 0.7rem; font-weight: 700; white-space: nowrap; text-align: center; }
+.rev-total-row td { background: #f0f0f0; font-weight: 700; text-align: center; }
+
+/* ─── Tabela defeitos ────────────────────── */
+.rev-def-table {
+  width: 100%; border-collapse: collapse;
+  margin-top: 8px; font-size: 0.65rem;
+}
+.rev-def-table th, .rev-def-table td {
+  border: 1px solid #000;
+  padding: 2px 3px;
+  text-align: center; vertical-align: middle;
+}
+.rev-def-table thead th { background: #e8e8e8; font-weight: 700; font-size: 0.6rem; }
+.rev-def-table td input {
+  border: none; outline: none; width: 100%;
+  font-size: 0.65rem; background: transparent; font-family: inherit;
+  text-align: center;
+}
+.td-left { text-align: left !important; }
+
+/* ─── Rodapé ─────────────────────────────── */
+.rev-footer {
+  border: 1px solid #000;
+  border-top: none;
+  padding: 6px 10px;
+  font-size: 0.68rem;
+}
+.rev-footer ul { margin: 2px 0; padding-left: 16px; }
+.rev-lider {
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  gap: 8px; font-size: 0.72rem; font-weight: 700; padding-top: 6px;
+}
+.rev-lider-line {
+  border-bottom: 1px solid #000;
+  min-width: 200px;
+  height: 22px;
+}
+
+/* ─── Ações do formulário ─────────────────── */
+.rev-actions {
+  display: flex; gap: 8px; align-items: center;
+  margin-bottom: 16px;
+}
+
+/* ─── Print ──────────────────────────────── */
+@media print {
+  .sidebar, .desktop-header, .mobile-header, .mobile-bottom-nav,
+  .page-header, .rev-actions, #listaPanel { display: none !important; }
+  .main { margin-left: 0 !important; padding-top: 0 !important; }
+  body, html { background: #fff !important; }
+  .form-revisao { max-width: none; font-size: 0.7rem; }
+  .rev-table td input, .rev-table td select, .rev-table td textarea,
+  .rev-def-table td input, .rev-field input, .rev-field select {
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .rev-fields-grid { grid-template-columns: repeat(2, 1fr); }
+  .rev-doc-header { grid-template-columns: 100px 1fr; }
+  .rev-code-cell { display: none; }
+  .form-revisao { font-size: 0.7rem; }
+  .rev-def-table { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- ── LISTA de relatórios ── -->
+  <div id="listaPanel">
+    <div class="d-flex align-items-center justify-content-between mb-3 gap-3 flex-wrap">
+      <div class="d-flex gap-2 flex-wrap" style="flex:1;">
+        <input type="text" class="form-control form-control-sm" id="filtLinha"
+               placeholder="Filtrar por linha..." style="border-radius:8px;max-width:200px;">
+        <input type="date" class="form-control form-control-sm" id="filtIni" style="border-radius:8px;max-width:160px;">
+        <input type="date" class="form-control form-control-sm" id="filtFim" style="border-radius:8px;max-width:160px;">
+        <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
+                onclick="filtrarLista()"><i class="bi bi-search me-1"></i>Filtrar</button>
+      </div>
+      <button class="btn btn-primary btn-sm fw-700" style="border-radius:8px;padding:6px 18px;"
+              onclick="novoRelatorio()">
+        <i class="bi bi-plus-lg me-1"></i>Novo Relatório
+      </button>
+    </div>
+
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
+          <h6 class="mb-0 fw-700" style="font-size:0.875rem;">
+            <i class="bi bi-clipboard2-check me-2 text-primary"></i>Relatórios de Revisão
+          </h6>
+        </div>
+        <div id="listaBody">
+          {% if relatorios %}
+            {% for r in relatorios %}
+            <div class="rev-list-row" onclick="carregarRelatorio({{ r.id }})">
+              <div style="flex:1;">
+                <div class="fw-700" style="font-size:0.85rem;">
+                  {{ r.data }} · {{ r.linha or '—' }} · OP {{ r.op or '—' }}
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-muted);">
+                  {{ r.produto or '—' }} · {{ r.turno or '—' }} · Revisor: {{ r.revisor or '—' }}
+                </div>
+              </div>
+              <div style="text-align:right;font-size:0.75rem;color:var(--text-muted);">
+                Prod: {{ r.total_produzido or 0 }} · Def: {{ r.total_defeitos or 0 }}
+              </div>
+              <span class="rev-status {{ 'st-finalizado' if r.status == 'finalizado' else 'st-rascunho' }}">
+                {{ 'Finalizado' if r.status == 'finalizado' else 'Rascunho' }}
+              </span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center py-5 text-muted" style="font-size:0.875rem;">
+              <i class="bi bi-clipboard2 fs-2 mb-2 d-block opacity-25"></i>
+              Nenhum relatório encontrado. Clique em "Novo Relatório" para criar.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FORMULÁRIO PRO010 ── -->
+  <div id="formPanel" class="d-none">
+
+    <div class="rev-actions">
+      <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
+              onclick="voltarLista()">
+        <i class="bi bi-arrow-left me-1"></i>Lista
+      </button>
+      <button class="btn btn-success btn-sm fw-700" style="border-radius:8px;padding:5px 18px;"
+              onclick="salvarRelatorio('rascunho')">
+        <i class="bi bi-floppy me-1"></i>Salvar
+      </button>
+      <button class="btn btn-primary btn-sm fw-700" style="border-radius:8px;padding:5px 18px;"
+              onclick="salvarRelatorio('finalizado')">
+        <i class="bi bi-check-circle me-1"></i>Finalizar
+      </button>
+      <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
+              onclick="imprimirRelatorio()">
+        <i class="bi bi-printer me-1"></i>Imprimir
+      </button>
+      <button class="btn btn-outline-danger btn-sm fw-600" style="border-radius:8px;"
+              id="btnExcluir" onclick="excluirRelatorio()" style="display:none;">
+        <i class="bi bi-trash3 me-1"></i>Excluir
+      </button>
+      <span id="salvoMsg" style="font-size:0.78rem;color:#198754;display:none;">
+        <i class="bi bi-check-circle-fill me-1"></i>Salvo
+      </span>
+    </div>
+
+    <div class="form-revisao" id="docPRO010">
+
+      <!-- Cabeçalho do documento -->
+      <div class="rev-doc-header">
+        <div class="rev-logo-cell">
+          <span style="color:#003087;letter-spacing:2px;">Venttos</span>
+        </div>
+        <div class="rev-title-cell">
+          <div class="title-main">RELATÓRIO DE PRODUÇÃO - REVISÃO</div>
+          <div class="title-sub">(Production Report - Review)</div>
+        </div>
+        <div class="rev-code-cell">
+          <div><strong>Código:</strong> PRO010</div>
+          <div><strong>Revisão:</strong> 03</div>
+          <div><strong>Data:</strong> <input id="hData" type="date" style="border:none;outline:none;font-size:0.72rem;width:90px;"></div>
+        </div>
+      </div>
+
+      <!-- Campos do cabeçalho -->
+      <div class="rev-fields-grid">
+        <div class="rev-field">
+          <label>Cliente (Customer)</label>
+          <input type="text" id="hCliente" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Produto (Product)</label>
+          <input type="text" id="hProduto" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Setor (Sector)</label>
+          <input type="text" id="hSetor" placeholder="—">
+        </div>
+        <div class="rev-field no-right">
+          <label>DATA</label>
+          <input type="date" id="hDataDoc" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Linha (Line)</label>
+          <input type="text" id="hLinha" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Posto (Station)</label>
+          <input type="text" id="hPosto" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Turno (Turn)</label>
+          <input type="text" id="hTurno" placeholder="—">
+        </div>
+        <div class="rev-field no-right">
+          <label>Meta (Target)</label>
+          <input type="number" id="hMeta" placeholder="—" min="0">
+        </div>
+        <div class="rev-field">
+          <label>Tipo revisão (Review Type)</label>
+          <input type="text" id="hTipoRevisao" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>Identific.</label>
+          <input type="text" id="hIdentificacao" placeholder="—">
+        </div>
+        <div class="rev-field">
+          <label>OP</label>
+          <input type="text" id="hOp" placeholder="—" style="text-transform:uppercase;"
+                 oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="rev-field no-right">
+          <label>REVISOR(A) (Proofreader)</label>
+          <input type="text" id="hRevisor" placeholder="—">
+        </div>
+      </div>
+
+      <!-- Checkboxes de processo -->
+      <div class="rev-checkboxes">
+        <label class="rev-chk"><input type="checkbox" id="cTop">TOP</label>
+        <label class="rev-chk"><input type="checkbox" id="cBot">BOT</label>
+        <label class="rev-chk"><input type="checkbox" id="cTopBot">TOP/BOT</label>
+        <span class="rev-chk-sep"></span>
+        <label class="rev-chk"><input type="checkbox" id="cLado01">LADO 01 <small style="font-size:0.6rem;">(Side 01)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cLado02">LADO 02 <small style="font-size:0.6rem;">(Side 02)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cAoi">AOI</label>
+        <span class="rev-chk-sep"></span>
+        <label class="rev-chk"><input type="checkbox" id="cPreForno">PRÉ FORNO <small style="font-size:0.6rem;">(Pre Oven)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cPosForno">PÓS FORNO <small style="font-size:0.6rem;">(Post Oven)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cPreMaq">PRÉ MÁQ. <small style="font-size:0.6rem;">(Pre Machine)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cPosMaq">PÓS MÁQ. <small style="font-size:0.6rem;">(Post Machine)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cAdesivo">ADESIVO <small style="font-size:0.6rem;">(Adhesive)</small></label>
+        <label class="rev-chk"><input type="checkbox" id="cSpi">SPI</label>
+      </div>
+
+      <!-- Tabela horária de produção -->
+      <table class="rev-table">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:22px;"></th>
+            <th rowspan="2" style="min-width:80px;">HORÁRIO<br><small>(Timetable)</small></th>
+            <th rowspan="2" style="min-width:60px;">ITENS<br>APROVADOS<br><small>(Approved Item)</small></th>
+            <th rowspan="2" style="min-width:60px;">ITENS<br>REPROVADOS<br><small>(Failed Item)</small></th>
+            <th rowspan="2" style="min-width:55px;">DEFEITOS<br><small>(Defect)<br>máx.</small></th>
+            <th rowspan="2" style="min-width:100px;">MODELO<br><small>(Model)</small></th>
+            <th rowspan="2" style="min-width:60px;">QTDE<br>PRODUZIDA<br><small>(QTY Produced)</small></th>
+            <th rowspan="2" style="min-width:64px;">PLACA H/H</th>
+            <th rowspan="2" style="min-width:64px;">FASE</th>
+            <th rowspan="2" style="min-width:80px;">REVISORA</th>
+            <th rowspan="2">OBSERVAÇÃO</th>
+          </tr>
+        </thead>
+        <tbody id="tHoras">
+          {% for s in slots %}
+          <tr>
+            <td style="text-align:center;width:22px;">
+              <input type="checkbox" class="slot-chk" data-slot="{{ s.slot_ordem }}" style="width:12px;height:12px;">
+            </td>
+            <td class="rev-cell-hora">{{ s.hora_ini }}/{{ s.hora_fim }}</td>
+            <td><input type="number" class="f-aprov" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
+            <td><input type="number" class="f-reprov" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
+            <td><input type="number" class="f-defmax" data-slot="{{ s.slot_ordem }}" min="0"></td>
+            <td><input type="text"   class="f-modelo" data-slot="{{ s.slot_ordem }}" style="text-transform:uppercase;"></td>
+            <td><input type="number" class="f-qtdprod" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
+            <td style="text-align:center;">
+              <label style="font-size:0.65rem;display:block;white-space:nowrap;">
+                <input type="radio" class="f-placahh-sim" name="placa{{ s.slot_ordem }}" value="sim" style="width:10px;"> SIM
+              </label>
+              <label style="font-size:0.65rem;display:block;white-space:nowrap;">
+                <input type="radio" class="f-placahh-nao" name="placa{{ s.slot_ordem }}" value="nao" style="width:10px;"> NÃO
+              </label>
+            </td>
+            <td style="text-align:center;">
+              <label style="font-size:0.65rem;display:block;white-space:nowrap;">
+                <input type="radio" class="f-fase-bot" name="fase{{ s.slot_ordem }}" value="BOT" style="width:10px;"> BOT
+              </label>
+              <label style="font-size:0.65rem;display:block;white-space:nowrap;">
+                <input type="radio" class="f-fase-top" name="fase{{ s.slot_ordem }}" value="TOP" style="width:10px;"> TOP
+              </label>
+            </td>
+            <td><input type="text" class="f-revisora" data-slot="{{ s.slot_ordem }}"></td>
+            <td><textarea class="f-obs" data-slot="{{ s.slot_ordem }}" rows="1"></textarea></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="rev-total-row">
+            <td colspan="2">TOTAL PRODUZIDO<br><small>(Total Produced)</small></td>
+            <td colspan="2" id="totAprov">0</td>
+            <td colspan="2">TOTAL DE DEFEITOS<br><small>(Total Defects)</small></td>
+            <td id="totDef">0</td>
+            <td colspan="4" style="text-align:left;padding-left:8px;">
+              TOTAL DE SCRAP<br><small>(Total Scrap)</small>
+              <input type="number" id="totScrap" min="0" style="border:none;outline:none;width:60px;font-weight:700;text-align:center;background:transparent;font-size:0.72rem;">
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Tabela de defeitos por hora -->
+      <table class="rev-def-table" style="margin-top:8px;">
+        <thead>
+          <tr>
+            <th rowspan="2" style="min-width:70px;" class="td-left">CÓDIGO<br>DEFEITO<br><small>(Defect Code)</small></th>
+            <th rowspan="2" style="min-width:80px;" class="td-left">POSIÇÃO MECÂNICA<br><small>(Mechanical Position)</small></th>
+            <th rowspan="2" style="min-width:40px;">LADO<br><small>(Side)</small></th>
+            <th colspan="{{ slots|length }}">Quantidade por Hora <small>(Quantity per Hour)</small></th>
+            <th rowspan="2" style="min-width:40px;">TOTAL</th>
+            <th rowspan="2" style="min-width:60px;" class="td-left">OBS.<br><small>(Remark)</small></th>
+          </tr>
+          <tr>
+            {% for s in slots %}
+            <th style="font-size:0.55rem;min-width:32px;">{{ s.hora_ini[-5:-3] }}h</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody id="tDefeitos">
+          {% for n in range(12) %}
+          <tr data-linha="{{ n + 1 }}">
+            <td class="td-left"><input type="text" class="d-cod" data-linha="{{ n + 1 }}" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
+            <td class="td-left"><input type="text" class="d-pos" data-linha="{{ n + 1 }}" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
+            <td><input type="text" class="d-lado" data-linha="{{ n + 1 }}" style="text-transform:uppercase;width:30px;" oninput="this.value=this.value.toUpperCase()"></td>
+            {% for s in slots %}
+            <td><input type="number" class="d-qtd" data-linha="{{ n + 1 }}" data-slot="{{ s.slot_ordem }}" min="0" oninput="calcTotalDefeito({{ n + 1 }})"></td>
+            {% endfor %}
+            <td id="dtotal-{{ n + 1 }}" class="fw-700" style="text-align:center;">0</td>
+            <td class="td-left"><input type="text" class="d-obs" data-linha="{{ n + 1 }}"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Rodapé -->
+      <div class="rev-footer">
+        <strong>CRITÉRIO PARA PARADA DE LINHA:</strong>
+        <ul>
+          <li>03 DEFEITO IGUAIS SEGUIDOS;</li>
+          <li>65 DEFEITOS DIFERENTES, ORIGINADO PELO MESMO POSTO.</li>
+        </ul>
+        <div class="rev-lider">
+          LIDER (Leader): <div class="rev-lider-line"></div>
+        </div>
+      </div>
+
+    </div><!-- /docPRO010 -->
+  </div><!-- /formPanel -->
+
+</div>
+
+<script>
+const URL_SALVAR  = "{{ url_for('pages.funcionalidades_pci_hub_revisao_salvar') }}";
+const URL_LOAD    = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}`;
+const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}/excluir`;
+const TOTAL_SLOTS = {{ slots|length }};
+
+let _relId = null;
+
+/* ── Lista ───────────────────────────── */
+function novoRelatorio() {
+  _relId = null;
+  limparForm();
+  document.getElementById('hData').value = hoje();
+  document.getElementById('hDataDoc').value = hoje();
+  mostrarForm();
+}
+
+function carregarRelatorio(id) {
+  fetch(URL_LOAD(id))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      _relId = id;
+      limparForm();
+      preencherForm(d.relatorio);
+      mostrarForm();
+    });
+}
+
+function mostrarForm() {
+  document.getElementById('listaPanel').classList.add('d-none');
+  document.getElementById('formPanel').classList.remove('d-none');
+  document.getElementById('btnVoltar').classList.add('d-none');
+  document.getElementById('btnImprimir').style.display = '';
+  document.getElementById('btnExcluir').style.display = _relId ? '' : 'none';
+}
+
+function voltarLista() {
+  document.getElementById('formPanel').classList.add('d-none');
+  document.getElementById('listaPanel').classList.remove('d-none');
+  document.getElementById('btnVoltar').classList.remove('d-none');
+  document.getElementById('btnImprimir').style.display = 'none';
+}
+
+function filtrarLista() {
+  const l = document.getElementById('filtLinha').value;
+  const i = document.getElementById('filtIni').value;
+  const f = document.getElementById('filtFim').value;
+  window.location.href = `?linha=${encodeURIComponent(l)}&data_ini=${i}&data_fim=${f}`;
+}
+
+/* ── Formulário ──────────────────────── */
+function limparForm() {
+  ['hCliente','hProduto','hSetor','hLinha','hPosto','hTurno','hTipoRevisao',
+   'hIdentificacao','hOp','hRevisor'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('hMeta').value = '';
+  document.getElementById('totScrap').value = '';
+  ['cTop','cBot','cTopBot','cLado01','cLado02','cAoi',
+   'cPreForno','cPosForno','cPreMaq','cPosMaq','cAdesivo','cSpi'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  document.querySelectorAll('.slot-chk,.f-aprov,.f-reprov,.f-defmax,.f-modelo,.f-qtdprod,.f-revisora,.f-obs')
+    .forEach(el => { el.type === 'checkbox' ? el.checked = false : el.value = ''; });
+  document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
+  document.querySelectorAll('.d-cod,.d-pos,.d-lado,.d-qtd,.d-obs').forEach(el => el.value = '');
+  recalcTotais();
+  for (let n = 1; n <= 12; n++) calcTotalDefeito(n);
+}
+
+function preencherForm(r) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
+  set('hCliente', r.cliente); set('hProduto', r.produto); set('hSetor', r.setor);
+  set('hLinha', r.linha); set('hPosto', r.posto); set('hTurno', r.turno);
+  set('hTipoRevisao', r.tipo_revisao); set('hIdentificacao', r.identificacao);
+  set('hMeta', r.meta); set('hOp', r.op); set('hRevisor', r.revisor);
+  set('hData', r.data); set('hDataDoc', r.data);
+  set('totScrap', r.total_scrap);
+  chk('cTop', r.proc_top); chk('cBot', r.proc_bot); chk('cTopBot', r.proc_topbot);
+  chk('cLado01', r.proc_lado01); chk('cLado02', r.proc_lado02); chk('cAoi', r.proc_aoi);
+  chk('cPreForno', r.proc_pre_forno); chk('cPosForno', r.proc_pos_forno);
+  chk('cPreMaq', r.proc_pre_maq); chk('cPosMaq', r.proc_pos_maq);
+  chk('cAdesivo', r.proc_adesivo); chk('cSpi', r.proc_spi);
+  (r.horas || []).forEach(h => {
+    const s = h.slot_ordem;
+    const qEl = el => document.querySelector(`${el}[data-slot="${s}"]`);
+    const chkEl = document.querySelector(`.slot-chk[data-slot="${s}"]`);
+    if (chkEl) chkEl.checked = h.selecionado;
+    if (qEl('.f-aprov'))  qEl('.f-aprov').value  = h.aprovados  ?? '';
+    if (qEl('.f-reprov')) qEl('.f-reprov').value = h.reprovados ?? '';
+    if (qEl('.f-defmax')) qEl('.f-defmax').value = h.defeitos_max ?? '';
+    if (qEl('.f-modelo')) qEl('.f-modelo').value = h.modelo ?? '';
+    if (qEl('.f-qtdprod'))qEl('.f-qtdprod').value= h.qtd_produzida ?? '';
+    if (qEl('.f-revisora'))qEl('.f-revisora').value= h.revisora ?? '';
+    if (qEl('.f-obs'))    qEl('.f-obs').value    = h.observacao ?? '';
+    if (h.placa_hh === true)  { const el = document.querySelector(`.f-placahh-sim[name="placa${s}"]`); if (el) el.checked = true; }
+    if (h.placa_hh === false) { const el = document.querySelector(`.f-placahh-nao[name="placa${s}"]`); if (el) el.checked = true; }
+    if (h.fase) { const el = document.querySelector(`input[name="fase${s}"][value="${h.fase}"]`); if (el) el.checked = true; }
+  });
+  (r.defeitos || []).forEach(d => {
+    const n = d.linha_ordem;
+    const qEl = (sel) => document.querySelector(`${sel}[data-linha="${n}"]`);
+    if (qEl('.d-cod'))  qEl('.d-cod').value  = d.codigo_defeito ?? '';
+    if (qEl('.d-pos'))  qEl('.d-pos').value  = d.posicao_mecanica ?? '';
+    if (qEl('.d-lado')) qEl('.d-lado').value = d.lado ?? '';
+    if (qEl('.d-obs'))  qEl('.d-obs').value  = d.observacao ?? '';
+    const qtds = d.qtd_por_hora || {};
+    Object.entries(qtds).forEach(([slot, qtd]) => {
+      const el = document.querySelector(`.d-qtd[data-linha="${n}"][data-slot="${slot}"]`);
+      if (el) el.value = qtd || '';
+    });
+    calcTotalDefeito(n);
+  });
+  recalcTotais();
+}
+
+function coletarForm(status) {
+  const val  = id => (document.getElementById(id)?.value || '').trim();
+  const bool = id => document.getElementById(id)?.checked || false;
+
+  const horas = [];
+  document.querySelectorAll('.slot-chk').forEach(chk => {
+    const s = parseInt(chk.dataset.slot);
+    const qEl = sel => document.querySelector(`${sel}[data-slot="${s}"]`);
+    const radioHH = document.querySelector(`.f-placahh-sim[name="placa${s}"]`);
+    const radioNao= document.querySelector(`.f-placahh-nao[name="placa${s}"]`);
+    const radioBot= document.querySelector(`.f-fase-bot[name="fase${s}"]`);
+    const radioTop= document.querySelector(`.f-fase-top[name="fase${s}"]`);
+    const placa_hh = radioHH?.checked ? true : radioNao?.checked ? false : null;
+    const fase = radioBot?.checked ? 'BOT' : radioTop?.checked ? 'TOP' : null;
+    horas.push({
+      slot_ordem:    s,
+      hora_ini:      qEl('.rev-cell-hora')?.textContent.split('/')[0] || '',
+      hora_fim:      qEl('.rev-cell-hora')?.textContent.split('/')[1] || '',
+      selecionado:   chk.checked,
+      aprovados:     parseInt(qEl('.f-aprov')?.value) || null,
+      reprovados:    parseInt(qEl('.f-reprov')?.value) || null,
+      defeitos_max:  parseInt(qEl('.f-defmax')?.value) || null,
+      modelo:        qEl('.f-modelo')?.value.trim() || null,
+      qtd_produzida: parseInt(qEl('.f-qtdprod')?.value) || null,
+      placa_hh, fase,
+      revisora:  qEl('.f-revisora')?.value.trim() || null,
+      observacao:qEl('.f-obs')?.value.trim() || null,
+    });
+  });
+
+  const defeitos = [];
+  for (let n = 1; n <= 12; n++) {
+    const qEl = sel => document.querySelector(`${sel}[data-linha="${n}"]`);
+    const cod = qEl('.d-cod')?.value.trim();
+    if (!cod) continue;
+    const qtd_por_hora = {};
+    document.querySelectorAll(`.d-qtd[data-linha="${n}"]`).forEach(el => {
+      const v = parseInt(el.value) || 0;
+      if (v > 0) qtd_por_hora[el.dataset.slot] = v;
+    });
+    defeitos.push({
+      linha_ordem: n,
+      codigo_defeito: cod,
+      posicao_mecanica: qEl('.d-pos')?.value.trim() || null,
+      lado: qEl('.d-lado')?.value.trim() || null,
+      qtd_por_hora,
+      observacao: qEl('.d-obs')?.value.trim() || null,
+    });
+  }
+
+  const totalAprov = parseInt(document.getElementById('totAprov')?.textContent) || 0;
+  const totalDef   = parseInt(document.getElementById('totDef')?.textContent) || 0;
+  const totalScrap = parseInt(document.getElementById('totScrap')?.value) || 0;
+
+  return {
+    id: _relId,
+    cabecalho: {
+      cliente: val('hCliente'), produto: val('hProduto'), setor: val('hSetor'),
+      linha: val('hLinha'), posto: val('hPosto'), turno: val('hTurno'),
+      tipo_revisao: val('hTipoRevisao'), identificacao: val('hIdentificacao'),
+      meta: parseInt(val('hMeta')) || null, op: val('hOp'),
+      data: val('hDataDoc') || val('hData'), revisor: val('hRevisor'),
+      proc_top:bool('cTop'), proc_bot:bool('cBot'), proc_topbot:bool('cTopBot'),
+      proc_lado01:bool('cLado01'), proc_lado02:bool('cLado02'), proc_aoi:bool('cAoi'),
+      proc_pre_forno:bool('cPreForno'), proc_pos_forno:bool('cPosForno'),
+      proc_pre_maq:bool('cPreMaq'), proc_pos_maq:bool('cPosMaq'),
+      proc_adesivo:bool('cAdesivo'), proc_spi:bool('cSpi'),
+      total_produzido: totalAprov, total_defeitos: totalDef, total_scrap: totalScrap,
+      status,
+    },
+    horas,
+    defeitos,
+  };
+}
+
+function salvarRelatorio(status) {
+  const payload = coletarForm(status);
+  fetch(URL_SALVAR, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        _relId = d.id;
+        document.getElementById('btnExcluir').style.display = '';
+        const msg = document.getElementById('salvoMsg');
+        msg.style.display = '';
+        setTimeout(() => msg.style.display = 'none', 2500);
+      } else {
+        alert(d.erro || 'Erro ao salvar.');
+      }
+    })
+    .catch(() => alert('Erro de conexão.'));
+}
+
+function excluirRelatorio() {
+  if (!_relId || !confirm('Excluir este relatório?')) return;
+  fetch(URL_EXCLUIR(_relId), { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) { window.location.reload(); }
+    });
+}
+
+function imprimirRelatorio() {
+  window.print();
+}
+
+/* ── Cálculos ────────────────────────── */
+function recalcTotais() {
+  let aprov = 0, reprov = 0;
+  document.querySelectorAll('.f-aprov').forEach(e => { aprov += parseInt(e.value) || 0; });
+  document.querySelectorAll('.f-reprov').forEach(e => { reprov += parseInt(e.value) || 0; });
+  document.getElementById('totAprov').textContent = aprov;
+  document.getElementById('totDef').textContent   = reprov;
+}
+
+function calcTotalDefeito(n) {
+  let total = 0;
+  document.querySelectorAll(`.d-qtd[data-linha="${n}"]`).forEach(el => { total += parseInt(el.value) || 0; });
+  const tEl = document.getElementById(`dtotal-${n}`);
+  if (tEl) tEl.textContent = total || 0;
+}
+
+/* ── Utilidades ──────────────────────── */
+function hoje() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+}
+</script>
+{% endblock %}

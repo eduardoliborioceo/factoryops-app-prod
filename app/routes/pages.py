@@ -2601,6 +2601,85 @@ def funcionalidades_pci_hub_embalagem_intervalos(sessao_id):
         return jsonify({"ok": False, "erro": "Erro ao calcular intervalos."}), 500
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# POSTO DE REVISÃO
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/revisao", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_posto_revisao():
+    from flask import request
+    from app.services import pci_revisao_service as svc
+
+    linha    = (request.args.get("linha")    or "").strip()
+    data_ini = (request.args.get("data_ini") or "").strip()
+    data_fim = (request.args.get("data_fim") or "").strip()
+    try:
+        relatorios = svc.listar(linha, data_ini, data_fim)
+    except Exception:
+        relatorios = []
+    return render_template(
+        "funcionalidades/pci_hub_revisao.html",
+        active_menu="funcionalidades_pci_hub",
+        relatorios=relatorios,
+        slots=svc.slots_padrao(),
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/revisao/salvar", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_revisao_salvar():
+    from flask import request, jsonify
+    from app.services import pci_revisao_service as svc
+
+    try:
+        body = request.get_json(force=True) or {}
+        cabecalho = body.get("cabecalho", {})
+        horas     = body.get("horas", [])
+        defeitos  = body.get("defeitos", [])
+        rel_id    = body.get("id")
+
+        if rel_id:
+            svc.atualizar_relatorio(int(rel_id), cabecalho, horas, defeitos)
+            return jsonify({"ok": True, "id": int(rel_id)})
+        else:
+            novo_id = svc.novo_relatorio(cabecalho, horas, defeitos)
+            return jsonify({"ok": True, "id": novo_id})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao salvar relatório."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/revisao/<int:rel_id>", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_revisao_carregar(rel_id):
+    from flask import jsonify
+    from app.services import pci_revisao_service as svc
+
+    try:
+        rel = svc.obter_relatorio(rel_id)
+        return jsonify({"ok": True, "relatorio": rel})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao carregar."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/revisao/<int:rel_id>/excluir", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_revisao_excluir(rel_id):
+    from flask import jsonify
+    from app.services import pci_revisao_service as svc
+
+    try:
+        svc.excluir(rel_id)
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao excluir."}), 500
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, send_from_directory, make_response
