@@ -1,0 +1,515 @@
+{% extends "layouts/app.html" %}
+{% block title %}Posto de Embalagem — PCI Hub{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Operação</span>
+    <h1 class="page-header-name">Posto de Embalagem</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ── Setup ────────────────────────────────────── */
+.setup-card {
+  max-width: 480px;
+  margin: 40px auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 36px 32px;
+}
+.setup-card .setup-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.setup-card .setup-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+/* ── Scanner ──────────────────────────────────── */
+.scan-infobar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+}
+.scan-info-chip {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.scan-info-chip strong { color: var(--text); font-weight: 700; }
+.scan-info-chip.count strong { font-size: 1.4rem; color: #0d6efd; }
+
+.scan-input-wrap {
+  position: relative;
+  margin-bottom: 20px;
+}
+.scan-input {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.scan-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 4px rgba(13,110,253,0.12);
+}
+.scan-input::placeholder { font-weight: 400; color: var(--text-muted); font-size: 0.9rem; }
+.scan-input-label {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  background: var(--card);
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0d6efd;
+}
+
+.scan-feedback {
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.scan-feedback.ok  { background: rgba(25,135,84,0.10); color: #198754; display: flex; }
+.scan-feedback.err { background: rgba(220,53,69,0.10);  color: #dc3545; display: flex; }
+
+/* ── Tabela de scans ──────────────────────────── */
+.scan-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.scan-list-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.scan-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+  transition: background 0.1s;
+}
+.scan-row:last-child { border-bottom: none; }
+.scan-row:hover { background: rgba(15,23,42,0.025); }
+.scan-row-num {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+.scan-row-serial { flex: 1; font-weight: 600; font-family: monospace; font-size: 0.88rem; }
+.scan-row-time { font-size: 0.75rem; color: var(--text-muted); }
+.scan-row-print {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.print-ok  { background: rgba(25,135,84,0.1);  color: #198754; }
+.print-pend{ background: rgba(255,193,7,0.15); color: #856404; }
+
+@media (max-width: 767px) {
+  .setup-card { margin: 16px auto; padding: 24px 18px; }
+  .scan-infobar { padding: 10px 14px; }
+  .scan-input { font-size: 1rem; padding: 16px 16px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- ── FASE 1: Setup ─────────────────────────── -->
+  <div id="faseSetup">
+    <div class="setup-card">
+      <div class="setup-title"><i class="bi bi-upc-scan me-2 text-primary"></i>Iniciar Sessão</div>
+      <div class="setup-sub">Identifique sua linha e OP antes de começar o scan de placas.</div>
+
+      <div class="mb-3">
+        <label class="form-label fw-600" style="font-size:0.8rem;">Linha de produção</label>
+        <div class="position-relative">
+          <input type="text" class="form-control" id="setupBuscaLinha"
+                 placeholder="Digite para buscar a linha..." autocomplete="off"
+                 style="border-radius:8px;">
+          <div id="setupLinhaDropdown"
+               style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:200;
+                      background:var(--card);border:1px solid var(--border);border-radius:8px;
+                      box-shadow:0 4px 16px rgba(15,23,42,0.12);max-height:220px;overflow-y:auto;"></div>
+        </div>
+        <input type="hidden" id="setupLinha">
+        <div id="setupLinhaOk" style="display:none;margin-top:6px;font-size:0.8rem;color:#198754;">
+          <i class="bi bi-check-circle-fill me-1"></i><span id="setupLinhaOkLabel"></span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-600" style="font-size:0.8rem;">Seu nome</label>
+        <input type="text" class="form-control" id="setupUsuario"
+               placeholder="Ex: Eduardo" style="border-radius:8px;"
+               autocomplete="off">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-600" style="font-size:0.8rem;">OP (Ordem de Produção)</label>
+        <input type="text" class="form-control" id="setupOp"
+               placeholder="Ex: 12345" style="border-radius:8px;text-transform:uppercase;"
+               oninput="this.value=this.value.toUpperCase()">
+      </div>
+
+      <div class="row g-2 mb-4">
+        <div class="col-6">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Modelo (opcional)</label>
+          <input type="text" class="form-control form-control-sm" id="setupModelo"
+                 placeholder="Ex: PCI-XYZ" style="border-radius:8px;text-transform:uppercase;"
+                 oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Turno (opcional)</label>
+          <select class="form-select form-select-sm" id="setupTurno" style="border-radius:8px;">
+            <option value="">—</option>
+            <option value="1">1º Turno</option>
+            <option value="2">2º Turno</option>
+            <option value="3">3º Turno</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-100 fw-600" style="border-radius:10px;padding:12px;"
+              id="btnIniciar" onclick="iniciarSessao()">
+        <i class="bi bi-play-fill me-2"></i>Iniciar Embalagem
+      </button>
+      <div id="setupErro" class="mt-3 text-danger" style="font-size:0.82rem;display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ── FASE 2: Scanner ───────────────────────── -->
+  <div id="faseScan" class="d-none">
+
+    <!-- Info bar -->
+    <div class="scan-infobar">
+      <div class="scan-info-chip">
+        <i class="bi bi-diagram-3" style="color:#0d6efd;"></i>
+        Linha: <strong id="scanLinha">—</strong>
+      </div>
+      <div class="scan-info-chip">
+        <i class="bi bi-person" style="color:#0d6efd;"></i>
+        Operador: <strong id="scanUsuario">—</strong>
+      </div>
+      <div class="scan-info-chip">
+        <i class="bi bi-card-list" style="color:#0d6efd;"></i>
+        OP: <strong id="scanOp">—</strong>
+      </div>
+      <div class="scan-info-chip count ms-auto">
+        <i class="bi bi-check2-all" style="color:#0d6efd;"></i>
+        <strong id="scanTotal">0</strong> <span style="font-size:0.78rem;font-weight:400;color:var(--text-muted);">placas</span>
+      </div>
+      <button class="btn btn-sm btn-outline-danger ms-2 fw-600" style="border-radius:8px;"
+              onclick="confirmarEncerrar()">
+        <i class="bi bi-stop-circle me-1"></i>Encerrar
+      </button>
+    </div>
+
+    <!-- Campo de scan -->
+    <div class="scan-input-wrap">
+      <span class="scan-input-label"><i class="bi bi-upc-scan me-1"></i>Bipe ou digite o serial</span>
+      <input type="text" class="scan-input" id="scanInput"
+             placeholder="Aguardando leitura do scanner..."
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             onkeydown="if(event.key==='Enter')processarScan()">
+    </div>
+
+    <!-- Feedback -->
+    <div class="scan-feedback" id="scanFeedback">
+      <i class="bi bi-check-circle-fill"></i>
+      <span id="scanFeedbackMsg"></span>
+    </div>
+
+    <!-- Lista de scans -->
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
+          <div class="scan-list-header">
+            <span class="scan-list-title">
+              <i class="bi bi-list-check me-2 text-primary"></i>Placas Bipadas
+            </span>
+            <span class="text-muted" style="font-size:0.75rem;" id="scanListCount"></span>
+          </div>
+        </div>
+        <div id="scanList" style="max-height:420px;overflow-y:auto;">
+          <div class="text-center py-5 text-muted" style="font-size:0.875rem;" id="scanListEmpty">
+            <i class="bi bi-upc-scan fs-2 mb-2 d-block opacity-25"></i>
+            Nenhuma placa bipada ainda.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_SESSAO      = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_sessao') }}";
+const URL_SCAN        = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_scan') }}";
+const URL_FECHAR      = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/fechar`;
+
+let _sessao = null;
+let _scans  = [];
+let _acTimer = null;
+
+/* ── Setup: busca de linha ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('setupBuscaLinha');
+  const drop = document.getElementById('setupLinhaDropdown');
+
+  inp.addEventListener('input', function () {
+    clearTimeout(_acTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { drop.style.display = 'none'; return; }
+    _acTimer = setTimeout(() => {
+      fetch(URL_BUSCA_LINHA + '?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(d => {
+          drop.innerHTML = '';
+          if (!d.resultados?.length) { drop.style.display = 'none'; return; }
+          d.resultados.forEach(r => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s;';
+            item.innerHTML = `<strong>${r.linha}</strong>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${r.filial} · ${r.setor}</span>`;
+            item.addEventListener('mouseenter', () => item.style.background = 'rgba(13,110,253,0.06)');
+            item.addEventListener('mouseleave', () => item.style.background = '');
+            item.addEventListener('click', () => {
+              document.getElementById('setupLinha').value = r.linha;
+              inp.value = r.linha;
+              drop.style.display = 'none';
+              document.getElementById('setupLinhaOkLabel').textContent = `${r.linha} · ${r.setor}`;
+              document.getElementById('setupLinhaOk').style.display = '';
+            });
+            drop.appendChild(item);
+          });
+          drop.style.display = 'block';
+        });
+    }, 200);
+  });
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+  });
+});
+
+/* ── Iniciar sessão ── */
+function iniciarSessao() {
+  const linha   = document.getElementById('setupLinha').value.trim();
+  const usuario = document.getElementById('setupUsuario').value.trim();
+  const op      = document.getElementById('setupOp').value.trim();
+  const modelo  = document.getElementById('setupModelo').value.trim();
+  const turno   = document.getElementById('setupTurno').value;
+  const erroEl  = document.getElementById('setupErro');
+  const btn     = document.getElementById('btnIniciar');
+
+  if (!linha) { mostrarErroSetup('Selecione a linha de produção.'); return; }
+  if (!usuario) { mostrarErroSetup('Informe seu nome.'); return; }
+  if (!op) { mostrarErroSetup('Informe a OP.'); return; }
+
+  btn.disabled = true;
+  erroEl.style.display = 'none';
+
+  fetch(URL_SESSAO, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ linha, usuario, op, modelo, turno }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      btn.disabled = false;
+      if (!d.ok) { mostrarErroSetup(d.erro || 'Erro ao criar sessão.'); return; }
+      _sessao = d.sessao;
+      _scans  = [];
+      document.getElementById('scanLinha').textContent   = _sessao.linha;
+      document.getElementById('scanUsuario').textContent = _sessao.usuario;
+      document.getElementById('scanOp').textContent      = _sessao.op;
+      document.getElementById('scanTotal').textContent   = '0';
+      document.getElementById('faseSetup').classList.add('d-none');
+      document.getElementById('faseScan').classList.remove('d-none');
+      setTimeout(() => document.getElementById('scanInput').focus(), 100);
+    })
+    .catch(() => { btn.disabled = false; mostrarErroSetup('Erro de conexão.'); });
+}
+
+function mostrarErroSetup(msg) {
+  const el = document.getElementById('setupErro');
+  el.textContent = msg;
+  el.style.display = '';
+}
+
+/* ── Processar scan ── */
+function processarScan() {
+  const inp    = document.getElementById('scanInput');
+  const serial = inp.value.trim();
+  if (!serial) return;
+  inp.value = '';
+
+  fetch(URL_SCAN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessao_id: _sessao.id, serial }),
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        _scans.unshift(d.scan);
+        document.getElementById('scanTotal').textContent = d.total;
+        renderScanList();
+        mostrarFeedback('ok', `${serial} — registrado com sucesso.`);
+        tentarImprimir(d.scan);
+      } else {
+        mostrarFeedback('err', d.erro || 'Erro ao registrar.');
+      }
+      inp.focus();
+    })
+    .catch(() => { mostrarFeedback('err', 'Erro de conexão.'); inp.focus(); });
+}
+
+/* ── Render lista ── */
+function renderScanList() {
+  const list  = document.getElementById('scanList');
+  const empty = document.getElementById('scanListEmpty');
+  const count = document.getElementById('scanListCount');
+
+  if (!_scans.length) {
+    list.innerHTML = '';
+    if (empty) list.appendChild(empty);
+    empty.style.display = '';
+    count.textContent = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  count.textContent = `${_scans.length} registros`;
+
+  list.innerHTML = _scans.map((s, idx) => `
+    <div class="scan-row">
+      <span class="scan-row-num">${_scans.length - idx}</span>
+      <span class="scan-row-serial">${esc(s.serial)}</span>
+      <span class="scan-row-time">${s.scaneado_em}</span>
+      <span class="scan-row-print ${s.impresso ? 'print-ok' : 'print-pend'}">
+        ${s.impresso ? '<i class="bi bi-printer-fill me-1"></i>Impresso' : '<i class="bi bi-clock me-1"></i>Pendente'}
+      </span>
+    </div>
+  `).join('');
+}
+
+/* ── Feedback ── */
+let _fbTimer;
+function mostrarFeedback(tipo, msg) {
+  const el = document.getElementById('scanFeedback');
+  const msgEl = document.getElementById('scanFeedbackMsg');
+  clearTimeout(_fbTimer);
+  el.className = 'scan-feedback ' + tipo;
+  el.querySelector('i').className = tipo === 'ok'
+    ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill';
+  msgEl.textContent = msg;
+  _fbTimer = setTimeout(() => { el.className = 'scan-feedback'; }, 3000);
+}
+
+/* ── Impressão Zebra (Zebra Browser Print) ── */
+function tentarImprimir(scan) {
+  if (typeof BrowserPrint === 'undefined') return;
+  BrowserPrint.getDefaultDevice('printer', device => {
+    if (!device) return;
+    const zpl = gerarZPL(scan);
+    device.send(zpl, () => marcarImpresso(scan.id), () => {});
+  }, () => {});
+}
+
+function gerarZPL(scan) {
+  const op     = _sessao?.op || '';
+  const serial = scan.serial;
+  const hora   = scan.scaneado_em;
+  const linha  = _sessao?.linha || '';
+  return `^XA
+^FO30,20^A0N,28,28^FDOP: ${op}^FS
+^FO30,56^A0N,24,24^FDLinha: ${linha}^FS
+^FO30,88^A0N,20,20^FDSN: ${serial}^FS
+^FO30,112^A0N,18,18^FD${hora}^FS
+^BY2,3,60^FO30,140^BCN,,Y,N^FD${serial}^FS
+^XZ`;
+}
+
+function marcarImpresso(scanId) {
+  const scan = _scans.find(s => s.id === scanId);
+  if (scan) { scan.impresso = true; renderScanList(); }
+}
+
+/* ── Encerrar sessão ── */
+function confirmarEncerrar() {
+  const total = parseInt(document.getElementById('scanTotal').textContent) || 0;
+  const msg = `Encerrar sessão? ${total} placa${total !== 1 ? 's' : ''} bipada${total !== 1 ? 's' : ''} serão finalizadas.`;
+  if (!confirm(msg)) return;
+  fetch(URL_FECHAR(_sessao.id), { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        _sessao = null;
+        _scans  = [];
+        document.getElementById('faseScan').classList.add('d-none');
+        document.getElementById('faseSetup').classList.remove('d-none');
+        document.getElementById('setupBuscaLinha').value = '';
+        document.getElementById('setupLinha').value = '';
+        document.getElementById('setupLinhaOk').style.display = 'none';
+        document.getElementById('setupUsuario').value = '';
+        document.getElementById('setupOp').value = '';
+        document.getElementById('setupModelo').value = '';
+        document.getElementById('setupErro').style.display = 'none';
+      }
+    });
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+</script>
+{% endblock %}

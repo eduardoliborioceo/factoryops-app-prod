@@ -2442,6 +2442,113 @@ def funcionalidades_sistema_input_excluir(registro_id):
         return jsonify({"ok": False, "erro": "Erro ao excluir registro."}), 500
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SISTEMA PCI HUB
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub():
+    return render_template(
+        "funcionalidades/pci_hub.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem():
+    return render_template(
+        "funcionalidades/pci_hub_embalagem.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_embalagem_sessao():
+    from flask import request, jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        data = request.get_json(force=True) or {}
+        sessao = svc.iniciar_sessao(
+            linha=data.get("linha", ""),
+            usuario=data.get("usuario", ""),
+            op=data.get("op", ""),
+            modelo=data.get("modelo", ""),
+            cliente=data.get("cliente", ""),
+            turno=data.get("turno", ""),
+        )
+        return jsonify({"ok": True, "sessao": sessao})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao criar sessão."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/scan", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_embalagem_scan():
+    from flask import request, jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        data = request.get_json(force=True) or {}
+        sessao_id = int(data.get("sessao_id", 0))
+        serial = data.get("serial", "")
+        scan, total = svc.processar_scan(sessao_id, serial)
+        return jsonify({
+            "ok": True,
+            "scan": {
+                "id": scan["id"],
+                "serial": scan["serial"],
+                "scaneado_em": str(scan["scaneado_em"])[-8:],
+                "impresso": scan["impresso"],
+            },
+            "total": total,
+        })
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao registrar scan."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao/<int:sessao_id>/scans", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem_scans(sessao_id):
+    from flask import jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        scans = svc.obter_scans(sessao_id)
+        return jsonify({"ok": True, "scans": [
+            {
+                "id": s["id"],
+                "serial": s["serial"],
+                "scaneado_em": str(s["scaneado_em"])[-8:],
+                "impresso": s["impresso"],
+            }
+            for s in scans
+        ]})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao listar scans."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao/<int:sessao_id>/fechar", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_embalagem_fechar(sessao_id):
+    from flask import jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        svc.fechar_sessao(sessao_id)
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao fechar sessão."}), 500
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, send_from_directory, make_response

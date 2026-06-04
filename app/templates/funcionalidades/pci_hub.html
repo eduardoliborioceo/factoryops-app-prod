@@ -1,0 +1,185 @@
+{% extends "layouts/app.html" %}
+{% block title %}Sistema PCI Hub{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades · Sistemas</span>
+    <h1 class="page-header-name">Sistema PCI Hub</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.hub-nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(15,23,42,0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.hub-nav-btn {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.hub-nav-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.10);
+}
+.hub-nav-btn:hover:not(.active) { color: var(--text); }
+
+.hub-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  text-decoration: none;
+  color: var(--text);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  margin-bottom: 10px;
+}
+.hub-card:hover {
+  box-shadow: 0 4px 16px rgba(15,23,42,0.09);
+  border-color: rgba(13,110,253,0.25);
+  transform: translateY(-1px);
+  color: var(--text);
+  text-decoration: none;
+}
+.hub-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.hub-card-body { flex: 1; min-width: 0; }
+.hub-card-name { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+.hub-card-desc { font-size: 0.78rem; color: var(--text-muted); }
+.hub-card-arrow { color: var(--text-muted); font-size: 0.9rem; }
+
+.em-dev {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+.em-dev i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.4; }
+.em-dev p { font-size: 0.875rem; margin: 0; }
+
+@media (max-width: 767px) {
+  .hub-nav { width: 100%; }
+  .hub-nav-btn { flex: 1; text-align: center; padding: 8px 12px; font-size: 0.82rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Navegação de módulos -->
+  <div class="hub-nav">
+    <button class="hub-nav-btn active" id="navProduto"   onclick="setTab('produto')">
+      <i class="bi bi-box-seam me-1"></i>Produto
+    </button>
+    <button class="hub-nav-btn" id="navCadastro"  onclick="setTab('cadastro')">
+      <i class="bi bi-clipboard-data me-1"></i>Cadastro
+    </button>
+    <button class="hub-nav-btn" id="navOperacao"  onclick="setTab('operacao')">
+      <i class="bi bi-play-circle me-1"></i>Operação
+    </button>
+    <button class="hub-nav-btn" id="navRelatorio" onclick="setTab('relatorio')">
+      <i class="bi bi-bar-chart-line me-1"></i>Relatório
+    </button>
+  </div>
+
+  <!-- ── ABA: PRODUTO ── -->
+  <div id="tabProduto">
+    <div class="em-dev">
+      <i class="bi bi-box-seam"></i>
+      <p>Módulo Produto em desenvolvimento.<br>As funcionalidades serão disponibilizadas em breve.</p>
+    </div>
+  </div>
+
+  <!-- ── ABA: CADASTRO ── -->
+  <div id="tabCadastro" class="d-none">
+    <div class="em-dev">
+      <i class="bi bi-clipboard-data"></i>
+      <p>Módulo Cadastro em desenvolvimento.<br>As funcionalidades serão disponibilizadas em breve.</p>
+    </div>
+  </div>
+
+  <!-- ── ABA: OPERAÇÃO ── -->
+  <div id="tabOperacao" class="d-none">
+    <p class="hub-section-title"><i class="bi bi-play-circle me-2"></i>Operação</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_embalagem') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-upc-scan"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Posto de Embalagem</div>
+            <div class="hub-card-desc">Scan de placas com leitor de código de barras e impressão de etiqueta Zebra por OP</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA: RELATÓRIO ── -->
+  <div id="tabRelatorio" class="d-none">
+    <div class="em-dev">
+      <i class="bi bi-bar-chart-line"></i>
+      <p>Módulo Relatório em desenvolvimento.<br>As funcionalidades serão disponibilizadas em breve.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const _tabs = ['produto', 'cadastro', 'operacao', 'relatorio'];
+
+function setTab(tab) {
+  _tabs.forEach(t => {
+    document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.toggle('d-none', t !== tab);
+    document.getElementById('nav' + t.charAt(0).toUpperCase() + t.slice(1))?.classList.toggle('active', t === tab);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hash = location.hash.replace('#', '') || 'produto';
+  if (_tabs.includes(hash)) setTab(hash);
+});
+</script>
+{% endblock %}
