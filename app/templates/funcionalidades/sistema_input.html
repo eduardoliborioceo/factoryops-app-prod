@@ -209,28 +209,68 @@
 
   <!-- ── ABA: HISTÓRICO ── -->
   <div id="tabHistorico" class="d-none">
-    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
-      <div class="card-body p-0">
-        <div class="d-flex align-items-center justify-content-between px-4 py-3"
-             style="border-bottom:1px solid var(--border);">
-          <h6 class="mb-0 fw-700" style="font-size:0.875rem;">
-            <i class="bi bi-clock-history me-2 text-primary"></i>Lançamentos Recentes (7 dias)
-          </h6>
-          <div class="d-flex gap-2 align-items-center">
-            <select class="form-select form-select-sm" id="histFiltroSetor" style="width:auto;border-radius:8px;font-size:0.8rem;">
-              <option value="">Todos setores</option>
+    <div class="card mb-3" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Data inicial</label>
+            <input type="date" class="form-control form-control-sm" id="histDataInicial" style="border-radius:8px;">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Data final</label>
+            <input type="date" class="form-control form-control-sm" id="histDataFinal" style="border-radius:8px;">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
+            <select class="form-select form-select-sm" id="histFiltroFilial" style="border-radius:8px;">
+              <option value="">Todas</option>
+              <option value="VTE">VTE</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
+            <select class="form-select form-select-sm" id="histFiltroSetor" style="border-radius:8px;">
+              <option value="">Todos</option>
               {% for s in setores %}
               <option value="{{ s }}">{{ s }}</option>
               {% endfor %}
             </select>
-            <button class="btn btn-outline-secondary btn-sm" style="border-radius:6px;" onclick="carregarHistorico()">
-              <i class="bi bi-arrow-clockwise"></i>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
+            <input type="text" class="form-control form-control-sm" id="histFiltroLinha"
+                   placeholder="Ex: IM-01" style="border-radius:8px;">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Turno</label>
+            <select class="form-select form-select-sm" id="histFiltroTurno" style="border-radius:8px;">
+              <option value="">Todos</option>
+              {% for t in turnos %}
+              <option value="{{ t }}">{{ t }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-12 d-flex justify-content-end">
+            <button class="btn btn-primary btn-sm fw-600" style="border-radius:8px;min-width:130px;"
+                    onclick="carregarHistorico()">
+              <i class="bi bi-search me-1"></i>Filtrar
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
+          <h6 class="mb-0 fw-700" style="font-size:0.875rem;">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Lançamentos
+          </h6>
+        </div>
         <div id="historicoBody" class="p-0">
           <div class="text-center py-5 text-muted" style="font-size:0.875rem;">
-            <i class="bi bi-clock-history fs-2 mb-2 d-block"></i>Carregando histórico...
+            <i class="bi bi-clock-history fs-2 mb-2 d-block"></i>Use os filtros acima e clique em Filtrar.
           </div>
         </div>
       </div>
@@ -254,8 +294,13 @@ let _tabAtiva    = 'hxh';
 let _setor_atual = '';
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('filtroData').value =
-    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+  const hoje7 = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+  document.getElementById('filtroData').value = hoje7;
+
+  const d7 = new Date();
+  d7.setDate(d7.getDate() - 6);
+  document.getElementById('histDataInicial').value = d7.toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+  document.getElementById('histDataFinal').value   = hoje7;
 
   /* ── Busca inteligente de linha ── */
   const buscaInput    = document.getElementById('buscaLinha');
@@ -713,10 +758,15 @@ function excluirSlot(id, i) {
 
 /* ─────────────── HISTÓRICO ─────────────── */
 function carregarHistorico() {
-  const setor = document.getElementById('histFiltroSetor').value;
-  const body  = document.getElementById('historicoBody');
+  const filial       = document.getElementById('histFiltroFilial')?.value || '';
+  const setor        = document.getElementById('histFiltroSetor')?.value  || '';
+  const linha        = document.getElementById('histFiltroLinha')?.value  || '';
+  const turno        = document.getElementById('histFiltroTurno')?.value  || '';
+  const data_inicial = document.getElementById('histDataInicial')?.value  || '';
+  const data_final   = document.getElementById('histDataFinal')?.value    || '';
+  const body = document.getElementById('historicoBody');
   body.innerHTML = '<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Carregando...</div>';
-  fetch(URL_HIST + '?' + new URLSearchParams({ setor }))
+  fetch(URL_HIST + '?' + new URLSearchParams({ filial, setor, linha, turno, data_inicial, data_final }))
     .then(r=>r.json())
     .then(d => {
       if (!d.registros?.length) {
