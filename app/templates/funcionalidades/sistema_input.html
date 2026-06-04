@@ -249,8 +249,9 @@ const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_
 const URL_EXCLUIR     = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
 
 const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
-let _slotsState = [];
-let _tabAtiva   = 'hxh';
+let _slotsState  = [];
+let _tabAtiva    = 'hxh';
+let _setor_atual = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filtroData').value =
@@ -357,7 +358,8 @@ function carregarSlots() {
           Nenhum slot encontrado. Verifique se há turno configurado para esta linha.</div>`;
         return;
       }
-      _slotsState = resp.slots.map((s, i) => ({ ...s, _idx: i, _data: data, _filial: filial, _setor: setor, _linha: linha, _turno: turno }));
+      _setor_atual = setor;
+      _slotsState  = resp.slots.map((s, i) => ({ ...s, _idx: i, _data: data, _filial: filial, _setor: setor, _linha: linha, _turno: turno }));
       renderSlots();
     })
     .catch(() => { area.innerHTML = `<div class="alert alert-danger">Erro de conexão.</div>`; });
@@ -397,7 +399,7 @@ function buildSlotCard(slot, i) {
     ? `<span class="slot-status" style="background:rgba(25,135,84,0.1);color:#198754;"><i class="bi bi-check-circle-fill me-1"></i>Salvo</span>`
     : `<span class="slot-status" style="background:rgba(15,23,42,0.06);color:var(--text-muted);">Pendente</span>`;
   const modeloLabel = slot.modelo
-    ? `${slot.modelo}${slot.op ? ' · OP '+slot.op : ''}${slot.fase ? ' · '+slot.fase : ''}`
+    ? `${slot.modelo}${slot.op ? ' · OP '+slot.op : ''}${slot.fase && _setor_atual === 'SMD' ? ' · '+slot.fase : ''}`
     : '<em style="color:var(--text-muted);">Sem plano de voo — preencher manualmente</em>';
 
   return `<div class="slot-card${salvo?' slot-salvo':''}" id="slot-card-${i}">
@@ -429,13 +431,14 @@ function buildSlotCard(slot, i) {
               <input type="text" class="form-control form-control-sm" id="s${i}_op"
                      value="${esc(lc?.op||slot.op||'')}" style="border-radius:8px;">
             </div>
+            ${_setor_atual === 'SMD' ? `
             <div class="col-4 col-md-2">
-              <label class="form-label fw-600" style="font-size:0.75rem;">Fase</label>
+              <label class="form-label fw-600" style="font-size:0.75rem;">Fase SMD</label>
               <select class="form-select form-select-sm" id="s${i}_fase" style="border-radius:8px;">
                 <option value="">—</option>
-                ${['SMD','PTH','IM/PA'].map(f=>`<option value="${f}" ${(lc?.fase||slot.fase)===f?'selected':''}>${f}</option>`).join('')}
+                ${['TOP','BOTTOM'].map(f=>`<option value="${f}" ${(lc?.fase||slot.fase)?.toUpperCase()===f?'selected':''}>${f.charAt(0)+f.slice(1).toLowerCase()}</option>`).join('')}
               </select>
-            </div>
+            </div>` : `<input type="hidden" id="s${i}_fase" value="">`}
             <div class="col-4 col-md-2">
               <label class="form-label fw-600" style="font-size:0.75rem;">Meta/hora</label>
               <input type="number" class="form-control form-control-sm" id="s${i}_meta"
