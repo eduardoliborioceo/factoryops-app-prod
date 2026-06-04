@@ -129,6 +129,13 @@
 .combo-opt:last-child { border-bottom: none; }
 .combo-opt:hover { background: rgba(13,110,253,0.07); }
 .combo-opt strong { color: var(--primary); font-size: 0.72rem; }
+.combo-hint {
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
 </style>
 {% endblock %}
 
@@ -455,6 +462,7 @@ function renderJustificativas(justs, i) {
                onblur="comboClose(this)"
                style="border-radius:6px;">
         <div class="combo-list">
+          <div class="combo-hint">Digite para filtrar...</div>
           ${MOTIVOS.map(m => `<div class="combo-opt" data-value="${m.codigo}" data-label="${m.codigo} — ${m.descricao}" onmousedown="comboPickMotivo(event,${i},${ji})"><strong>${m.codigo}</strong> — ${m.descricao}</div>`).join('')}
         </div>
       </div>
@@ -499,6 +507,7 @@ function renderDefeitos(defs, i) {
                onblur="comboClose(this)"
                style="border-radius:6px;">
         <div class="combo-list">
+          <div class="combo-hint">Digite para filtrar...</div>
           ${DEFEITOS.map(df => `<div class="combo-opt" data-value="${df.codigo}" data-label="${df.codigo} — ${df.descricao}" onmousedown="comboPickDefeito(event,${i})"><strong>${df.codigo}</strong> — ${df.descricao}</div>`).join('')}
         </div>
       </div>
@@ -585,15 +594,33 @@ function normalize(s) {
 function comboOpen(inp) {
   inp.select();
   const list = inp.closest('.combo-wrap').querySelector('.combo-list');
-  list.querySelectorAll('.combo-opt').forEach(o => o.style.display = '');
+  const hint = list.querySelector('.combo-hint');
+  if (!inp.value.trim()) {
+    list.querySelectorAll('.combo-opt').forEach(o => o.style.display = 'none');
+    if (hint) hint.style.display = '';
+  } else {
+    if (hint) hint.style.display = 'none';
+    const q = normalize(inp.value);
+    list.querySelectorAll('.combo-opt').forEach(o => {
+      o.style.display = normalize(o.dataset.label).includes(q) ? '' : 'none';
+    });
+  }
   list.style.display = 'block';
 }
 
 function comboFilter(inp) {
   const wrap = inp.closest('.combo-wrap');
   const list = wrap.querySelector('.combo-list');
+  const hint = list.querySelector('.combo-hint');
+  if (!inp.value.trim()) {
+    inp.dataset.selected = '';
+    list.querySelectorAll('.combo-opt').forEach(o => o.style.display = 'none');
+    if (hint) hint.style.display = '';
+    list.style.display = 'block';
+    return;
+  }
+  if (hint) hint.style.display = 'none';
   const q = normalize(inp.value);
-  if (!inp.value.trim()) inp.dataset.selected = '';
   list.style.display = 'block';
   list.querySelectorAll('.combo-opt').forEach(o => {
     o.style.display = normalize(o.dataset.label).includes(q) ? '' : 'none';
