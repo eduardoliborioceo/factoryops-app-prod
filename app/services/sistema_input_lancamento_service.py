@@ -37,11 +37,15 @@ def slots_do_turno(data_str: str, setor: str, linha: str, turno: str) -> list:
 
         meta_hora = slot.get("meta_hora") or slot.get("taxa_horaria") or 0
 
+        cliente = slot.get("cliente") or ""
+        if not cliente and slot.get("modelo"):
+            cliente = _buscar_familia(slot["modelo"])
+
         resultado.append({
             "hora_inicio": hora_inicio,
             "hora_fim": hora_fim,
             "modelo": slot.get("modelo") or "",
-            "cliente": slot.get("cliente") or "",
+            "cliente": cliente,
             "op": slot.get("numero_op") or "",
             "fase": slot.get("fase") or "",
             "meta_hora": int(meta_hora) if meta_hora else 0,
@@ -50,6 +54,14 @@ def slots_do_turno(data_str: str, setor: str, linha: str, turno: str) -> list:
         })
 
     return resultado
+
+
+def _buscar_familia(modelo: str) -> str:
+    try:
+        from app.repositories import planejamento_repository as plan_repo
+        return plan_repo.familia_por_modelo(modelo) or ""
+    except Exception:
+        return ""
 
 
 def _gerar_slots_vazios(intervalos: list, data_str: str) -> list:

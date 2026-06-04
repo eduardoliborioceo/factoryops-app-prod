@@ -170,7 +170,14 @@ def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str 
                        (co.quantidade - co.produzido) AS saldo_op,
                        p.quantidade_planejada, p.taxa_horaria, p.setup_min,
                        p.hora_inicio_prevista, p.hora_fim_prevista, p.status,
-                       COALESCE(m.cliente, '') AS cliente
+                       COALESCE(
+                           (SELECT pc.familia FROM producao_coletada pc
+                            WHERE pc.modelo = p.modelo
+                              AND pc.familia IS NOT NULL AND pc.familia <> ''
+                            LIMIT 1),
+                           m.cliente,
+                           ''
+                       ) AS cliente
                 FROM planejamento p
                 LEFT JOIN controle_ops co ON co.id = p.op_id
                 LEFT JOIN modelos m ON UPPER(TRIM(m.codigo)) = UPPER(TRIM(p.modelo))
