@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% block title %}Mais{% endblock %}
+{% block title %}Menu · {{ APP_NAME }}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/more.css') }}?v={{ APP_VERSION }}">
@@ -9,12 +9,9 @@
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">Navegação</span>
-    <h1 class="page-header-name">Mais</h1>
+    <h1 class="page-header-name">Menu Completo</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -25,18 +22,21 @@
 {% block content %}
 <div class="container-fluid">
 
+  <!-- ── FUNCIONALIDADES ─────────────────────────────────── -->
   <div class="section-label">Funcionalidades</div>
   <div class="row g-2 mb-4">
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_modelos') }}">
         <div class="more-icon"><i class="bi bi-table"></i></div>
         <div class="more-text">
-          <div class="more-title">SMT</div>
+          <div class="more-title">SMD</div>
           <div class="more-subtitle">Modelos cadastrados</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_cadastro') }}">
         <div class="more-icon"><i class="bi bi-plus-square"></i></div>
@@ -47,6 +47,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_calcular') }}">
         <div class="more-icon"><i class="bi bi-calculator"></i></div>
@@ -57,60 +58,92 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.funcionalidades_im_pa') }}">
         <div class="more-icon"><i class="bi bi-cpu"></i></div>
         <div class="more-text">
-          <div class="more-title">IM/PA</div>
-          <div class="more-subtitle">Modelos cadastrados</div>
+          <div class="more-title">IM / PA</div>
+          <div class="more-subtitle">VTE</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.funcionalidades_pth') }}">
         <div class="more-icon"><i class="bi bi-diagram-3"></i></div>
         <div class="more-text">
           <div class="more-title">PTH</div>
-          <div class="more-subtitle">Modelos cadastrados</div>
+          <div class="more-subtitle">VTE</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.funcionalidades_vtt') }}">
-        <div class="more-icon"><i class="bi bi-tools"></i></div>
+        <div class="more-icon"><i class="bi bi-building-fill"></i></div>
         <div class="more-text">
           <div class="more-title">VTT</div>
-          <div class="more-subtitle">Modelos cadastrados</div>
+          <div class="more-subtitle">Modelos VTT</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.funcionalidades_resumo_producao') }}">
         <div class="more-icon"><i class="bi bi-bar-chart-steps"></i></div>
         <div class="more-text">
-          <div class="more-title">Resumo de Produção</div>
+          <div class="more-title">Resumo Produção</div>
           <div class="more-subtitle">Relatório de turno</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_etiquetas_manuais') }}">
+        <div class="more-icon"><i class="bi bi-tag"></i></div>
+        <div class="more-text">
+          <div class="more-title">Etiquetas Manuais</div>
+          <div class="more-subtitle">Impressão manual</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-12">
+      <a class="more-card" href="{{ url_for('pages.funcionalidades_sistema_input') }}">
+        <div class="more-icon" style="background:rgba(253,126,20,0.1);color:#fd7e14;">
+          <i class="bi bi-input-cursor-text"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Sistema INPUT</div>
+          <div class="more-subtitle">Lançamento hora a hora, justificativas e defeitos</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
   </div>
 
+  <!-- ── PRODUÇÃO ──────────────────────────────────────── -->
   <div class="section-label">Produção</div>
   <div class="row g-2 mb-4">
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.producao_medicao_pasta') }}">
         <div class="more-icon is-producao"><i class="bi bi-rulers"></i></div>
         <div class="more-text">
           <div class="more-title">Medição Pasta de Solda</div>
-          <div class="more-subtitle">Controle de altura</div>
+          <div class="more-subtitle">Controle de altura SMD</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.producao_checklist_linha') }}">
         <div class="more-icon is-producao"><i class="bi bi-clipboard-check"></i></div>
@@ -121,6 +154,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.producao_limpeza_stencil') }}">
         <div class="more-icon is-producao"><i class="bi bi-eraser"></i></div>
@@ -131,20 +165,24 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.smd_monitor_tv') }}">
         <div class="more-icon is-producao"><i class="bi bi-display"></i></div>
         <div class="more-text">
-          <div class="more-title">Monitor SMD TV</div>
+          <div class="more-title">Monitor SMD (TV)</div>
           <div class="more-subtitle">Painel de produção</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
   </div>
 
+  <!-- ── ENGENHARIA ─────────────────────────────────────── -->
   <div class="section-label">Engenharia</div>
   <div class="row g-2 mb-4">
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_estudo_tempo') }}">
         <div class="more-icon is-engenharia"><i class="bi bi-stopwatch"></i></div>
@@ -155,6 +193,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.engenharia_folha_crono') }}">
         <div class="more-icon is-engenharia"><i class="bi bi-journal-text"></i></div>
@@ -165,10 +204,13 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
   </div>
 
+  <!-- ── PCP ───────────────────────────────────────────── -->
   <div class="section-label">PCP</div>
   <div class="row g-2 mb-4">
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_planejamento') }}">
         <div class="more-icon is-pcp"><i class="bi bi-calendar-week"></i></div>
@@ -179,6 +221,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_controle_ops') }}">
         <div class="more-icon is-pcp"><i class="bi bi-file-earmark-text"></i></div>
@@ -189,6 +232,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_apontamento') }}">
         <div class="more-icon is-pcp"><i class="bi bi-clipboard-check"></i></div>
@@ -199,6 +243,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_entregas') }}">
         <div class="more-icon is-pcp"><i class="bi bi-truck"></i></div>
@@ -209,17 +254,19 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     {% if current_user.is_authenticated and current_user.is_admin %}
     <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.pcp_producao_coletada') }}">
-        <div class="more-icon is-pcp"><i class="bi bi-database-down"></i></div>
+      <a class="more-card" href="{{ url_for('pages.pcp_roteiros') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-diagram-3"></i></div>
         <div class="more-text">
-          <div class="more-title">Produção Coletada</div>
-          <div class="more-subtitle">Dados coletados</div>
+          <div class="more-title">Roteiros</div>
+          <div class="more-subtitle">Fluxo de produção</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_lancamento_producao') }}">
         <div class="more-icon is-pcp"><i class="bi bi-pencil-square"></i></div>
@@ -230,21 +277,36 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
-    <div class="col-12">
-      <a class="more-card" href="{{ url_for('pages.pcp_roteiros') }}">
-        <div class="more-icon is-pcp"><i class="bi bi-diagram-3"></i></div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_producao_coletada') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-database-down"></i></div>
         <div class="more-text">
-          <div class="more-title">Roteiros</div>
-          <div class="more-subtitle">Fluxo de produção</div>
+          <div class="more-title">Produção Input</div>
+          <div class="more-subtitle">Dados coletados</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.pcp_producao_mes') }}">
+        <div class="more-icon is-pcp"><i class="bi bi-database-down"></i></div>
+        <div class="more-text">
+          <div class="more-title">Produção MES</div>
+          <div class="more-subtitle">Dados do MES</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
     {% endif %}
+
   </div>
 
-  <div class="section-label">Logística</div>
+  <!-- ── ESTOQUE & LOGÍSTICA ────────────────────────────── -->
+  <div class="section-label">Estoque &amp; Logística</div>
   <div class="row g-2 mb-4">
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.logistica_resumo') }}">
         <div class="more-icon is-logistica"><i class="bi bi-clipboard-data"></i></div>
@@ -255,6 +317,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.pcp_entregas') }}?tab=logistica">
         <div class="more-icon is-logistica"><i class="bi bi-truck"></i></div>
@@ -265,10 +328,24 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
+    <div class="col-12">
+      <a class="more-card" href="{{ url_for('pages.logistica_conferencia_material') }}">
+        <div class="more-icon is-logistica"><i class="bi bi-clipboard2-check"></i></div>
+        <div class="more-text">
+          <div class="more-title">Conferência de Material</div>
+          <div class="more-subtitle">Verificação de recebimento</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
   </div>
 
+  <!-- ── SUPORTE ────────────────────────────────────────── -->
   <div class="section-label">Suporte</div>
   <div class="row g-2 mb-4">
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.suporte_centro_conhecimento') }}">
         <div class="more-icon is-suporte"><i class="bi bi-journal-richtext"></i></div>
@@ -279,6 +356,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.suporte_ouvidoria') }}">
         <div class="more-icon is-suporte"><i class="bi bi-megaphone"></i></div>
@@ -289,6 +367,7 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.suporte_especializado') }}">
         <div class="more-icon is-suporte"><i class="bi bi-headset"></i></div>
@@ -299,7 +378,146 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
   </div>
+
+  <!-- ── CONFIGURAÇÕES (admin) ─────────────────────────── -->
+  {% if current_user.is_authenticated and current_user.is_admin %}
+  <div class="section-label">Configurações</div>
+  <div class="row g-2 mb-4">
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.config_empresa') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-building-gear"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Empresa</div>
+          <div class="more-subtitle">Logo e identidade</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.config_turnos') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-clock-history"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Turnos</div>
+          <div class="more-subtitle">Horários dos turnos</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.config_linhas') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-diagram-2"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Linhas e Setores</div>
+          <div class="more-subtitle">Configuração de linhas</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.config_paradas') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-pause-circle"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Paradas de Linha</div>
+          <div class="more-subtitle">Tipos de parada</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.admin_sync') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-arrow-repeat"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Sync Automático</div>
+          <div class="more-subtitle">Configuração de sync</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.config_manual') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-book"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Manual do Sistema</div>
+          <div class="more-subtitle">Documentação</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.admin_backup') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-database-gear"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Backup</div>
+          <div class="more-subtitle">Backup do banco</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.admin_chamados') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-ticket"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Chamados</div>
+          <div class="more-subtitle">Suporte interno</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('auth.admin_users') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-person-check"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Aprovar Usuários</div>
+          <div class="more-subtitle">Pendentes de acesso</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('auth.admin_users_all') }}">
+        <div class="more-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+          <i class="bi bi-people"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">Todos Usuários</div>
+          <div class="more-subtitle">Gestão de acesso</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+  </div>
+  {% endif %}
 
 </div>
 {% endblock %}
