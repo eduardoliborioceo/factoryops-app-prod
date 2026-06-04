@@ -2227,7 +2227,7 @@ def funcionalidades_sistema_input_lancamento():
     try:
         catalogos = svc.catalogos()
         filtros = pc_svc.filtros_disponiveis(setor)
-        turnos = sorted({t["turno"] for t in turno_repo.listar()})
+        turnos = turno_repo.listar_nomes_unicos()
     except Exception:
         catalogos = {"motivos": [], "defeitos": []}
         filtros = {"setores": [], "linhas": []}
@@ -2328,7 +2328,7 @@ def funcionalidades_sistema_input():
     try:
         catalogos = lsvc.catalogos()
         setores = pc_repo.setores_disponiveis() or []
-        turnos = sorted({t["turno"] for t in turno_repo.listar()})
+        turnos = turno_repo.listar_nomes_unicos()
     except Exception:
         catalogos = {"motivos": [], "defeitos": []}
         setores = []
