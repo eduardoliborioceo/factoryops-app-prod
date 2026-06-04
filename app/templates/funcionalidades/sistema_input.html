@@ -751,7 +751,9 @@ function buildDefRow(d, i, di) {
       <div class="col-7 col-sm-4">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Posição Mecânica</label>
         <input class="form-control form-control-sm" id="s${i}_def_${di}_pos"
-               value="${esc(d.posicao_mecanica||'')}" placeholder="Ex: U10, R3..." style="border-radius:6px;">
+               value="${esc(d.posicao_mecanica||'')}" placeholder="Ex: U10, R3..."
+               style="border-radius:6px;text-transform:uppercase;"
+               oninput="this.value=this.value.toUpperCase()">
       </div>
       <div class="col-3 col-sm-2">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Qtd</label>
@@ -909,12 +911,13 @@ function calcDtotal(i) {
   let t = 0; c.querySelectorAll('[id$="_qtd"]').forEach(e=>{ t+=parseInt(e.value||0)||0; });
   const prod = parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0;
   if (t <= 0) { d.style.display = 'none'; d.innerHTML = ''; return; }
-  const yld = prod > 0 ? Math.max(0, Math.min(100, Math.round((prod - t) / prod * 100))) : 0;
-  const cor = yld >= 99 ? '#198754' : yld >= 95 ? '#fd7e14' : '#dc3545';
+  const yldRaw = prod > 0 ? Math.max(0, Math.min(100, (prod - t) / prod * 100)) : 0;
+  const yldStr = yldRaw.toFixed(2).replace('.', ',');
+  const cor = yldRaw >= 99 ? '#198754' : yldRaw >= 95 ? '#fd7e14' : '#dc3545';
   d.style.display = '';
   d.className = 'perda-display';
-  d.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${yld}%;background:${cor};"></div></div>
-    <span>Yield: <strong style="color:${cor};">${yld}%</strong> — Defeitos: <strong>${t}</strong>${prod > 0 ? ` de <strong>${prod}</strong> pcs` : ''}</span>`;
+  d.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${yldRaw}%;background:${cor};"></div></div>
+    <span>Yield: <strong style="color:${cor};">${yldStr}%</strong> — Defeitos: <strong>${t}</strong>${prod > 0 ? ` de <strong>${prod}</strong> pcs` : ''}</span>`;
 }
 
 function coletarSlot(i) {
