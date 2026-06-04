@@ -1,7 +1,21 @@
+from collections import defaultdict
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from app.repositories import pci_hub_repository as repo
 
+_TZ = ZoneInfo("America/Manaus")
 
-def iniciar_sessao(linha: str, usuario: str, op: str, modelo: str, cliente: str, turno: str) -> dict:
+
+def iniciar_sessao(
+    linha: str,
+    usuario: str,
+    op: str,
+    modelo: str,
+    cliente: str,
+    turno: str,
+    meta_hora: int | None,
+) -> dict:
     if not linha or not usuario or not op:
         raise ValueError("Linha, usuário e OP são obrigatórios.")
     return repo.criar_sessao(
@@ -11,6 +25,7 @@ def iniciar_sessao(linha: str, usuario: str, op: str, modelo: str, cliente: str,
         modelo=modelo.strip() or None,
         cliente=cliente.strip() or None,
         turno=turno.strip() or None,
+        meta_hora=int(meta_hora) if meta_hora else None,
     )
 
 
@@ -31,3 +46,77 @@ def obter_scans(sessao_id: int) -> list:
 
 def fechar_sessao(sessao_id: int) -> None:
     repo.fechar_sessao(sessao_id)
+
+
+def detectar_turno() -> dict:
+    from app.repositories import turno_config_repository as turno_repo
+
+    agora = datetime.now(_TZ)
+    hora_atual = agora.time()
+    hora_str = agora.strftime("%H:%M")
+
+    todos = turno_repo.listar()
+
+    por_turno: dict[str, list] = defaultdict(list)
+    for row in todos:
+        nome = row["turno"].replace("§", "º").replace("°", "º")
+        por_turno[nome].append(row)
+
+    turno_ativo = None
+    for nome, intervals in por_turno.items():
+        inicio = min(iv["hora_inicio"] for iv in intervals)
+        fim = max(iv["hora_fim"] for iv in intervals)
+        if inicio <= fim:
+            if inicio <= hora_atual <= fim:
+                turno_ativo = nome
+                break
+        else:
+            if hora_atual >= inicio or hora_atual <= fim:
+                turno_ativo = nome
+                break
+
+    intervalos = []
+    if turno_ativo:
+        for iv in sorted(por_turno[turno_ativo], key=lambda x: x["ordem"]):
+            intervalos.append({
+                "ordem": iv["ordem"],
+                "hora_inicio": iv["hora_inicio"].strftime("%H:%M"),
+                "hora_fim": iv["hora_fim"].strftime("%H:%M"),
+                "atual": iv["hora_inicio"] <= hora_atual < iv["hora_fim"],
+            })
+
+    return {"turno": turno_ativo, "hora_atual": hora_str, "intervalos": intervalos}
+
+
+def obter_intervalos_sessao(sessao_id: int) -> dict:
+    from app.repositories import turno_config_repository as turno_repo
+
+    sessao = repo.buscar_sessao(sessao_id)
+    if not sessao:
+        raise ValueError("Sessão não encontrada.")
+
+    meta_hora = sessao.get("meta_hora")
+    turno = sessao.get("turno")
+    data = sessao.get("data")
+
+    if not turno or not data:
+        return {"meta_hora": meta_hora, "intervalos": []}
+
+    intervalos_config = turno_repo.listar_por_turno(turno)
+    hora_atual = datetime.now(_TZ).time()
+
+    resultado = []
+    for iv in intervalos_config:
+        hora_ini = iv["hora_inicio"]
+        hora_fim = iv["hora_fim"]
+        total = repo.scans_no_intervalo(sessao_id, data, hora_ini, hora_fim)
+        atual = hora_ini <= hora_atual < hora_fim
+        resultado.append({
+            "hora_inicio": hora_ini.strftime("%H:%M"),
+            "hora_fim": hora_fim.strftime("%H:%M"),
+            "ordem": iv["ordem"],
+            "total": total,
+            "atual": atual,
+        })
+
+    return {"meta_hora": meta_hora, "intervalos": resultado}

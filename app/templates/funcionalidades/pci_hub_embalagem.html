@@ -8,7 +8,7 @@
     <h1 class="page-header-name">Posto de Embalagem</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar" id="btnVoltar">
       <i class="bi bi-arrow-left"></i>
     </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
@@ -20,63 +20,101 @@
 
 {% block styles %}
 <style>
-/* ── Setup ────────────────────────────────────── */
+/* ─── Setup ─────────────────────────────────────────────────── */
+.setup-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: calc(100vh - 160px);
+  padding: 24px 0;
+}
 .setup-card {
-  max-width: 480px;
-  margin: 40px auto;
+  width: 100%;
+  max-width: 520px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--card);
-  padding: 36px 32px;
+  padding: 36px 32px 28px;
 }
-.setup-card .setup-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 4px;
+.setup-logo {
+  width: 44px; height: 44px;
+  background: rgba(13,110,253,0.10);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; color: #0d6efd;
+  margin-bottom: 16px;
 }
-.setup-card .setup-sub {
-  font-size: 0.82rem;
+.setup-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 2px; }
+.setup-sub   { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px; }
+.turno-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(25,135,84,0.10);
+  color: #198754;
+  font-size: 0.8rem; font-weight: 700;
+  border: 1px solid rgba(25,135,84,0.20);
+}
+.turno-badge.sem-turno {
+  background: rgba(15,23,42,0.06);
   color: var(--text-muted);
-  margin-bottom: 28px;
+  border-color: var(--border);
 }
 
-/* ── Scanner ──────────────────────────────────── */
+/* ─── Scanner — layout expandido ────────────────────────────── */
+.scan-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 140px);
+  gap: 12px;
+}
+
+/* Barra de info */
 .scan-infobar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   align-items: center;
+  gap: 8px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 18px;
-  margin-bottom: 16px;
+  padding: 10px 16px;
 }
-.scan-info-chip {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.scan-info-chip strong { color: var(--text); font-weight: 700; }
-.scan-info-chip.count strong { font-size: 1.4rem; color: #0d6efd; }
+.ic { display: flex; align-items: center; gap: 5px; font-size: 0.78rem; color: var(--text-muted); }
+.ic strong { color: var(--text); font-weight: 700; }
+.ic-sep { color: var(--border); font-size: 1rem; }
+.ic-count strong { font-size: 1.35rem; color: #0d6efd; font-weight: 800; }
 
-.scan-input-wrap {
-  position: relative;
-  margin-bottom: 20px;
+/* Grid principal */
+.scan-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  flex: 1;
 }
+@media (min-width: 900px) {
+  .scan-grid { grid-template-columns: 3fr 2fr; }
+}
+
+/* Coluna esquerda — scanner + lista */
+.scan-col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.scan-input-wrap { position: relative; }
 .scan-input {
   width: 100%;
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 18px 20px;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 600;
   background: var(--card);
   color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .scan-input:focus {
   border-color: #0d6efd;
@@ -84,284 +122,511 @@
 }
 .scan-input::placeholder { font-weight: 400; color: var(--text-muted); font-size: 0.9rem; }
 .scan-input-label {
-  position: absolute;
-  top: -9px;
-  left: 14px;
-  background: var(--card);
-  padding: 0 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #0d6efd;
+  position: absolute; top: -9px; left: 14px;
+  background: var(--bg); padding: 0 6px;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #0d6efd;
 }
-
 .scan-feedback {
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  display: none;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  display: none; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 8px;
+  font-size: 0.875rem; font-weight: 600;
 }
-.scan-feedback.ok  { background: rgba(25,135,84,0.10); color: #198754; display: flex; }
-.scan-feedback.err { background: rgba(220,53,69,0.10);  color: #dc3545; display: flex; }
+.scan-feedback.ok  { display: flex; background: rgba(25,135,84,0.10); color: #198754; }
+.scan-feedback.err { display: flex; background: rgba(220,53,69,0.10);  color: #dc3545; }
 
-/* ── Tabela de scans ──────────────────────────── */
-.scan-list-header {
+.scan-list-card {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
-.scan-list-title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text);
+.scan-list-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
+.scan-list-head-title { font-size: 0.8rem; font-weight: 700; }
+.scan-list-body { overflow-y: auto; flex: 1; max-height: 380px; }
+@media (min-width: 900px) { .scan-list-body { max-height: calc(100vh - 380px); } }
+
 .scan-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 0.82rem;
-  transition: background 0.1s;
 }
 .scan-row:last-child { border-bottom: none; }
 .scan-row:hover { background: rgba(15,23,42,0.025); }
-.scan-row-num {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  min-width: 28px;
-  text-align: right;
-}
-.scan-row-serial { flex: 1; font-weight: 600; font-family: monospace; font-size: 0.88rem; }
-.scan-row-time { font-size: 0.75rem; color: var(--text-muted); }
-.scan-row-print {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-.print-ok  { background: rgba(25,135,84,0.1);  color: #198754; }
-.print-pend{ background: rgba(255,193,7,0.15); color: #856404; }
+.scan-num  { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); min-width: 28px; text-align: right; }
+.scan-ser  { flex: 1; font-family: monospace; font-weight: 600; font-size: 0.88rem; word-break: break-all; }
+.scan-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+.scan-prt  { font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+.prt-ok   { background: rgba(25,135,84,0.10);  color: #198754; }
+.prt-pend { background: rgba(255,193,7,0.15); color: #856404; }
 
-@media (max-width: 767px) {
-  .setup-card { margin: 16px auto; padding: 24px 18px; }
-  .scan-infobar { padding: 10px 14px; }
-  .scan-input { font-size: 1rem; padding: 16px 16px; }
+/* Coluna direita — tabela de intervalos */
+.scan-col-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
+.interval-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.interval-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.interval-head-title { font-size: 0.8rem; font-weight: 700; }
+.interval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.interval-table thead th {
+  padding: 7px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  background: rgba(15,23,42,0.03);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.interval-table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.interval-table tbody tr:last-child td { border-bottom: none; }
+.interval-table tbody tr.iv-atual { background: rgba(13,110,253,0.06); }
+.interval-table tbody tr.iv-atual td:first-child {
+  border-left: 3px solid #0d6efd;
+}
+.iv-hora { font-weight: 700; white-space: nowrap; }
+.iv-atual-pill {
+  font-size: 0.65rem; font-weight: 700; padding: 1px 6px;
+  border-radius: 8px; background: #0d6efd; color: #fff;
+  margin-left: 4px; vertical-align: middle;
+}
+.iv-num { text-align: right; font-weight: 600; }
+.iv-ef  { text-align: right; font-weight: 700; }
+.iv-pos { color: #198754; }
+.iv-neg { color: #dc3545; }
+.iv-neu { color: var(--text-muted); }
+
+/* ─── Botão encerrar ──────────────────────────── */
+.btn-encerrar {
+  padding: 5px 14px;
+  border: 1px solid rgba(220,53,69,0.30);
+  border-radius: 8px;
+  background: transparent;
+  color: #dc3545;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-encerrar:hover { background: rgba(220,53,69,0.08); }
+
+/* ─── Mobile ──────────────────────────────────── */
+@media (max-width: 767px) {
+  .setup-card { padding: 24px 18px; }
+  .setup-wrap { padding: 12px 0; min-height: auto; }
+  .scan-input { font-size: 1rem; padding: 16px; }
+}
+
+/* ─── Autocomplete dropdown ───────────────────── */
+.ac-drop {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0; right: 0;
+  z-index: 400;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(15,23,42,0.13);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.ac-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: rgba(13,110,253,0.06); }
+.ac-item-main { font-weight: 700; }
+.ac-item-sub  { font-size: 0.75rem; color: var(--text-muted); text-align: right; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-2 px-md-3">
 
-  <!-- ── FASE 1: Setup ─────────────────────────── -->
-  <div id="faseSetup">
+  <!-- ════════════════════════════════════════════
+       FASE 1 — Setup
+  ════════════════════════════════════════════ -->
+  <div id="faseSetup" class="setup-wrap">
     <div class="setup-card">
-      <div class="setup-title"><i class="bi bi-upc-scan me-2 text-primary"></i>Iniciar Sessão</div>
-      <div class="setup-sub">Identifique sua linha e OP antes de começar o scan de placas.</div>
+      <div class="setup-logo"><i class="bi bi-upc-scan"></i></div>
+      <div class="setup-title">Iniciar Sessão de Embalagem</div>
+      <div class="setup-sub">Selecione a linha, a OP e informe seu nome para começar.</div>
 
+      <!-- Turno detectado -->
+      <div class="mb-3 d-flex align-items-center gap-2">
+        <span style="font-size:0.8rem;color:var(--text-muted);">Turno detectado:</span>
+        <span class="turno-badge sem-turno" id="turnoBadge">
+          <i class="bi bi-clock"></i> <span id="turnoLabel">Detectando...</span>
+        </span>
+        <span style="font-size:0.75rem;color:var(--text-muted);" id="horaAtualLabel"></span>
+      </div>
+
+      <!-- Linha -->
       <div class="mb-3">
         <label class="form-label fw-600" style="font-size:0.8rem;">Linha de produção</label>
         <div class="position-relative">
           <input type="text" class="form-control" id="setupBuscaLinha"
-                 placeholder="Digite para buscar a linha..." autocomplete="off"
-                 style="border-radius:8px;">
-          <div id="setupLinhaDropdown"
-               style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:200;
-                      background:var(--card);border:1px solid var(--border);border-radius:8px;
-                      box-shadow:0 4px 16px rgba(15,23,42,0.12);max-height:220px;overflow-y:auto;"></div>
+                 placeholder="Digite para buscar a linha..." autocomplete="off" style="border-radius:8px;">
+          <div class="ac-drop" id="setupLinhaDropdown"></div>
         </div>
         <input type="hidden" id="setupLinha">
-        <div id="setupLinhaOk" style="display:none;margin-top:6px;font-size:0.8rem;color:#198754;">
+        <div id="setupLinhaOk" class="d-none mt-1" style="font-size:0.8rem;color:#198754;">
           <i class="bi bi-check-circle-fill me-1"></i><span id="setupLinhaOkLabel"></span>
         </div>
       </div>
 
+      <!-- OP (conectado ao controle de OPs) -->
       <div class="mb-3">
-        <label class="form-label fw-600" style="font-size:0.8rem;">Seu nome</label>
-        <input type="text" class="form-control" id="setupUsuario"
-               placeholder="Ex: Eduardo" style="border-radius:8px;"
-               autocomplete="off">
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-600" style="font-size:0.8rem;">OP (Ordem de Produção)</label>
-        <input type="text" class="form-control" id="setupOp"
-               placeholder="Ex: 12345" style="border-radius:8px;text-transform:uppercase;"
-               oninput="this.value=this.value.toUpperCase()">
-      </div>
-
-      <div class="row g-2 mb-4">
-        <div class="col-6">
-          <label class="form-label fw-600" style="font-size:0.8rem;">Modelo (opcional)</label>
-          <input type="text" class="form-control form-control-sm" id="setupModelo"
-                 placeholder="Ex: PCI-XYZ" style="border-radius:8px;text-transform:uppercase;"
+        <label class="form-label fw-600" style="font-size:0.8rem;">OP — Ordem de Produção</label>
+        <div class="position-relative">
+          <input type="text" class="form-control" id="setupBuscaOp"
+                 placeholder="Digite o número ou produto..." autocomplete="off"
+                 style="border-radius:8px;text-transform:uppercase;"
                  oninput="this.value=this.value.toUpperCase()">
+          <div class="ac-drop" id="setupOpDropdown"></div>
         </div>
-        <div class="col-6">
-          <label class="form-label fw-600" style="font-size:0.8rem;">Turno (opcional)</label>
-          <select class="form-select form-select-sm" id="setupTurno" style="border-radius:8px;">
-            <option value="">—</option>
-            <option value="1">1º Turno</option>
-            <option value="2">2º Turno</option>
-            <option value="3">3º Turno</option>
-          </select>
+        <input type="hidden" id="setupOp">
+      </div>
+
+      <!-- Modelo (preenchido automático pela OP) -->
+      <div class="mb-3">
+        <label class="form-label fw-600" style="font-size:0.8rem;">
+          Modelo <span class="fw-400 text-muted" style="font-size:0.75rem;">— preenchido pela OP</span>
+        </label>
+        <input type="text" class="form-control" id="setupModelo"
+               placeholder="Selecione a OP acima para preencher" readonly
+               style="border-radius:8px;background:rgba(15,23,42,0.03);color:var(--text-muted);">
+      </div>
+
+      <!-- Nome operador + Meta hora -->
+      <div class="row g-2 mb-4">
+        <div class="col-7">
+          <label class="form-label fw-600" style="font-size:0.8rem;">Seu nome</label>
+          <input type="text" class="form-control" id="setupUsuario"
+                 placeholder="Ex: Eduardo" autocomplete="off" style="border-radius:8px;">
+        </div>
+        <div class="col-5">
+          <label class="form-label fw-600" style="font-size:0.8rem;">
+            Meta/hora <span class="fw-400 text-muted">(opcional)</span>
+          </label>
+          <input type="number" class="form-control" id="setupMetaHora"
+                 placeholder="Ex: 150" min="1" style="border-radius:8px;">
         </div>
       </div>
 
-      <button class="btn btn-primary w-100 fw-600" style="border-radius:10px;padding:12px;"
+      <button class="btn btn-primary w-100 fw-700" style="border-radius:10px;padding:13px;"
               id="btnIniciar" onclick="iniciarSessao()">
         <i class="bi bi-play-fill me-2"></i>Iniciar Embalagem
       </button>
-      <div id="setupErro" class="mt-3 text-danger" style="font-size:0.82rem;display:none;"></div>
+      <div id="setupErro" class="mt-2 text-danger d-none" style="font-size:0.82rem;"></div>
     </div>
   </div>
 
-  <!-- ── FASE 2: Scanner ───────────────────────── -->
-  <div id="faseScan" class="d-none">
+  <!-- ════════════════════════════════════════════
+       FASE 2 — Scanner
+  ════════════════════════════════════════════ -->
+  <div id="faseScan" class="scan-wrap d-none">
 
-    <!-- Info bar -->
+    <!-- Barra de informações -->
     <div class="scan-infobar">
-      <div class="scan-info-chip">
+      <div class="ic">
         <i class="bi bi-diagram-3" style="color:#0d6efd;"></i>
         Linha: <strong id="scanLinha">—</strong>
       </div>
-      <div class="scan-info-chip">
-        <i class="bi bi-person" style="color:#0d6efd;"></i>
-        Operador: <strong id="scanUsuario">—</strong>
-      </div>
-      <div class="scan-info-chip">
+      <span class="ic-sep">|</span>
+      <div class="ic">
         <i class="bi bi-card-list" style="color:#0d6efd;"></i>
         OP: <strong id="scanOp">—</strong>
       </div>
-      <div class="scan-info-chip count ms-auto">
-        <i class="bi bi-check2-all" style="color:#0d6efd;"></i>
-        <strong id="scanTotal">0</strong> <span style="font-size:0.78rem;font-weight:400;color:var(--text-muted);">placas</span>
+      <span class="ic-sep d-none d-sm-inline">|</span>
+      <div class="ic d-none d-sm-flex">
+        <i class="bi bi-box-seam" style="color:#0d6efd;"></i>
+        <strong id="scanModelo">—</strong>
       </div>
-      <button class="btn btn-sm btn-outline-danger ms-2 fw-600" style="border-radius:8px;"
-              onclick="confirmarEncerrar()">
-        <i class="bi bi-stop-circle me-1"></i>Encerrar
-      </button>
+      <span class="ic-sep">|</span>
+      <div class="ic">
+        <i class="bi bi-person" style="color:#0d6efd;"></i>
+        <strong id="scanUsuario">—</strong>
+      </div>
+      <span class="ic-sep">|</span>
+      <div class="ic">
+        <i class="bi bi-clock" style="color:#0d6efd;"></i>
+        <strong id="scanTurno">—</strong>
+        <span id="scanHoraAtual" style="font-size:0.72rem;color:var(--text-muted);margin-left:2px;"></span>
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="ic ic-count">
+          <i class="bi bi-check2-all" style="color:#0d6efd;"></i>
+          <strong id="scanTotal">0</strong>
+          <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);">placas</span>
+        </div>
+        <button class="btn-encerrar" onclick="confirmarEncerrar()">
+          <i class="bi bi-stop-circle me-1"></i>Encerrar
+        </button>
+      </div>
     </div>
 
-    <!-- Campo de scan -->
-    <div class="scan-input-wrap">
-      <span class="scan-input-label"><i class="bi bi-upc-scan me-1"></i>Bipe ou digite o serial</span>
-      <input type="text" class="scan-input" id="scanInput"
-             placeholder="Aguardando leitura do scanner..."
-             autocomplete="off" autocorrect="off" spellcheck="false"
-             onkeydown="if(event.key==='Enter')processarScan()">
-    </div>
+    <!-- Grid principal -->
+    <div class="scan-grid">
 
-    <!-- Feedback -->
-    <div class="scan-feedback" id="scanFeedback">
-      <i class="bi bi-check-circle-fill"></i>
-      <span id="scanFeedbackMsg"></span>
-    </div>
+      <!-- ── Coluna esquerda: scanner + lista ── -->
+      <div class="scan-col-left">
 
-    <!-- Lista de scans -->
-    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
-      <div class="card-body p-0">
-        <div class="px-4 py-3" style="border-bottom:1px solid var(--border);">
-          <div class="scan-list-header">
-            <span class="scan-list-title">
-              <i class="bi bi-list-check me-2 text-primary"></i>Placas Bipadas
+        <!-- Campo de scan -->
+        <div class="scan-input-wrap">
+          <span class="scan-input-label"><i class="bi bi-upc-scan me-1"></i>Bipe ou digite o serial</span>
+          <input type="text" class="scan-input" id="scanInput"
+                 placeholder="Aguardando leitura do scanner..."
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 onkeydown="if(event.key==='Enter')processarScan()">
+        </div>
+
+        <!-- Feedback -->
+        <div class="scan-feedback" id="scanFeedback">
+          <i class="bi bi-check-circle-fill"></i>
+          <span id="scanFeedbackMsg"></span>
+        </div>
+
+        <!-- Lista de scans -->
+        <div class="scan-list-card">
+          <div class="scan-list-head">
+            <span class="scan-list-head-title">
+              <i class="bi bi-list-check me-1 text-primary"></i>Placas Bipadas
             </span>
-            <span class="text-muted" style="font-size:0.75rem;" id="scanListCount"></span>
+            <span style="font-size:0.75rem;color:var(--text-muted);" id="scanListCount"></span>
+          </div>
+          <div class="scan-list-body" id="scanList">
+            <div class="text-center py-5 text-muted" style="font-size:0.875rem;" id="scanListEmpty">
+              <i class="bi bi-upc-scan fs-2 mb-2 d-block opacity-25"></i>
+              Nenhuma placa bipada ainda.
+            </div>
           </div>
         </div>
-        <div id="scanList" style="max-height:420px;overflow-y:auto;">
-          <div class="text-center py-5 text-muted" style="font-size:0.875rem;" id="scanListEmpty">
-            <i class="bi bi-upc-scan fs-2 mb-2 d-block opacity-25"></i>
-            Nenhuma placa bipada ainda.
-          </div>
-        </div>
-      </div>
-    </div>
 
-  </div>
+      </div><!-- /col-left -->
+
+      <!-- ── Coluna direita: tabela de intervalos ── -->
+      <div class="scan-col-right">
+        <div class="interval-card">
+          <div class="interval-head">
+            <span class="interval-head-title">
+              <i class="bi bi-bar-chart-steps me-1 text-primary"></i>Produção por Intervalo
+            </span>
+            <span style="font-size:0.72rem;color:var(--text-muted);" id="intervalAtualiz"></span>
+          </div>
+          <div style="overflow-x:auto;flex:1;">
+            <table class="interval-table">
+              <thead>
+                <tr>
+                  <th>Horário</th>
+                  <th class="text-end">Progr.</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-end">Dif.</th>
+                  <th class="text-end">Efic.</th>
+                </tr>
+              </thead>
+              <tbody id="intervalBody">
+                <tr><td colspan="5" class="text-center text-muted py-4" style="font-size:0.8rem;">
+                  <i class="bi bi-clock me-1"></i>Carregando intervalos...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /col-right -->
+
+    </div><!-- /scan-grid -->
+  </div><!-- /faseScan -->
 
 </div>
 
 <script>
-const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
-const URL_SESSAO      = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_sessao') }}";
-const URL_SCAN        = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_scan') }}";
-const URL_FECHAR      = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/fechar`;
+const URL_BUSCA_LINHA  = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_BUSCA_OP     = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_buscar_op') }}";
+const URL_TURNO_ATUAL  = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_turno_atual') }}";
+const URL_SESSAO       = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_sessao') }}";
+const URL_SCAN         = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_scan') }}";
+const URL_FECHAR       = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/fechar`;
+const URL_INTERVALOS   = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/intervalos`;
 
-let _sessao = null;
-let _scans  = [];
-let _acTimer = null;
+let _sessao    = null;
+let _scans     = [];
+let _turnoInfo = null;
+let _acTimerL  = null;
+let _acTimerO  = null;
+let _fbTimer   = null;
+let _ivTimer   = null;
 
-/* ── Setup: busca de linha ── */
+/* ── Init ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  const inp = document.getElementById('setupBuscaLinha');
+  iniciarAcLinha();
+  iniciarAcOp();
+  carregarTurnoAtual();
+  document.addEventListener('click', fecharDropdowns);
+});
+
+/* ── Turno auto-detect ──────────────────────────────────── */
+function carregarTurnoAtual() {
+  fetch(URL_TURNO_ATUAL)
+    .then(r => r.json())
+    .then(d => {
+      _turnoInfo = d;
+      const badge = document.getElementById('turnoBadge');
+      const label = document.getElementById('turnoLabel');
+      const hora  = document.getElementById('horaAtualLabel');
+      if (d.turno) {
+        badge.classList.remove('sem-turno');
+        label.textContent = d.turno;
+      } else {
+        label.textContent = 'Fora de turno';
+      }
+      if (d.hora_atual) hora.textContent = `· ${d.hora_atual} (Manaus)`;
+    })
+    .catch(() => {});
+}
+
+/* ── Autocomplete Linha ─────────────────────────────────── */
+function iniciarAcLinha() {
+  const inp  = document.getElementById('setupBuscaLinha');
   const drop = document.getElementById('setupLinhaDropdown');
 
   inp.addEventListener('input', function () {
-    clearTimeout(_acTimer);
+    clearTimeout(_acTimerL);
     const q = this.value.trim();
     if (q.length < 1) { drop.style.display = 'none'; return; }
-    _acTimer = setTimeout(() => {
+    _acTimerL = setTimeout(() => {
       fetch(URL_BUSCA_LINHA + '?q=' + encodeURIComponent(q))
         .then(r => r.json())
         .then(d => {
-          drop.innerHTML = '';
           if (!d.resultados?.length) { drop.style.display = 'none'; return; }
-          d.resultados.forEach(r => {
-            const item = document.createElement('div');
-            item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s;';
-            item.innerHTML = `<strong>${r.linha}</strong>
-              <span style="font-size:0.75rem;color:var(--text-muted);">${r.filial} · ${r.setor}</span>`;
-            item.addEventListener('mouseenter', () => item.style.background = 'rgba(13,110,253,0.06)');
-            item.addEventListener('mouseleave', () => item.style.background = '');
-            item.addEventListener('click', () => {
-              document.getElementById('setupLinha').value = r.linha;
-              inp.value = r.linha;
-              drop.style.display = 'none';
-              document.getElementById('setupLinhaOkLabel').textContent = `${r.linha} · ${r.setor}`;
-              document.getElementById('setupLinhaOk').style.display = '';
-            });
-            drop.appendChild(item);
-          });
+          drop.innerHTML = d.resultados.map(r =>
+            `<div class="ac-item" onclick="selecionarLinha(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+              <span class="ac-item-main">${esc(r.linha)}</span>
+              <span class="ac-item-sub">${esc(r.filial)} · ${esc(r.setor)}</span>
+            </div>`
+          ).join('');
           drop.style.display = 'block';
         });
     }, 200);
   });
+}
 
-  document.addEventListener('click', e => {
-    if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+function selecionarLinha(r) {
+  document.getElementById('setupLinha').value         = r.linha;
+  document.getElementById('setupBuscaLinha').value    = r.linha;
+  document.getElementById('setupLinhaOkLabel').textContent = `${r.linha} · ${r.setor}`;
+  document.getElementById('setupLinhaOk').classList.remove('d-none');
+  document.getElementById('setupLinhaDropdown').style.display = 'none';
+}
+
+/* ── Autocomplete OP ────────────────────────────────────── */
+function iniciarAcOp() {
+  const inp  = document.getElementById('setupBuscaOp');
+  const drop = document.getElementById('setupOpDropdown');
+
+  inp.addEventListener('input', function () {
+    clearTimeout(_acTimerO);
+    const q = this.value.trim();
+    document.getElementById('setupOp').value = q;
+    if (q.length < 1) { drop.style.display = 'none'; return; }
+    _acTimerO = setTimeout(() => {
+      fetch(URL_BUSCA_OP + '?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(d => {
+          if (!d.resultados?.length) { drop.style.display = 'none'; return; }
+          drop.innerHTML = d.resultados.map(r =>
+            `<div class="ac-item" onclick="selecionarOp(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+              <div>
+                <span class="ac-item-main">${esc(r.numero_op)}</span>
+                ${r.produto ? `<span style="font-size:0.78rem;color:var(--text-muted);margin-left:6px;">${esc(r.produto)}</span>` : ''}
+              </div>
+              <span class="ac-item-sub">${esc(r.filial)} · ${esc(r.setor)}</span>
+            </div>`
+          ).join('');
+          drop.style.display = 'block';
+        });
+    }, 250);
   });
-});
+}
 
-/* ── Iniciar sessão ── */
+function selecionarOp(r) {
+  document.getElementById('setupBuscaOp').value = r.numero_op;
+  document.getElementById('setupOp').value      = r.numero_op;
+  document.getElementById('setupModelo').value  = r.produto || '';
+  document.getElementById('setupOpDropdown').style.display = 'none';
+}
+
+function fecharDropdowns(e) {
+  ['setupBuscaLinha','setupLinhaDropdown','setupBuscaOp','setupOpDropdown'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.contains(e.target)) {
+      if (id.endsWith('Dropdown')) el.style.display = 'none';
+    }
+  });
+}
+
+/* ── Iniciar sessão ─────────────────────────────────────── */
 function iniciarSessao() {
-  const linha   = document.getElementById('setupLinha').value.trim();
-  const usuario = document.getElementById('setupUsuario').value.trim();
-  const op      = document.getElementById('setupOp').value.trim();
-  const modelo  = document.getElementById('setupModelo').value.trim();
-  const turno   = document.getElementById('setupTurno').value;
-  const erroEl  = document.getElementById('setupErro');
-  const btn     = document.getElementById('btnIniciar');
+  const linha    = document.getElementById('setupLinha').value.trim();
+  const op       = document.getElementById('setupOp').value.trim();
+  const modelo   = document.getElementById('setupModelo').value.trim();
+  const usuario  = document.getElementById('setupUsuario').value.trim();
+  const metaHora = parseInt(document.getElementById('setupMetaHora').value) || null;
+  const turno    = _turnoInfo?.turno || '';
+  const erroEl   = document.getElementById('setupErro');
+  const btn      = document.getElementById('btnIniciar');
 
-  if (!linha) { mostrarErroSetup('Selecione a linha de produção.'); return; }
+  if (!linha)   { mostrarErroSetup('Selecione a linha de produção.'); return; }
+  if (!op)      { mostrarErroSetup('Informe ou selecione a OP.'); return; }
   if (!usuario) { mostrarErroSetup('Informe seu nome.'); return; }
-  if (!op) { mostrarErroSetup('Informe a OP.'); return; }
 
   btn.disabled = true;
-  erroEl.style.display = 'none';
+  erroEl.classList.add('d-none');
 
   fetch(URL_SESSAO, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ linha, usuario, op, modelo, turno }),
+    body: JSON.stringify({ linha, op, modelo, usuario, turno, meta_hora: metaHora }),
   })
     .then(r => r.json())
     .then(d => {
@@ -369,24 +634,35 @@ function iniciarSessao() {
       if (!d.ok) { mostrarErroSetup(d.erro || 'Erro ao criar sessão.'); return; }
       _sessao = d.sessao;
       _scans  = [];
-      document.getElementById('scanLinha').textContent   = _sessao.linha;
-      document.getElementById('scanUsuario').textContent = _sessao.usuario;
-      document.getElementById('scanOp').textContent      = _sessao.op;
-      document.getElementById('scanTotal').textContent   = '0';
+      preencherInfobar();
       document.getElementById('faseSetup').classList.add('d-none');
       document.getElementById('faseScan').classList.remove('d-none');
-      setTimeout(() => document.getElementById('scanInput').focus(), 100);
+      document.getElementById('btnVoltar').classList.add('d-none');
+      carregarIntervalos();
+      _ivTimer = setInterval(carregarIntervalos, 30000);
+      setTimeout(() => document.getElementById('scanInput').focus(), 120);
     })
     .catch(() => { btn.disabled = false; mostrarErroSetup('Erro de conexão.'); });
 }
 
 function mostrarErroSetup(msg) {
   const el = document.getElementById('setupErro');
-  el.textContent = msg;
-  el.style.display = '';
+  el.textContent = msg; el.classList.remove('d-none');
 }
 
-/* ── Processar scan ── */
+function preencherInfobar() {
+  document.getElementById('scanLinha').textContent   = _sessao.linha   || '—';
+  document.getElementById('scanOp').textContent      = _sessao.op      || '—';
+  document.getElementById('scanModelo').textContent  = _sessao.modelo  || '—';
+  document.getElementById('scanUsuario').textContent = _sessao.usuario || '—';
+  document.getElementById('scanTurno').textContent   = _sessao.turno   || 'Fora de turno';
+  document.getElementById('scanTotal').textContent   = '0';
+  if (_turnoInfo?.hora_atual) {
+    document.getElementById('scanHoraAtual').textContent = `· ${_turnoInfo.hora_atual}`;
+  }
+}
+
+/* ── Processamento de scan ──────────────────────────────── */
 function processarScan() {
   const inp    = document.getElementById('scanInput');
   const serial = inp.value.trim();
@@ -404,7 +680,7 @@ function processarScan() {
         _scans.unshift(d.scan);
         document.getElementById('scanTotal').textContent = d.total;
         renderScanList();
-        mostrarFeedback('ok', `${serial} — registrado com sucesso.`);
+        mostrarFeedback('ok', `${serial} — registrado.`);
         tentarImprimir(d.scan);
       } else {
         mostrarFeedback('err', d.erro || 'Erro ao registrar.');
@@ -414,7 +690,7 @@ function processarScan() {
     .catch(() => { mostrarFeedback('err', 'Erro de conexão.'); inp.focus(); });
 }
 
-/* ── Render lista ── */
+/* ── Render lista de scans ──────────────────────────────── */
 function renderScanList() {
   const list  = document.getElementById('scanList');
   const empty = document.getElementById('scanListEmpty');
@@ -422,94 +698,135 @@ function renderScanList() {
 
   if (!_scans.length) {
     list.innerHTML = '';
-    if (empty) list.appendChild(empty);
+    list.appendChild(empty);
     empty.style.display = '';
     count.textContent = '';
     return;
   }
-  if (empty) empty.style.display = 'none';
+  empty.style.display = 'none';
   count.textContent = `${_scans.length} registros`;
 
   list.innerHTML = _scans.map((s, idx) => `
     <div class="scan-row">
-      <span class="scan-row-num">${_scans.length - idx}</span>
-      <span class="scan-row-serial">${esc(s.serial)}</span>
-      <span class="scan-row-time">${s.scaneado_em}</span>
-      <span class="scan-row-print ${s.impresso ? 'print-ok' : 'print-pend'}">
-        ${s.impresso ? '<i class="bi bi-printer-fill me-1"></i>Impresso' : '<i class="bi bi-clock me-1"></i>Pendente'}
+      <span class="scan-num">${_scans.length - idx}</span>
+      <span class="scan-ser">${esc(s.serial)}</span>
+      <span class="scan-time">${String(s.scaneado_em || '').slice(11, 19)}</span>
+      <span class="scan-prt ${s.impresso ? 'prt-ok' : 'prt-pend'}">
+        ${s.impresso ? '<i class="bi bi-printer-fill"></i>' : '<i class="bi bi-hourglass-split"></i>'}
       </span>
     </div>
   `).join('');
 }
 
-/* ── Feedback ── */
-let _fbTimer;
+/* ── Tabela de intervalos ───────────────────────────────── */
+function carregarIntervalos() {
+  if (!_sessao) return;
+  fetch(URL_INTERVALOS(_sessao.id))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      renderIntervalos(d.intervalos, d.meta_hora);
+      const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Manaus' });
+      document.getElementById('intervalAtualiz').textContent = `Atualizado ${agora}`;
+    })
+    .catch(() => {});
+}
+
+function renderIntervalos(intervalos, metaHora) {
+  const tbody = document.getElementById('intervalBody');
+  if (!intervalos || !intervalos.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4" style="font-size:0.8rem;">
+      <i class="bi bi-info-circle me-1"></i>Nenhum intervalo configurado para este turno.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = intervalos.map(iv => {
+    const prog = metaHora ? metaHora : null;
+    const total = iv.total;
+    const dif   = prog !== null ? (total - prog) : null;
+    const ef    = prog !== null && prog > 0 ? (total / prog * 100) : null;
+
+    const difStr = dif !== null
+      ? `<span class="${dif >= 0 ? 'iv-pos' : 'iv-neg'}">${dif >= 0 ? '+' : ''}${dif}</span>`
+      : '<span class="iv-neu">—</span>';
+
+    const efStr = ef !== null
+      ? `<span class="${ef >= 95 ? 'iv-pos' : ef >= 80 ? '' : 'iv-neg'}">${ef.toFixed(1).replace('.', ',')}%</span>`
+      : '<span class="iv-neu">—</span>';
+
+    const atualPill = iv.atual ? '<span class="iv-atual-pill">agora</span>' : '';
+
+    return `<tr class="${iv.atual ? 'iv-atual' : ''}">
+      <td class="iv-hora">${iv.hora_inicio}–${iv.hora_fim}${atualPill}</td>
+      <td class="iv-num iv-neu">${prog !== null ? prog : '—'}</td>
+      <td class="iv-num"><strong>${total}</strong></td>
+      <td class="iv-num">${difStr}</td>
+      <td class="iv-ef">${efStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Feedback de scan ───────────────────────────────────── */
 function mostrarFeedback(tipo, msg) {
-  const el = document.getElementById('scanFeedback');
+  const el    = document.getElementById('scanFeedback');
   const msgEl = document.getElementById('scanFeedbackMsg');
   clearTimeout(_fbTimer);
   el.className = 'scan-feedback ' + tipo;
   el.querySelector('i').className = tipo === 'ok'
     ? 'bi bi-check-circle-fill' : 'bi bi-exclamation-triangle-fill';
   msgEl.textContent = msg;
-  _fbTimer = setTimeout(() => { el.className = 'scan-feedback'; }, 3000);
+  _fbTimer = setTimeout(() => { el.className = 'scan-feedback'; }, 3500);
 }
 
-/* ── Impressão Zebra (Zebra Browser Print) ── */
+/* ── Zebra Browser Print ────────────────────────────────── */
 function tentarImprimir(scan) {
   if (typeof BrowserPrint === 'undefined') return;
   BrowserPrint.getDefaultDevice('printer', device => {
     if (!device) return;
-    const zpl = gerarZPL(scan);
-    device.send(zpl, () => marcarImpresso(scan.id), () => {});
+    device.send(gerarZPL(scan), () => { scan.impresso = true; renderScanList(); }, () => {});
   }, () => {});
 }
 
 function gerarZPL(scan) {
-  const op     = _sessao?.op || '';
-  const serial = scan.serial;
-  const hora   = scan.scaneado_em;
-  const linha  = _sessao?.linha || '';
-  return `^XA
-^FO30,20^A0N,28,28^FDOP: ${op}^FS
-^FO30,56^A0N,24,24^FDLinha: ${linha}^FS
-^FO30,88^A0N,20,20^FDSN: ${serial}^FS
-^FO30,112^A0N,18,18^FD${hora}^FS
-^BY2,3,60^FO30,140^BCN,,Y,N^FD${serial}^FS
-^XZ`;
+  const op    = _sessao?.op    || '';
+  const linha = _sessao?.linha || '';
+  const ser   = scan.serial;
+  const hora  = String(scan.scaneado_em || '').slice(11, 19);
+  return `^XA\n^FO30,20^A0N,28,28^FDOP: ${op}^FS\n^FO30,56^A0N,24,24^FDLinha: ${linha}^FS\n^FO30,88^A0N,20,20^FDSN: ${ser}^FS\n^FO30,112^A0N,18,18^FD${hora}^FS\n^BY2,3,60^FO30,140^BCN,,Y,N^FD${ser}^FS\n^XZ`;
 }
 
-function marcarImpresso(scanId) {
-  const scan = _scans.find(s => s.id === scanId);
-  if (scan) { scan.impresso = true; renderScanList(); }
-}
-
-/* ── Encerrar sessão ── */
+/* ── Encerrar sessão ────────────────────────────────────── */
 function confirmarEncerrar() {
   const total = parseInt(document.getElementById('scanTotal').textContent) || 0;
-  const msg = `Encerrar sessão? ${total} placa${total !== 1 ? 's' : ''} bipada${total !== 1 ? 's' : ''} serão finalizadas.`;
-  if (!confirm(msg)) return;
+  if (!confirm(`Encerrar sessão? ${total} placa${total !== 1 ? 's' : ''} bipada${total !== 1 ? 's' : ''}.`)) return;
+  clearInterval(_ivTimer);
   fetch(URL_FECHAR(_sessao.id), { method: 'POST' })
     .then(r => r.json())
     .then(d => {
-      if (d.ok) {
-        _sessao = null;
-        _scans  = [];
-        document.getElementById('faseScan').classList.add('d-none');
-        document.getElementById('faseSetup').classList.remove('d-none');
-        document.getElementById('setupBuscaLinha').value = '';
-        document.getElementById('setupLinha').value = '';
-        document.getElementById('setupLinhaOk').style.display = 'none';
-        document.getElementById('setupUsuario').value = '';
-        document.getElementById('setupOp').value = '';
-        document.getElementById('setupModelo').value = '';
-        document.getElementById('setupErro').style.display = 'none';
-      }
+      if (d.ok) resetarSessao();
     });
 }
 
+function resetarSessao() {
+  _sessao = null; _scans = [];
+  document.getElementById('faseScan').classList.add('d-none');
+  document.getElementById('faseSetup').classList.remove('d-none');
+  document.getElementById('btnVoltar').classList.remove('d-none');
+  document.getElementById('setupBuscaLinha').value = '';
+  document.getElementById('setupLinha').value = '';
+  document.getElementById('setupLinhaOk').classList.add('d-none');
+  document.getElementById('setupBuscaOp').value = '';
+  document.getElementById('setupOp').value = '';
+  document.getElementById('setupModelo').value = '';
+  document.getElementById('setupUsuario').value = '';
+  document.getElementById('setupMetaHora').value = '';
+  document.getElementById('setupErro').classList.add('d-none');
+  carregarTurnoAtual();
+}
+
+/* ── Utilidades ─────────────────────────────────────────── */
 function esc(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 {% endblock %}
