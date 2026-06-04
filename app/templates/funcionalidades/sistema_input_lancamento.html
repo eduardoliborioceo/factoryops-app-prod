@@ -107,6 +107,11 @@
 {% endblock %}
 
 {% block content %}
+<datalist id="defeitos-list">
+  {% for df in catalogos.defeitos %}
+  <option value="{{ df.codigo }}">{{ df.codigo }} — {{ df.descricao }}</option>
+  {% endfor %}
+</datalist>
 <div class="container-fluid" id="appLancamento">
 
   <!-- Painel de filtros -->
@@ -455,10 +460,9 @@ function renderDefeitos(defs, i) {
     <div class="def-row" id="s${i}_def_${di}">
       <div style="min-width:200px;">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Código Defeito</label>
-        <select class="form-select form-select-sm" style="border-radius:6px;" onchange="atualizarDefTotal(${i})">
-          <option value="">Selecione</option>
-          ${DEFEITOS.map(df => `<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
-        </select>
+        <input type="text" list="defeitos-list" class="form-control form-control-sm def-codigo"
+               value="${esc(d.codigo_defeito||'')}" placeholder="Ex: PONTE, MISS..."
+               style="border-radius:6px;" oninput="atualizarDefTotal(${i})">
       </div>
       <div style="min-width:140px;">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Posição Mecânica</label>
@@ -594,10 +598,10 @@ function coletarSlot(i) {
 
   const defRows = document.getElementById(`s${i}_defs`)?.querySelectorAll('.def-row') || [];
   const defeitos = Array.from(defRows).map(row => {
-    const sel = row.querySelector('select');
-    const inputs = row.querySelectorAll('input');
+    const codigoInput = row.querySelector('input.def-codigo');
+    const inputs = row.querySelectorAll('input:not(.def-codigo)');
     return {
-      codigo_defeito: sel?.value || null,
+      codigo_defeito: codigoInput?.value?.trim() || null,
       posicao_mecanica: inputs[0]?.value?.trim() || null,
       quantidade: parseInt(inputs[1]?.value || '1') || 1,
     };
