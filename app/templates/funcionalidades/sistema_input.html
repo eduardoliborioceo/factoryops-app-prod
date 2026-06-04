@@ -642,7 +642,7 @@ function buildSlotCard(slot, i) {
                     onclick="addDef(${i})"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
           </div>
           <div id="s${i}_defs">${buildDefs(lc?.defeitos||[], i)}</div>
-          <div id="s${i}_dtotal" style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;"></div>
+          <div id="s${i}_dtotal" class="perda-display" style="margin-top:6px;display:none;"></div>
         </div>
 
         <div class="col-12 d-flex justify-content-end gap-2">
@@ -796,6 +796,7 @@ function calcPerda(i) {
     <span>Eficiência: <strong style="color:${cor};">${pct}%</strong>
     ${perda>0?` — Perda: <strong>${perda} pcs</strong> (${perdaStr})`
             :' — <span style="color:#198754;font-weight:600;">Meta atingida ✓</span>'}</span>`;
+  calcDtotal(i);
 }
 
 function addJust(i) {
@@ -906,7 +907,14 @@ function calcDtotal(i) {
   const d = document.getElementById(`s${i}_dtotal`);
   if (!c||!d) return;
   let t = 0; c.querySelectorAll('[id$="_qtd"]').forEach(e=>{ t+=parseInt(e.value||0)||0; });
-  d.textContent = t > 0 ? `Total de defeitos: ${t}` : '';
+  const prod = parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0;
+  if (t <= 0) { d.style.display = 'none'; d.innerHTML = ''; return; }
+  const yld = prod > 0 ? Math.max(0, Math.min(100, Math.round((prod - t) / prod * 100))) : 0;
+  const cor = yld >= 99 ? '#198754' : yld >= 95 ? '#fd7e14' : '#dc3545';
+  d.style.display = '';
+  d.className = 'perda-display';
+  d.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${yld}%;background:${cor};"></div></div>
+    <span>Yield: <strong style="color:${cor};">${yld}%</strong> — Defeitos: <strong>${t}</strong>${prod > 0 ? ` de <strong>${prod}</strong> pcs` : ''}</span>`;
 }
 
 function coletarSlot(i) {
