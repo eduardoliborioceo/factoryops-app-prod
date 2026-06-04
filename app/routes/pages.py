@@ -2550,6 +2550,46 @@ def funcionalidades_pci_hub_embalagem_fechar(sessao_id):
         return jsonify({"ok": False, "erro": "Erro ao fechar sessão."}), 500
 
 
+@bp.route("/funcionalidades/sistemas/pci-hub/consultar-embalagem", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_consultar_embalagem():
+    return render_template(
+        "funcionalidades/pci_hub_consultar_embalagem.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/consultar-embalagem/dados", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_consultar_embalagem_dados():
+    from flask import request, jsonify
+    from app.repositories import pci_hub_repository as repo
+
+    try:
+        filial       = (request.args.get("filial")       or "").strip()
+        setor        = (request.args.get("setor")        or "").strip()
+        linha        = (request.args.get("linha")        or "").strip()
+        data_inicial = (request.args.get("data_inicial") or "").strip()
+        data_final   = (request.args.get("data_final")   or "").strip()
+        sessoes = repo.listar_sessoes_filtradas(filial, setor, linha, data_inicial, data_final)
+        return jsonify({"ok": True, "sessoes": sessoes})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao consultar."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/consultar-embalagem/sessao/<int:sessao_id>/scans", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_consultar_scans(sessao_id):
+    from flask import jsonify
+    from app.repositories import pci_hub_repository as repo
+
+    try:
+        scans = repo.listar_scans(sessao_id, limite=500)
+        return jsonify({"ok": True, "scans": scans})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao carregar scans."}), 500
+
+
 @bp.route("/funcionalidades/sistemas/pci-hub/embalagem/buscar-op", methods=["GET"])
 @login_required
 def funcionalidades_pci_hub_embalagem_buscar_op():

@@ -114,6 +114,61 @@ def scans_no_intervalo(
             return cur.fetchone()[0]
 
 
+def listar_sessoes_filtradas(
+    filial: str = "",
+    setor: str = "",
+    linha: str = "",
+    data_inicial: str = "",
+    data_final: str = "",
+    limite: int = 300,
+) -> list:
+    filtros = ["1=1"]
+    params: list = []
+
+    if linha:
+        filtros.append("s.linha ILIKE %s")
+        params.append(f"%{linha}%")
+    if data_inicial:
+        filtros.append("s.data >= %s::date")
+        params.append(data_inicial)
+    if data_final:
+        filtros.append("s.data <= %s::date")
+        params.append(data_final)
+    if filial:
+        filtros.append("COALESCE(lc.filial, '') ILIKE %s")
+        params.append(f"%{filial}%")
+    if setor:
+        filtros.append("COALESCE(lc.setor, '') ILIKE %s")
+        params.append(f"%{setor}%")
+
+    where = " AND ".join(filtros)
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                SELECT s.id, s.linha, s.usuario, s.op, s.modelo, s.turno,
+                       s.meta_hora, s.data::text, s.status,
+                       (s.iniciado_em  AT TIME ZONE '{_TZ}')::text AS iniciado_em,
+                       (s.finalizado_em AT TIME ZONE '{_TZ}')::text AS finalizado_em,
+                       COALESCE(lc.filial, '') AS filial,
+                       COALESCE(lc.setor,  '') AS setor,
+                       COUNT(sc.id) AS total_scans
+                FROM pci_embalagem_sessao s
+                LEFT JOIN linha_config lc ON lc.linha = s.linha
+                LEFT JOIN pci_embalagem_scan sc ON sc.sessao_id = s.id
+                WHERE {where}
+                GROUP BY s.id, s.linha, s.usuario, s.op, s.modelo, s.turno,
+                         s.meta_hora, s.data, s.status,
+                         s.iniciado_em, s.finalizado_em,
+                         lc.filial, lc.setor
+                ORDER BY s.iniciado_em DESC
+                LIMIT %s
+                """,
+                params + [limite],
+            )
+            return cur.fetchall()
+
+
 def fechar_sessao(sessao_id: int) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:
