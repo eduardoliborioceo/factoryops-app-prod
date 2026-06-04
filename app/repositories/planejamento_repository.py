@@ -166,12 +166,14 @@ def listar_plano_de_voo(data: str, turno: str = "", setor: str = "", linha: str 
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(f"""
                 SELECT p.id, p.linha, p.setor, p.turno, p.modelo, p.op_id,
-                       co.numero_op, p.fase,
+                       co.numero_op, co.produto AS op_produto, p.fase,
                        (co.quantidade - co.produzido) AS saldo_op,
                        p.quantidade_planejada, p.taxa_horaria, p.setup_min,
-                       p.hora_inicio_prevista, p.hora_fim_prevista, p.status
+                       p.hora_inicio_prevista, p.hora_fim_prevista, p.status,
+                       COALESCE(m.cliente, '') AS cliente
                 FROM planejamento p
                 LEFT JOIN controle_ops co ON co.id = p.op_id
+                LEFT JOIN modelos m ON UPPER(TRIM(m.codigo)) = UPPER(TRIM(p.modelo))
                 WHERE {where}
                 ORDER BY p.linha, p.hora_inicio_prevista
             """, params)
