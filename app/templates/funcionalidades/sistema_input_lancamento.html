@@ -28,7 +28,6 @@
   border-radius: 12px;
   background: var(--card);
   margin-bottom: 12px;
-  overflow: hidden;
   transition: box-shadow 0.15s ease;
 }
 .slot-card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.07); }
@@ -42,6 +41,7 @@
   cursor: pointer;
   background: rgba(15,23,42,0.02);
   border-bottom: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
   user-select: none;
 }
 .slot-hora {
@@ -451,7 +451,7 @@ function renderJustificativas(justs, i) {
                data-selected="${j.codigo_motivo || ''}"
                autocomplete="off"
                oninput="comboFilter(this)"
-               onfocus="comboFilter(this)"
+               onfocus="comboOpen(this)"
                onblur="comboClose(this)"
                style="border-radius:6px;">
         <div class="combo-list">
@@ -495,7 +495,7 @@ function renderDefeitos(defs, i) {
                data-selected="${d.codigo_defeito || ''}"
                autocomplete="off"
                oninput="comboFilter(this)"
-               onfocus="comboFilter(this)"
+               onfocus="comboOpen(this)"
                onblur="comboClose(this)"
                style="border-radius:6px;">
         <div class="combo-list">
@@ -580,6 +580,13 @@ function removerDef(i, di) {
 
 function normalize(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function comboOpen(inp) {
+  inp.select();
+  const list = inp.closest('.combo-wrap').querySelector('.combo-list');
+  list.querySelectorAll('.combo-opt').forEach(o => o.style.display = '');
+  list.style.display = 'block';
 }
 
 function comboFilter(inp) {
