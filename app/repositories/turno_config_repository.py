@@ -43,9 +43,9 @@ def listar_nomes_unicos() -> list:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT turno
+                SELECT REPLACE(REPLACE(turno, '§', 'º'), '°', 'º') AS turno
                 FROM turno_config
-                GROUP BY turno
+                GROUP BY REPLACE(REPLACE(turno, '§', 'º'), '°', 'º')
                 ORDER BY MIN(ordem)
             """)
             return [r["turno"] for r in cur.fetchall()]
