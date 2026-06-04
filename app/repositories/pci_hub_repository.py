@@ -1,18 +1,47 @@
 from app.extensions import get_db
 from psycopg.rows import dict_row
 
+_TZ = "America/Manaus"
 
-def criar_sessao(linha: str, usuario: str, op: str, modelo: str | None, cliente: str | None, turno: str | None) -> dict:
+
+def criar_sessao(
+    linha: str,
+    usuario: str,
+    op: str,
+    modelo: str | None,
+    cliente: str | None,
+    turno: str | None,
+    meta_hora: int | None,
+) -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                """
-                INSERT INTO pci_embalagem_sessao (linha, usuario, op, modelo, cliente, turno)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                f"""
+                INSERT INTO pci_embalagem_sessao
+                    (linha, usuario, op, modelo, cliente, turno, meta_hora)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, linha, usuario, op, modelo, cliente,
-                          data::text, turno, iniciado_em::text, status
+                          data::text, turno, meta_hora,
+                          (iniciado_em AT TIME ZONE '{_TZ}')::text AS iniciado_em,
+                          status
                 """,
-                (linha, usuario, op, modelo, cliente, turno),
+                (linha, usuario, op, modelo, cliente, turno, meta_hora),
+            )
+            return cur.fetchone()
+
+
+def buscar_sessao(sessao_id: int) -> dict | None:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                SELECT id, linha, usuario, op, modelo, cliente,
+                       data::text, turno, meta_hora,
+                       (iniciado_em AT TIME ZONE '{_TZ}')::text AS iniciado_em,
+                       status
+                FROM pci_embalagem_sessao WHERE id = %s
+                """,
+                (sessao_id,),
             )
             return cur.fetchone()
 
@@ -27,10 +56,12 @@ def registrar_scan(sessao_id: int, serial: str) -> tuple[dict | None, str | None
             if cur.fetchone():
                 return None, "duplicado"
             cur.execute(
-                """
+                f"""
                 INSERT INTO pci_embalagem_scan (sessao_id, serial)
                 VALUES (%s, %s)
-                RETURNING id, serial, scaneado_em::text, impresso
+                RETURNING id, serial,
+                          (scaneado_em AT TIME ZONE '{_TZ}')::text AS scaneado_em,
+                          impresso
                 """,
                 (sessao_id, serial),
             )
@@ -47,12 +78,14 @@ def contar_scans(sessao_id: int) -> int:
             return cur.fetchone()[0]
 
 
-def listar_scans(sessao_id: int, limite: int = 100) -> list:
+def listar_scans(sessao_id: int, limite: int = 150) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                """
-                SELECT id, serial, scaneado_em::text, impresso
+                f"""
+                SELECT id, serial,
+                       (scaneado_em AT TIME ZONE '{_TZ}')::text AS scaneado_em,
+                       impresso
                 FROM pci_embalagem_scan
                 WHERE sessao_id = %s
                 ORDER BY scaneado_em DESC
@@ -61,6 +94,24 @@ def listar_scans(sessao_id: int, limite: int = 100) -> list:
                 (sessao_id, limite),
             )
             return cur.fetchall()
+
+
+def scans_no_intervalo(
+    sessao_id: int, data_sessao: str, hora_inicio, hora_fim
+) -> int:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT COUNT(*) FROM pci_embalagem_scan
+                WHERE sessao_id = %s
+                  AND DATE(scaneado_em AT TIME ZONE '{_TZ}') = %s::date
+                  AND (scaneado_em AT TIME ZONE '{_TZ}')::time >= %s
+                  AND (scaneado_em AT TIME ZONE '{_TZ}')::time <  %s
+                """,
+                (sessao_id, data_sessao, hora_inicio, hora_fim),
+            )
+            return cur.fetchone()[0]
 
 
 def fechar_sessao(sessao_id: int) -> None:

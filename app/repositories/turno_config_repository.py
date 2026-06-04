@@ -57,6 +57,18 @@ def listar_nomes_unicos() -> list:
     return sorted(nomes, key=_chave)
 
 
+def listar_por_turno(turno: str) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT id, turno, hora_inicio, hora_fim, ordem
+                FROM turno_config
+                WHERE REPLACE(REPLACE(turno, '§', 'º'), '°', 'º') = %s
+                ORDER BY ordem
+            """, (turno,))
+            return cur.fetchall()
+
+
 def proximo_ordem(turno: str) -> int:
     with get_db() as conn:
         with conn.cursor() as cur:

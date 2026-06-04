@@ -151,6 +151,19 @@ def filiais_disponiveis() -> list:
             return [r["filial"] for r in cur.fetchall()]
 
 
+def buscar_por_termo(termo: str, limite: int = 12) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT numero_op, produto, quantidade, filial, setor, fase_modelo
+                FROM controle_ops
+                WHERE numero_op ILIKE %s OR produto ILIKE %s
+                ORDER BY criado_em DESC
+                LIMIT %s
+            """, (f"%{termo}%", f"%{termo}%", limite))
+            return cur.fetchall()
+
+
 def buscar_familia_op(base: str) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

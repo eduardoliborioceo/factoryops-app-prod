@@ -2480,6 +2480,7 @@ def funcionalidades_pci_hub_embalagem_sessao():
             modelo=data.get("modelo", ""),
             cliente=data.get("cliente", ""),
             turno=data.get("turno", ""),
+            meta_hora=data.get("meta_hora"),
         )
         return jsonify({"ok": True, "sessao": sessao})
     except ValueError as e:
@@ -2547,6 +2548,57 @@ def funcionalidades_pci_hub_embalagem_fechar(sessao_id):
         return jsonify({"ok": True})
     except Exception:
         return jsonify({"ok": False, "erro": "Erro ao fechar sessão."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/buscar-op", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem_buscar_op():
+    from flask import request, jsonify
+    from app.repositories import controle_ops_repository as ops_repo
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 1:
+        return jsonify({"ok": True, "resultados": []})
+    try:
+        rows = ops_repo.buscar_por_termo(q)
+        return jsonify({"ok": True, "resultados": [
+            {
+                "numero_op": r["numero_op"],
+                "produto": r["produto"] or "",
+                "quantidade": r["quantidade"] or 0,
+                "filial": r["filial"] or "",
+                "setor": r["setor"] or "",
+            }
+            for r in rows
+        ]})
+    except Exception:
+        return jsonify({"ok": False, "resultados": []}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/turno-atual", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem_turno_atual():
+    from flask import jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        return jsonify({"ok": True, **svc.detectar_turno()})
+    except Exception:
+        return jsonify({"ok": True, "turno": None, "hora_atual": "", "intervalos": []})
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao/<int:sessao_id>/intervalos", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem_intervalos(sessao_id):
+    from flask import jsonify
+    from app.services import pci_hub_service as svc
+
+    try:
+        return jsonify({"ok": True, **svc.obter_intervalos_sessao(sessao_id)})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao calcular intervalos."}), 500
 
 
 @bp.route("/sw.js", endpoint="pwa_sw")
