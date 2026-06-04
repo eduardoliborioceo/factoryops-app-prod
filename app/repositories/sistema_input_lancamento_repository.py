@@ -93,21 +93,22 @@ def salvar_lancamento(data: dict, justificativas: list, defeitos: list, user_id:
                 INSERT INTO input_lancamento (
                     data, filial, setor, linha, turno, hora_inicio, hora_fim,
                     modelo, cliente, op, fase, meta_hora,
-                    producao_real, total_defeitos, planejamento_id, criado_por
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    producao_real, total_defeitos, perda_segundos, planejamento_id, criado_por
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT (data, setor, linha, turno, hora_inicio) DO UPDATE SET
-                    filial         = EXCLUDED.filial,
-                    hora_fim       = EXCLUDED.hora_fim,
-                    modelo         = EXCLUDED.modelo,
-                    cliente        = EXCLUDED.cliente,
-                    op             = EXCLUDED.op,
-                    fase           = EXCLUDED.fase,
-                    meta_hora      = EXCLUDED.meta_hora,
-                    producao_real  = EXCLUDED.producao_real,
-                    total_defeitos = EXCLUDED.total_defeitos,
-                    planejamento_id= EXCLUDED.planejamento_id,
-                    criado_por     = EXCLUDED.criado_por,
-                    criado_em      = NOW()
+                    filial          = EXCLUDED.filial,
+                    hora_fim        = EXCLUDED.hora_fim,
+                    modelo          = EXCLUDED.modelo,
+                    cliente         = EXCLUDED.cliente,
+                    op              = EXCLUDED.op,
+                    fase            = EXCLUDED.fase,
+                    meta_hora       = EXCLUDED.meta_hora,
+                    producao_real   = EXCLUDED.producao_real,
+                    total_defeitos  = EXCLUDED.total_defeitos,
+                    perda_segundos  = EXCLUDED.perda_segundos,
+                    planejamento_id = EXCLUDED.planejamento_id,
+                    criado_por      = EXCLUDED.criado_por,
+                    criado_em       = NOW()
                 RETURNING id
             """, (
                 data["data"], data["filial"], data["setor"], data["linha"],
@@ -116,6 +117,7 @@ def salvar_lancamento(data: dict, justificativas: list, defeitos: list, user_id:
                 data.get("fase"), data.get("meta_hora"),
                 data.get("producao_real", 0),
                 sum(d.get("quantidade", 0) for d in defeitos),
+                int(data.get("perda_segundos") or 0),
                 data.get("planejamento_id"),
                 user_id,
             ))

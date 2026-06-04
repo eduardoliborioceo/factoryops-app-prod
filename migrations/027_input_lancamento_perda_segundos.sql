@@ -1,0 +1,2 @@
+ALTER TABLE input_lancamento
+    ADD COLUMN IF NOT EXISTS perda_segundos INTEGER NOT NULL DEFAULT 0;
