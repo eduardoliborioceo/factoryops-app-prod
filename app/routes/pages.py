@@ -2288,13 +2288,18 @@ def funcionalidades_sistema_input_historico():
     from flask import request, jsonify
     from app.services import sistema_input_lancamento_service as svc
 
-    setor = request.args.get("setor", "")
-    linha = request.args.get("linha", "")
-    turno = request.args.get("turno", "")
-    dias = int(request.args.get("dias", "7") or "7")
+    filial       = request.args.get("filial", "")
+    setor        = request.args.get("setor", "")
+    linha        = request.args.get("linha", "")
+    turno        = request.args.get("turno", "")
+    data_inicial = request.args.get("data_inicial", "")
+    data_final   = request.args.get("data_final", "")
 
     try:
-        registros = svc.historico(setor=setor, linha=linha, turno=turno, dias=dias)
+        registros = svc.historico(
+            filial=filial, setor=setor, linha=linha, turno=turno,
+            data_inicial=data_inicial, data_final=data_final,
+        )
         return jsonify({"ok": True, "registros": [dict(r) for r in registros]})
     except Exception:
         return jsonify({"ok": False, "registros": []})

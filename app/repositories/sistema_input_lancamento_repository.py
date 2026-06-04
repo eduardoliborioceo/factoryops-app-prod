@@ -54,9 +54,12 @@ def buscar_lancamento(data: str, setor: str, linha: str, turno: str, hora_inicio
 
 
 def listar_historico(data_inicial: str, data_final: str,
-                     setor: str = "", linha: str = "", turno: str = "") -> list:
+                     filial: str = "", setor: str = "", linha: str = "", turno: str = "") -> list:
     filtros = ["l.data BETWEEN %s AND %s"]
     params = [data_inicial, data_final]
+    if filial:
+        filtros.append("l.filial = %s")
+        params.append(filial)
     if setor:
         filtros.append("l.setor = %s")
         params.append(setor)

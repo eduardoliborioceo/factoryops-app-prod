@@ -142,10 +142,14 @@ def salvar(payload: dict, user_id: int | None) -> int:
     return repo.salvar_lancamento(dados, justificativas, defeitos, user_id)
 
 
-def historico(setor: str = "", linha: str = "", turno: str = "", dias: int = 7) -> list:
-    data_final = date.today()
-    data_inicial = data_final - timedelta(days=dias - 1)
-    return repo.listar_historico(str(data_inicial), str(data_final), setor, linha, turno)
+def historico(filial: str = "", setor: str = "", linha: str = "", turno: str = "",
+              data_inicial: str = "", data_final: str = "") -> list:
+    if not data_inicial or not data_final:
+        hoje = date.today()
+        data_final = str(hoje)
+        data_inicial = str(hoje - timedelta(days=6))
+    return repo.listar_historico(data_inicial, data_final,
+                                  filial=filial, setor=setor, linha=linha, turno=turno)
 
 
 def excluir(lancamento_id: int) -> None:
