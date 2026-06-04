@@ -46,6 +46,19 @@ def listar_linhas_producao() -> list:
             return cur.fetchall()
 
 
+def buscar_por_termo(termo: str) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT linha, filial, setor
+                FROM linha_config
+                WHERE linha ILIKE %s
+                ORDER BY filial, setor, linha
+                LIMIT 20
+            """, (f"%{termo}%",))
+            return cur.fetchall()
+
+
 def atribuir(filial: str, setor: str, linha: str) -> int:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

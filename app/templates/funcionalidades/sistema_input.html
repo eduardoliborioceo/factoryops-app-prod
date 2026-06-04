@@ -110,27 +110,61 @@
     <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
       <div class="card-body p-3">
         <div class="row g-2 align-items-end">
+
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Data</label>
             <input type="date" class="form-control form-control-sm" id="filtroData" style="border-radius:8px;">
           </div>
-          <div class="col-6 col-md-2">
+
+          <!-- Busca inteligente de linha -->
+          <div class="col-12 col-md-4 position-relative">
+            <label class="form-label fw-600" style="font-size:0.8rem;">
+              Linha <span class="text-muted fw-400" style="font-size:0.75rem;">— digite para buscar (ex: IM-01)</span>
+            </label>
+            <input type="text" class="form-control form-control-sm" id="buscaLinha"
+                   placeholder="Ex: IM-01, SMD-03, PTH..." style="border-radius:8px;" autocomplete="off">
+            <div id="buscaLinhaDropdown"
+                 style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:1000;
+                        background:var(--card);border:1px solid var(--border);border-radius:8px;
+                        box-shadow:0 4px 16px rgba(15,23,42,0.10);max-height:220px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Filial (preenchida automaticamente, editável) -->
+          <div class="col-4 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
             <select class="form-select form-select-sm" id="filtroFilial" style="border-radius:8px;">
-              <option value="">Selecione</option>
+              <option value="">—</option>
               <option value="VTE">VTE</option>
               <option value="VTT">VTT</option>
             </select>
           </div>
-          <div class="col-6 col-md-2">
+
+          <!-- Setor (deduzido automaticamente) -->
+          <div class="col-4 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
-            <select class="form-select form-select-sm" id="filtroSetor" style="border-radius:8px;">
-              <option value="">Selecione a filial</option>
-            </select>
+            <input type="text" class="form-control form-control-sm" id="filtroSetor"
+                   readonly style="border-radius:8px;background:rgba(15,23,42,0.03);color:var(--text-muted);"
+                   placeholder="Auto">
           </div>
-          <div class="col-6 col-md-2">
+
+          <!-- Linha confirmada (hidden, valor real enviado) -->
+          <input type="hidden" id="filtroLinha">
+
+          <!-- Linha selecionada (badge visual) -->
+          <div class="col-4 col-md-2" id="linhaSelecionadaWrap" style="display:none;">
+            <label class="form-label fw-600" style="font-size:0.8rem;">&nbsp;</label>
+            <div class="d-flex align-items-center gap-1">
+              <span class="badge" id="linhaSelecionadaBadge"
+                    style="background:rgba(13,110,253,0.1);color:#0d6efd;font-size:0.82rem;padding:5px 10px;border-radius:6px;font-weight:600;"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;padding:3px 7px;"
+                      onclick="limparLinha()" title="Trocar linha"><i class="bi bi-x-lg" style="font-size:0.7rem;"></i></button>
+            </div>
+          </div>
+
+          <!-- Linha antiga (select oculto, mantido para compatibilidade com carregarSlots) -->
+          <div class="col-6 col-md-2" id="filtroLinhaSelect_UNUSED" style="display:none;">
             <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
-            <select class="form-select form-select-sm" id="filtroLinha" style="border-radius:8px;">
+            <select class="form-select form-select-sm" id="filtroLinhaSelect" style="border-radius:8px;">
               <option value="">Selecione o setor</option>
             </select>
           </div>
@@ -193,50 +227,78 @@
 const MOTIVOS  = {{ catalogos.motivos | tojson }};
 const DEFEITOS = {{ catalogos.defeitos | tojson }};
 const URL_SLOTS   = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
-const URL_SALVAR  = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
-const URL_HIST    = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
-const URL_LINHAS  = "{{ url_for('pages.funcionalidades_sistema_input_linhas') }}";
-const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
+const URL_SLOTS        = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
+const URL_SALVAR       = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
+const URL_HIST         = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
+const URL_BUSCA_LINHA  = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_EXCLUIR      = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
 
 const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
 let _slotsState = [];
 let _tabAtiva   = 'hxh';
 
-/* ── Configuração dos setores por filial ── */
-const SETORES_POR_FILIAL = {
-  VTE: {{ setores | tojson }},
-  VTT: {{ setores | tojson }},
-};
-
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('filtroData').value = new Date().toISOString().split('T')[0];
 
-  document.getElementById('filtroFilial').addEventListener('change', function () {
-    const filial = this.value;
-    const setorEl = document.getElementById('filtroSetor');
-    const linhaEl = document.getElementById('filtroLinha');
-    setorEl.innerHTML = '<option value="">Selecione</option>';
-    linhaEl.innerHTML = '<option value="">Selecione o setor</option>';
-    if (!filial) return;
-    (SETORES_POR_FILIAL[filial] || []).forEach(s => {
-      setorEl.innerHTML += `<option value="${s}">${s}</option>`;
-    });
+  /* ── Busca inteligente de linha ── */
+  const buscaInput    = document.getElementById('buscaLinha');
+  const dropdown      = document.getElementById('buscaLinhaDropdown');
+  let _acTimer = null;
+
+  buscaInput.addEventListener('input', function () {
+    clearTimeout(_acTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { dropdown.style.display = 'none'; return; }
+    _acTimer = setTimeout(() => {
+      fetch(URL_BUSCA_LINHA + '?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(d => {
+          dropdown.innerHTML = '';
+          if (!d.resultados?.length) { dropdown.style.display = 'none'; return; }
+          d.resultados.forEach(r => {
+            const item = document.createElement('div');
+            item.style.cssText = 'padding:9px 14px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:background .1s;';
+            item.innerHTML = `<strong>${r.linha}</strong>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${r.filial} · ${r.setor}</span>`;
+            item.addEventListener('mouseenter', () => item.style.background = 'rgba(13,110,253,0.06)');
+            item.addEventListener('mouseleave', () => item.style.background = '');
+            item.addEventListener('click', () => selecionarLinha(r));
+            dropdown.appendChild(item);
+          });
+          dropdown.style.display = 'block';
+        });
+    }, 200);
   });
 
-  document.getElementById('filtroSetor').addEventListener('change', function () {
-    const setor = this.value;
-    const linhaEl = document.getElementById('filtroLinha');
-    linhaEl.innerHTML = '<option value="">Carregando...</option>';
-    if (!setor) { linhaEl.innerHTML = '<option value="">Selecione o setor</option>'; return; }
-    fetch(URL_LINHAS + '?setor=' + encodeURIComponent(setor))
-      .then(r => r.json())
-      .then(d => {
-        linhaEl.innerHTML = '<option value="">Selecione</option>';
-        (d.linhas || []).forEach(l => { linhaEl.innerHTML += `<option value="${l}">${l}</option>`; });
-      })
-      .catch(() => { linhaEl.innerHTML = '<option value="">Erro ao carregar</option>'; });
+  document.addEventListener('click', e => {
+    if (!buscaInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
   });
 });
+
+function selecionarLinha(r) {
+  /* r = { linha, filial, setor } */
+  document.getElementById('filtroLinha').value  = r.linha;
+  document.getElementById('filtroFilial').value = r.filial;
+  document.getElementById('filtroSetor').value  = r.setor;
+
+  /* badge visual */
+  document.getElementById('linhaSelecionadaBadge').textContent = r.linha;
+  document.getElementById('linhaSelecionadaWrap').style.display = '';
+  document.getElementById('buscaLinha').value = '';
+  document.getElementById('buscaLinhaDropdown').style.display = 'none';
+}
+
+function limparLinha() {
+  document.getElementById('filtroLinha').value  = '';
+  document.getElementById('filtroFilial').value = '';
+  document.getElementById('filtroSetor').value  = '';
+  document.getElementById('linhaSelecionadaBadge').textContent = '';
+  document.getElementById('linhaSelecionadaWrap').style.display = 'none';
+  document.getElementById('buscaLinha').value = '';
+  document.getElementById('buscaLinha').focus();
+}
 
 function setTab(tab) {
   _tabAtiva = tab;
@@ -255,8 +317,12 @@ function carregarSlots() {
   const linha  = document.getElementById('filtroLinha').value;
   const turno  = document.getElementById('filtroTurno').value;
 
-  if (!data || !filial || !setor || !linha || !turno) {
-    alerta('warning', 'Preencha todos os campos antes de carregar o plano.');
+  if (!data || !linha || !turno) {
+    alerta('warning', 'Selecione a linha (busque pelo nome) e o turno antes de carregar.');
+    return;
+  }
+  if (!setor) {
+    alerta('warning', 'Setor não identificado para esta linha. Verifique o cadastro de linhas.');
     return;
   }
 

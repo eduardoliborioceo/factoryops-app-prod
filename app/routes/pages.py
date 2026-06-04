@@ -2358,6 +2358,22 @@ def funcionalidades_sistema_input_linhas():
         return jsonify({"ok": False, "linhas": []})
 
 
+@bp.route("/funcionalidades/sistemas/input/buscar-linha")
+@login_required
+def funcionalidades_sistema_input_buscar_linha():
+    from flask import request, jsonify
+    from app.repositories import linha_config_repository as lc_repo
+
+    termo = request.args.get("q", "").strip()
+    if len(termo) < 1:
+        return jsonify({"ok": True, "resultados": []})
+    try:
+        rows = lc_repo.buscar_por_termo(termo)
+        return jsonify({"ok": True, "resultados": [dict(r) for r in rows]})
+    except Exception:
+        return jsonify({"ok": False, "resultados": []})
+
+
 @bp.route("/funcionalidades/sistemas/input/modelos")
 @login_required
 def funcionalidades_sistema_input_modelos():
