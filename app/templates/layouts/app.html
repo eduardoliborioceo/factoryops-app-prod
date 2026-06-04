@@ -72,55 +72,13 @@
 
 <header class="mobile-header d-md-none">
   <div class="mobile-left">
-    <div class="avatar">
+    <a href="{{ url_for('auth.my_profile') }}" class="avatar" style="text-decoration:none;">
+      {% if current_user.is_authenticated and current_user.profile_image %}
+      <img src="{{ current_user.profile_image }}" alt="Perfil" style="object-fit:cover;">
+      {% else %}
       <img src="{{ COMPANY_LOGO_URL or url_for('static', filename='images/logos/logo.jpeg') }}">
-    </div>
-
-    {% set page_titles = {
-      "inicio": "Início",
-      "dashboard": "Dashboard",
-      "perfil": "Meu Perfil",
-      "smt_modelos": "SMT",
-      "smt_cadastro": "Cadastro",
-      "smt_calcular": "Cálculos",
-      "smt_estudo_tempo": "Estudo de Tempo",
-      "smt_more": "Mais",
-      "funcionalidades_im_pa": "IM/PA",
-      "funcionalidades_pth": "PTH",
-      "funcionalidades_vtt": "VTT",
-      "producao_medicao_pasta": "Medição Pasta",
-      "producao_checklist_linha": "Checklist Linha",
-      "producao_limpeza_stencil": "Limpeza Stencil",
-      "smd_monitor_tv": "Monitor SMD",
-      "engenharia_folha_crono": "Folha de Cronometragem",
-      "pcp_controle_ops": "Controle de OPs",
-      "pcp_apontamento": "Apontamento",
-      "pcp_planejamento": "Planejamento",
-      "pcp_entregas": "Entregas",
-      "logistica_entregas": "Entregas",
-      "pcp_lancamento_producao": "Lançamento PTH",
-      "pcp_producao_coletada": "Produção Input",
-      "pcp_producao_mes": "Produção MES",
-      "pcp_roteiros": "Roteiros",
-      "logistica_resumo": "Estoque & Logística",
-      "logistica_conferencia_material": "Conf. Material",
-      "config_turnos": "Turnos",
-      "config_linhas": "Linhas e Setores",
-      "config_paradas": "Paradas de Linha",
-      "suporte_centro_conhecimento": "Centro de Conhecimento",
-      "suporte_ouvidoria": "Ouvidoria",
-      "suporte_especializado": "Suporte Especializado",
-      "admin_backup": "Backup",
-      "admin_chamados": "Chamados de Suporte",
-      "funcionalidades_resumo_producao": "Resumo de Produção",
-      "pcp_etiquetas_manuais": "Etiquetas Manuais",
-      "funcionalidades_sistema_input": "Sistema INPUT",
-      "config_empresa": "Empresa"
-    } %}
-
-    <span class="mobile-page-title">
-      {{ page_titles.get(active_menu, APP_NAME) }}
-    </span>
+      {% endif %}
+    </a>
   </div>
 
   {% if current_user.is_authenticated %}
