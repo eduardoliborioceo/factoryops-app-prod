@@ -39,6 +39,18 @@ def buscar_horario(turno: str) -> dict | None:
             return cur.fetchone()
 
 
+def listar_nomes_unicos() -> list:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT turno
+                FROM turno_config
+                GROUP BY turno
+                ORDER BY MIN(ordem)
+            """)
+            return [r["turno"] for r in cur.fetchall()]
+
+
 def proximo_ordem(turno: str) -> int:
     with get_db() as conn:
         with conn.cursor() as cur:
