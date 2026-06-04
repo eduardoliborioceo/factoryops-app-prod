@@ -40,19 +40,21 @@ def buscar_horario(turno: str) -> dict | None:
 
 
 def listar_nomes_unicos() -> list:
+    import re
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT REPLACE(REPLACE(turno, '§', 'º'), '°', 'º') AS turno
                 FROM turno_config
                 GROUP BY REPLACE(REPLACE(turno, '§', 'º'), '°', 'º')
-                ORDER BY
-                    CAST(NULLIF(REGEXP_REPLACE(
-                        REPLACE(REPLACE(turno, '§', ''), '°', ''), '[^0-9]', '', 'g'
-                    ), '') AS INTEGER) NULLS LAST,
-                    REPLACE(REPLACE(turno, '§', 'º'), '°', 'º')
             """)
-            return [r["turno"] for r in cur.fetchall()]
+            nomes = [r["turno"] for r in cur.fetchall()]
+
+    def _chave(nome):
+        m = re.match(r'(\d+)', nome or '')
+        return (int(m.group(1)) if m else 999, nome)
+
+    return sorted(nomes, key=_chave)
 
 
 def proximo_ordem(turno: str) -> int:
