@@ -46,7 +46,11 @@ def listar_nomes_unicos() -> list:
                 SELECT REPLACE(REPLACE(turno, '§', 'º'), '°', 'º') AS turno
                 FROM turno_config
                 GROUP BY REPLACE(REPLACE(turno, '§', 'º'), '°', 'º')
-                ORDER BY MIN(ordem)
+                ORDER BY
+                    CAST(NULLIF(REGEXP_REPLACE(
+                        REPLACE(REPLACE(turno, '§', ''), '°', ''), '[^0-9]', '', 'g'
+                    ), '') AS INTEGER) NULLS LAST,
+                    REPLACE(REPLACE(turno, '§', 'º'), '°', 'º')
             """)
             return [r["turno"] for r in cur.fetchall()]
 
