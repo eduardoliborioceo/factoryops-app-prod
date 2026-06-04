@@ -633,18 +633,29 @@ function calcPerda(i) {
   const pct = Math.min(100, Math.round(prod/meta*100));
   const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
   const perda = Math.max(0, meta-prod);
-  const perdaMin = Math.round((perda/meta)*60);
+  const perdaTotalSeg = Math.round((perda/meta)*3600);
+  const perdaMin = Math.floor(perdaTotalSeg/60);
+  const perdaSeg = perdaTotalSeg%60;
+  const perdaStr = perdaMin>0
+    ? (perdaSeg>0 ? `~${perdaMin} min ${perdaSeg} seg` : `~${perdaMin} min`)
+    : `~${perdaSeg} seg`;
   el.className = 'perda-display'+(prod>=meta?' perda-ok':'');
   el.innerHTML = `<div class="eficiencia-bar mb-1"><div class="eficiencia-fill" style="width:${pct}%;background:${cor};"></div></div>
     <span>Eficiência: <strong style="color:${cor};">${pct}%</strong>
-    ${perda>0?` — Perda: <strong>${perda} pcs</strong> (~${perdaMin} min)`
+    ${perda>0?` — Perda: <strong>${perda} pcs</strong> (${perdaStr})`
             :' — <span style="color:#198754;font-weight:600;">Meta atingida ✓</span>'}</span>`;
 }
 
 function addJust(i) {
   const c = document.getElementById(`s${i}_justs`);
   const ji = c.querySelectorAll('.just-row').length;
-  c.insertAdjacentHTML('beforeend', buildJustRow({}, i, ji));
+  const meta = parseFloat(document.getElementById(`s${i}_meta`)?.value||0)||0;
+  const prod = parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0;
+  const perdaMinAuto = (meta > 0 && prod < meta && ji === 0)
+    ? Math.floor(((meta - prod) / meta) * 60)
+    : 0;
+  c.insertAdjacentHTML('beforeend', buildJustRow({ perda_minutos: perdaMinAuto }, i, ji));
+  calcJmin(i);
 }
 
 function addDef(i) {
@@ -692,6 +703,12 @@ function coletarSlot(i) {
     meta_hora: parseFloat(document.getElementById(`s${i}_meta`)?.value||0)||null,
     producao_real: parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0,
     planejamento_id: sl.planejamento_id||null,
+    perda_segundos: (() => {
+      const m = parseFloat(document.getElementById(`s${i}_meta`)?.value||0)||0;
+      const p = parseInt(document.getElementById(`s${i}_prod`)?.value||0)||0;
+      if (m <= 0 || p >= m) return 0;
+      return Math.round(((m - p) / m) * 3600);
+    })(),
   };
   const jRows = document.getElementById(`s${i}_justs`)?.querySelectorAll('.just-row')||[];
   const justificativas = Array.from(jRows).map(row => {
