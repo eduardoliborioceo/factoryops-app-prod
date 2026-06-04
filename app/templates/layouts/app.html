@@ -35,13 +35,14 @@
 
 {% set _func_vte_menus = ['funcionalidades_im_pa','smt_modelos','funcionalidades_pth'] %}
 {% set _func_vtt_menus = ['funcionalidades_vtt'] %}
-{% set _func_sistemas_menus = ['funcionalidades_sistema_input'] %}
+{% set _func_sistemas_menus = ['funcionalidades_sistema_input', 'funcionalidades_pci_hub'] %}
 {% set _func_menus = [
   'smt_cadastro','smt_calcular',
   'funcionalidades_im_pa','smt_modelos','funcionalidades_pth',
   'funcionalidades_vtt',
   'funcionalidades_resumo_producao','pcp_etiquetas_manuais',
-  'funcionalidades_sistema_input'
+  'funcionalidades_sistema_input',
+  'funcionalidades_pci_hub'
 ] %}
 {% set _prod_smd_menus = ['producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil'] %}
 {% set _prod_menus = [
@@ -202,6 +203,10 @@
                   <a href="{{ url_for('pages.funcionalidades_sistema_input') }}"
                      class="{% if active_menu == 'funcionalidades_sistema_input' %}active{% endif %}">
                     <i class="bi bi-input-cursor-text"></i> Sistema INPUT
+                  </a>
+                  <a href="{{ url_for('pages.funcionalidades_pci_hub') }}"
+                     class="{% if active_menu == 'funcionalidades_pci_hub' %}active{% endif %}">
+                    <i class="bi bi-cpu"></i> PCI Hub
                   </a>
                 </div>
               </div>
