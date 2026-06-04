@@ -91,6 +91,34 @@
 .eficiencia-bar { height: 6px; border-radius: 3px; background: rgba(15,23,42,0.08); overflow: hidden; margin-top: 6px; }
 .eficiencia-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 
+/* ── MOBILE ─────────────────────────────────── */
+@media (max-width: 767px) {
+  .input-nav { width: 100%; }
+  .input-nav-btn { flex: 1; text-align: center; padding: 8px 10px; }
+
+  .slot-header { flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+  .slot-hora { font-size: 0.95rem; min-width: 0; }
+  .slot-modelo { flex: 0 0 100%; order: 4; font-size: 0.78rem; margin-top: 2px; }
+  .slot-meta { min-width: 0; font-size: 0.75rem; }
+  .slot-status { font-size: 0.65rem; }
+  .slot-body { padding: 12px; }
+
+  .just-row, .def-row { padding: 8px; gap: 6px; }
+
+  /* Resumo de eficiência wrap no mobile */
+  #slotsArea > div:first-child {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  /* Botões de ação slot — full width no mobile */
+  .slot-body .col-12.d-flex { flex-direction: column; }
+  .slot-body .col-12.d-flex .btn { width: 100%; justify-content: center; }
+
+  /* Prod real — destaque maior no mobile */
+  .prod-real-input { font-size: 1.4rem !important; font-weight: 800 !important; height: 48px; }
+}
+
 @media print {
   .sidebar, .desktop-header, .mobile-header, .mobile-bottom-nav,
   .input-nav, .card.mb-4, button, .btn, .slot-chevron { display: none !important; }
@@ -123,8 +151,16 @@
   <div id="tabHxH">
 
     <!-- Filtros -->
-    <div class="card mb-4" style="border-radius:12px;border:1px solid var(--border);">
-      <div class="card-body p-3">
+    <div class="card mb-3" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="d-flex align-items-center justify-content-between px-3 py-2 d-md-none"
+           style="border-bottom:1px solid var(--border);cursor:pointer;"
+           onclick="toggleFiltros()">
+        <span class="fw-600" style="font-size:0.875rem;">
+          <i class="bi bi-funnel me-2 text-primary"></i>Filtros de Lançamento
+        </span>
+        <i class="bi bi-chevron-down" id="filtrosChevron" style="transition:transform .2s;"></i>
+      </div>
+      <div class="card-body p-3" id="filtrosBody">
         <div class="row g-2 align-items-end">
 
           <div class="col-6 col-md-2">
@@ -132,58 +168,7 @@
             <input type="date" class="form-control form-control-sm" id="filtroData" style="border-radius:8px;">
           </div>
 
-          <!-- Busca inteligente de linha -->
-          <div class="col-12 col-md-4 position-relative">
-            <label class="form-label fw-600" style="font-size:0.8rem;">
-              Linha <span class="text-muted fw-400" style="font-size:0.75rem;">— digite para buscar (ex: IM-01)</span>
-            </label>
-            <input type="text" class="form-control form-control-sm" id="buscaLinha"
-                   placeholder="Ex: IM-01, SMD-03, PTH..." style="border-radius:8px;" autocomplete="off">
-            <div id="buscaLinhaDropdown"
-                 style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:1000;
-                        background:var(--card);border:1px solid var(--border);border-radius:8px;
-                        box-shadow:0 4px 16px rgba(15,23,42,0.10);max-height:220px;overflow-y:auto;"></div>
-          </div>
-
-          <!-- Filial (preenchida automaticamente, editável) -->
-          <div class="col-4 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
-            <select class="form-select form-select-sm" id="filtroFilial" style="border-radius:8px;">
-              <option value="">—</option>
-              <option value="VTE">VTE</option>
-              <option value="VTT">VTT</option>
-            </select>
-          </div>
-
-          <!-- Setor (deduzido automaticamente) -->
-          <div class="col-4 col-md-2">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Setor</label>
-            <input type="text" class="form-control form-control-sm" id="filtroSetor"
-                   readonly style="border-radius:8px;background:rgba(15,23,42,0.03);color:var(--text-muted);"
-                   placeholder="Auto">
-          </div>
-
-          <!-- Linha confirmada (hidden, valor real enviado) -->
-          <input type="hidden" id="filtroLinha">
-
-          <!-- Linha selecionada (badge visual) -->
-          <div class="col-4 col-md-2" id="linhaSelecionadaWrap" style="display:none;">
-            <label class="form-label fw-600" style="font-size:0.8rem;">&nbsp;</label>
-            <div class="d-flex align-items-center gap-1">
-              <span class="badge" id="linhaSelecionadaBadge"
-                    style="background:rgba(13,110,253,0.1);color:#0d6efd;font-size:0.82rem;padding:5px 10px;border-radius:6px;font-weight:600;"></span>
-              <button type="button" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;padding:3px 7px;"
-                      onclick="limparLinha()" title="Trocar linha"><i class="bi bi-x-lg" style="font-size:0.7rem;"></i></button>
-            </div>
-          </div>
-
-          <!-- Linha antiga (select oculto, mantido para compatibilidade com carregarSlots) -->
-          <div class="col-6 col-md-2" id="filtroLinhaSelect_UNUSED" style="display:none;">
-            <label class="form-label fw-600" style="font-size:0.8rem;">Linha</label>
-            <select class="form-select form-select-sm" id="filtroLinhaSelect" style="border-radius:8px;">
-              <option value="">Selecione o setor</option>
-            </select>
-          </div>
+          <!-- Turno — visível no mobile ao lado da data -->
           <div class="col-6 col-md-2">
             <label class="form-label fw-600" style="font-size:0.8rem;">Turno</label>
             <select class="form-select form-select-sm" id="filtroTurno" style="border-radius:8px;">
@@ -193,8 +178,53 @@
               {% endfor %}
             </select>
           </div>
+
+          <!-- Busca inteligente de linha -->
+          <div class="col-12 col-md-4 position-relative">
+            <label class="form-label fw-600" style="font-size:0.8rem;">
+              Linha <span class="text-muted fw-400 d-none d-sm-inline" style="font-size:0.75rem;">— digite para buscar</span>
+            </label>
+            <input type="text" class="form-control form-control-sm" id="buscaLinha"
+                   placeholder="Ex: IM-01, SMD-03..." style="border-radius:8px;" autocomplete="off">
+            <div id="buscaLinhaDropdown"
+                 style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:1050;
+                        background:var(--card);border:1px solid var(--border);border-radius:8px;
+                        box-shadow:0 4px 16px rgba(15,23,42,0.12);max-height:240px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Filial + Setor em linha única no mobile -->
           <div class="col-6 col-md-2">
-            <button class="btn btn-primary btn-sm w-100 fw-600" style="border-radius:8px;" onclick="carregarSlots()">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Filial</label>
+            <select class="form-select form-select-sm" id="filtroFilial" style="border-radius:8px;">
+              <option value="">—</option>
+              <option value="VTE">VTE</option>
+              <option value="VTT">VTT</option>
+            </select>
+          </div>
+
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Setor <span class="text-muted fw-400">(auto)</span></label>
+            <input type="text" class="form-control form-control-sm" id="filtroSetor"
+                   readonly style="border-radius:8px;background:rgba(15,23,42,0.03);color:var(--text-muted);"
+                   placeholder="—">
+          </div>
+
+          <input type="hidden" id="filtroLinha">
+
+          <!-- Linha selecionada badge -->
+          <div class="col-12" id="linhaSelecionadaWrap" style="display:none;">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-check-circle text-success" style="font-size:0.9rem;"></i>
+              <span class="fw-600" style="font-size:0.85rem;">Linha:</span>
+              <span class="badge" id="linhaSelecionadaBadge"
+                    style="background:rgba(13,110,253,0.1);color:#0d6efd;font-size:0.82rem;padding:5px 10px;border-radius:6px;font-weight:600;"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" style="border-radius:6px;padding:3px 10px;"
+                      onclick="limparLinha()"><i class="bi bi-x-lg me-1" style="font-size:0.7rem;"></i>Trocar</button>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-2 mt-1">
+            <button class="btn btn-primary btn-sm w-100 fw-600" style="border-radius:8px;height:34px;" onclick="carregarSlots()">
               <i class="bi bi-play-fill me-1"></i>Carregar Plano
             </button>
           </div>
@@ -339,6 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function toggleFiltros() {
+  const body = document.getElementById('filtrosBody');
+  const chev = document.getElementById('filtrosChevron');
+  const oculto = body.style.display === 'none';
+  body.style.display = oculto ? '' : 'none';
+  if (chev) chev.style.transform = oculto ? 'rotate(180deg)' : '';
+}
+
 function selecionarLinha(r) {
   /* r = { linha, filial, setor } */
   document.getElementById('filtroLinha').value  = r.linha;
@@ -404,6 +442,12 @@ function carregarSlots() {
         return;
       }
       _setor_atual = setor;
+      if (window.innerWidth < 768) {
+        const fb = document.getElementById('filtrosBody');
+        const fc = document.getElementById('filtrosChevron');
+        if (fb) fb.style.display = 'none';
+        if (fc) fc.style.transform = '';
+      }
       _slotsState  = resp.slots.map((s, i) => ({ ...s, _idx: i, _data: data, _filial: filial, _setor: setor, _linha: linha, _turno: turno }));
       renderSlots();
     })
@@ -495,9 +539,9 @@ function buildSlotCard(slot, i) {
 
         <div class="col-12">
           <div class="row g-2 align-items-end">
-            <div class="col-6 col-md-2">
+            <div class="col-12 col-sm-4 col-md-2">
               <label class="form-label fw-600" style="font-size:0.75rem;">Produção Real</label>
-              <input type="number" class="form-control form-control-sm" id="s${i}_prod"
+              <input type="number" class="form-control form-control-sm prod-real-input" id="s${i}_prod"
                      value="${prodReal}" min="0" style="border-radius:8px;font-size:1.1rem;font-weight:700;"
                      oninput="calcPerda(${i})">
             </div>
@@ -551,37 +595,41 @@ function buildJusts(justs, i) {
 
 function buildJustRow(j, i, ji) {
   return `<div class="just-row" id="s${i}_just_${ji}">
-    <div style="min-width:180px;flex:1.5;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Motivo</label>
-      <select class="form-select form-select-sm" id="s${i}_just_${ji}_cod"
-              onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
-        <option value="">Selecione</option>
-        ${MOTIVOS.map(m=>`<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
-      </select>
+    <div class="row g-2 w-100 align-items-end">
+      <div class="col-12 col-sm-6 col-lg-4">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Motivo</label>
+        <select class="form-select form-select-sm" id="s${i}_just_${ji}_cod"
+                onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
+          <option value="">Selecione</option>
+          ${MOTIVOS.map(m=>`<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
+        </select>
+      </div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Origem</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_orig" value="${esc(j.origem||'')}"
+               readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+      </div>
+      <div class="col-6 col-sm-3 col-lg-2">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Responsável</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_resp" value="${esc(j.responsavel||'')}"
+               readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
+      </div>
+      <div class="col-4 col-sm-2 col-lg-1">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Min</label>
+        <input type="number" class="form-control form-control-sm" id="s${i}_just_${ji}_min"
+               value="${j.perda_minutos||0}" min="0" max="60" style="border-radius:6px;"
+               oninput="calcJmin(${i})">
+      </div>
+      <div class="col-7 col-sm-9 col-lg-2">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Justificativa</label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_txt"
+               value="${esc(j.justificativa_texto||'')}" placeholder="Descreva..." style="border-radius:6px;">
+      </div>
+      <div class="col-1 d-flex align-items-end pb-1">
+        <button class="btn btn-sm btn-outline-danger w-100" style="border-radius:6px;padding:4px 6px;"
+                onclick="rmJust(${i},${ji})"><i class="bi bi-trash3"></i></button>
+      </div>
     </div>
-    <div style="min-width:100px;flex:0.8;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Origem</label>
-      <input class="form-control form-control-sm" id="s${i}_just_${ji}_orig" value="${esc(j.origem||'')}"
-             readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
-    </div>
-    <div style="min-width:100px;flex:0.8;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Responsável</label>
-      <input class="form-control form-control-sm" id="s${i}_just_${ji}_resp" value="${esc(j.responsavel||'')}"
-             readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
-    </div>
-    <div style="min-width:80px;flex:0.5;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Perda (min)</label>
-      <input type="number" class="form-control form-control-sm" id="s${i}_just_${ji}_min"
-             value="${j.perda_minutos||0}" min="0" max="60" style="border-radius:6px;"
-             oninput="calcJmin(${i})">
-    </div>
-    <div style="min-width:160px;flex:2;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Justificativa</label>
-      <input class="form-control form-control-sm" id="s${i}_just_${ji}_txt"
-             value="${esc(j.justificativa_texto||'')}" placeholder="Descreva..." style="border-radius:6px;">
-    </div>
-    <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
-            onclick="rmJust(${i},${ji})"><i class="bi bi-trash3"></i></button>
   </div>`;
 }
 
@@ -591,27 +639,31 @@ function buildDefs(defs, i) {
 
 function buildDefRow(d, i, di) {
   return `<div class="def-row" id="s${i}_def_${di}">
-    <div style="min-width:200px;flex:2;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Código Defeito</label>
-      <select class="form-select form-select-sm" id="s${i}_def_${di}_cod"
-              onchange="calcDtotal(${i})" style="border-radius:6px;">
-        <option value="">Selecione</option>
-        ${DEFEITOS.map(df=>`<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
-      </select>
+    <div class="row g-2 w-100 align-items-end">
+      <div class="col-12 col-sm-5">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Código Defeito</label>
+        <select class="form-select form-select-sm" id="s${i}_def_${di}_cod"
+                onchange="calcDtotal(${i})" style="border-radius:6px;">
+          <option value="">Selecione</option>
+          ${DEFEITOS.map(df=>`<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
+        </select>
+      </div>
+      <div class="col-7 col-sm-4">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Posição Mecânica</label>
+        <input class="form-control form-control-sm" id="s${i}_def_${di}_pos"
+               value="${esc(d.posicao_mecanica||'')}" placeholder="Ex: U10, R3..." style="border-radius:6px;">
+      </div>
+      <div class="col-3 col-sm-2">
+        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Qtd</label>
+        <input type="number" class="form-control form-control-sm" id="s${i}_def_${di}_qtd"
+               value="${d.quantidade||1}" min="1" style="border-radius:6px;"
+               oninput="calcDtotal(${i})">
+      </div>
+      <div class="col-2 col-sm-1 d-flex align-items-end pb-1">
+        <button class="btn btn-sm btn-outline-danger w-100" style="border-radius:6px;padding:4px 6px;"
+                onclick="rmDef(${i},${di})"><i class="bi bi-trash3"></i></button>
+      </div>
     </div>
-    <div style="min-width:140px;flex:1.5;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Posição Mecânica</label>
-      <input class="form-control form-control-sm" id="s${i}_def_${di}_pos"
-             value="${esc(d.posicao_mecanica||'')}" placeholder="Ex: U10, R3..." style="border-radius:6px;">
-    </div>
-    <div style="min-width:70px;flex:0.5;">
-      <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Qtd</label>
-      <input type="number" class="form-control form-control-sm" id="s${i}_def_${di}_qtd"
-             value="${d.quantidade||1}" min="1" style="border-radius:6px;"
-             oninput="calcDtotal(${i})">
-    </div>
-    <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;align-self:flex-end;"
-            onclick="rmDef(${i},${di})"><i class="bi bi-trash3"></i></button>
   </div>`;
 }
 
@@ -790,40 +842,85 @@ function carregarHistorico() {
         body.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-2 mb-2 d-block"></i>Nenhum lançamento nos últimos 7 dias.</div>';
         return;
       }
-      let html = `<div class="table-responsive"><table class="table table-hover mb-0" style="font-size:0.84rem;">
-        <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;background:rgba(15,23,42,0.04);">
-          <tr>
-            <th style="padding:8px 16px;">Data</th><th>Horário</th><th>Filial/Setor</th><th>Linha</th>
-            <th>Turno</th><th>Modelo</th><th>OP</th>
-            <th class="text-end">Prod.</th><th class="text-end">Meta</th>
-            <th class="text-center">Just.</th><th class="text-center">Def.</th>
-            <th style="padding:8px 16px;"></th>
-          </tr>
-        </thead><tbody>`;
-      d.registros.forEach(r => {
-        const pct = r.meta_hora>0 ? Math.min(100,Math.round(r.producao_real/r.meta_hora*100)) : 0;
-        const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
-        html += `<tr>
-          <td style="padding:8px 16px;">${fmtDate(r.data)}</td>
-          <td>${r.hora_inicio}→${r.hora_fim}</td>
-          <td><span class="badge" style="background:rgba(13,110,253,0.08);color:#0d6efd;font-size:0.72rem;">${r.filial}</span>
-              <span class="ms-1 text-muted" style="font-size:0.8rem;">${r.setor}</span></td>
-          <td>${r.linha}</td>
-          <td style="font-size:0.8rem;">${r.turno}</td>
-          <td class="fw-600">${r.modelo||'—'}</td>
-          <td style="font-size:0.8rem;color:var(--text-muted);">${r.op||'—'}</td>
-          <td class="text-end fw-600" style="color:${cor};">${r.producao_real}</td>
-          <td class="text-end text-muted">${r.meta_hora||'—'}</td>
-          <td class="text-center">${r.qtd_justificativas>0?`<span class="badge" style="background:rgba(255,193,7,0.15);color:#856404;">${r.qtd_justificativas}</span>`:'—'}</td>
-          <td class="text-center">${r.total_defeitos>0?`<span class="badge" style="background:rgba(220,53,69,0.1);color:#dc3545;">${r.total_defeitos}</span>`:'—'}</td>
-          <td style="padding:8px 16px;">
-            <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:2px 8px;"
-                    onclick="excluirHist(${r.id})"><i class="bi bi-trash3" style="font-size:0.75rem;"></i></button>
-          </td>
-        </tr>`;
-      });
-      html += '</tbody></table></div>';
-      body.innerHTML = html;
+      const isMobile = window.innerWidth < 768;
+
+      if (isMobile) {
+        let html = '<div class="p-3">';
+        d.registros.forEach(r => {
+          const pct = r.meta_hora>0 ? Math.min(100,Math.round(r.producao_real/r.meta_hora*100)) : 0;
+          const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
+          html += `<div class="card mb-2" style="border-radius:10px;border:1px solid var(--border);">
+            <div class="card-body p-3">
+              <div class="d-flex align-items-start justify-content-between mb-2">
+                <div>
+                  <div class="fw-700" style="font-size:0.9rem;">${r.linha} <span style="font-size:0.75rem;color:var(--text-muted);">${r.hora_inicio}→${r.hora_fim}</span></div>
+                  <div style="font-size:0.75rem;color:var(--text-muted);">${fmtDate(r.data)} · ${r.turno} · <span class="badge" style="background:rgba(13,110,253,0.08);color:#0d6efd;font-size:0.68rem;">${r.filial}</span> ${r.setor}</div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:3px 8px;" onclick="excluirHist(${r.id})"><i class="bi bi-trash3"></i></button>
+              </div>
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="fw-600" style="font-size:0.85rem;">${r.modelo||'—'}</span>
+                ${r.op?`<span style="font-size:0.75rem;color:var(--text-muted);">OP ${r.op}</span>`:''}
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div>
+                  <div style="font-size:0.7rem;color:var(--text-muted);">Produção</div>
+                  <div class="fw-700" style="font-size:1.1rem;color:${cor};">${r.producao_real}</div>
+                </div>
+                ${r.meta_hora?`<div>
+                  <div style="font-size:0.7rem;color:var(--text-muted);">Meta</div>
+                  <div style="font-size:0.9rem;font-weight:600;">${r.meta_hora}</div>
+                </div>
+                <div>
+                  <div style="font-size:0.7rem;color:var(--text-muted);">Efic.</div>
+                  <div style="font-size:0.9rem;font-weight:700;color:${cor};">${pct}%</div>
+                </div>`:''}
+                ${r.qtd_justificativas>0?`<span class="badge ms-auto" style="background:rgba(255,193,7,0.15);color:#856404;"><i class="bi bi-exclamation-triangle me-1"></i>${r.qtd_justificativas} just.</span>`:''}
+                ${r.total_defeitos>0?`<span class="badge" style="background:rgba(220,53,69,0.1);color:#dc3545;"><i class="bi bi-bug me-1"></i>${r.total_defeitos} def.</span>`:''}
+              </div>
+              ${r.meta_hora?`<div style="height:4px;background:rgba(15,23,42,0.08);border-radius:3px;margin-top:8px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;background:${cor};border-radius:3px;"></div></div>`:''}
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+        body.innerHTML = html;
+      } else {
+        let html = `<div class="table-responsive"><table class="table table-hover mb-0" style="font-size:0.84rem;">
+          <thead style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;background:rgba(15,23,42,0.04);">
+            <tr>
+              <th style="padding:8px 16px;">Data</th><th>Horário</th><th>Filial/Setor</th><th>Linha</th>
+              <th>Turno</th><th>Modelo</th><th>OP</th>
+              <th class="text-end">Prod.</th><th class="text-end">Meta</th>
+              <th class="text-center">Just.</th><th class="text-center">Def.</th>
+              <th style="padding:8px 16px;"></th>
+            </tr>
+          </thead><tbody>`;
+        d.registros.forEach(r => {
+          const pct = r.meta_hora>0 ? Math.min(100,Math.round(r.producao_real/r.meta_hora*100)) : 0;
+          const cor = pct>=95?'#198754':pct>=80?'#fd7e14':'#dc3545';
+          html += `<tr>
+            <td style="padding:8px 16px;">${fmtDate(r.data)}</td>
+            <td>${r.hora_inicio}→${r.hora_fim}</td>
+            <td><span class="badge" style="background:rgba(13,110,253,0.08);color:#0d6efd;font-size:0.72rem;">${r.filial}</span>
+                <span class="ms-1 text-muted" style="font-size:0.8rem;">${r.setor}</span></td>
+            <td>${r.linha}</td>
+            <td style="font-size:0.8rem;">${r.turno}</td>
+            <td class="fw-600">${r.modelo||'—'}</td>
+            <td style="font-size:0.8rem;color:var(--text-muted);">${r.op||'—'}</td>
+            <td class="text-end fw-600" style="color:${cor};">${r.producao_real}</td>
+            <td class="text-end text-muted">${r.meta_hora||'—'}</td>
+            <td class="text-center">${r.qtd_justificativas>0?`<span class="badge" style="background:rgba(255,193,7,0.15);color:#856404;">${r.qtd_justificativas}</span>`:'—'}</td>
+            <td class="text-center">${r.total_defeitos>0?`<span class="badge" style="background:rgba(220,53,69,0.1);color:#dc3545;">${r.total_defeitos}</span>`:'—'}</td>
+            <td style="padding:8px 16px;">
+              <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:2px 8px;"
+                      onclick="excluirHist(${r.id})"><i class="bi bi-trash3" style="font-size:0.75rem;"></i></button>
+            </td>
+          </tr>`;
+        });
+        html += '</tbody></table></div>';
+        body.innerHTML = html;
+      }
     })
     .catch(()=>{ body.innerHTML='<div class="text-danger text-center py-3">Erro ao carregar.</div>'; });
 }
