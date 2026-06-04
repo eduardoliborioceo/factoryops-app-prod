@@ -1470,6 +1470,40 @@ def pcp_entregas():
     )
 
 
+@bp.route("/pcp/entregas/buscar-clientes")
+@login_required
+def pcp_entregas_buscar_clientes():
+    from flask import request, jsonify
+    from app.extensions import get_db
+    from psycopg.rows import dict_row
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"ok": True, "resultados": []})
+
+    termo = f"%{q}%"
+    try:
+        with get_db() as conn:
+            with conn.cursor(row_factory=dict_row) as cur:
+                cur.execute("""
+                    SELECT nome, endereco FROM (
+                        SELECT DISTINCT cliente AS nome, endereco
+                        FROM local_entrega
+                        WHERE ativo = TRUE AND cliente ILIKE %s AND cliente IS NOT NULL
+                        UNION
+                        SELECT DISTINCT produto AS nome, NULL AS endereco
+                        FROM controle_ops
+                        WHERE produto ILIKE %s AND produto IS NOT NULL
+                    ) sub
+                    ORDER BY nome
+                    LIMIT 12
+                """, (termo, termo))
+                rows = cur.fetchall()
+        return jsonify({"ok": True, "resultados": [dict(r) for r in rows]})
+    except Exception:
+        return jsonify({"ok": False, "resultados": []})
+
+
 @bp.route("/pcp/entregas/locais", methods=["GET"])
 @login_required
 def pcp_entregas_locais():
