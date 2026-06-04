@@ -91,6 +91,41 @@
 .eficiencia-bar { height: 6px; border-radius: 3px; background: rgba(15,23,42,0.08); overflow: hidden; margin-top: 6px; }
 .eficiencia-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
 
+.just-sugestoes {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(15,23,42,0.13);
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  margin-top: 2px;
+}
+.just-sug-item {
+  padding: 9px 13px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+  transition: background 0.1s;
+}
+.just-sug-item:last-child { border-bottom: none; }
+.just-sug-item:hover { background: rgba(13,110,253,0.06); }
+.just-sug-item .sug-processo {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.just-sug-item .sug-texto { color: var(--text); font-weight: 500; }
+
 /* ── MOBILE ─────────────────────────────────── */
 @media (max-width: 767px) {
   .input-nav { width: 100%; }
@@ -659,20 +694,30 @@ function buildJustRow(j, i, ji) {
         <input class="form-control form-control-sm" id="s${i}_just_${ji}_resp" value="${esc(j.responsavel||'')}"
                readonly style="border-radius:6px;background:rgba(15,23,42,0.03);">
       </div>
-      <div class="col-4 col-sm-2 col-lg-1">
+      <div class="col-5 col-sm-2 col-lg-1">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Min</label>
         <input type="number" class="form-control form-control-sm" id="s${i}_just_${ji}_min"
                value="${j.perda_minutos||0}" min="0" max="60" style="border-radius:6px;"
                oninput="calcJmin(${i})">
       </div>
-      <div class="col-7 col-sm-9 col-lg-2">
-        <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Justificativa</label>
-        <input class="form-control form-control-sm" id="s${i}_just_${ji}_txt"
-               value="${esc(j.justificativa_texto||'')}" placeholder="Descreva..." style="border-radius:6px;">
-      </div>
-      <div class="col-1 d-flex align-items-end pb-1">
-        <button class="btn btn-sm btn-outline-danger w-100" style="border-radius:6px;padding:4px 6px;"
+      <div class="col-7 col-sm-1 d-flex align-items-end pb-1 justify-content-end">
+        <button class="btn btn-sm btn-outline-danger" style="border-radius:6px;padding:4px 8px;"
                 onclick="rmJust(${i},${ji})"><i class="bi bi-trash3"></i></button>
+      </div>
+      <div class="col-12 position-relative">
+        <label style="font-size:0.7rem;font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          Justificativa
+          <span id="s${i}_just_${ji}_sug_hint" style="font-size:0.65rem;font-weight:400;color:var(--text-muted);"></span>
+        </label>
+        <input class="form-control form-control-sm" id="s${i}_just_${ji}_txt"
+               value="${esc(j.justificativa_texto||'')}"
+               placeholder="Descreva o ocorrido..."
+               style="border-radius:6px;"
+               autocomplete="off"
+               oninput="filtrarSugestoes(${i},${ji},this.value)"
+               onfocus="filtrarSugestoes(${i},${ji},this.value)"
+               onblur="setTimeout(()=>ocultarSugestoes(${i},${ji}),200)">
+        <div class="just-sugestoes" id="s${i}_just_${ji}_sug"></div>
       </div>
     </div>
   </div>`;
@@ -893,7 +938,13 @@ function coletarSlot(i) {
       descricao: m.descricao||null,
       responsavel: row.querySelector('[id$="_resp"]')?.value||m.responsavel||null,
       perda_minutos: parseInt(row.querySelector('[id$="_min"]')?.value||0)||0,
-      justificativa_texto: row.querySelector('[id$="_txt"]')?.value?.trim()||null,
+      justificativa_texto: (() => {
+        const raw = row.querySelector('[id$="_txt"]')?.value?.trim() || null;
+        if (!raw) return null;
+        const fmt = formatJustificativa(raw);
+        const sufixo = getSufixoEficiencia(i);
+        return sufixo ? `${fmt} ${sufixo}` : fmt;
+      })(),
     };
   }).filter(j => j.codigo_motivo||j.justificativa_texto||j.perda_minutos>0);
 
@@ -1087,6 +1138,161 @@ function imprimirPagina() {
     if (body) body.classList.remove('d-none');
   });
   window.print();
+}
+
+/* ─────────────── BASE DE CONHECIMENTO SMT ─────────────── */
+const SMT_SUGESTOES = [
+  { processo: 'DEK', palavras: ['stencil','entupid','limpeza stencil'],
+    sugestao: 'Stencil entupido na impressora de pasta — limpeza completa realizada e intervalo de limpeza reduzido.' },
+  { processo: 'DEK', palavras: ['offset impressao','offset impressão','desalinhamento impressora','fiducial dek'],
+    sugestao: 'Offset de impressão na DEK — fiduciais reconfigurados e alinhamento corrigido.' },
+  { processo: 'DEK', palavras: ['pasta seca','pasta degradad','troca de pasta'],
+    sugestao: 'Pasta de solda seca ou degradada — troca realizada e parâmetros de impressão ajustados.' },
+  { processo: 'DEK', palavras: ['ponte impressao','ponte impressão','excesso de pasta impressora'],
+    sugestao: 'Excesso de pasta gerando ponte na impressão — pressão do rodo e velocidade de impressão ajustados.' },
+  { processo: 'DEK', palavras: ['rodo','pressao rodo','pressão rodo','snap-off','snap off'],
+    sugestao: 'Parâmetro de impressão (pressão/velocidade do rodo) fora do especificado — ajuste realizado na DEK.' },
+  { processo: 'SPI', palavras: ['spi','volume baixo','insufficient paste'],
+    sugestao: 'SPI apontando volume baixo de pasta — stencil limpo e impressão revalidada.' },
+  { processo: 'SPI', palavras: ['spi volume alto','excess paste'],
+    sugestao: 'SPI apontando volume alto de pasta — parâmetros de impressão ajustados.' },
+  { processo: 'SPI', palavras: ['spi offset','offset spi'],
+    sugestao: 'Offset X/Y detectado no SPI — alinhamento corrigido na impressora.' },
+  { processo: 'SPI', palavras: ['calibracao spi','calibração spi','medicao spi','medição spi'],
+    sugestao: 'Falha de medição no SPI — recalibração realizada e iluminação ajustada.' },
+  { processo: 'Pick & Place', palavras: ['fiducial','mark recognition','reconhecimento de marca'],
+    sugestao: 'Mark recognition error — fiducial não localizado. PCB limpa, iluminação ajustada e fiduciais reconfigurados.' },
+  { processo: 'Pick & Place', palavras: ['nozzle','bico','bocal','nozzle lost','bico perdido'],
+    sugestao: 'Nozzle perdido ou entupido — limpeza ultrassônica realizada e head recalibrado.' },
+  { processo: 'Pick & Place', palavras: ['vacuum','vacuo','vácuo','vacuum error','vacuum abnormal'],
+    sugestao: 'Vacuum error (vácuo anormal) — filtros limpos, mangueiras e ejetor verificados.' },
+  { processo: 'Pick & Place', palavras: ['feeder pitch','pitch error','tape','cover tape'],
+    sugestao: 'Feeder pitch error — tape não avançava corretamente. Feeder calibrado e substituído.' },
+  { processo: 'Pick & Place', palavras: ['feeder error','feeder defeituoso','feeder sensor'],
+    sugestao: 'Feeder error — sensor defeituoso identificado. Feeder limpo e substituído por reserva.' },
+  { processo: 'Pick & Place', palavras: ['part recognition','biblioteca','componente nao reconhecido','componente não reconhecido'],
+    sugestao: 'Part recognition error — biblioteca do componente inadequada. Teach refeito e validado em produção.' },
+  { processo: 'Pick & Place', palavras: ['z-axis','z axis','over travel','eixo z'],
+    sugestao: 'Z-axis error / over travel — sensor fora de posição. Homing e calibração do eixo realizados.' },
+  { processo: 'Pick & Place', palavras: ['missing component','componente faltando','pick fail','falha de pick'],
+    sugestao: 'Missing component — falha de pick detectada. Feeder verificado e abastecido. Parâmetros de vácuo ajustados.' },
+  { processo: 'Pick & Place', palavras: ['component shift','deslocamento','placement force'],
+    sugestao: 'Component shift — deslocamento de componente após placement. Placement force e viscosidade da pasta ajustados.' },
+  { processo: 'Pick & Place', palavras: ['nxt','aimex','xp','yamaha','cm402','cm602','pick place'],
+    sugestao: 'Parada na pick and place — diagnóstico realizado e ajustes de parâmetros executados. Máquina liberada.' },
+  { processo: 'Reflow', palavras: ['tombstone','lapide','lápide','tombstoning'],
+    sugestao: 'Tombstone no reflow — aquecimento desigual detectado. Perfil ramp-up ajustado e stencil revisado.' },
+  { processo: 'Reflow', palavras: ['solda fria','cold solder','cold joint','junta fria'],
+    sugestao: 'Solda fria detectada no reflow — temperatura insuficiente na zona de pico. Perfil térmico ajustado.' },
+  { processo: 'Reflow', palavras: ['head in pillow','hip','bga','warpage','empenamento'],
+    sugestao: 'Head-in-pillow (HIP) em BGA — warpage e oxidação identificados. TAL aumentado e atmosfera ajustada.' },
+  { processo: 'Reflow', palavras: ['void','bolha','vazio'],
+    sugestao: 'Voids detectados — umidade ou perfil inadequado. Baking realizado e zona de soak ajustada.' },
+  { processo: 'Reflow', palavras: ['balling','esfera de solda','solder ball'],
+    sugestao: 'Solder balling — pasta degradada ou ramp-up agressivo. Troca de pasta e ajuste de perfil realizados.' },
+  { processo: 'Reflow', palavras: ['ponte reflow','bridging','bridge'],
+    sugestao: 'Ponte de solda no reflow — excesso de pasta identificado. Stencil revisado e perfil ajustado.' },
+  { processo: 'Reflow', palavras: ['perfil termico','perfil térmico','temperatura forno','forno','reflow'],
+    sugestao: 'Perfil térmico do forno fora do especificado — zonas de aquecimento ajustadas e perfil revalidado.' },
+  { processo: 'AOI', palavras: ['false call','falso positivo','falsa deteccao','falsa detecção','falso alarme'],
+    sugestao: 'False call no AOI — programa ajustado, limiares corrigidos e iluminação reconfigurada.' },
+  { processo: 'AOI', palavras: ['polaridade','invertido','aoi polaridade'],
+    sugestao: 'Polaridade invertida detectada no AOI — feeder verificado e setup corrigido com barcode validation.' },
+  { processo: 'AOI', palavras: ['lifted lead','coplanaridade','lead levantado'],
+    sugestao: 'Lifted lead detectado no AOI — coplanaridade ruim. Reflow ajustado e fornecedor notificado.' },
+  { processo: 'AOI', palavras: ['wrong component','componente errado','componente trocado'],
+    sugestao: 'Wrong component detectado — feeder carregado incorretamente. Setup revalidado com verificação de barcode.' },
+  { processo: 'AOI', palavras: ['calibracao aoi','calibração aoi','aoi'],
+    sugestao: 'Falha de calibração no AOI — recalibração realizada e programa de inspeção reajustado.' },
+  { processo: 'Preventiva', palavras: ['preventiva','pm ','manutencao preventiva','manutenção preventiva','plano de manutencao'],
+    sugestao: 'Manutenção preventiva programada (PM) executada conforme plano. Máquina liberada e testada em produção.' },
+  { processo: 'Corretiva', palavras: ['corretiva','manutencao corretiva','manutenção corretiva','defeito mecanico','defeito mecânico'],
+    sugestao: 'Manutenção corretiva — defeito mecânico identificado e corrigido. Máquina testada e liberada para produção.' },
+  { processo: 'Suporte', palavras: ['suporte tecnico','suporte técnico','assistencia tecnica','assistência técnica'],
+    sugestao: 'Aguardando suporte técnico — técnico acionado e atendimento em andamento. Previsão de liberação em definição.' },
+];
+
+function normText(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function filtrarSugestoes(i, ji, query) {
+  const respEl = document.getElementById(`s${i}_just_${ji}_resp`);
+  const resp = normText(respEl?.value || '');
+  const isManutenção = resp.includes('manut');
+  if (!isManutenção) return;
+
+  const sugEl = document.getElementById(`s${i}_just_${ji}_sug`);
+  const hintEl = document.getElementById(`s${i}_just_${ji}_sug_hint`);
+  if (!sugEl) return;
+
+  const q = normText(query);
+  let resultados;
+
+  if (!q) {
+    resultados = SMT_SUGESTOES.slice(0, 7);
+  } else {
+    resultados = SMT_SUGESTOES.filter(s =>
+      s.palavras.some(p => normText(p).includes(q) || q.includes(normText(p))) ||
+      normText(s.sugestao).includes(q) ||
+      normText(s.processo).includes(q)
+    ).slice(0, 8);
+  }
+
+  if (!resultados.length) { sugEl.style.display = 'none'; return; }
+
+  if (hintEl) hintEl.textContent = '— sugestões SMT disponíveis';
+
+  sugEl.innerHTML = resultados.map(s =>
+    `<div class="just-sug-item" onmousedown="selecionarSugestao(event,${i},${ji},this.dataset.texto)" data-texto="${esc(s.sugestao)}">
+      <div class="sug-processo">${s.processo}</div>
+      <div class="sug-texto">${s.sugestao}</div>
+    </div>`
+  ).join('');
+  sugEl.style.display = 'block';
+}
+
+function ocultarSugestoes(i, ji) {
+  const sugEl = document.getElementById(`s${i}_just_${ji}_sug`);
+  const hintEl = document.getElementById(`s${i}_just_${ji}_sug_hint`);
+  if (sugEl) sugEl.style.display = 'none';
+  if (hintEl) hintEl.textContent = '';
+}
+
+function selecionarSugestao(e, i, ji, texto) {
+  e.preventDefault();
+  const txtEl = document.getElementById(`s${i}_just_${ji}_txt`);
+  if (txtEl) {
+    txtEl.value = texto.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    txtEl.focus();
+  }
+  ocultarSugestoes(i, ji);
+}
+
+function formatJustificativa(txt) {
+  if (!txt) return txt;
+  txt = txt.trim().replace(/\s+/g, ' ');
+  if (!txt) return txt;
+  txt = txt.replace(/\s*Eficiência:\s*\d+%.*$/, '').trimEnd();
+  txt = txt.charAt(0).toUpperCase() + txt.slice(1);
+  if (!/[.!?]$/.test(txt)) txt += '.';
+  return txt;
+}
+
+function getSufixoEficiencia(i) {
+  const meta = parseInt(document.getElementById(`s${i}_meta`)?.value || 0) || 0;
+  const prod = parseInt(document.getElementById(`s${i}_prod`)?.value || 0) || 0;
+  if (meta <= 0) return '';
+  const pct = Math.min(100, Math.round(prod / meta * 100));
+  const perda = Math.max(0, meta - prod);
+  if (perda <= 0) return `Eficiência: ${pct}%`;
+  const perdaSeg = Math.round((perda / meta) * 3600);
+  const perdaMin = Math.floor(perdaSeg / 60);
+  const perdaSegRest = perdaSeg % 60;
+  const perdaStr = perdaMin > 0
+    ? (perdaSegRest > 0 ? `~${perdaMin} min ${perdaSegRest} seg` : `~${perdaMin} min`)
+    : `~${perdaSeg} seg`;
+  return `Eficiência: ${pct}% — Perda: ${perda} pcs (${perdaStr})`;
 }
 </script>
 {% endblock %}
