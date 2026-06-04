@@ -535,18 +535,12 @@
     <small>Tempo</small>
   </a>
 
-  <a href="{{ url_for('auth.my_profile') }}"
-     class="bottom-item {% if active_menu == 'perfil' %}active{% endif %}">
+  <a href="{{ url_for('pages.pcp_planejamento') }}"
+     class="bottom-item {% if active_menu == 'pcp_planejamento' %}active{% endif %}">
     <div class="bottom-icon">
-      {% if current_user.is_authenticated and current_user.profile_image %}
-      <img src="{{ current_user.profile_image }}"
-           class="bottom-nav-avatar"
-           alt="">
-      {% else %}
-      <i class="bi bi-person-circle"></i>
-      {% endif %}
+      <i class="bi bi-calendar3"></i>
     </div>
-    <small>Perfil</small>
+    <small>Planejamento</small>
   </a>
 
   <a href="{{ url_for('pages.smt_mais') }}"
