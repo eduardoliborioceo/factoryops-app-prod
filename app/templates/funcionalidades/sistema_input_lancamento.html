@@ -103,15 +103,36 @@
   border-radius: 3px;
   transition: width 0.3s ease;
 }
+.combo-wrap { position: relative; }
+.combo-list {
+  display: none;
+  position: absolute;
+  z-index: 9999;
+  left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 2px;
+  max-height: 210px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.12);
+}
+.combo-opt {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.combo-opt:last-child { border-bottom: none; }
+.combo-opt:hover { background: rgba(13,110,253,0.07); }
+.combo-opt strong { color: var(--primary); font-size: 0.72rem; }
 </style>
 {% endblock %}
 
 {% block content %}
-<datalist id="defeitos-list">
-  {% for df in catalogos.defeitos %}
-  <option value="{{ df.codigo }}">{{ df.codigo }} — {{ df.descricao }}</option>
-  {% endfor %}
-</datalist>
 <div class="container-fluid" id="appLancamento">
 
   <!-- Painel de filtros -->
@@ -422,12 +443,20 @@ function renderJustificativas(justs, i) {
   if (!justs || !justs.length) return '';
   return justs.map((j, ji) => `
     <div class="just-row" id="s${i}_just_${ji}">
-      <div style="min-width:160px;">
+      <div style="min-width:220px;" class="combo-wrap">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Motivo</label>
-        <select class="form-select form-select-sm" onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
-          <option value="">Selecione</option>
-          ${MOTIVOS.map(m => `<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
-        </select>
+        <input type="text" class="form-control form-control-sm combo-motivo"
+               placeholder="Código ou descrição..."
+               value="${j.codigo_motivo ? j.codigo_motivo + ' — ' + (motivoMap[j.codigo_motivo]?.descricao || '') : ''}"
+               data-selected="${j.codigo_motivo || ''}"
+               autocomplete="off"
+               oninput="comboFilter(this)"
+               onfocus="comboFilter(this)"
+               onblur="comboClose(this)"
+               style="border-radius:6px;">
+        <div class="combo-list">
+          ${MOTIVOS.map(m => `<div class="combo-opt" data-value="${m.codigo}" data-label="${m.codigo} — ${m.descricao}" onmousedown="comboPickMotivo(event,${i},${ji})"><strong>${m.codigo}</strong> — ${m.descricao}</div>`).join('')}
+        </div>
       </div>
       <div style="min-width:90px;">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Origem</label>
@@ -458,11 +487,20 @@ function renderDefeitos(defs, i) {
   if (!defs || !defs.length) return '';
   return defs.map((d, di) => `
     <div class="def-row" id="s${i}_def_${di}">
-      <div style="min-width:200px;">
+      <div style="min-width:220px;" class="combo-wrap">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Código Defeito</label>
-        <input type="text" list="defeitos-list" class="form-control form-control-sm def-codigo"
-               value="${esc(d.codigo_defeito||'')}" placeholder="Ex: PONTE, MISS..."
-               style="border-radius:6px;" oninput="atualizarDefTotal(${i})">
+        <input type="text" class="form-control form-control-sm combo-defeito"
+               placeholder="Código ou descrição..."
+               value="${d.codigo_defeito ? d.codigo_defeito + ' — ' + (defeitoMap[d.codigo_defeito]?.descricao || '') : ''}"
+               data-selected="${d.codigo_defeito || ''}"
+               autocomplete="off"
+               oninput="comboFilter(this)"
+               onfocus="comboFilter(this)"
+               onblur="comboClose(this)"
+               style="border-radius:6px;">
+        <div class="combo-list">
+          ${DEFEITOS.map(df => `<div class="combo-opt" data-value="${df.codigo}" data-label="${df.codigo} — ${df.descricao}" onmousedown="comboPickDefeito(event,${i})"><strong>${df.codigo}</strong> — ${df.descricao}</div>`).join('')}
+        </div>
       </div>
       <div style="min-width:140px;">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:2px;">Posição Mecânica</label>
@@ -540,6 +578,48 @@ function removerDef(i, di) {
   atualizarDefTotal(i);
 }
 
+function normalize(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function comboFilter(inp) {
+  const wrap = inp.closest('.combo-wrap');
+  const list = wrap.querySelector('.combo-list');
+  const q = normalize(inp.value);
+  if (!inp.value.trim()) inp.dataset.selected = '';
+  list.style.display = 'block';
+  list.querySelectorAll('.combo-opt').forEach(o => {
+    o.style.display = normalize(o.dataset.label).includes(q) ? '' : 'none';
+  });
+}
+
+function comboClose(inp) {
+  setTimeout(() => {
+    const list = inp.closest('.combo-wrap')?.querySelector('.combo-list');
+    if (list) list.style.display = 'none';
+  }, 150);
+}
+
+function comboPickMotivo(e, i, ji) {
+  e.preventDefault();
+  const opt = e.currentTarget;
+  const inp = opt.closest('.combo-wrap').querySelector('input');
+  inp.value = opt.dataset.label;
+  inp.dataset.selected = opt.dataset.value;
+  opt.closest('.combo-list').style.display = 'none';
+  preencherMotivo(i, ji, opt.dataset.value);
+}
+
+function comboPickDefeito(e, i) {
+  e.preventDefault();
+  const opt = e.currentTarget;
+  const inp = opt.closest('.combo-wrap').querySelector('input');
+  inp.value = opt.dataset.label;
+  inp.dataset.selected = opt.dataset.value;
+  opt.closest('.combo-list').style.display = 'none';
+  atualizarDefTotal(i);
+}
+
 function preencherMotivo(i, ji, codigo) {
   const m = motivoMap[codigo];
   if (!m) return;
@@ -583,8 +663,7 @@ function coletarSlot(i) {
 
   const justRows = document.getElementById(`s${i}_justs`)?.querySelectorAll('.just-row') || [];
   const justificativas = Array.from(justRows).map(row => {
-    const sel = row.querySelector('select');
-    const codigo = sel?.value || '';
+    const codigo = row.querySelector('input.combo-motivo')?.dataset.selected || '';
     const m = motivoMap[codigo] || {};
     return {
       codigo_motivo: codigo || null,
@@ -598,10 +677,9 @@ function coletarSlot(i) {
 
   const defRows = document.getElementById(`s${i}_defs`)?.querySelectorAll('.def-row') || [];
   const defeitos = Array.from(defRows).map(row => {
-    const codigoInput = row.querySelector('input.def-codigo');
-    const inputs = row.querySelectorAll('input:not(.def-codigo)');
+    const inputs = row.querySelectorAll('input:not(.combo-defeito)');
     return {
-      codigo_defeito: codigoInput?.value?.trim() || null,
+      codigo_defeito: row.querySelector('input.combo-defeito')?.dataset.selected || null,
       posicao_mecanica: inputs[0]?.value?.trim() || null,
       quantidade: parseInt(inputs[1]?.value || '1') || 1,
     };
