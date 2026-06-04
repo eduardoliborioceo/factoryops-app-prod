@@ -131,6 +131,40 @@
     border-bottom: 2px solid #0d6efd; padding-bottom: 8px; margin-bottom: 16px;
   }
 }
+
+.combo-wrap { position: relative; }
+.combo-list {
+  display: none;
+  position: absolute;
+  z-index: 9999;
+  left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 2px;
+  max-height: 210px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.12);
+}
+.combo-opt {
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.combo-opt:last-child { border-bottom: none; }
+.combo-opt:hover { background: rgba(13,110,253,0.07); }
+.combo-opt strong { color: var(--primary); font-size: 0.72rem; }
+.combo-hint {
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
 </style>
 {% endblock %}
 
@@ -318,7 +352,8 @@ const URL_HIST        = "{{ url_for('pages.funcionalidades_sistema_input_histori
 const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
 const URL_EXCLUIR     = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
 
-const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
+const motivoMap  = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
+const defeitoMap = Object.fromEntries(DEFEITOS.map(d => [d.codigo, d]));
 let _slotsState  = [];
 let _tabAtiva    = 'hxh';
 let _setor_atual = '';
@@ -598,11 +633,21 @@ function buildJustRow(j, i, ji) {
     <div class="row g-2 w-100 align-items-end">
       <div class="col-12 col-sm-6 col-lg-4">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Motivo</label>
-        <select class="form-select form-select-sm" id="s${i}_just_${ji}_cod"
-                onchange="preencherMotivo(${i},${ji},this.value)" style="border-radius:6px;">
-          <option value="">Selecione</option>
-          ${MOTIVOS.map(m=>`<option value="${m.codigo}" ${j.codigo_motivo===m.codigo?'selected':''}>${m.codigo} — ${m.descricao}</option>`).join('')}
-        </select>
+        <div class="combo-wrap">
+          <input type="text" class="form-control form-control-sm combo-motivo"
+                 placeholder="Código ou descrição..."
+                 value="${j.codigo_motivo ? j.codigo_motivo + ' — ' + (motivoMap[j.codigo_motivo]?.descricao || '') : ''}"
+                 data-selected="${j.codigo_motivo || ''}"
+                 autocomplete="off"
+                 oninput="comboFilter(this)"
+                 onfocus="comboOpen(this)"
+                 onblur="comboClose(this)"
+                 style="border-radius:6px;">
+          <div class="combo-list">
+            <div class="combo-hint">Digite para filtrar...</div>
+            ${MOTIVOS.map(m => `<div class="combo-opt" data-value="${m.codigo}" data-label="${m.codigo} — ${m.descricao}" onmousedown="comboPickMotivo(event,${i},${ji})"><strong>${m.codigo}</strong> — ${m.descricao}</div>`).join('')}
+          </div>
+        </div>
       </div>
       <div class="col-6 col-sm-3 col-lg-2">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Origem</label>
@@ -642,11 +687,21 @@ function buildDefRow(d, i, di) {
     <div class="row g-2 w-100 align-items-end">
       <div class="col-12 col-sm-5">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Código Defeito</label>
-        <select class="form-select form-select-sm" id="s${i}_def_${di}_cod"
-                onchange="calcDtotal(${i})" style="border-radius:6px;">
-          <option value="">Selecione</option>
-          ${DEFEITOS.map(df=>`<option value="${df.codigo}" ${d.codigo_defeito===df.codigo?'selected':''}>${df.codigo} — ${df.descricao}</option>`).join('')}
-        </select>
+        <div class="combo-wrap">
+          <input type="text" class="form-control form-control-sm combo-defeito"
+                 placeholder="Código ou descrição..."
+                 value="${d.codigo_defeito ? d.codigo_defeito + ' — ' + (defeitoMap[d.codigo_defeito]?.descricao || '') : ''}"
+                 data-selected="${d.codigo_defeito || ''}"
+                 autocomplete="off"
+                 oninput="comboFilter(this)"
+                 onfocus="comboOpen(this)"
+                 onblur="comboClose(this)"
+                 style="border-radius:6px;">
+          <div class="combo-list">
+            <div class="combo-hint">Digite para filtrar...</div>
+            ${DEFEITOS.map(df => `<div class="combo-opt" data-value="${df.codigo}" data-label="${df.codigo} — ${df.descricao}" onmousedown="comboPickDefeito(event,${i})"><strong>${df.codigo}</strong> — ${df.descricao}</div>`).join('')}
+          </div>
+        </div>
       </div>
       <div class="col-7 col-sm-4">
         <label style="font-size:0.7rem;font-weight:600;display:block;margin-bottom:3px;">Posição Mecânica</label>
@@ -719,6 +774,72 @@ function addDef(i) {
 function rmJust(i, ji) { document.getElementById(`s${i}_just_${ji}`)?.remove(); calcJmin(i); }
 function rmDef(i, di)  { document.getElementById(`s${i}_def_${di}`)?.remove();  calcDtotal(i); }
 
+function normalize(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+function comboOpen(inp) {
+  inp.select();
+  const list = inp.closest('.combo-wrap').querySelector('.combo-list');
+  const hint = list.querySelector('.combo-hint');
+  if (!inp.value.trim()) {
+    list.querySelectorAll('.combo-opt').forEach(o => o.style.display = 'none');
+    if (hint) hint.style.display = '';
+  } else {
+    if (hint) hint.style.display = 'none';
+    const q = normalize(inp.value);
+    list.querySelectorAll('.combo-opt').forEach(o => {
+      o.style.display = normalize(o.dataset.label).includes(q) ? '' : 'none';
+    });
+  }
+  list.style.display = 'block';
+}
+
+function comboFilter(inp) {
+  const list = inp.closest('.combo-wrap').querySelector('.combo-list');
+  const hint = list.querySelector('.combo-hint');
+  if (!inp.value.trim()) {
+    inp.dataset.selected = '';
+    list.querySelectorAll('.combo-opt').forEach(o => o.style.display = 'none');
+    if (hint) hint.style.display = '';
+    list.style.display = 'block';
+    return;
+  }
+  if (hint) hint.style.display = 'none';
+  const q = normalize(inp.value);
+  list.style.display = 'block';
+  list.querySelectorAll('.combo-opt').forEach(o => {
+    o.style.display = normalize(o.dataset.label).includes(q) ? '' : 'none';
+  });
+}
+
+function comboClose(inp) {
+  setTimeout(() => {
+    const list = inp.closest('.combo-wrap')?.querySelector('.combo-list');
+    if (list) list.style.display = 'none';
+  }, 150);
+}
+
+function comboPickMotivo(e, i, ji) {
+  e.preventDefault();
+  const opt = e.currentTarget;
+  const inp = opt.closest('.combo-wrap').querySelector('input');
+  inp.value = opt.dataset.label;
+  inp.dataset.selected = opt.dataset.value;
+  opt.closest('.combo-list').style.display = 'none';
+  preencherMotivo(i, ji, opt.dataset.value);
+}
+
+function comboPickDefeito(e, i) {
+  e.preventDefault();
+  const opt = e.currentTarget;
+  const inp = opt.closest('.combo-wrap').querySelector('input');
+  inp.value = opt.dataset.label;
+  inp.dataset.selected = opt.dataset.value;
+  opt.closest('.combo-list').style.display = 'none';
+  calcDtotal(i);
+}
+
 function preencherMotivo(i, ji, cod) {
   const m = motivoMap[cod]; if (!m) return;
   const o = document.getElementById(`s${i}_just_${ji}_orig`);
@@ -764,7 +885,7 @@ function coletarSlot(i) {
   };
   const jRows = document.getElementById(`s${i}_justs`)?.querySelectorAll('.just-row')||[];
   const justificativas = Array.from(jRows).map(row => {
-    const cod = row.querySelector('select')?.value||'';
+    const cod = row.querySelector('input.combo-motivo')?.dataset.selected||'';
     const m = motivoMap[cod]||{};
     return {
       codigo_motivo: cod||null,
@@ -778,7 +899,7 @@ function coletarSlot(i) {
 
   const dRows = document.getElementById(`s${i}_defs`)?.querySelectorAll('.def-row')||[];
   const defeitos = Array.from(dRows).map(row => ({
-    codigo_defeito: row.querySelector('select')?.value||null,
+    codigo_defeito: row.querySelector('input.combo-defeito')?.dataset.selected||null,
     posicao_mecanica: row.querySelector('[id$="_pos"]')?.value?.trim()||null,
     quantidade: parseInt(row.querySelector('[id$="_qtd"]')?.value||1)||1,
   })).filter(d => d.codigo_defeito);
