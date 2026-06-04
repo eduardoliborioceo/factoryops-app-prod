@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Sistema INPUT</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="imprimirPagina()" title="Imprimir / Exportar">
+      <i class="bi bi-printer"></i>
+    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -87,6 +90,19 @@
 .perda-ok { background: rgba(25,135,84,0.06); }
 .eficiencia-bar { height: 6px; border-radius: 3px; background: rgba(15,23,42,0.08); overflow: hidden; margin-top: 6px; }
 .eficiencia-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+@media print {
+  .sidebar, .desktop-header, .mobile-header, .mobile-bottom-nav,
+  .input-nav, .card.mb-4, button, .btn, .slot-chevron { display: none !important; }
+  .main { margin-left: 0 !important; padding-top: 0 !important; }
+  .slot-body { display: block !important; }
+  .slot-card { break-inside: avoid; border: 1px solid #ddd; margin-bottom: 8px; }
+  body::before {
+    content: "Sistema INPUT — Lançamento Hora a Hora";
+    display: block; font-size: 1.2rem; font-weight: 700;
+    border-bottom: 2px solid #0d6efd; padding-bottom: 8px; margin-bottom: 16px;
+  }
+}
 </style>
 {% endblock %}
 
@@ -226,19 +242,19 @@
 <script>
 const MOTIVOS  = {{ catalogos.motivos | tojson }};
 const DEFEITOS = {{ catalogos.defeitos | tojson }};
-const URL_SLOTS   = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
-const URL_SLOTS        = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
-const URL_SALVAR       = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
-const URL_HIST         = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
-const URL_BUSCA_LINHA  = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
-const URL_EXCLUIR      = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
+const URL_SLOTS       = "{{ url_for('pages.funcionalidades_sistema_input_slots') }}";
+const URL_SALVAR      = "{{ url_for('pages.funcionalidades_sistema_input_salvar') }}";
+const URL_HIST        = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
+const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_EXCLUIR     = (id) => `/funcionalidades/sistemas/input/lancamento/${id}/excluir`;
 
 const motivoMap = Object.fromEntries(MOTIVOS.map(m => [m.codigo, m]));
 let _slotsState = [];
 let _tabAtiva   = 'hxh';
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('filtroData').value = new Date().toISOString().split('T')[0];
+  document.getElementById('filtroData').value =
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
 
   /* ── Busca inteligente de linha ── */
   const buscaInput    = document.getElementById('buscaLinha');
@@ -775,6 +791,14 @@ function fmtDate(d) {
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function imprimirPagina() {
+  _slotsState.forEach((_, i) => {
+    const body = document.getElementById(`slot-body-${i}`);
+    if (body) body.classList.remove('d-none');
+  });
+  window.print();
 }
 </script>
 {% endblock %}

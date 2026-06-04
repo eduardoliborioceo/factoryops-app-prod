@@ -24,24 +24,28 @@ def slots_do_turno(data_str: str, setor: str, linha: str, turno: str) -> list:
 
     resultado = []
     for slot in slots:
-        hora_inicio = _min_to_hhmm(slot.get("slot_inicio") or 0)
-        hora_fim = _min_to_hhmm(slot.get("slot_fim") or 0)
+        # gerar_plano_hora_a_hora → strings "HH:MM"
+        # _gerar_slots_vazios → inteiros slot_inicio / slot_fim
+        if "hora_inicio" in slot and isinstance(slot["hora_inicio"], str):
+            hora_inicio = slot["hora_inicio"]
+            hora_fim = slot["hora_fim"]
+        else:
+            hora_inicio = _min_to_hhmm(slot.get("slot_inicio") or 0)
+            hora_fim = _min_to_hhmm(slot.get("slot_fim") or 0)
 
         existente = repo.buscar_lancamento(data_str, setor, linha, turno, hora_inicio)
 
         meta_hora = slot.get("meta_hora") or slot.get("taxa_horaria") or 0
-        if not meta_hora and slot.get("producao_esperada"):
-            meta_hora = slot["producao_esperada"]
 
         resultado.append({
             "hora_inicio": hora_inicio,
             "hora_fim": hora_fim,
             "modelo": slot.get("modelo") or "",
             "cliente": slot.get("cliente") or "",
-            "op": slot.get("numero_op") or slot.get("op") or "",
+            "op": slot.get("numero_op") or "",
             "fase": slot.get("fase") or "",
             "meta_hora": int(meta_hora) if meta_hora else 0,
-            "planejamento_id": slot.get("planejamento_id") or slot.get("id"),
+            "planejamento_id": slot.get("planejamento_id"),
             "lancamento": dict(existente) if existente else None,
         })
 
