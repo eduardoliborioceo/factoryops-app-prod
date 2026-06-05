@@ -2481,6 +2481,7 @@ def funcionalidades_pci_hub_embalagem_sessao():
             cliente=data.get("cliente", ""),
             turno=data.get("turno", ""),
             meta_hora=data.get("meta_hora"),
+            qtd_por_caixa=data.get("qtd_por_caixa"),
         )
         return jsonify({"ok": True, "sessao": sessao})
     except ValueError as e:

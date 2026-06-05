@@ -12,20 +12,21 @@ def criar_sessao(
     cliente: str | None,
     turno: str | None,
     meta_hora: int | None,
+    qtd_por_caixa: int | None = None,
 ) -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 f"""
                 INSERT INTO pci_embalagem_sessao
-                    (linha, usuario, op, modelo, cliente, turno, meta_hora)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    (linha, usuario, op, modelo, cliente, turno, meta_hora, qtd_por_caixa)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id, linha, usuario, op, modelo, cliente,
-                          data::text, turno, meta_hora,
+                          data::text, turno, meta_hora, qtd_por_caixa,
                           (iniciado_em AT TIME ZONE '{_TZ}')::text AS iniciado_em,
                           status
                 """,
-                (linha, usuario, op, modelo, cliente, turno, meta_hora),
+                (linha, usuario, op, modelo, cliente, turno, meta_hora, qtd_por_caixa),
             )
             return cur.fetchone()
 

@@ -15,6 +15,7 @@ def iniciar_sessao(
     cliente: str,
     turno: str,
     meta_hora: int | None,
+    qtd_por_caixa: int | None = None,
 ) -> dict:
     if not linha or not usuario or not op:
         raise ValueError("Linha, usuário e OP são obrigatórios.")
@@ -26,6 +27,7 @@ def iniciar_sessao(
         cliente=cliente.strip() or None,
         turno=turno.strip() or None,
         meta_hora=int(meta_hora) if meta_hora else None,
+        qtd_por_caixa=int(qtd_por_caixa) if qtd_por_caixa else None,
     )
 
 

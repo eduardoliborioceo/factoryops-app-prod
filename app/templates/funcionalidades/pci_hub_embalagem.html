@@ -338,19 +338,31 @@
                style="border-radius:8px;background:rgba(15,23,42,0.03);color:var(--text-muted);">
       </div>
 
-      <!-- Nome operador + Meta hora -->
-      <div class="row g-2 mb-4">
-        <div class="col-7">
+      <!-- Nome operador + Meta hora + Qtd por caixa -->
+      <div class="row g-2 mb-2">
+        <div class="col-12">
           <label class="form-label fw-600" style="font-size:0.8rem;">Seu nome</label>
           <input type="text" class="form-control" id="setupUsuario"
                  placeholder="Ex: Eduardo" autocomplete="off" style="border-radius:8px;">
         </div>
-        <div class="col-5">
+      </div>
+      <div class="row g-2 mb-4">
+        <div class="col-6">
           <label class="form-label fw-600" style="font-size:0.8rem;">
             Meta/hora <span class="fw-400 text-muted">(opcional)</span>
           </label>
           <input type="number" class="form-control" id="setupMetaHora"
                  placeholder="Ex: 150" min="1" style="border-radius:8px;">
+        </div>
+        <div class="col-6">
+          <label class="form-label fw-600" style="font-size:0.8rem;">
+            Qtd por caixa <span class="fw-400 text-muted">(opcional)</span>
+          </label>
+          <input type="number" class="form-control" id="setupQtdCaixa"
+                 placeholder="Ex: 10" min="1" style="border-radius:8px;">
+          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">
+            Ao completar, a etiqueta da caixa é impressa
+          </div>
         </div>
       </div>
 
@@ -393,6 +405,11 @@
         <i class="bi bi-clock" style="color:#0d6efd;"></i>
         <strong id="scanTurno">—</strong>
         <span id="scanHoraAtual" style="font-size:0.72rem;color:var(--text-muted);margin-left:2px;"></span>
+      </div>
+      <div class="ic" id="boxStatusChip" style="display:none;">
+        <span class="ic-sep">|</span>
+        <i class="bi bi-box-seam" style="color:#0d6efd;"></i>
+        <span id="boxStatus" style="font-weight:700;"></span>
       </div>
       <div class="ms-auto d-flex align-items-center gap-2">
         <div class="ic ic-count">
@@ -611,8 +628,9 @@ function iniciarSessao() {
   const op       = document.getElementById('setupOp').value.trim();
   const modelo   = document.getElementById('setupModelo').value.trim();
   const usuario  = document.getElementById('setupUsuario').value.trim();
-  const metaHora = parseInt(document.getElementById('setupMetaHora').value) || null;
-  const turno    = _turnoInfo?.turno || '';
+  const metaHora    = parseInt(document.getElementById('setupMetaHora').value) || null;
+  const qtdCaixa    = parseInt(document.getElementById('setupQtdCaixa').value) || null;
+  const turno       = _turnoInfo?.turno || '';
   const erroEl   = document.getElementById('setupErro');
   const btn      = document.getElementById('btnIniciar');
 
@@ -626,7 +644,7 @@ function iniciarSessao() {
   fetch(URL_SESSAO, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ linha, op, modelo, usuario, turno, meta_hora: metaHora }),
+    body: JSON.stringify({ linha, op, modelo, usuario, turno, meta_hora: metaHora, qtd_por_caixa: qtdCaixa }),
   })
     .then(r => r.json())
     .then(d => {
@@ -680,8 +698,20 @@ function processarScan() {
         _scans.unshift(d.scan);
         document.getElementById('scanTotal').textContent = d.total;
         renderScanList();
-        mostrarFeedback('ok', `${serial} — registrado.`);
         tentarImprimir(d.scan);
+        const qtd = _sessao?.qtd_por_caixa;
+        if (qtd && d.total % qtd === 0 && d.total > 0) {
+          const boxNum = d.total / qtd;
+          const boxSerials = _scans.slice(0, qtd).map(s => s.serial);
+          imprimirCaixa(boxNum, boxSerials);
+          mostrarFeedback('ok', `Caixa ${boxNum} completa (${qtd} pcs) — etiqueta enviada!`);
+        } else {
+          const inBox = qtd ? (d.total % qtd) : d.total;
+          const boxNum = qtd ? Math.ceil(d.total / qtd) : 1;
+          const sufixo = qtd ? ` — Caixa ${boxNum}: ${inBox}/${qtd}` : '';
+          mostrarFeedback('ok', `${serial} — registrado.${sufixo}`);
+        }
+        atualizarStatusCaixa(d.total);
       } else {
         mostrarFeedback('err', d.erro || 'Erro ao registrar.');
       }
@@ -795,6 +825,48 @@ function gerarZPL(scan) {
   return `^XA\n^FO30,20^A0N,28,28^FDOP: ${op}^FS\n^FO30,56^A0N,24,24^FDLinha: ${linha}^FS\n^FO30,88^A0N,20,20^FDSN: ${ser}^FS\n^FO30,112^A0N,18,18^FD${hora}^FS\n^BY2,3,60^FO30,140^BCN,,Y,N^FD${ser}^FS\n^XZ`;
 }
 
+function gerarZPLCaixa(boxNum, serials) {
+  const op     = _sessao?.op     || '';
+  const modelo = _sessao?.modelo || '';
+  const linha  = _sessao?.linha  || '';
+  const qtd    = _sessao?.qtd_por_caixa || serials.length;
+  const agora  = new Date().toLocaleString('pt-BR', { timeZone: 'America/Manaus', hour12: false });
+  const qrData = `OP:${op}|CAIXA:${boxNum}|QTD:${qtd}|LINHA:${linha}`;
+  return [
+    '^XA',
+    '^FO30,20^A0N,36,36^FDCAIXA ' + boxNum + '^FS',
+    '^FO30,64^A0N,26,26^FDOP: ' + op + '^FS',
+    '^FO30,96^A0N,22,22^FD' + modelo + '^FS',
+    '^FO30,124^A0N,20,20^FDLinha: ' + linha + '^FS',
+    '^FO30,148^A0N,20,20^FDQtd: ' + qtd + ' pcs^FS',
+    '^FO30,172^A0N,18,18^FD' + agora + '^FS',
+    '^FO260,20^BQN,2,7^FDQA,' + qrData + '^FS',
+    '^XZ',
+  ].join('\n');
+}
+
+function imprimirCaixa(boxNum, serials) {
+  if (typeof BrowserPrint === 'undefined') return;
+  BrowserPrint.getDefaultDevice('printer', device => {
+    if (!device) return;
+    device.send(gerarZPLCaixa(boxNum, serials), () => {}, () => {});
+  }, () => {});
+}
+
+function atualizarStatusCaixa(total) {
+  const chip   = document.getElementById('boxStatusChip');
+  const label  = document.getElementById('boxStatus');
+  const qtd    = _sessao?.qtd_por_caixa;
+  if (!chip || !label) return;
+  if (!qtd || qtd <= 0) { chip.style.display = 'none'; return; }
+  const inBox  = total % qtd || (total > 0 ? qtd : 0);
+  const boxNum = total > 0 ? Math.ceil(total / qtd) : 1;
+  chip.style.display = '';
+  const cor = inBox === qtd ? '#198754' : 'var(--text)';
+  label.style.color = cor;
+  label.textContent = `Caixa ${boxNum}: ${inBox}/${qtd}`;
+}
+
 /* ── Encerrar sessão ────────────────────────────────────── */
 function confirmarEncerrar() {
   const total = parseInt(document.getElementById('scanTotal').textContent) || 0;
@@ -820,6 +892,7 @@ function resetarSessao() {
   document.getElementById('setupModelo').value = '';
   document.getElementById('setupUsuario').value = '';
   document.getElementById('setupMetaHora').value = '';
+  document.getElementById('setupQtdCaixa').value = '';
   document.getElementById('setupErro').classList.add('d-none');
   carregarTurnoAtual();
 }
