@@ -48,6 +48,13 @@ def fechar_sessao(sessao_id: int) -> None:
     repo.fechar_sessao(sessao_id)
 
 
+def _em_intervalo(hora, ini, fim) -> bool:
+    """Verifica se 'hora' está no intervalo [ini, fim), suportando cruzamento de meia-noite."""
+    if ini <= fim:
+        return ini <= hora < fim
+    return hora >= ini or hora < fim
+
+
 def detectar_turno() -> dict:
     from app.repositories import turno_config_repository as turno_repo
 
@@ -64,16 +71,14 @@ def detectar_turno() -> dict:
 
     turno_ativo = None
     for nome, intervals in por_turno.items():
-        inicio = min(iv["hora_inicio"] for iv in intervals)
-        fim = max(iv["hora_fim"] for iv in intervals)
-        if inicio <= fim:
-            if inicio <= hora_atual <= fim:
-                turno_ativo = nome
-                break
-        else:
-            if hora_atual >= inicio or hora_atual <= fim:
-                turno_ativo = nome
-                break
+        # Usar o primeiro e último intervalo por ordem — não min/max dos horários,
+        # pois turnos que cruzam meia-noite têm hora_inicio=00:xx < hora_inicio=16:xx
+        sorted_ivs = sorted(intervals, key=lambda x: x["ordem"])
+        inicio = sorted_ivs[0]["hora_inicio"]
+        fim    = sorted_ivs[-1]["hora_fim"]
+        if _em_intervalo(hora_atual, inicio, fim):
+            turno_ativo = nome
+            break
 
     intervalos = []
     if turno_ativo:
@@ -82,7 +87,7 @@ def detectar_turno() -> dict:
                 "ordem": iv["ordem"],
                 "hora_inicio": iv["hora_inicio"].strftime("%H:%M"),
                 "hora_fim": iv["hora_fim"].strftime("%H:%M"),
-                "atual": iv["hora_inicio"] <= hora_atual < iv["hora_fim"],
+                "atual": _em_intervalo(hora_atual, iv["hora_inicio"], iv["hora_fim"]),
             })
 
     return {"turno": turno_ativo, "hora_atual": hora_str, "intervalos": intervalos}
@@ -109,8 +114,8 @@ def obter_intervalos_sessao(sessao_id: int) -> dict:
     for iv in intervalos_config:
         hora_ini = iv["hora_inicio"]
         hora_fim = iv["hora_fim"]
-        total = repo.scans_no_intervalo(sessao_id, data, hora_ini, hora_fim)
-        atual = hora_ini <= hora_atual < hora_fim
+        total = repo.scans_no_intervalo(sessao_id, hora_ini, hora_fim)
+        atual = _em_intervalo(hora_atual, hora_ini, hora_fim)
         resultado.append({
             "hora_inicio": hora_ini.strftime("%H:%M"),
             "hora_fim": hora_fim.strftime("%H:%M"),
