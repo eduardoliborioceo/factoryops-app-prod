@@ -2643,6 +2643,114 @@ def funcionalidades_pci_hub_embalagem_intervalos(sessao_id):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PADRÃO DO MODELO
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/padrao-modelo", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_padrao_modelo():
+    from app.services import pci_modelo_padrao_service as svc
+
+    try:
+        modelos = svc.listar()
+    except Exception:
+        modelos = []
+    return render_template(
+        "funcionalidades/pci_hub_padrao_modelo.html",
+        active_menu="funcionalidades_pci_hub",
+        modelos=modelos,
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/padrao-modelo/salvar", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_padrao_modelo_salvar():
+    from flask import request, jsonify
+    from app.services import pci_modelo_padrao_service as svc
+
+    try:
+        body = request.get_json(force=True) or {}
+        mid = body.get("id")
+        if mid:
+            svc.atualizar(int(mid), body)
+            return jsonify({"ok": True, "id": int(mid)})
+        else:
+            novo_id = svc.criar(body)
+            return jsonify({"ok": True, "id": novo_id})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao salvar."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/padrao-modelo/<int:mid>", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_padrao_modelo_carregar(mid):
+    from flask import jsonify
+    from app.services import pci_modelo_padrao_service as svc
+
+    try:
+        return jsonify({"ok": True, "modelo": svc.obter(mid)})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 404
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao carregar."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/padrao-modelo/<int:mid>/excluir", methods=["POST"])
+@login_required
+def funcionalidades_pci_hub_padrao_modelo_excluir(mid):
+    from flask import jsonify
+    from app.services import pci_modelo_padrao_service as svc
+
+    try:
+        svc.excluir(mid)
+        return jsonify({"ok": True})
+    except Exception:
+        return jsonify({"ok": False, "erro": "Erro ao excluir."}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/padrao-modelo/buscar-roteiro", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_padrao_modelo_buscar_roteiro():
+    from flask import request, jsonify
+    from app.repositories import roteiro_repository as repo
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 1:
+        return jsonify({"ok": True, "resultados": []})
+    try:
+        todos = repo.listar()
+        q_lower = q.lower()
+        filtrados = [
+            {"id": r["id"], "nome": r["nome"], "cliente": r["cliente"] or ""}
+            for r in todos
+            if q_lower in (r["nome"] or "").lower() or q_lower in (r["cliente"] or "").lower()
+        ][:10]
+        return jsonify({"ok": True, "resultados": filtrados})
+    except Exception:
+        return jsonify({"ok": False, "resultados": []}), 500
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/modelo-padrao", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_embalagem_modelo_padrao():
+    """Retorna qtd_por_caixa e meta_hora de um modelo configurado (para auto-fill no setup)."""
+    from flask import request, jsonify
+    from app.services import pci_modelo_padrao_service as svc
+
+    modelo = (request.args.get("modelo") or "").strip()
+    if not modelo:
+        return jsonify({"ok": True, "config": None})
+    try:
+        config = svc.buscar_por_modelo(modelo)
+        return jsonify({"ok": True, "config": config})
+    except Exception:
+        return jsonify({"ok": True, "config": None})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # POSTO DE REVISÃO
 # ─────────────────────────────────────────────────────────────────────────────
 

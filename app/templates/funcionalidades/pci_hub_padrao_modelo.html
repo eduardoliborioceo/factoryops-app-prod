@@ -1,0 +1,460 @@
+{% extends "layouts/app.html" %}
+{% block title %}Padrão do Modelo — PCI Hub{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Produto</span>
+    <h1 class="page-header-name">Padrão do Modelo</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#produto" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.pm-list-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem; cursor: pointer; transition: background 0.1s;
+}
+.pm-list-row:hover { background: rgba(13,110,253,0.04); }
+.pm-list-row:last-child { border-bottom: none; }
+.pm-nome { font-weight: 700; font-size: 0.88rem; flex: 1; min-width: 0; }
+.pm-chip {
+  font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 10px; white-space: nowrap;
+}
+.pm-chip-blue   { background: rgba(13,110,253,0.10); color: #0d6efd; }
+.pm-chip-green  { background: rgba(25,135,84,0.10);  color: #198754; }
+.pm-chip-orange { background: rgba(255,193,7,0.13);  color: #856404; }
+.pm-chip-gray   { background: rgba(15,23,42,0.07);   color: var(--text-muted); }
+
+.mask-editor {
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  min-height: 140px;
+  resize: vertical;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+.mask-var {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(13,110,253,0.15);
+  color: #0d6efd;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  cursor: pointer;
+  margin: 2px;
+  transition: background 0.1s;
+}
+.mask-var:hover { background: rgba(13,110,253,0.25); }
+
+.ac-drop {
+  display: none; position: absolute;
+  top: calc(100% + 2px); left: 0; right: 0; z-index: 400;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 4px 20px rgba(15,23,42,0.13);
+  max-height: 220px; overflow-y: auto;
+}
+.ac-item {
+  padding: 9px 13px; cursor: pointer; font-size: 0.84rem;
+  border-bottom: 1px solid var(--border); transition: background 0.1s;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: rgba(13,110,253,0.06); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- ── Painel lista ── -->
+  <div id="listaPanel">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <span class="text-muted" style="font-size:0.82rem;">
+        {{ modelos|length }} configuração(ões) ativa(s)
+      </span>
+      <button class="btn btn-primary btn-sm fw-700" style="border-radius:8px;padding:6px 18px;"
+              onclick="novoModelo()">
+        <i class="bi bi-plus-lg me-1"></i>Nova Configuração
+      </button>
+    </div>
+
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body p-0">
+        {% if modelos %}
+          {% for m in modelos %}
+          <div class="pm-list-row" onclick="carregarModelo({{ m.id }})">
+            <div class="pm-nome">{{ m.nome }}</div>
+            {% if m.modelo %}
+              <span class="pm-chip pm-chip-blue">{{ m.modelo }}</span>
+            {% endif %}
+            {% if m.cliente %}
+              <span class="pm-chip pm-chip-gray d-none d-sm-inline">{{ m.cliente }}</span>
+            {% endif %}
+            {% if m.qtd_por_caixa %}
+              <span class="pm-chip pm-chip-green d-none d-md-inline">
+                <i class="bi bi-box-seam me-1"></i>{{ m.qtd_por_caixa }} pcs/cx
+              </span>
+            {% endif %}
+            {% if m.meta_hora %}
+              <span class="pm-chip pm-chip-orange d-none d-md-inline">
+                <i class="bi bi-speedometer2 me-1"></i>{{ m.meta_hora }}/h
+              </span>
+            {% endif %}
+            {% if m.roteiro_nome %}
+              <span class="pm-chip pm-chip-gray d-none d-lg-inline">
+                <i class="bi bi-diagram-3 me-1"></i>{{ m.roteiro_nome }}
+              </span>
+            {% endif %}
+            <i class="bi bi-chevron-right text-muted" style="font-size:0.8rem;"></i>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-center py-5 text-muted" style="font-size:0.875rem;">
+            <i class="bi bi-sliders fs-2 mb-2 d-block opacity-25"></i>
+            Nenhuma configuração criada. Clique em "Nova Configuração".
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Painel formulário ── -->
+  <div id="formPanel" class="d-none">
+
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
+              onclick="voltarLista()">
+        <i class="bi bi-arrow-left me-1"></i>Lista
+      </button>
+      <button class="btn btn-success btn-sm fw-700" style="border-radius:8px;padding:5px 18px;"
+              onclick="salvar()">
+        <i class="bi bi-floppy me-1"></i>Salvar
+      </button>
+      <button class="btn btn-outline-danger btn-sm fw-600" id="btnExcluir" style="display:none;border-radius:8px;"
+              onclick="excluir()">
+        <i class="bi bi-trash3 me-1"></i>Excluir
+      </button>
+      <span id="salvoMsg" style="font-size:0.78rem;color:#198754;display:none;">
+        <i class="bi bi-check-circle-fill me-1"></i>Salvo
+      </span>
+    </div>
+
+    <div class="card" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="card-body">
+        <div class="row g-3">
+
+          <!-- Dados básicos -->
+          <div class="col-12">
+            <h6 class="fw-700" style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">
+              <i class="bi bi-info-circle me-2"></i>Identificação
+            </h6>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Nome da configuração *</label>
+            <input type="text" class="form-control" id="fNome"
+                   placeholder="Ex: PCI Controladora v3 — TOP" style="border-radius:8px;">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Família</label>
+            <input type="text" class="form-control" id="fFamilia"
+                   placeholder="Ex: Controladoras, Displays..." style="border-radius:8px;">
+          </div>
+
+          <!-- Modelo e cliente puxados de controle de OPs -->
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-600" style="font-size:0.8rem;">
+              Modelo <span class="fw-400 text-muted" style="font-size:0.75rem;">— sincroniza com Controle de OPs</span>
+            </label>
+            <div class="position-relative">
+              <input type="text" class="form-control" id="fModelo"
+                     placeholder="Buscar ou digitar modelo..." autocomplete="off"
+                     style="border-radius:8px;text-transform:uppercase;"
+                     oninput="this.value=this.value.toUpperCase();buscarModelo(this.value)">
+              <div class="ac-drop" id="dropModelo"></div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Cliente</label>
+            <input type="text" class="form-control" id="fCliente"
+                   placeholder="Ex: YAMAHA, Tecno..." style="border-radius:8px;">
+          </div>
+
+          <!-- Roteiro -->
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-600" style="font-size:0.8rem;">
+              Roteiro <span class="fw-400 text-muted" style="font-size:0.75rem;">— da página Roteiros</span>
+            </label>
+            <div class="position-relative">
+              <input type="text" class="form-control" id="fBuscaRoteiro"
+                     placeholder="Buscar roteiro..." autocomplete="off" style="border-radius:8px;">
+              <div class="ac-drop" id="dropRoteiro"></div>
+            </div>
+            <input type="hidden" id="fRoteiroId">
+            <div id="roteiroOk" class="d-none mt-1" style="font-size:0.78rem;color:#198754;">
+              <i class="bi bi-check-circle-fill me-1"></i><span id="roteiroOkLabel"></span>
+            </div>
+          </div>
+
+          <!-- Parâmetros de produção -->
+          <div class="col-12 mt-2">
+            <h6 class="fw-700" style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">
+              <i class="bi bi-speedometer2 me-2"></i>Parâmetros de Produção
+            </h6>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Qtd por caixa</label>
+            <input type="number" class="form-control" id="fQtdCaixa"
+                   placeholder="Ex: 10" min="1" style="border-radius:8px;">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">pcs/caixa</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label fw-600" style="font-size:0.8rem;">Meta/hora</label>
+            <input type="number" class="form-control" id="fMetaHora"
+                   placeholder="Ex: 150" min="1" style="border-radius:8px;">
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">pcs/hora</div>
+          </div>
+
+          <!-- Máscara de etiqueta -->
+          <div class="col-12 mt-2">
+            <h6 class="fw-700" style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">
+              <i class="bi bi-qr-code me-2"></i>Máscara da Etiqueta (ZPL)
+            </h6>
+            <div class="mb-2" style="font-size:0.78rem;color:var(--text-muted);">
+              Variáveis disponíveis (clique para inserir):
+            </div>
+            <div class="mb-2">
+              {% for v in ['{op}','{modelo}','{cliente}','{familia}','{caixa_num}','{qtd_por_caixa}','{meta_hora}','{linha}','{data}','{hora}','{serial}'] %}
+              <span class="mask-var" onclick="inserirVar('{{ v }}')">{{ v }}</span>
+              {% endfor %}
+            </div>
+            <textarea class="mask-editor w-100" id="fMascara"
+                      placeholder="Cole ou escreva o template ZPL aqui.
+Exemplo:
+^XA
+^FO30,20^A0N,32,32^FDCAIXA {caixa_num}^FS
+^FO30,60^A0N,24,24^FDOP: {op}^FS
+^FO30,90^A0N,22,22^FD{modelo}^FS
+^FO30,116^A0N,20,20^FDLinha: {linha}^FS
+^FO30,140^A0N,20,20^FDQtd: {qtd_por_caixa} pcs^FS
+^FO30,164^A0N,18,18^FD{data} {hora}^FS
+^FO260,20^BQN,2,7^FDQA,OP:{op}|CX:{caixa_num}|QTD:{qtd_por_caixa}^FS
+^XZ"></textarea>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">
+              Deixe vazio para usar o template padrão do sistema.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const URL_SALVAR       = "{{ url_for('pages.funcionalidades_pci_hub_padrao_modelo_salvar') }}";
+const URL_LOAD         = (id) => `/funcionalidades/sistemas/pci-hub/padrao-modelo/${id}`;
+const URL_EXCLUIR      = (id) => `/funcionalidades/sistemas/pci-hub/padrao-modelo/${id}/excluir`;
+const URL_BUSCA_OP     = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_buscar_op') }}";
+const URL_BUSCA_ROT    = "{{ url_for('pages.funcionalidades_pci_hub_padrao_modelo_buscar_roteiro') }}";
+
+let _mid = null;
+let _acModTimer = null, _acRotTimer = null;
+
+/* ── Lista ─────────────────────────── */
+function novoModelo() {
+  _mid = null;
+  limparForm();
+  mostrarForm();
+}
+
+function carregarModelo(id) {
+  fetch(URL_LOAD(id)).then(r => r.json()).then(d => {
+    if (!d.ok) return;
+    _mid = id;
+    limparForm();
+    preencherForm(d.modelo);
+    mostrarForm();
+  });
+}
+
+function mostrarForm() {
+  document.getElementById('listaPanel').classList.add('d-none');
+  document.getElementById('formPanel').classList.remove('d-none');
+  document.getElementById('btnExcluir').style.display = _mid ? '' : 'none';
+}
+
+function voltarLista() {
+  document.getElementById('formPanel').classList.add('d-none');
+  document.getElementById('listaPanel').classList.remove('d-none');
+}
+
+/* ── Formulário ─────────────────────── */
+function limparForm() {
+  ['fNome','fFamilia','fModelo','fCliente','fQtdCaixa','fMetaHora','fMascara','fBuscaRoteiro'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('fRoteiroId').value = '';
+  document.getElementById('roteiroOk').classList.add('d-none');
+  document.getElementById('salvoMsg').style.display = 'none';
+}
+
+function preencherForm(m) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  set('fNome',       m.nome);
+  set('fFamilia',    m.familia);
+  set('fModelo',     m.modelo);
+  set('fCliente',    m.cliente);
+  set('fQtdCaixa',   m.qtd_por_caixa);
+  set('fMetaHora',   m.meta_hora);
+  set('fMascara',    m.mascara_etiqueta);
+  if (m.roteiro_id) {
+    document.getElementById('fRoteiroId').value  = m.roteiro_id;
+    document.getElementById('fBuscaRoteiro').value = m.roteiro_nome || '';
+    document.getElementById('roteiroOkLabel').textContent = m.roteiro_nome || '';
+    document.getElementById('roteiroOk').classList.remove('d-none');
+  }
+}
+
+function coletarForm() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  return {
+    id:               _mid,
+    nome:             val('fNome'),
+    familia:          val('fFamilia'),
+    modelo:           val('fModelo'),
+    cliente:          val('fCliente'),
+    qtd_por_caixa:    parseInt(val('fQtdCaixa')) || null,
+    meta_hora:        parseInt(val('fMetaHora')) || null,
+    mascara_etiqueta: val('fMascara') || null,
+    roteiro_id:       parseInt(document.getElementById('fRoteiroId').value) || null,
+    ativo:            true,
+  };
+}
+
+function salvar() {
+  fetch(URL_SALVAR, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(coletarForm()),
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      _mid = d.id;
+      document.getElementById('btnExcluir').style.display = '';
+      const msg = document.getElementById('salvoMsg');
+      msg.style.display = '';
+      setTimeout(() => msg.style.display = 'none', 2500);
+    } else {
+      alert(d.erro || 'Erro ao salvar.');
+    }
+  });
+}
+
+function excluir() {
+  if (!_mid || !confirm('Desativar esta configuração?')) return;
+  fetch(URL_EXCLUIR(_mid), { method: 'POST' }).then(r => r.json()).then(d => {
+    if (d.ok) window.location.reload();
+  });
+}
+
+/* ── Autocomplete Modelo (controle de ops) ── */
+function buscarModelo(q) {
+  clearTimeout(_acModTimer);
+  const drop = document.getElementById('dropModelo');
+  if (!q || q.length < 2) { drop.style.display = 'none'; return; }
+  _acModTimer = setTimeout(() => {
+    fetch(URL_BUSCA_OP + '?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(d => {
+        if (!d.resultados?.length) { drop.style.display = 'none'; return; }
+        drop.innerHTML = d.resultados.map(r =>
+          `<div class="ac-item" onclick="selecionarModelo('${esc(r.numero_op)}','${esc(r.produto)}')">
+            <div><strong>${esc(r.produto || r.numero_op)}</strong></div>
+            <span style="font-size:0.75rem;color:var(--text-muted);">${esc(r.filial)} · OP ${esc(r.numero_op)}</span>
+          </div>`
+        ).join('');
+        drop.style.display = 'block';
+      });
+  }, 250);
+}
+
+function selecionarModelo(op, produto) {
+  document.getElementById('fModelo').value = produto || op;
+  document.getElementById('dropModelo').style.display = 'none';
+}
+
+/* ── Autocomplete Roteiro ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const inp  = document.getElementById('fBuscaRoteiro');
+  const drop = document.getElementById('dropRoteiro');
+
+  inp.addEventListener('input', function () {
+    clearTimeout(_acRotTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { drop.style.display = 'none'; return; }
+    _acRotTimer = setTimeout(() => {
+      fetch(URL_BUSCA_ROT + '?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(d => {
+          if (!d.resultados?.length) { drop.style.display = 'none'; return; }
+          drop.innerHTML = d.resultados.map(r =>
+            `<div class="ac-item" onclick="selecionarRoteiro(${r.id},'${esc(r.nome)}','${esc(r.cliente)}')">
+              <strong>${esc(r.nome)}</strong>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${esc(r.cliente)}</span>
+            </div>`
+          ).join('');
+          drop.style.display = 'block';
+        });
+    }, 200);
+  });
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target)) drop.style.display = 'none';
+    if (!document.getElementById('fModelo').contains(e.target))
+      document.getElementById('dropModelo').style.display = 'none';
+  });
+});
+
+function selecionarRoteiro(id, nome, cliente) {
+  document.getElementById('fRoteiroId').value  = id;
+  document.getElementById('fBuscaRoteiro').value = nome;
+  document.getElementById('roteiroOkLabel').textContent = `${nome}${cliente ? ' — ' + cliente : ''}`;
+  document.getElementById('roteiroOk').classList.remove('d-none');
+  document.getElementById('dropRoteiro').style.display = 'none';
+}
+
+/* ── Máscara ZPL ── */
+function inserirVar(variavel) {
+  const ta = document.getElementById('fMascara');
+  if (!ta) return;
+  const pos = ta.selectionStart;
+  const before = ta.value.substring(0, pos);
+  const after  = ta.value.substring(ta.selectionEnd);
+  ta.value = before + variavel + after;
+  ta.selectionStart = ta.selectionEnd = pos + variavel.length;
+  ta.focus();
+}
+
+/* ── Utilidades ── */
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}
