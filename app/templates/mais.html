@@ -24,18 +24,7 @@
 
   <!-- ── FUNCIONALIDADES ─────────────────────────────────── -->
   <div class="section-label">Funcionalidades</div>
-  <div class="row g-2 mb-4">
-
-    <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.smt_modelos') }}">
-        <div class="more-icon"><i class="bi bi-table"></i></div>
-        <div class="more-text">
-          <div class="more-title">SMD</div>
-          <div class="more-subtitle">Modelos cadastrados</div>
-        </div>
-        <i class="bi bi-chevron-right more-arrow"></i>
-      </a>
-    </div>
+  <div class="row g-2 mb-3">
 
     <div class="col-6">
       <a class="more-card" href="{{ url_for('pages.smt_cadastro') }}">
@@ -54,39 +43,6 @@
         <div class="more-text">
           <div class="more-title">Cálculos</div>
           <div class="more-subtitle">Ferramentas de cálculo</div>
-        </div>
-        <i class="bi bi-chevron-right more-arrow"></i>
-      </a>
-    </div>
-
-    <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.funcionalidades_im_pa') }}">
-        <div class="more-icon"><i class="bi bi-cpu"></i></div>
-        <div class="more-text">
-          <div class="more-title">IM / PA</div>
-          <div class="more-subtitle">VTE</div>
-        </div>
-        <i class="bi bi-chevron-right more-arrow"></i>
-      </a>
-    </div>
-
-    <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.funcionalidades_pth') }}">
-        <div class="more-icon"><i class="bi bi-diagram-3"></i></div>
-        <div class="more-text">
-          <div class="more-title">PTH</div>
-          <div class="more-subtitle">VTE</div>
-        </div>
-        <i class="bi bi-chevron-right more-arrow"></i>
-      </a>
-    </div>
-
-    <div class="col-6">
-      <a class="more-card" href="{{ url_for('pages.funcionalidades_vtt') }}">
-        <div class="more-icon"><i class="bi bi-building-fill"></i></div>
-        <div class="more-text">
-          <div class="more-title">VTT</div>
-          <div class="more-subtitle">Modelos VTT</div>
         </div>
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
@@ -114,6 +70,65 @@
       </a>
     </div>
 
+  </div>
+
+  <div class="subsection-label">VTE</div>
+  <div class="row g-2 mb-3">
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.funcionalidades_im_pa') }}">
+        <div class="more-icon"><i class="bi bi-cpu"></i></div>
+        <div class="more-text">
+          <div class="more-title">IM / PA</div>
+          <div class="more-subtitle">Inserção manual</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.smt_modelos') }}">
+        <div class="more-icon"><i class="bi bi-table"></i></div>
+        <div class="more-text">
+          <div class="more-title">SMD</div>
+          <div class="more-subtitle">Modelos cadastrados</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.funcionalidades_pth') }}">
+        <div class="more-icon"><i class="bi bi-diagram-3"></i></div>
+        <div class="more-text">
+          <div class="more-title">PTH</div>
+          <div class="more-subtitle">Através do furo</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+  </div>
+
+  <div class="subsection-label">VTT</div>
+  <div class="row g-2 mb-3">
+
+    <div class="col-6">
+      <a class="more-card" href="{{ url_for('pages.funcionalidades_vtt') }}">
+        <div class="more-icon"><i class="bi bi-building-fill"></i></div>
+        <div class="more-text">
+          <div class="more-title">SMD</div>
+          <div class="more-subtitle">Modelos VTT</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
+  </div>
+
+  <div class="subsection-label">Sistemas</div>
+  <div class="row g-2 mb-4">
+
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.funcionalidades_sistema_input') }}">
         <div class="more-icon" style="background:rgba(253,126,20,0.1);color:#fd7e14;">
@@ -127,11 +142,26 @@
       </a>
     </div>
 
+    <div class="col-12">
+      <a class="more-card" href="{{ url_for('pages.funcionalidades_pci_hub') }}">
+        <div class="more-icon" style="background:rgba(99,102,241,0.10);color:#6366f1;">
+          <i class="bi bi-cpu"></i>
+        </div>
+        <div class="more-text">
+          <div class="more-title">PCI Hub</div>
+          <div class="more-subtitle">Central de controle PCI</div>
+        </div>
+        <i class="bi bi-chevron-right more-arrow"></i>
+      </a>
+    </div>
+
   </div>
 
   <!-- ── PRODUÇÃO ──────────────────────────────────────── -->
   <div class="section-label">Produção</div>
-  <div class="row g-2 mb-4">
+
+  <div class="subsection-label">SMD</div>
+  <div class="row g-2 mb-3">
 
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.producao_medicao_pasta') }}">
@@ -165,6 +195,10 @@
         <i class="bi bi-chevron-right more-arrow"></i>
       </a>
     </div>
+
+  </div>
+
+  <div class="row g-2 mb-4">
 
     <div class="col-12">
       <a class="more-card" href="{{ url_for('pages.smd_monitor_tv') }}">

@@ -73,3 +73,26 @@
   margin-top: 4px;
   padding-left: 2px;
 }
+
+.subsection-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #3b82f6;
+  margin-bottom: 6px;
+  margin-top: 12px;
+  padding-left: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.subsection-label::before {
+  content: '';
+  width: 3px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
