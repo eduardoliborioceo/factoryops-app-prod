@@ -2624,8 +2624,10 @@ def funcionalidades_pci_hub_embalagem_turno_atual():
 
     try:
         return jsonify({"ok": True, **svc.detectar_turno()})
-    except Exception:
-        return jsonify({"ok": True, "turno": None, "hora_atual": "", "intervalos": []})
+    except Exception as _exc:
+        import traceback, logging
+        logging.getLogger(__name__).error("detectar_turno falhou: %s\n%s", _exc, traceback.format_exc())
+        return jsonify({"ok": False, "turno": None, "hora_atual": "", "intervalos": [], "erro": str(_exc)})
 
 
 @bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao/<int:sessao_id>/intervalos", methods=["GET"])
