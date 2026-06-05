@@ -50,6 +50,24 @@ def fechar_sessao(sessao_id: int) -> None:
     repo.fechar_sessao(sessao_id)
 
 
+_CHAR_FIX = str.maketrans({"§": "º", "\xa7": "º", "°": "º"})
+
+
+def _sanitizar(nome: str) -> str:
+    return nome.translate(_CHAR_FIX) if nome else (nome or "")
+
+
+def _to_time(val):
+    """Converte qualquer representação de hora para datetime.time com segurança."""
+    from datetime import time as _time
+    if isinstance(val, _time):
+        return val
+    if hasattr(val, "hour"):
+        return _time(val.hour, val.minute)
+    parts = str(val).split(":")
+    return _time(int(parts[0]), int(parts[1]))
+
+
 def _em_intervalo(hora, ini, fim) -> bool:
     """Verifica se 'hora' está no intervalo [ini, fim), suportando cruzamento de meia-noite."""
     if ini <= fim:
@@ -64,32 +82,39 @@ def detectar_turno() -> dict:
     hora_atual = agora.time()
     hora_str = agora.strftime("%H:%M")
 
-    todos = turno_repo.listar()
+    todos = turno_repo.listar()  # já ordenado por ordem
 
-    por_turno: dict[str, list] = defaultdict(list)
+    # Consolida: primeira linha define hora_inicio, as demais atualizam hora_fim.
+    # Padrão idêntico ao monitor_smd_service._consolidar_turnos (que funciona).
+    consolidado: dict[str, dict] = {}
     for row in todos:
-        nome = row["turno"].replace("§", "º").replace("°", "º")
-        por_turno[nome].append(row)
+        nome = _sanitizar(row["turno"])
+        if nome not in consolidado:
+            consolidado[nome] = {
+                "nome": nome,
+                "hora_inicio": _to_time(row["hora_inicio"]),
+                "hora_fim":    _to_time(row["hora_fim"]),
+            }
+        else:
+            consolidado[nome]["hora_fim"] = _to_time(row["hora_fim"])
 
     turno_ativo = None
-    for nome, intervals in por_turno.items():
-        # Usar o primeiro e último intervalo por ordem — não min/max dos horários,
-        # pois turnos que cruzam meia-noite têm hora_inicio=00:xx < hora_inicio=16:xx
-        sorted_ivs = sorted(intervals, key=lambda x: x["ordem"])
-        inicio = sorted_ivs[0]["hora_inicio"]
-        fim    = sorted_ivs[-1]["hora_fim"]
-        if _em_intervalo(hora_atual, inicio, fim):
+    for nome, t in consolidado.items():
+        if _em_intervalo(hora_atual, t["hora_inicio"], t["hora_fim"]):
             turno_ativo = nome
             break
 
     intervalos = []
     if turno_ativo:
-        for iv in sorted(por_turno[turno_ativo], key=lambda x: x["ordem"]):
+        intervalos_config = turno_repo.listar_por_turno(turno_ativo)
+        for iv in intervalos_config:
+            ini = _to_time(iv["hora_inicio"])
+            fim = _to_time(iv["hora_fim"])
             intervalos.append({
                 "ordem": iv["ordem"],
-                "hora_inicio": iv["hora_inicio"].strftime("%H:%M"),
-                "hora_fim": iv["hora_fim"].strftime("%H:%M"),
-                "atual": _em_intervalo(hora_atual, iv["hora_inicio"], iv["hora_fim"]),
+                "hora_inicio": ini.strftime("%H:%M"),
+                "hora_fim":    fim.strftime("%H:%M"),
+                "atual": _em_intervalo(hora_atual, ini, fim),
             })
 
     return {"turno": turno_ativo, "hora_atual": hora_str, "intervalos": intervalos}
@@ -114,8 +139,8 @@ def obter_intervalos_sessao(sessao_id: int) -> dict:
 
     resultado = []
     for iv in intervalos_config:
-        hora_ini = iv["hora_inicio"]
-        hora_fim = iv["hora_fim"]
+        hora_ini = _to_time(iv["hora_inicio"])
+        hora_fim = _to_time(iv["hora_fim"])
         total = repo.scans_no_intervalo(sessao_id, hora_ini, hora_fim)
         atual = _em_intervalo(hora_atual, hora_ini, hora_fim)
         resultado.append({
