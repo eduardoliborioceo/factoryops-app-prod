@@ -96,21 +96,34 @@ def listar_scans(sessao_id: int, limite: int = 150) -> list:
             return cur.fetchall()
 
 
-def scans_no_intervalo(
-    sessao_id: int, data_sessao: str, hora_inicio, hora_fim
-) -> int:
+def scans_no_intervalo(sessao_id: int, hora_inicio, hora_fim) -> int:
+    """Conta scans no intervalo de tempo, suportando intervalos que cruzam meia-noite."""
+    from datetime import time as _t
+    spans = isinstance(hora_inicio, _t) and hora_inicio > hora_fim
     with get_db() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                f"""
-                SELECT COUNT(*) FROM pci_embalagem_scan
-                WHERE sessao_id = %s
-                  AND DATE(scaneado_em AT TIME ZONE '{_TZ}') = %s::date
-                  AND (scaneado_em AT TIME ZONE '{_TZ}')::time >= %s
-                  AND (scaneado_em AT TIME ZONE '{_TZ}')::time <  %s
-                """,
-                (sessao_id, data_sessao, hora_inicio, hora_fim),
-            )
+            if spans:
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*) FROM pci_embalagem_scan
+                    WHERE sessao_id = %s
+                      AND (
+                            (scaneado_em AT TIME ZONE '{_TZ}')::time >= %s
+                         OR (scaneado_em AT TIME ZONE '{_TZ}')::time <  %s
+                      )
+                    """,
+                    (sessao_id, hora_inicio, hora_fim),
+                )
+            else:
+                cur.execute(
+                    f"""
+                    SELECT COUNT(*) FROM pci_embalagem_scan
+                    WHERE sessao_id = %s
+                      AND (scaneado_em AT TIME ZONE '{_TZ}')::time >= %s
+                      AND (scaneado_em AT TIME ZONE '{_TZ}')::time <  %s
+                    """,
+                    (sessao_id, hora_inicio, hora_fim),
+                )
             return cur.fetchone()[0]
 
 
