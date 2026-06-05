@@ -207,8 +207,15 @@
   <div id="listaPanel">
     <div class="d-flex align-items-center justify-content-between mb-3 gap-3 flex-wrap">
       <div class="d-flex gap-2 flex-wrap" style="flex:1;">
-        <input type="text" class="form-control form-control-sm" id="filtLinha"
-               placeholder="Filtrar por linha..." style="border-radius:8px;max-width:200px;">
+        <div class="position-relative" style="max-width:220px;">
+          <input type="text" class="form-control form-control-sm" id="filtLinha"
+                 placeholder="Filtrar por linha..." autocomplete="off"
+                 style="border-radius:8px;">
+          <div id="filtLinhaDropdown"
+               style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:500;
+                      background:var(--card);border:1px solid var(--border);border-radius:8px;
+                      box-shadow:0 4px 16px rgba(15,23,42,0.13);max-height:220px;overflow-y:auto;"></div>
+        </div>
         <input type="date" class="form-control form-control-sm" id="filtIni" style="border-radius:8px;max-width:160px;">
         <input type="date" class="form-control form-control-sm" id="filtFim" style="border-radius:8px;max-width:160px;">
         <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
@@ -491,6 +498,7 @@
 </div>
 
 <script>
+const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
 const URL_SALVAR  = "{{ url_for('pages.funcionalidades_pci_hub_revisao_salvar') }}";
 const URL_LOAD    = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}`;
 const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}/excluir`;
@@ -532,6 +540,48 @@ function voltarLista() {
   document.getElementById('listaPanel').classList.remove('d-none');
   document.getElementById('btnVoltar').classList.remove('d-none');
   document.getElementById('btnImprimir').style.display = 'none';
+}
+
+/* ── Autocomplete filtro de linha ─────── */
+let _acRevTimer = null;
+document.addEventListener('DOMContentLoaded', () => {
+  const inp  = document.getElementById('filtLinha');
+  const drop = document.getElementById('filtLinhaDropdown');
+  if (!inp || !drop) return;
+
+  inp.addEventListener('input', function () {
+    clearTimeout(_acRevTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { drop.style.display = 'none'; return; }
+    _acRevTimer = setTimeout(() => {
+      fetch(URL_BUSCA_LINHA + '?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(d => {
+          if (!d.resultados?.length) { drop.style.display = 'none'; return; }
+          drop.innerHTML = d.resultados.map(r =>
+            `<div style="padding:9px 14px;cursor:pointer;font-size:0.84rem;display:flex;
+                         align-items:center;justify-content:space-between;gap:8px;
+                         border-bottom:1px solid var(--border);transition:background .1s;"
+                 onmouseenter="this.style.background='rgba(13,110,253,0.06)'"
+                 onmouseleave="this.style.background=''"
+                 onclick="selecionarLinhaFiltro('${esc(r.linha)}')">
+              <strong style="font-size:0.85rem;">${esc(r.linha)}</strong>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${esc(r.filial)} · ${esc(r.setor)}</span>
+            </div>`
+          ).join('');
+          drop.style.display = 'block';
+        });
+    }, 200);
+  });
+
+  document.addEventListener('click', e => {
+    if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+  });
+});
+
+function selecionarLinhaFiltro(linha) {
+  document.getElementById('filtLinha').value = linha;
+  document.getElementById('filtLinhaDropdown').style.display = 'none';
 }
 
 function filtrarLista() {
