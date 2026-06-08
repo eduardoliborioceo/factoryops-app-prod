@@ -2833,11 +2833,11 @@ def funcionalidades_pci_hub_revisao_excluir(rel_id):
 
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
-    from flask import current_app, send_from_directory, make_response
-    import os
+    from flask import current_app, make_response, render_template
 
-    static_dir = os.path.join(current_app.root_path, "static")
-    resp = make_response(send_from_directory(static_dir, "sw.js"))
+    app_version = current_app.config.get("APP_VERSION", "dev")
+    content = render_template("pwa/sw.js", app_version=app_version)
+    resp = make_response(content)
     resp.headers["Content-Type"] = "application/javascript; charset=utf-8"
     resp.headers["Cache-Control"] = "no-cache, must-revalidate"
     resp.headers["Pragma"] = "no-cache"

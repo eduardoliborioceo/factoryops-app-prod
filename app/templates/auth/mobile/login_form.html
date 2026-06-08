@@ -2,7 +2,7 @@
 {% block title %}Entrar{% endblock %}
 {% block content %}
 <section class="mobile-screen login-form"
-  style="background-image:url('{{ url_for('static', filename='images/banners/bg-log-pass.webp') }}')">
+  style="background-image:url('{{ url_for('static', filename='images/banners/bg-log-pass.webp') }}?v={{ APP_VERSION }}')">
 
   <form method="post"
         action="{{ url_for('auth.login_local') }}"
