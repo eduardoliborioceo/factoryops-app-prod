@@ -2813,8 +2813,9 @@ def funcionalidades_pci_hub_revisao_salvar():
             return jsonify({"ok": True, "id": novo_id})
     except ValueError as e:
         return jsonify({"ok": False, "erro": str(e)}), 400
-    except Exception:
-        return jsonify({"ok": False, "erro": "Erro ao salvar relatório."}), 500
+    except Exception as e:
+        import traceback
+        return jsonify({"ok": False, "erro": traceback.format_exc()}), 500
 
 
 @bp.route("/funcionalidades/sistemas/pci-hub/revisao/<int:rel_id>", methods=["GET"])

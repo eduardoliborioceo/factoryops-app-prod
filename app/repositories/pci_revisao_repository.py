@@ -44,7 +44,7 @@ def criar_relatorio(dados: dict) -> int:
                 """,
                 dados,
             )
-            rel_id = cur.fetchone()[0]
+            rel_id = cur.fetchone()["id"]
         return rel_id
 
 
