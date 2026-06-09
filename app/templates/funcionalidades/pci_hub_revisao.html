@@ -376,7 +376,9 @@
         </div>
         <div class="rev-field">
           <label>Linha (Line)</label>
-          <input type="text" id="hLinha" placeholder="—">
+          <select id="hLinha">
+            <option value="">—</option>
+          </select>
         </div>
         <div class="rev-field">
           <label>Posto (Station)</label>
@@ -423,7 +425,7 @@
         <div class="rev-field no-right">
           <label>REVISOR(A) (Proofreader)</label>
           <input type="text" id="hRevisor" placeholder="Ex: Beatriz, Adriana"
-                 oninput="atualizarCamposRevisora()">
+                 oninput="clearTimeout(_revisorTimer);_revisorTimer=setTimeout(atualizarCamposRevisora,350)">
         </div>
       </div>
 
@@ -574,7 +576,8 @@
 </div>
 
 <script>
-const URL_BUSCA_LINHA = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_BUSCA_LINHA  = "{{ url_for('pages.funcionalidades_sistema_input_buscar_linha') }}";
+const URL_LINHAS_SETOR = "{{ url_for('pages.funcionalidades_sistema_input_linhas') }}";
 const URL_SALVAR  = "{{ url_for('pages.funcionalidades_pci_hub_revisao_salvar') }}";
 const URL_LOAD    = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}`;
 const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}/excluir`;
@@ -582,6 +585,7 @@ const TOTAL_SLOTS = {{ slots|length }};
 const DEFEITOS_CAT = {{ defeitos_cat | tojson }};
 
 let _relId = null;
+let _revisorTimer = null;
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -676,19 +680,42 @@ function filtrarLista() {
   window.location.href = `?linha=${encodeURIComponent(l)}&data_ini=${i}&data_fim=${f}`;
 }
 
-/* ── Setor → auto-fill Tipo Revisão e Identificação ── */
+/* ── Setor → linhas + auto-fill Tipo Revisão e Identificação ── */
 function onSetorChange() {
   const setor = document.getElementById('hSetor').value;
-  const tipoEl = document.getElementById('hTipoRevisao');
+  const tipoEl  = document.getElementById('hTipoRevisao');
   const identEl = document.getElementById('hIdentificacao');
-  if (!setor) return;
+  const linhaEl = document.getElementById('hLinha');
+
   if (setor === 'SMD') {
-    if (tipoEl) tipoEl.value = 'AOI';
+    if (tipoEl)  tipoEl.value  = 'AOI';
     if (identEl) identEl.value = 'R1';
-  } else {
-    if (tipoEl) tipoEl.value = 'Inspeção Visual';
+  } else if (setor) {
+    if (tipoEl)  tipoEl.value  = 'Inspeção Visual';
     if (identEl) identEl.value = '';
   }
+
+  carregarLinhasSetor(setor, '');
+}
+
+function carregarLinhasSetor(setor, valorAtual) {
+  const linhaEl = document.getElementById('hLinha');
+  if (!linhaEl) return;
+  linhaEl.innerHTML = '<option value="">—</option>';
+  if (!setor) return;
+  fetch(URL_LINHAS_SETOR + '?setor=' + encodeURIComponent(setor))
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok || !d.linhas?.length) return;
+      d.linhas.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = l;
+        if (l === valorAtual) opt.selected = true;
+        linhaEl.appendChild(opt);
+      });
+    })
+    .catch(() => {});
 }
 
 /* ── Turno multi-select ───────────────── */
@@ -718,35 +745,40 @@ function setTurnoValor(valor) {
 
 /* ── Revisor(a) → select nas linhas da tabela ── */
 function atualizarCamposRevisora() {
-  const raw = document.getElementById('hRevisor').value;
+  const raw   = document.getElementById('hRevisor').value;
   const nomes = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const SEL_STYLE = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;';
+  const INP_STYLE = SEL_STYLE;
+
   document.querySelectorAll('.f-revisora').forEach(el => {
-    const slot = el.dataset.slot;
+    const slot     = el.dataset.slot;
     const valAtual = el.value || '';
-    if (nomes.length >= 2) {
-      if (el.tagName !== 'SELECT') {
-        const sel = document.createElement('select');
-        sel.className = 'f-revisora';
-        sel.dataset.slot = slot;
-        sel.style.cssText = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;';
-        sel.innerHTML = `<option value="">—</option>` +
-          nomes.map(n => `<option value="${esc(n)}" ${n===valAtual?'selected':''}>${esc(n)}</option>`).join('');
-        el.replaceWith(sel);
+
+    if (nomes.length >= 1) {
+      const opcoesHtml = `<option value="">—</option>` +
+        nomes.map(n => `<option value="${esc(n)}" ${n === valAtual ? 'selected' : ''}>${esc(n)}</option>`).join('');
+
+      if (el.tagName === 'SELECT') {
+        el.innerHTML = opcoesHtml;
       } else {
-        el.innerHTML = `<option value="">—</option>` +
-          nomes.map(n => `<option value="${esc(n)}" ${n===valAtual?'selected':''}>${esc(n)}</option>`).join('');
+        const sel = document.createElement('select');
+        sel.className    = 'f-revisora';
+        sel.dataset.slot = slot;
+        sel.style.cssText = SEL_STYLE;
+        sel.innerHTML    = opcoesHtml;
+        el.replaceWith(sel);
       }
     } else {
       if (el.tagName === 'SELECT') {
         const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.className = 'f-revisora';
-        inp.dataset.slot = slot;
-        inp.style.cssText = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;';
-        inp.value = nomes.length === 1 ? nomes[0] : valAtual;
+        inp.type          = 'text';
+        inp.className     = 'f-revisora';
+        inp.dataset.slot  = slot;
+        inp.style.cssText = INP_STYLE;
+        inp.value         = '';
         el.replaceWith(inp);
-      } else if (nomes.length === 1 && !el.value) {
-        el.value = nomes[0];
+      } else {
+        el.value = '';
       }
     }
   });
@@ -907,7 +939,8 @@ function preencherForm(r) {
   set('hCliente', r.cliente); set('hProduto', r.produto);
   const setorEl = document.getElementById('hSetor');
   if (setorEl) setorEl.value = r.setor || '';
-  set('hLinha', r.linha); set('hPosto', r.posto);
+  carregarLinhasSetor(r.setor || '', r.linha || '');
+  set('hPosto', r.posto);
   setTurnoValor(r.turno || '');
   set('hTipoRevisao', r.tipo_revisao); set('hIdentificacao', r.identificacao);
   set('hMeta', r.meta); set('hOp', r.op); set('hRevisor', r.revisor);
