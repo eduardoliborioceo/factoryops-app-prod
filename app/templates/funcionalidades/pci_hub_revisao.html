@@ -180,39 +180,36 @@
 /* ─── Print ──────────────────────────────── */
 @page {
   size: A4 portrait;
-  margin: 8mm;
+  margin: 5mm;
 }
 
 @media print {
-  .sidebar,
-  .desktop-header,
-  .mobile-header,
-  .bottom-nav,
-  .page-header,
-  .rev-actions,
-  #listaPanel,
-  .rev-turno-dropdown,
-  .dcod-dropdown { display: none !important; }
+  /* Ocultar todo chrome da interface */
+  .sidebar, .desktop-header, .mobile-header, .bottom-nav,
+  .page-header, .rev-actions, #listaPanel,
+  .rev-turno-dropdown, .dcod-dropdown { display: none !important; }
 
-  html, body {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #fff !important;
-  }
+  /* Reset de layout — remover margens do sidebar/header */
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   .app { display: block !important; }
-  .main {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-  }
-  .container-fluid {
-    padding: 0 !important;
+  .main { margin: 0 !important; padding: 0 !important; }
+  .container-fluid { padding: 0 !important; }
+
+  /*
+   * Forçar o formulário no seu tamanho projetado (1100px) e depois escalar
+   * proporcionalmente para caber no A4 retrato — mesma aparência que na tela,
+   * apenas menor. zoom afeta layout + visual; não altera nada na visualização de tela.
+   * A4 retrato utilizável (5mm margens): ~200mm = ~756px
+   * 1100px × 0.65 = 715px → cabe em 756px
+   */
+  .form-revisao {
+    width: 1100px !important;
     max-width: none !important;
+    zoom: 0.65 !important;
   }
 
-  .rev-table thead th,
-  .rev-def-table thead th,
-  .rev-total-row td {
+  /* Preservar fundos coloridos dos cabeçalhos */
+  .rev-table thead th, .rev-def-table thead th, .rev-total-row td {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
