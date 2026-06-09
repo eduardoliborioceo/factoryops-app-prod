@@ -179,12 +179,11 @@
 
 /* ─── Print ──────────────────────────────── */
 @page {
-  size: A4 landscape;
-  margin: 6mm;
+  size: A4 portrait;
+  margin: 8mm;
 }
 
 @media print {
-  /* Ocultar todo chrome da interface */
   .sidebar,
   .desktop-header,
   .mobile-header,
@@ -195,62 +194,28 @@
   .rev-turno-dropdown,
   .dcod-dropdown { display: none !important; }
 
-  /* Reset de layout */
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    width: 100% !important;
   }
   .app { display: block !important; }
   .main {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
-    min-height: unset !important;
   }
   .container-fluid {
     padding: 0 !important;
-    margin: 0 !important;
     max-width: none !important;
   }
-  #formPanel { display: block !important; }
 
-  /* Documento */
-  .form-revisao {
-    max-width: none !important;
-    width: 100% !important;
-    font-size: 0.62rem !important;
-  }
-
-  /* Inputs e selects mostram o valor sem borda */
-  .rev-table td input,
-  .rev-table td select,
-  .rev-table td textarea,
-  .rev-def-table td input,
-  .rev-def-table td select,
-  .rev-field input,
-  .rev-field select {
-    font-size: 0.62rem !important;
-    background: transparent !important;
-    border: none !important;
-  }
-
-  /* Preservar cores de fundo nas células de cabeçalho */
   .rev-table thead th,
   .rev-def-table thead th,
-  .rev-total-row td,
-  .rev-doc-header,
-  .rev-fields-grid,
-  .rev-checkboxes,
-  .rev-footer {
+  .rev-total-row td {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-
-  /* Evitar quebra de página dentro das tabelas */
-  .rev-table, .rev-def-table { page-break-inside: avoid; }
-  .rev-table tr, .rev-def-table tr { page-break-inside: avoid; }
 }
 
 /* ─── Turno multi-select ─────────────────── */
