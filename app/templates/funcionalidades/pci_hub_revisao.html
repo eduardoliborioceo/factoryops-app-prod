@@ -797,7 +797,7 @@ function onDefeitoQtdInput(el, n) {
   const slot = el.dataset.slot;
   atualizarDefmaxSlot(slot);
   clearTimeout(_aprovTimers[slot]);
-  _aprovTimers[slot] = setTimeout(() => ajustarAprovados(slot), 1200);
+  _aprovTimers[slot] = setTimeout(() => ajustarAprovados(slot), 5000);
   recalcTotais();
 }
 
@@ -833,7 +833,7 @@ function onAprovInput(el) {
 }
 
 function recalcQtdeProduzida() {
-  let faseAtual = null;
+  let faseAtual = '__init__';
   let acumulado = 0;
   document.querySelectorAll('#tHoras tr').forEach(row => {
     const chk = row.querySelector('.slot-chk');
@@ -841,13 +841,21 @@ function recalcQtdeProduzida() {
     const s = chk.dataset.slot;
     const aprovEl = row.querySelector('.f-aprov');
     const qtdProdEl = row.querySelector('.f-qtdprod');
+    if (!aprovEl || !qtdProdEl) return;
+
     const faseBot = document.querySelector(`.f-fase-bot[name="fase${s}"]`);
     const faseTop = document.querySelector(`.f-fase-top[name="fase${s}"]`);
     const fase = faseBot?.checked ? 'BOT' : faseTop?.checked ? 'TOP' : null;
-    const raw = parseInt(aprovEl?.dataset.raw || aprovEl?.value) || 0;
     if (fase !== faseAtual) { faseAtual = fase; acumulado = 0; }
+
+    if (aprovEl.value === '') { qtdProdEl.value = ''; return; }
+
+    const rawStr = aprovEl.dataset.raw;
+    const raw = (rawStr !== '' && rawStr !== undefined)
+      ? (parseInt(rawStr) || 0)
+      : (parseInt(aprovEl.value) || 0);
     acumulado += raw;
-    if (qtdProdEl) qtdProdEl.value = acumulado || '';
+    qtdProdEl.value = acumulado;
   });
   recalcTotais();
 }
