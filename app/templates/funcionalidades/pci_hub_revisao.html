@@ -190,6 +190,43 @@
   }
 }
 
+/* ─── Turno multi-select ─────────────────── */
+.rev-turno-wrap { position: relative; }
+.rev-turno-display {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: 0.78rem; min-height: 18px;
+  padding: 0; background: transparent; width: 100%;
+}
+.rev-turno-dropdown {
+  position: absolute; top: 100%; left: -6px; right: -6px; z-index: 400;
+  background: #fff; border: 1px solid #999; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14); padding: 4px 0;
+  min-width: 140px; margin-top: 2px;
+}
+.rev-turno-opt {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; font-size: 0.78rem; cursor: pointer;
+}
+.rev-turno-opt:hover { background: rgba(13,110,253,0.06); }
+.rev-turno-opt input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; }
+
+/* ─── Autocomplete código defeito ────────── */
+.dcod-wrap { position: relative; }
+.dcod-dropdown {
+  position: absolute; top: 100%; left: -4px; z-index: 500;
+  background: #fff; border: 1px solid #999; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+  max-height: 180px; overflow-y: auto; min-width: 220px;
+  display: none; margin-top: 1px;
+}
+.dcod-opt {
+  padding: 5px 9px; font-size: 0.72rem; cursor: pointer;
+  border-bottom: 1px solid #eee; line-height: 1.3;
+}
+.dcod-opt:last-child { border-bottom: none; }
+.dcod-opt:hover { background: rgba(13,110,253,0.07); }
+.dcod-opt strong { color: #0d6efd; }
+
 @media (max-width: 767px) {
   .rev-fields-grid { grid-template-columns: repeat(2, 1fr); }
   .rev-doc-header { grid-template-columns: 100px 1fr; }
@@ -299,7 +336,8 @@
       <!-- Cabeçalho do documento -->
       <div class="rev-doc-header">
         <div class="rev-logo-cell">
-          <span style="color:#003087;letter-spacing:2px;">Venttos</span>
+          <img src="{{ url_for('static', filename='images/logos/logo.png') }}" alt="Venttos"
+               style="max-height:52px;max-width:120px;object-fit:contain;">
         </div>
         <div class="rev-title-cell">
           <div class="title-main">RELATÓRIO DE PRODUÇÃO - REVISÃO</div>
@@ -324,7 +362,13 @@
         </div>
         <div class="rev-field">
           <label>Setor (Sector)</label>
-          <input type="text" id="hSetor" placeholder="—">
+          <select id="hSetor" onchange="onSetorChange()">
+            <option value="">—</option>
+            <option value="IM">IM</option>
+            <option value="PA">PA</option>
+            <option value="SMD">SMD</option>
+            <option value="PTH">PTH</option>
+          </select>
         </div>
         <div class="rev-field no-right">
           <label>DATA</label>
@@ -340,7 +384,24 @@
         </div>
         <div class="rev-field">
           <label>Turno (Turn)</label>
-          <input type="text" id="hTurno" placeholder="—">
+          <div class="rev-turno-wrap" id="hTurnoWrap">
+            <div class="rev-turno-display" id="hTurnoDisplay" onclick="toggleTurnoDropdown(event)">
+              <span id="hTurnoText" style="color:#777;">—</span>
+              <i class="bi bi-chevron-down" style="font-size:0.55rem;color:#777;"></i>
+            </div>
+            <div class="rev-turno-dropdown" id="hTurnoDropdown" style="display:none;">
+              {% for t in turnos %}
+              <label class="rev-turno-opt">
+                <input type="checkbox" class="turno-chk" value="{{ t }}" onchange="onTurnoChange()">
+                {{ t }}
+              </label>
+              {% endfor %}
+              {% if not turnos %}
+              <div style="padding:6px 10px;font-size:0.75rem;color:#999;">Nenhum turno cadastrado</div>
+              {% endif %}
+            </div>
+            <input type="hidden" id="hTurno" value="">
+          </div>
         </div>
         <div class="rev-field no-right">
           <label>Meta (Target)</label>
@@ -361,7 +422,8 @@
         </div>
         <div class="rev-field no-right">
           <label>REVISOR(A) (Proofreader)</label>
-          <input type="text" id="hRevisor" placeholder="—">
+          <input type="text" id="hRevisor" placeholder="Ex: Beatriz, Adriana"
+                 oninput="atualizarCamposRevisora()">
         </div>
       </div>
 
@@ -396,7 +458,7 @@
             <th rowspan="2" style="min-width:60px;">QTDE<br>PRODUZIDA<br><small>(QTY Produced)</small></th>
             <th rowspan="2" style="min-width:64px;">PLACA H/H</th>
             <th rowspan="2" style="min-width:64px;">FASE</th>
-            <th rowspan="2" style="min-width:80px;">REVISORA</th>
+            <th rowspan="2" style="min-width:80px;">REVISOR(A)</th>
             <th rowspan="2">OBSERVAÇÃO</th>
           </tr>
         </thead>
@@ -407,11 +469,14 @@
               <input type="checkbox" class="slot-chk" data-slot="{{ s.slot_ordem }}" style="width:12px;height:12px;">
             </td>
             <td class="rev-cell-hora">{{ s.hora_ini }}/{{ s.hora_fim }}</td>
-            <td><input type="number" class="f-aprov" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
+            <td><input type="number" class="f-aprov" data-slot="{{ s.slot_ordem }}" data-raw="" min="0"
+                       oninput="onAprovInput(this)"></td>
             <td><input type="number" class="f-reprov" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
-            <td><input type="number" class="f-defmax" data-slot="{{ s.slot_ordem }}" min="0"></td>
+            <td><input type="number" class="f-defmax" data-slot="{{ s.slot_ordem }}" min="0" readonly
+                       style="background:transparent;cursor:default;color:#555;"></td>
             <td><input type="text"   class="f-modelo" data-slot="{{ s.slot_ordem }}" style="text-transform:uppercase;"></td>
-            <td><input type="number" class="f-qtdprod" data-slot="{{ s.slot_ordem }}" min="0" oninput="recalcTotais()"></td>
+            <td><input type="number" class="f-qtdprod" data-slot="{{ s.slot_ordem }}" min="0" readonly
+                       style="background:transparent;cursor:default;font-weight:600;"></td>
             <td style="text-align:center;">
               <label style="font-size:0.65rem;display:block;white-space:nowrap;">
                 <input type="radio" class="f-placahh-sim" name="placa{{ s.slot_ordem }}" value="sim" style="width:10px;"> SIM
@@ -422,10 +487,12 @@
             </td>
             <td style="text-align:center;">
               <label style="font-size:0.65rem;display:block;white-space:nowrap;">
-                <input type="radio" class="f-fase-bot" name="fase{{ s.slot_ordem }}" value="BOT" style="width:10px;"> BOT
+                <input type="radio" class="f-fase-bot" name="fase{{ s.slot_ordem }}" value="BOT" style="width:10px;"
+                       onchange="recalcQtdeProduzida()"> BOT
               </label>
               <label style="font-size:0.65rem;display:block;white-space:nowrap;">
-                <input type="radio" class="f-fase-top" name="fase{{ s.slot_ordem }}" value="TOP" style="width:10px;"> TOP
+                <input type="radio" class="f-fase-top" name="fase{{ s.slot_ordem }}" value="TOP" style="width:10px;"
+                       onchange="recalcQtdeProduzida()"> TOP
               </label>
             </td>
             <td><input type="text" class="f-revisora" data-slot="{{ s.slot_ordem }}"></td>
@@ -467,11 +534,20 @@
         <tbody id="tDefeitos">
           {% for n in range(12) %}
           <tr data-linha="{{ n + 1 }}">
-            <td class="td-left"><input type="text" class="d-cod" data-linha="{{ n + 1 }}" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
+            <td class="td-left dcod-wrap">
+              <input type="text" class="d-cod" data-linha="{{ n + 1 }}"
+                     style="text-transform:uppercase;"
+                     autocomplete="off"
+                     oninput="filtrarDefeito(this);this.value=this.value.toUpperCase()"
+                     onfocus="filtrarDefeito(this)"
+                     onblur="setTimeout(()=>fecharDefeito(this),200)">
+              <div class="dcod-dropdown" id="dcod-drop-{{ n + 1 }}"></div>
+            </td>
             <td class="td-left"><input type="text" class="d-pos" data-linha="{{ n + 1 }}" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
             <td><input type="text" class="d-lado" data-linha="{{ n + 1 }}" style="text-transform:uppercase;width:30px;" oninput="this.value=this.value.toUpperCase()"></td>
             {% for s in slots %}
-            <td><input type="number" class="d-qtd" data-linha="{{ n + 1 }}" data-slot="{{ s.slot_ordem }}" min="0" oninput="calcTotalDefeito({{ n + 1 }})"></td>
+            <td><input type="number" class="d-qtd" data-linha="{{ n + 1 }}" data-slot="{{ s.slot_ordem }}" min="0"
+                       oninput="onDefeitoQtdInput(this,{{ n + 1 }})"></td>
             {% endfor %}
             <td id="dtotal-{{ n + 1 }}" class="fw-700" style="text-align:center;">0</td>
             <td class="td-left"><input type="text" class="d-obs" data-linha="{{ n + 1 }}"></td>
@@ -503,8 +579,13 @@ const URL_SALVAR  = "{{ url_for('pages.funcionalidades_pci_hub_revisao_salvar') 
 const URL_LOAD    = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}`;
 const URL_EXCLUIR = (id) => `/funcionalidades/sistemas/pci-hub/revisao/${id}/excluir`;
 const TOTAL_SLOTS = {{ slots|length }};
+const DEFEITOS_CAT = {{ defeitos_cat | tojson }};
 
 let _relId = null;
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
 /* ── Lista ───────────────────────────── */
 function novoRelatorio() {
@@ -576,6 +657,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', e => {
     if (!inp.contains(e.target) && !drop.contains(e.target)) drop.style.display = 'none';
+    if (!document.getElementById('hTurnoWrap')?.contains(e.target)) {
+      const dd = document.getElementById('hTurnoDropdown');
+      if (dd) dd.style.display = 'none';
+    }
   });
 });
 
@@ -591,21 +676,217 @@ function filtrarLista() {
   window.location.href = `?linha=${encodeURIComponent(l)}&data_ini=${i}&data_fim=${f}`;
 }
 
+/* ── Setor → auto-fill Tipo Revisão e Identificação ── */
+function onSetorChange() {
+  const setor = document.getElementById('hSetor').value;
+  const tipoEl = document.getElementById('hTipoRevisao');
+  const identEl = document.getElementById('hIdentificacao');
+  if (!setor) return;
+  if (setor === 'SMD') {
+    if (tipoEl) tipoEl.value = 'AOI';
+    if (identEl) identEl.value = 'R1';
+  } else {
+    if (tipoEl) tipoEl.value = 'Inspeção Visual';
+    if (identEl) identEl.value = '';
+  }
+}
+
+/* ── Turno multi-select ───────────────── */
+function toggleTurnoDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('hTurnoDropdown');
+  if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function onTurnoChange() {
+  const selecionados = [...document.querySelectorAll('.turno-chk:checked')].map(c => c.value);
+  document.getElementById('hTurno').value = selecionados.join(', ');
+  const textEl = document.getElementById('hTurnoText');
+  if (textEl) {
+    textEl.textContent = selecionados.length ? selecionados.join(', ') : '—';
+    textEl.style.color = selecionados.length ? '#000' : '#777';
+  }
+}
+
+function setTurnoValor(valor) {
+  const nomes = (valor || '').split(',').map(s => s.trim()).filter(Boolean);
+  document.querySelectorAll('.turno-chk').forEach(chk => {
+    chk.checked = nomes.includes(chk.value);
+  });
+  onTurnoChange();
+}
+
+/* ── Revisor(a) → select nas linhas da tabela ── */
+function atualizarCamposRevisora() {
+  const raw = document.getElementById('hRevisor').value;
+  const nomes = raw.split(',').map(s => s.trim()).filter(Boolean);
+  document.querySelectorAll('.f-revisora').forEach(el => {
+    const slot = el.dataset.slot;
+    const valAtual = el.value || '';
+    if (nomes.length >= 2) {
+      if (el.tagName !== 'SELECT') {
+        const sel = document.createElement('select');
+        sel.className = 'f-revisora';
+        sel.dataset.slot = slot;
+        sel.style.cssText = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;';
+        sel.innerHTML = `<option value="">—</option>` +
+          nomes.map(n => `<option value="${esc(n)}" ${n===valAtual?'selected':''}>${esc(n)}</option>`).join('');
+        el.replaceWith(sel);
+      } else {
+        el.innerHTML = `<option value="">—</option>` +
+          nomes.map(n => `<option value="${esc(n)}" ${n===valAtual?'selected':''}>${esc(n)}</option>`).join('');
+      }
+    } else {
+      if (el.tagName === 'SELECT') {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'f-revisora';
+        inp.dataset.slot = slot;
+        inp.style.cssText = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;';
+        inp.value = nomes.length === 1 ? nomes[0] : valAtual;
+        el.replaceWith(inp);
+      } else if (nomes.length === 1 && !el.value) {
+        el.value = nomes[0];
+      }
+    }
+  });
+}
+
+/* ── Autocomplete código de defeito ───── */
+function normDef(s) {
+  return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+}
+
+function filtrarDefeito(inputEl) {
+  const n = inputEl.dataset.linha;
+  const drop = document.getElementById(`dcod-drop-${n}`);
+  if (!drop) return;
+  const q = normDef(inputEl.value);
+  const resultados = q
+    ? DEFEITOS_CAT.filter(d =>
+        normDef(d.codigo).includes(q) || normDef(d.descricao||'').includes(q)
+      ).slice(0, 10)
+    : DEFEITOS_CAT.slice(0, 10);
+  if (!resultados.length) { drop.style.display = 'none'; return; }
+  drop.innerHTML = resultados.map(d =>
+    `<div class="dcod-opt" onmousedown="selecionarDefeito(event,'${esc(d.codigo)}','${n}')">
+      <strong>${esc(d.codigo)}</strong> — ${esc(d.descricao||'')}
+    </div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function selecionarDefeito(e, codigo, n) {
+  e.preventDefault();
+  const inp = document.querySelector(`.d-cod[data-linha="${n}"]`);
+  if (inp) { inp.value = codigo; inp.focus(); }
+  const drop = document.getElementById(`dcod-drop-${n}`);
+  if (drop) drop.style.display = 'none';
+}
+
+function fecharDefeito(inputEl) {
+  const drop = document.getElementById(`dcod-drop-${inputEl.dataset.linha}`);
+  if (drop) drop.style.display = 'none';
+}
+
+/* ── Cálculos de defeitos e produção ──── */
+const _aprovTimers = {};
+
+function onDefeitoQtdInput(el, n) {
+  calcTotalDefeito(n);
+  const slot = el.dataset.slot;
+  atualizarDefmaxSlot(slot);
+  clearTimeout(_aprovTimers[slot]);
+  _aprovTimers[slot] = setTimeout(() => ajustarAprovados(slot), 1200);
+  recalcTotais();
+}
+
+function calcTotalDefeito(n) {
+  let total = 0;
+  document.querySelectorAll(`.d-qtd[data-linha="${n}"]`).forEach(el => { total += parseInt(el.value) || 0; });
+  const tEl = document.getElementById(`dtotal-${n}`);
+  if (tEl) tEl.textContent = total || 0;
+}
+
+function atualizarDefmaxSlot(slot) {
+  let total = 0;
+  document.querySelectorAll(`.d-qtd[data-slot="${slot}"]`).forEach(el => { total += parseInt(el.value) || 0; });
+  const defmaxEl = document.querySelector(`.f-defmax[data-slot="${slot}"]`);
+  if (defmaxEl) defmaxEl.value = total || '';
+}
+
+function ajustarAprovados(slot) {
+  const aprovEl = document.querySelector(`.f-aprov[data-slot="${slot}"]`);
+  if (!aprovEl) return;
+  const raw = parseInt(aprovEl.dataset.raw);
+  if (isNaN(raw)) return;
+  const defects = parseInt(document.querySelector(`.f-defmax[data-slot="${slot}"]`)?.value) || 0;
+  aprovEl.value = Math.max(0, raw - defects);
+  recalcTotais();
+  recalcQtdeProduzida();
+}
+
+function onAprovInput(el) {
+  el.dataset.raw = el.value;
+  recalcTotais();
+  recalcQtdeProduzida();
+}
+
+function recalcQtdeProduzida() {
+  let faseAtual = null;
+  let acumulado = 0;
+  document.querySelectorAll('#tHoras tr').forEach(row => {
+    const chk = row.querySelector('.slot-chk');
+    if (!chk) return;
+    const s = chk.dataset.slot;
+    const aprovEl = row.querySelector('.f-aprov');
+    const qtdProdEl = row.querySelector('.f-qtdprod');
+    const faseBot = document.querySelector(`.f-fase-bot[name="fase${s}"]`);
+    const faseTop = document.querySelector(`.f-fase-top[name="fase${s}"]`);
+    const fase = faseBot?.checked ? 'BOT' : faseTop?.checked ? 'TOP' : null;
+    const raw = parseInt(aprovEl?.dataset.raw || aprovEl?.value) || 0;
+    if (fase !== faseAtual) { faseAtual = fase; acumulado = 0; }
+    acumulado += raw;
+    if (qtdProdEl) qtdProdEl.value = acumulado || '';
+  });
+  recalcTotais();
+}
+
+function recalcTotais() {
+  let totalProd = 0;
+  document.querySelectorAll('.f-aprov').forEach(el => {
+    totalProd += parseInt(el.dataset.raw || el.value) || 0;
+  });
+  let totalDef = 0;
+  for (let n = 1; n <= 12; n++) {
+    totalDef += parseInt(document.getElementById(`dtotal-${n}`)?.textContent) || 0;
+  }
+  document.getElementById('totAprov').textContent = totalProd;
+  document.getElementById('totDef').textContent   = totalDef;
+}
+
 /* ── Formulário ──────────────────────── */
 function limparForm() {
-  ['hCliente','hProduto','hSetor','hLinha','hPosto','hTurno','hTipoRevisao',
+  ['hCliente','hProduto','hLinha','hPosto','hTipoRevisao',
    'hIdentificacao','hOp','hRevisor'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const setorEl = document.getElementById('hSetor');
+  if (setorEl) setorEl.value = '';
+  setTurnoValor('');
   document.getElementById('hMeta').value = '';
   document.getElementById('totScrap').value = '';
   ['cTop','cBot','cTopBot','cLado01','cLado02','cAoi',
    'cPreForno','cPosForno','cPreMaq','cPosMaq','cAdesivo','cSpi'].forEach(id => {
     document.getElementById(id).checked = false;
   });
-  document.querySelectorAll('.slot-chk,.f-aprov,.f-reprov,.f-defmax,.f-modelo,.f-qtdprod,.f-revisora,.f-obs')
-    .forEach(el => { el.type === 'checkbox' ? el.checked = false : el.value = ''; });
+  document.querySelectorAll('.slot-chk,.f-reprov,.f-modelo,.f-obs').forEach(el => {
+    el.type === 'checkbox' ? el.checked = false : el.value = '';
+  });
+  document.querySelectorAll('.f-aprov').forEach(el => { el.value = ''; el.dataset.raw = ''; });
+  document.querySelectorAll('.f-defmax,.f-qtdprod').forEach(el => { el.value = ''; });
+  document.querySelectorAll('.f-revisora').forEach(el => { el.value = ''; });
   document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
   document.querySelectorAll('.d-cod,.d-pos,.d-lado,.d-qtd,.d-obs').forEach(el => el.value = '');
   recalcTotais();
@@ -615,8 +896,11 @@ function limparForm() {
 function preencherForm(r) {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
-  set('hCliente', r.cliente); set('hProduto', r.produto); set('hSetor', r.setor);
-  set('hLinha', r.linha); set('hPosto', r.posto); set('hTurno', r.turno);
+  set('hCliente', r.cliente); set('hProduto', r.produto);
+  const setorEl = document.getElementById('hSetor');
+  if (setorEl) setorEl.value = r.setor || '';
+  set('hLinha', r.linha); set('hPosto', r.posto);
+  setTurnoValor(r.turno || '');
   set('hTipoRevisao', r.tipo_revisao); set('hIdentificacao', r.identificacao);
   set('hMeta', r.meta); set('hOp', r.op); set('hRevisor', r.revisor);
   set('hData', r.data); set('hDataDoc', r.data);
@@ -626,25 +910,27 @@ function preencherForm(r) {
   chk('cPreForno', r.proc_pre_forno); chk('cPosForno', r.proc_pos_forno);
   chk('cPreMaq', r.proc_pre_maq); chk('cPosMaq', r.proc_pos_maq);
   chk('cAdesivo', r.proc_adesivo); chk('cSpi', r.proc_spi);
+  if (r.revisor) atualizarCamposRevisora();
   (r.horas || []).forEach(h => {
     const s = h.slot_ordem;
-    const qEl = el => document.querySelector(`${el}[data-slot="${s}"]`);
+    const qEl = sel => document.querySelector(`${sel}[data-slot="${s}"]`);
     const chkEl = document.querySelector(`.slot-chk[data-slot="${s}"]`);
     if (chkEl) chkEl.checked = h.selecionado;
-    if (qEl('.f-aprov'))  qEl('.f-aprov').value  = h.aprovados  ?? '';
+    const aprovEl = qEl('.f-aprov');
+    if (aprovEl) { aprovEl.value = h.aprovados ?? ''; aprovEl.dataset.raw = h.aprovados ?? ''; }
     if (qEl('.f-reprov')) qEl('.f-reprov').value = h.reprovados ?? '';
     if (qEl('.f-defmax')) qEl('.f-defmax').value = h.defeitos_max ?? '';
     if (qEl('.f-modelo')) qEl('.f-modelo').value = h.modelo ?? '';
-    if (qEl('.f-qtdprod'))qEl('.f-qtdprod').value= h.qtd_produzida ?? '';
-    if (qEl('.f-revisora'))qEl('.f-revisora').value= h.revisora ?? '';
+    if (qEl('.f-qtdprod')) qEl('.f-qtdprod').value = h.qtd_produzida ?? '';
+    if (qEl('.f-revisora')) qEl('.f-revisora').value = h.revisora ?? '';
     if (qEl('.f-obs'))    qEl('.f-obs').value    = h.observacao ?? '';
-    if (h.placa_hh === true)  { const el = document.querySelector(`.f-placahh-sim[name="placa${s}"]`); if (el) el.checked = true; }
-    if (h.placa_hh === false) { const el = document.querySelector(`.f-placahh-nao[name="placa${s}"]`); if (el) el.checked = true; }
-    if (h.fase) { const el = document.querySelector(`input[name="fase${s}"][value="${h.fase}"]`); if (el) el.checked = true; }
+    if (h.placa_hh === true)  { const e = document.querySelector(`.f-placahh-sim[name="placa${s}"]`); if (e) e.checked = true; }
+    if (h.placa_hh === false) { const e = document.querySelector(`.f-placahh-nao[name="placa${s}"]`); if (e) e.checked = true; }
+    if (h.fase) { const e = document.querySelector(`input[name="fase${s}"][value="${h.fase}"]`); if (e) e.checked = true; }
   });
   (r.defeitos || []).forEach(d => {
     const n = d.linha_ordem;
-    const qEl = (sel) => document.querySelector(`${sel}[data-linha="${n}"]`);
+    const qEl = sel => document.querySelector(`${sel}[data-linha="${n}"]`);
     if (qEl('.d-cod'))  qEl('.d-cod').value  = d.codigo_defeito ?? '';
     if (qEl('.d-pos'))  qEl('.d-pos').value  = d.posicao_mecanica ?? '';
     if (qEl('.d-lado')) qEl('.d-lado').value = d.lado ?? '';
@@ -656,7 +942,9 @@ function preencherForm(r) {
     });
     calcTotalDefeito(n);
   });
+  for (let slot = 1; slot <= TOTAL_SLOTS; slot++) atualizarDefmaxSlot(slot);
   recalcTotais();
+  recalcQtdeProduzida();
 }
 
 function coletarForm(status) {
@@ -667,18 +955,19 @@ function coletarForm(status) {
   document.querySelectorAll('.slot-chk').forEach(chk => {
     const s = parseInt(chk.dataset.slot);
     const qEl = sel => document.querySelector(`${sel}[data-slot="${s}"]`);
-    const radioHH = document.querySelector(`.f-placahh-sim[name="placa${s}"]`);
-    const radioNao= document.querySelector(`.f-placahh-nao[name="placa${s}"]`);
-    const radioBot= document.querySelector(`.f-fase-bot[name="fase${s}"]`);
-    const radioTop= document.querySelector(`.f-fase-top[name="fase${s}"]`);
+    const radioHH  = document.querySelector(`.f-placahh-sim[name="placa${s}"]`);
+    const radioNao = document.querySelector(`.f-placahh-nao[name="placa${s}"]`);
+    const radioBot = document.querySelector(`.f-fase-bot[name="fase${s}"]`);
+    const radioTop = document.querySelector(`.f-fase-top[name="fase${s}"]`);
     const placa_hh = radioHH?.checked ? true : radioNao?.checked ? false : null;
     const fase = radioBot?.checked ? 'BOT' : radioTop?.checked ? 'TOP' : null;
+    const aprovEl = qEl('.f-aprov');
     horas.push({
       slot_ordem:    s,
       hora_ini:      qEl('.rev-cell-hora')?.textContent.split('/')[0] || '',
       hora_fim:      qEl('.rev-cell-hora')?.textContent.split('/')[1] || '',
       selecionado:   chk.checked,
-      aprovados:     parseInt(qEl('.f-aprov')?.value) || null,
+      aprovados:     parseInt(aprovEl?.value) || null,
       reprovados:    parseInt(qEl('.f-reprov')?.value) || null,
       defeitos_max:  parseInt(qEl('.f-defmax')?.value) || null,
       modelo:        qEl('.f-modelo')?.value.trim() || null,
@@ -709,14 +998,15 @@ function coletarForm(status) {
     });
   }
 
-  const totalAprov = parseInt(document.getElementById('totAprov')?.textContent) || 0;
-  const totalDef   = parseInt(document.getElementById('totDef')?.textContent) || 0;
-  const totalScrap = parseInt(document.getElementById('totScrap')?.value) || 0;
+  const totalProd = parseInt(document.getElementById('totAprov')?.textContent) || 0;
+  const totalDef  = parseInt(document.getElementById('totDef')?.textContent) || 0;
+  const totalScrap= parseInt(document.getElementById('totScrap')?.value) || 0;
 
   return {
     id: _relId,
     cabecalho: {
-      cliente: val('hCliente'), produto: val('hProduto'), setor: val('hSetor'),
+      cliente: val('hCliente'), produto: val('hProduto'),
+      setor: document.getElementById('hSetor')?.value || '',
       linha: val('hLinha'), posto: val('hPosto'), turno: val('hTurno'),
       tipo_revisao: val('hTipoRevisao'), identificacao: val('hIdentificacao'),
       meta: parseInt(val('hMeta')) || null, op: val('hOp'),
@@ -726,7 +1016,7 @@ function coletarForm(status) {
       proc_pre_forno:bool('cPreForno'), proc_pos_forno:bool('cPosForno'),
       proc_pre_maq:bool('cPreMaq'), proc_pos_maq:bool('cPosMaq'),
       proc_adesivo:bool('cAdesivo'), proc_spi:bool('cSpi'),
-      total_produzido: totalAprov, total_defeitos: totalDef, total_scrap: totalScrap,
+      total_produzido: totalProd, total_defeitos: totalDef, total_scrap: totalScrap,
       status,
     },
     horas,
@@ -760,29 +1050,11 @@ function excluirRelatorio() {
   if (!_relId || !confirm('Excluir este relatório?')) return;
   fetch(URL_EXCLUIR(_relId), { method: 'POST' })
     .then(r => r.json())
-    .then(d => {
-      if (d.ok) { window.location.reload(); }
-    });
+    .then(d => { if (d.ok) window.location.reload(); });
 }
 
 function imprimirRelatorio() {
   window.print();
-}
-
-/* ── Cálculos ────────────────────────── */
-function recalcTotais() {
-  let aprov = 0, reprov = 0;
-  document.querySelectorAll('.f-aprov').forEach(e => { aprov += parseInt(e.value) || 0; });
-  document.querySelectorAll('.f-reprov').forEach(e => { reprov += parseInt(e.value) || 0; });
-  document.getElementById('totAprov').textContent = aprov;
-  document.getElementById('totDef').textContent   = reprov;
-}
-
-function calcTotalDefeito(n) {
-  let total = 0;
-  document.querySelectorAll(`.d-qtd[data-linha="${n}"]`).forEach(el => { total += parseInt(el.value) || 0; });
-  const tEl = document.getElementById(`dtotal-${n}`);
-  if (tEl) tEl.textContent = total || 0;
 }
 
 /* ── Utilidades ──────────────────────── */

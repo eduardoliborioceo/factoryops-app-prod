@@ -2762,6 +2762,8 @@ def funcionalidades_pci_hub_embalagem_modelo_padrao():
 def funcionalidades_pci_hub_posto_revisao():
     from flask import request
     from app.services import pci_revisao_service as svc
+    from app.repositories import turno_config_repository as turno_repo
+    from app.repositories import sistema_input_lancamento_repository as catalog_repo
 
     linha    = (request.args.get("linha")    or "").strip()
     data_ini = (request.args.get("data_ini") or "").strip()
@@ -2770,11 +2772,21 @@ def funcionalidades_pci_hub_posto_revisao():
         relatorios = svc.listar(linha, data_ini, data_fim)
     except Exception:
         relatorios = []
+    try:
+        turnos = turno_repo.listar_nomes_unicos()
+    except Exception:
+        turnos = []
+    try:
+        defeitos_cat = catalog_repo.listar_defeitos()
+    except Exception:
+        defeitos_cat = []
     return render_template(
         "funcionalidades/pci_hub_revisao.html",
         active_menu="funcionalidades_pci_hub",
         relatorios=relatorios,
         slots=svc.slots_padrao(),
+        turnos=turnos,
+        defeitos_cat=defeitos_cat,
     )
 
 
