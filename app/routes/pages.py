@@ -2846,6 +2846,255 @@ def funcionalidades_pci_hub_revisao_excluir(rel_id):
         return jsonify({"ok": False, "erro": "Erro ao excluir."}), 500
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# RH OPS
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@bp.route("/funcionalidades/sistemas/rh-ops", methods=["GET"])
+@login_required
+def rh_ops_hub():
+    return render_template("rh_ops/rh_hub.html", active_menu="rh_ops_hub")
+
+
+# ── Colaboradores ──
+
+@bp.route("/rh-ops/colaboradores", methods=["GET"])
+@login_required
+def rh_colaboradores_lista():
+    return render_template("rh_ops/colaboradores/lista.html", active_menu="rh_colaboradores_lista")
+
+
+@bp.route("/rh-ops/colaboradores/cadastrar", methods=["GET"])
+@login_required
+def rh_colaboradores_cadastrar():
+    return render_template("rh_ops/colaboradores/cadastrar.html", active_menu="rh_colaboradores_cadastrar")
+
+
+@bp.route("/rh-ops/colaboradores/<int:colaborador_id>/perfil", methods=["GET"])
+@login_required
+def rh_colaboradores_perfil(colaborador_id):
+    return render_template("rh_ops/colaboradores/perfil.html", active_menu="rh_colaboradores_lista", colaborador_id=colaborador_id)
+
+
+@bp.route("/rh-ops/colaboradores/documentos", methods=["GET"])
+@login_required
+def rh_colaboradores_documentos():
+    return render_template("rh_ops/colaboradores/documentos.html", active_menu="rh_colaboradores_documentos")
+
+
+@bp.route("/rh-ops/colaboradores/historico", methods=["GET"])
+@login_required
+def rh_colaboradores_historico():
+    return render_template("rh_ops/colaboradores/historico.html", active_menu="rh_colaboradores_historico")
+
+
+# ── Estrutura Organizacional ──
+
+@bp.route("/rh-ops/organizacional/filiais", methods=["GET"])
+@login_required
+def rh_org_filiais():
+    return render_template("rh_ops/organizacional/filiais.html", active_menu="rh_org_filiais")
+
+
+@bp.route("/rh-ops/organizacional/departamentos", methods=["GET"])
+@login_required
+def rh_org_departamentos():
+    return render_template("rh_ops/organizacional/departamentos.html", active_menu="rh_org_departamentos")
+
+
+@bp.route("/rh-ops/organizacional/cargos", methods=["GET"])
+@login_required
+def rh_org_cargos():
+    return render_template("rh_ops/organizacional/cargos.html", active_menu="rh_org_cargos")
+
+
+@bp.route("/rh-ops/organizacional/organograma", methods=["GET"])
+@login_required
+def rh_org_organograma():
+    return render_template("rh_ops/organizacional/organograma.html", active_menu="rh_org_organograma")
+
+
+# ── Ponto & Frequência ──
+
+@bp.route("/rh-ops/ponto/turnos", methods=["GET"])
+@login_required
+def rh_ponto_turnos():
+    return render_template("rh_ops/ponto/turnos.html", active_menu="rh_ponto_turnos")
+
+
+@bp.route("/rh-ops/ponto/escalas", methods=["GET"])
+@login_required
+def rh_ponto_escalas():
+    return render_template("rh_ops/ponto/escalas.html", active_menu="rh_ponto_escalas")
+
+
+@bp.route("/rh-ops/ponto/registros", methods=["GET"])
+@login_required
+def rh_ponto_registros():
+    return render_template("rh_ops/ponto/registros.html", active_menu="rh_ponto_registros")
+
+
+@bp.route("/rh-ops/ponto/horas-extras", methods=["GET"])
+@login_required
+def rh_ponto_horas_extras():
+    return render_template("rh_ops/ponto/horas_extras.html", active_menu="rh_ponto_horas_extras")
+
+
+@bp.route("/rh-ops/ponto/afastamentos", methods=["GET"])
+@login_required
+def rh_ponto_afastamentos():
+    return render_template("rh_ops/ponto/afastamentos.html", active_menu="rh_ponto_afastamentos")
+
+
+# ── Recrutamento & Admissão ──
+
+@bp.route("/rh-ops/recrutamento/vagas", methods=["GET"])
+@login_required
+def rh_recrutamento_vagas():
+    return render_template("rh_ops/recrutamento/vagas.html", active_menu="rh_recrutamento_vagas")
+
+
+@bp.route("/rh-ops/recrutamento/candidatos", methods=["GET"])
+@login_required
+def rh_recrutamento_candidatos():
+    return render_template("rh_ops/recrutamento/candidatos.html", active_menu="rh_recrutamento_candidatos")
+
+
+@bp.route("/rh-ops/recrutamento/processo", methods=["GET"])
+@login_required
+def rh_recrutamento_processo():
+    return render_template("rh_ops/recrutamento/processo.html", active_menu="rh_recrutamento_processo")
+
+
+@bp.route("/rh-ops/recrutamento/onboarding", methods=["GET"])
+@login_required
+def rh_recrutamento_onboarding():
+    return render_template("rh_ops/recrutamento/onboarding.html", active_menu="rh_recrutamento_onboarding")
+
+
+# ── Treinamento & Desenvolvimento ──
+
+@bp.route("/rh-ops/treinamento/catalogo", methods=["GET"])
+@login_required
+def rh_treinamento_catalogo():
+    return render_template("rh_ops/treinamento/catalogo.html", active_menu="rh_treinamento_catalogo")
+
+
+@bp.route("/rh-ops/treinamento/realizados", methods=["GET"])
+@login_required
+def rh_treinamento_realizados():
+    return render_template("rh_ops/treinamento/realizados.html", active_menu="rh_treinamento_realizados")
+
+
+@bp.route("/rh-ops/treinamento/certificacoes", methods=["GET"])
+@login_required
+def rh_treinamento_certificacoes():
+    return render_template("rh_ops/treinamento/certificacoes.html", active_menu="rh_treinamento_certificacoes")
+
+
+@bp.route("/rh-ops/treinamento/pdi", methods=["GET"])
+@login_required
+def rh_treinamento_pdi():
+    return render_template("rh_ops/treinamento/pdi.html", active_menu="rh_treinamento_pdi")
+
+
+# ── Saúde Ocupacional ──
+
+@bp.route("/rh-ops/saude/aso", methods=["GET"])
+@login_required
+def rh_saude_aso():
+    return render_template("rh_ops/saude/aso.html", active_menu="rh_saude_aso")
+
+
+@bp.route("/rh-ops/saude/afastamentos", methods=["GET"])
+@login_required
+def rh_saude_afastamentos():
+    return render_template("rh_ops/saude/afastamentos.html", active_menu="rh_saude_afastamentos")
+
+
+@bp.route("/rh-ops/saude/epi", methods=["GET"])
+@login_required
+def rh_saude_epi():
+    return render_template("rh_ops/saude/epi.html", active_menu="rh_saude_epi")
+
+
+@bp.route("/rh-ops/saude/cipa", methods=["GET"])
+@login_required
+def rh_saude_cipa():
+    return render_template("rh_ops/saude/cipa.html", active_menu="rh_saude_cipa")
+
+
+# ── Transporte & Rotas ──
+
+@bp.route("/rh-ops/transporte/dashboard", methods=["GET"])
+@login_required
+def rh_transporte_dashboard():
+    return render_template("rh_ops/transporte/dashboard.html", active_menu="rh_transporte_dashboard")
+
+
+@bp.route("/rh-ops/transporte/rotas", methods=["GET"])
+@login_required
+def rh_transporte_rotas():
+    return render_template("rh_ops/transporte/rotas.html", active_menu="rh_transporte_rotas")
+
+
+@bp.route("/rh-ops/transporte/veiculos", methods=["GET"])
+@login_required
+def rh_transporte_veiculos():
+    return render_template("rh_ops/transporte/veiculos.html", active_menu="rh_transporte_veiculos")
+
+
+@bp.route("/rh-ops/transporte/alocacao", methods=["GET"])
+@login_required
+def rh_transporte_alocacao():
+    return render_template("rh_ops/transporte/alocacao.html", active_menu="rh_transporte_alocacao")
+
+
+@bp.route("/rh-ops/transporte/otimizador", methods=["GET"])
+@login_required
+def rh_transporte_otimizador():
+    return render_template("rh_ops/transporte/otimizador.html", active_menu="rh_transporte_otimizador")
+
+
+@bp.route("/rh-ops/transporte/configuracoes", methods=["GET"])
+@login_required
+def rh_transporte_config_turno():
+    return render_template("rh_ops/transporte/config_turno.html", active_menu="rh_transporte_config_turno")
+
+
+# ── Relatórios & Indicadores ──
+
+@bp.route("/rh-ops/relatorios/headcount", methods=["GET"])
+@login_required
+def rh_relatorios_headcount():
+    return render_template("rh_ops/relatorios/headcount.html", active_menu="rh_relatorios_headcount")
+
+
+@bp.route("/rh-ops/relatorios/turnover", methods=["GET"])
+@login_required
+def rh_relatorios_turnover():
+    return render_template("rh_ops/relatorios/turnover.html", active_menu="rh_relatorios_turnover")
+
+
+@bp.route("/rh-ops/relatorios/absenteismo", methods=["GET"])
+@login_required
+def rh_relatorios_absenteismo():
+    return render_template("rh_ops/relatorios/absenteismo.html", active_menu="rh_relatorios_absenteismo")
+
+
+@bp.route("/rh-ops/relatorios/custo-pessoal", methods=["GET"])
+@login_required
+def rh_relatorios_custo_pessoal():
+    return render_template("rh_ops/relatorios/custo_pessoal.html", active_menu="rh_relatorios_custo_pessoal")
+
+
+@bp.route("/rh-ops/relatorios/transporte", methods=["GET"])
+@login_required
+def rh_relatorios_transporte():
+    return render_template("rh_ops/relatorios/transporte.html", active_menu="rh_relatorios_transporte")
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, make_response, render_template

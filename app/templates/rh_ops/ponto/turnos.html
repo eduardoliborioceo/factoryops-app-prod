@@ -1,0 +1,28 @@
+{% extends "layouts/app.html" %}
+{% block title %}Turnos — RH OPS{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">RH OPS · Ponto & Frequência</span>
+    <h1 class="page-header-name">Turnos</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center py-5">
+    <i class="bi bi-moon-stars" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro dos turnos (1º, 2º, 3º turno) com horários, dias e regras de transporte.</p>
+  </div>
+</div>
+{% endblock %}
