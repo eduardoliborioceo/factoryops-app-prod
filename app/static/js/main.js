@@ -67,9 +67,21 @@ function setupMobileZoomFix() {
   vv.addEventListener("scroll", sync);
 }
 
+function setupBackButtons() {
+  document.querySelectorAll(".btn-header-icon").forEach(el => {
+    if (el.querySelector(".bi-arrow-left")) {
+      el.addEventListener("click", e => {
+        e.preventDefault();
+        history.back();
+      });
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   if (localStorage.getItem("fullscreen") === "1") {
     document.body.classList.add("fullscreen-mode");
   }
   setupMobileZoomFix();
+  setupBackButtons();
 });
