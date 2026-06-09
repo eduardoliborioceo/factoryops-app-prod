@@ -1,0 +1,628 @@
+{% extends "layouts/app.html" %}
+{% block title %}RH OPS{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Funcionalidades · Sistemas</span>
+    <h1 class="page-header-name">RH OPS</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="history.back()" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.hub-nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(15,23,42,0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+.hub-nav-btn {
+  padding: 8px 22px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.hub-nav-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.10);
+}
+.hub-nav-btn:hover:not(.active) { color: var(--text); }
+
+.hub-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hub-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  text-decoration: none;
+  color: var(--text);
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  margin-bottom: 10px;
+}
+.hub-card:hover {
+  box-shadow: 0 4px 16px rgba(15,23,42,0.09);
+  border-color: rgba(13,110,253,0.25);
+  transform: translateY(-1px);
+  color: var(--text);
+  text-decoration: none;
+}
+.hub-card-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.hub-card-body { flex: 1; min-width: 0; }
+.hub-card-name { font-size: 0.95rem; font-weight: 700; margin-bottom: 2px; }
+.hub-card-desc { font-size: 0.78rem; color: var(--text-muted); }
+.hub-card-arrow { color: var(--text-muted); font-size: 0.9rem; }
+
+.hub-badge-dev {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255,193,7,0.15);
+  color: #856404;
+  border-radius: 4px;
+  padding: 1px 6px;
+  letter-spacing: 0.3px;
+  vertical-align: middle;
+}
+
+@media (max-width: 767px) {
+  .hub-nav { width: 100%; }
+  .hub-nav-btn { flex: 1; text-align: center; padding: 8px 10px; font-size: 0.78rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="hub-nav">
+    <button class="hub-nav-btn active" id="navPessoas"    onclick="setTab('pessoas')">
+      <i class="bi bi-people me-1"></i>Pessoas
+    </button>
+    <button class="hub-nav-btn" id="navOperacao"   onclick="setTab('operacao')">
+      <i class="bi bi-calendar3 me-1"></i>Operação
+    </button>
+    <button class="hub-nav-btn" id="navTransporte" onclick="setTab('transporte')">
+      <i class="bi bi-bus-front me-1"></i>Transporte
+    </button>
+    <button class="hub-nav-btn" id="navRelatorios" onclick="setTab('relatorios')">
+      <i class="bi bi-bar-chart-line me-1"></i>Relatórios
+    </button>
+  </div>
+
+  <!-- ── ABA: PESSOAS ── -->
+  <div id="tabPessoas">
+
+    <p class="hub-section-title"><i class="bi bi-person-vcard me-2"></i>Colaboradores</p>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_colaboradores_lista') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-people"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Todos os Colaboradores</div>
+            <div class="hub-card-desc">Listagem completa com filtros por filial, cargo, turno e status</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_colaboradores_cadastrar') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-person-plus"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Cadastrar Colaborador</div>
+            <div class="hub-card-desc">Dados pessoais, endereço, cargo, filial, turno e benefícios</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_colaboradores_documentos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+            <i class="bi bi-folder2-open"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Documentos</div>
+            <div class="hub-card-desc">Upload e consulta de documentos por colaborador (RG, CPF, ASO)</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_colaboradores_historico') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.10);color:#6f42c1;">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Histórico de Alterações</div>
+            <div class="hub-card-desc">Log de mudanças de cargo, salário e filial por colaborador</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <p class="hub-section-title"><i class="bi bi-diagram-3 me-2"></i>Estrutura Organizacional</p>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_org_filiais') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-building"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Filiais</div>
+            <div class="hub-card-desc">Cadastro e gestão das filiais da empresa</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_org_departamentos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,202,240,0.10);color:#0dcaf0;">
+            <i class="bi bi-grid-1x2"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Departamentos</div>
+            <div class="hub-card-desc">Setores e departamentos por filial</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_org_cargos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-award"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Cargos</div>
+            <div class="hub-card-desc">Tabela de cargos com nível hierárquico e faixa salarial</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_org_organograma') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-diagram-2"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Organograma</div>
+            <div class="hub-card-desc">Visualização da hierarquia organizacional</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <p class="hub-section-title"><i class="bi bi-person-check me-2"></i>Recrutamento & Admissão</p>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_recrutamento_vagas') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-briefcase"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Vagas Abertas</div>
+            <div class="hub-card-desc">Posições abertas por filial e departamento</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_recrutamento_candidatos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-person-lines-fill"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Candidatos</div>
+            <div class="hub-card-desc">Pipeline de candidatos por vaga e etapa do processo</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_recrutamento_processo') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-funnel"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Processo Seletivo</div>
+            <div class="hub-card-desc">Etapas, entrevistas e status por candidato</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_recrutamento_onboarding') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.10);color:#6f42c1;">
+            <i class="bi bi-rocket-takeoff"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Onboarding</div>
+            <div class="hub-card-desc">Checklist de admissão, documentos e treinamentos iniciais</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <p class="hub-section-title"><i class="bi bi-heart-pulse me-2"></i>Saúde Ocupacional</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_saude_aso') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+            <i class="bi bi-clipboard2-pulse"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">ASO & Exames</div>
+            <div class="hub-card-desc">Controle de Atestados de Saúde Ocupacional e vencimentos</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_saude_afastamentos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-bandaid"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Afastamentos Médicos</div>
+            <div class="hub-card-desc">Afastamentos por doença, acidente e INSS</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_saude_epi') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">EPI</div>
+            <div class="hub-card-desc">Controle de entrega e devolução de EPIs por colaborador</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_saude_cipa') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">CIPA</div>
+            <div class="hub-card-desc">Gestão dos membros e atas da Comissão Interna</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA: OPERAÇÃO ── -->
+  <div id="tabOperacao" class="d-none">
+
+    <p class="hub-section-title"><i class="bi bi-calendar-week me-2"></i>Ponto & Frequência</p>
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_ponto_turnos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-moon-stars"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Turnos</div>
+            <div class="hub-card-desc">Cadastro dos turnos de trabalho (1º, 2º, 3º) com horários e dias</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_ponto_escalas') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,202,240,0.10);color:#0dcaf0;">
+            <i class="bi bi-calendar3"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Escalas</div>
+            <div class="hub-card-desc">Alocação de colaboradores por turno e período</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_ponto_registros') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Registros de Ponto</div>
+            <div class="hub-card-desc">Consulta de batidas por colaborador e período</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_ponto_horas_extras') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-plus-circle"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Horas Extras</div>
+            <div class="hub-card-desc">Aprovação e histórico de horas extras por colaborador</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_ponto_afastamentos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+            <i class="bi bi-x-circle"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Faltas & Afastamentos</div>
+            <div class="hub-card-desc">Registro de faltas, atestados e licenças</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+
+    <p class="hub-section-title"><i class="bi bi-mortarboard me-2"></i>Treinamento & Desenvolvimento</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_treinamento_catalogo') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-book"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Catálogo de Treinamentos</div>
+            <div class="hub-card-desc">Treinamentos disponíveis internos e externos</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_treinamento_realizados') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-check2-circle"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Realizados</div>
+            <div class="hub-card-desc">Histórico de treinamentos concluídos por colaborador</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_treinamento_certificacoes') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-patch-check"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Certificações</div>
+            <div class="hub-card-desc">Controle de certificações e validade (NR-10, NR-35, etc.)</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_treinamento_pdi') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.10);color:#6f42c1;">
+            <i class="bi bi-graph-up-arrow"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">PDI</div>
+            <div class="hub-card-desc">Plano de Desenvolvimento Individual por colaborador</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA: TRANSPORTE ── -->
+  <div id="tabTransporte" class="d-none">
+    <p class="hub-section-title"><i class="bi bi-bus-front me-2"></i>Gestão de Transporte & Rotas</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_dashboard') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-speedometer2"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Dashboard de Rotas</div>
+            <div class="hub-card-desc">Visão geral: rotas ativas, colaboradores alocados, veículos em operação</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-signpost-split"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Rotas</div>
+            <div class="hub-card-desc">Cadastro de rotas: código, nome, filial, veículo, motorista e turno</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_veiculos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(108,117,125,0.10);color:#6c757d;">
+            <i class="bi bi-truck-front"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Veículos & Motoristas</div>
+            <div class="hub-card-desc">Cadastro de frota (placa, capacidade) e motoristas responsáveis</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_alocacao') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-person-walking"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Alocação de Colaboradores</div>
+            <div class="hub-card-desc">Visualizar e editar quais colaboradores estão em cada rota</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_otimizador') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.10);color:#6f42c1;">
+            <i class="bi bi-map"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Otimizador de Rotas</div>
+            <div class="hub-card-desc">Geração de trajeto otimizado via OpenRouteService com regras por turno</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_transporte_config_turno') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+            <i class="bi bi-gear"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Configurações por Turno</div>
+            <div class="hub-card-desc">Tipo de descida (geral vs porta a porta), raio de embarque e tolerâncias</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABA: RELATÓRIOS ── -->
+  <div id="tabRelatorios" class="d-none">
+    <p class="hub-section-title"><i class="bi bi-bar-chart-line me-2"></i>Indicadores & Relatórios</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_relatorios_headcount') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-person-badge"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Headcount</div>
+            <div class="hub-card-desc">Total de colaboradores por filial, cargo e turno com histórico</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_relatorios_turnover') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+            <i class="bi bi-arrow-repeat"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Turnover</div>
+            <div class="hub-card-desc">Taxa de rotatividade por período e departamento</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_relatorios_absenteismo') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-calendar-x"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Absenteísmo</div>
+            <div class="hub-card-desc">Faltas, afastamentos e tendências por período</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_relatorios_custo_pessoal') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-currency-dollar"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Custo de Pessoal</div>
+            <div class="hub-card-desc">Folha de pagamento por filial e departamento</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.rh_relatorios_transporte') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.10);color:#6f42c1;">
+            <i class="bi bi-graph-up"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Relatório de Transporte</div>
+            <div class="hub-card-desc">Custo por rota, colaboradores atendidos e km rodado</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const _tabs = ['pessoas', 'operacao', 'transporte', 'relatorios'];
+
+function setTab(tab) {
+  _tabs.forEach(t => {
+    const el = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    const btn = document.getElementById('nav' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.classList.toggle('d-none', t !== tab);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  history.replaceState(null, '', '#' + tab);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hash = location.hash.replace('#', '') || 'pessoas';
+  if (_tabs.includes(hash)) setTab(hash);
+});
+</script>
+{% endblock %}
