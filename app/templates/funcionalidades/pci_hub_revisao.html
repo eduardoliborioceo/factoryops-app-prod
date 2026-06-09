@@ -926,6 +926,10 @@ function ajustarAprovados(slot) {
 
 function onAprovInput(el) {
   el.dataset.raw = el.value;
+  if (el.value !== '') {
+    const chk = document.querySelector(`.slot-chk[data-slot="${el.dataset.slot}"]`);
+    if (chk) chk.checked = true;
+  }
   recalcTotais();
   recalcQtdeProduzida();
 }
