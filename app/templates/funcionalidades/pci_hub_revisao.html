@@ -358,7 +358,8 @@
         </div>
         <div class="rev-field">
           <label>Produto (Product)</label>
-          <input type="text" id="hProduto" placeholder="—">
+          <input type="text" id="hProduto" placeholder="—"
+                 oninput="clearTimeout(_modeloTimer);_modeloTimer=setTimeout(atualizarCamposModelo,350)">
         </div>
         <div class="rev-field">
           <label>Setor (Sector)</label>
@@ -586,6 +587,7 @@ const DEFEITOS_CAT = {{ defeitos_cat | tojson }};
 
 let _relId = null;
 let _revisorTimer = null;
+let _modeloTimer  = null;
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -784,6 +786,64 @@ function atualizarCamposRevisora() {
   });
 }
 
+/* ── Utilitário: reverte selects de coluna de tabela para inputs ── */
+function _resetCampoTabela(selector, tipo, style) {
+  document.querySelectorAll(selector).forEach(el => {
+    if (el.tagName === 'SELECT') {
+      const inp = document.createElement('input');
+      inp.type = tipo;
+      inp.className = el.className;
+      inp.dataset.slot = el.dataset.slot;
+      inp.style.cssText = style;
+      inp.value = '';
+      el.replaceWith(inp);
+    } else {
+      el.value = '';
+    }
+  });
+}
+
+/* ── Produto → select de modelo nas linhas da tabela ── */
+function atualizarCamposModelo() {
+  const raw    = document.getElementById('hProduto').value;
+  const modelos = raw.split(',').map(s => s.trim()).filter(Boolean);
+  const SEL_STYLE = 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;text-transform:uppercase;';
+  const INP_STYLE = SEL_STYLE;
+
+  document.querySelectorAll('.f-modelo').forEach(el => {
+    const slot     = el.dataset.slot;
+    const valAtual = el.value || '';
+
+    if (modelos.length >= 1) {
+      const opcoesHtml = `<option value="">—</option>` +
+        modelos.map(m => `<option value="${esc(m)}" ${m.toUpperCase() === valAtual.toUpperCase() ? 'selected' : ''}>${esc(m)}</option>`).join('');
+
+      if (el.tagName === 'SELECT') {
+        el.innerHTML = opcoesHtml;
+      } else {
+        const sel = document.createElement('select');
+        sel.className    = 'f-modelo';
+        sel.dataset.slot = slot;
+        sel.style.cssText = SEL_STYLE;
+        sel.innerHTML    = opcoesHtml;
+        el.replaceWith(sel);
+      }
+    } else {
+      if (el.tagName === 'SELECT') {
+        const inp = document.createElement('input');
+        inp.type          = 'text';
+        inp.className     = 'f-modelo';
+        inp.dataset.slot  = slot;
+        inp.style.cssText = INP_STYLE;
+        inp.value         = '';
+        el.replaceWith(inp);
+      } else {
+        el.value = '';
+      }
+    }
+  });
+}
+
 /* ── Autocomplete código de defeito ───── */
 function normDef(s) {
   return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -921,12 +981,13 @@ function limparForm() {
    'cPreForno','cPosForno','cPreMaq','cPosMaq','cAdesivo','cSpi'].forEach(id => {
     document.getElementById(id).checked = false;
   });
-  document.querySelectorAll('.slot-chk,.f-reprov,.f-modelo,.f-obs').forEach(el => {
+  document.querySelectorAll('.slot-chk,.f-reprov,.f-obs').forEach(el => {
     el.type === 'checkbox' ? el.checked = false : el.value = '';
   });
+  _resetCampoTabela('.f-modelo', 'text', 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;text-transform:uppercase;');
+  _resetCampoTabela('.f-revisora', 'text', 'border:none;outline:none;width:100%;font-size:0.72rem;background:transparent;font-family:inherit;text-align:center;');
   document.querySelectorAll('.f-aprov').forEach(el => { el.value = ''; el.dataset.raw = ''; });
   document.querySelectorAll('.f-defmax,.f-qtdprod').forEach(el => { el.value = ''; });
-  document.querySelectorAll('.f-revisora').forEach(el => { el.value = ''; });
   document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
   document.querySelectorAll('.d-cod,.d-pos,.d-lado,.d-qtd,.d-obs').forEach(el => el.value = '');
   recalcTotais();
@@ -937,6 +998,7 @@ function preencherForm(r) {
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   const chk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
   set('hCliente', r.cliente); set('hProduto', r.produto);
+  if (r.produto) atualizarCamposModelo();
   const setorEl = document.getElementById('hSetor');
   if (setorEl) setorEl.value = r.setor || '';
   carregarLinhasSetor(r.setor || '', r.linha || '');
