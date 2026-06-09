@@ -1,6 +1,107 @@
 {% extends "layouts/app.html" %}
 {% block title %}Balanceamento de Linha — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+/* ── layout ─────────────────────────────────────────── */
+.bal-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.bal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13,110,253,0.04);
+}
+.bal-header-title { font-size: 0.875rem; font-weight: 700; color: var(--text); }
+.bal-header-sub   { font-size: 0.78rem;  color: var(--text-muted); }
+.bal-body { padding: 18px; }
+
+/* ── KPI strip ──────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px; margin-bottom: 20px;
+}
+.kpi-box {
+  background: rgba(15,23,42,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; text-align: center;
+}
+.kpi-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 2px; }
+.kpi-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+.kpi-val.ok   { color: #198754; }
+.kpi-val.warn { color: #856404; }
+.kpi-val.bad  { color: #dc3545; }
+.kpi-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── ops table ──────────────────────────────────────── */
+.ops-table { font-size: 0.82rem; }
+.ops-table th {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; background: rgba(15,23,42,0.05);
+  padding: 8px 10px; white-space: nowrap;
+}
+.ops-table td { padding: 7px 10px; vertical-align: middle; }
+.ops-table tr.bottleneck td { background: rgba(220,53,69,0.07); }
+.ops-table tr.over-takt td  { background: rgba(255,193,7,0.10); }
+.station-inp {
+  width: 64px; text-align: center; font-size: 0.82rem; font-weight: 700;
+  border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px;
+}
+.station-inp:focus {
+  outline: none; border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+}
+
+/* ── stations summary ───────────────────────────────── */
+.station-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px; margin-top: 16px;
+}
+.station-box {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; position: relative;
+}
+.station-box.over-takt  { border-color: #dc3545; background: rgba(220,53,69,0.05); }
+.station-box.near-takt  { border-color: #856404; background: rgba(255,193,7,0.08); }
+.station-box.ok-station { border-color: #198754; background: rgba(25,135,84,0.05); }
+.station-num   { font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px; }
+.station-time  { font-size: 1.3rem; font-weight: 800; }
+.station-idle  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.station-bar-wrap { margin-top: 8px; height: 6px; border-radius: 4px;
+  background: rgba(15,23,42,0.08); overflow: hidden; }
+.station-bar   { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.station-ops   { font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;
+  max-height: 64px; overflow-y: auto; }
+
+/* ── select area ────────────────────────────────────── */
+.select-area {
+  background: rgba(15,23,42,0.03);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 20px;
+}
+
+/* ── chart wrapper ──────────────────────────────────── */
+.chart-wrap { position: relative; min-height: 180px; }
+
+@media print {
+  .no-print { display: none !important; }
+  .bal-card  { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
+}
+@media (max-width: 767px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .station-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,6 +109,9 @@
     <h1 class="page-header-name">Balanceamento de Linha</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
+      <i class="bi bi-printer"></i>
+    </button>
     <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -20,9 +124,424 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-bar-chart-steps" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Distribuição de carga entre estações e otimização do takt time.</p>
+
+  <!-- Seleção de Estudo -->
+  <div class="bal-card mb-3 no-print">
+    <div class="bal-header">
+      <div>
+        <div class="bal-header-title">Carregar Estudo de Tempo</div>
+        <div class="bal-header-sub">Selecione um estudo existente para calcular o balanceamento</div>
+      </div>
+    </div>
+    <div class="bal-body">
+      <div class="select-area">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-md-5">
+            <label class="form-label fw-bold" style="font-size:0.8rem;">Estudo de Tempo</label>
+            <select id="studySelect" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-bold" style="font-size:0.8rem;">Takt Time (s) <span style="font-weight:400;color:var(--text-muted);">manual</span></label>
+            <input id="taktOverride" type="number" min="1" step="0.1" class="form-control form-control-sm" placeholder="auto">
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-bold" style="font-size:0.8rem;">Estações disponíveis</label>
+            <input id="numStations" type="number" min="1" max="50" value="1" class="form-control form-control-sm">
+          </div>
+          <div class="col-12 col-md-3 d-flex gap-2">
+            <button id="btnLoad" class="btn btn-primary btn-sm flex-fill">
+              <i class="bi bi-arrow-down-circle me-1"></i>Carregar
+            </button>
+            <button id="btnRefresh" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-arrow-repeat"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="loadMsg"></div>
+    </div>
   </div>
+
+  <!-- KPIs -->
+  <div id="kpiArea" class="d-none">
+    <div class="kpi-strip">
+      <div class="kpi-box">
+        <div class="kpi-label">Takt Time</div>
+        <div class="kpi-val" id="kTakt">—</div>
+        <div class="kpi-sub">segundos/peça</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Tempo Gargalo</div>
+        <div class="kpi-val" id="kBottleneck">—</div>
+        <div class="kpi-sub">maior tempo de estação</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Eficiência</div>
+        <div class="kpi-val" id="kEff">—</div>
+        <div class="kpi-sub">% do tempo total aproveitado</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Tempo Ocioso Total</div>
+        <div class="kpi-val" id="kIdle">—</div>
+        <div class="kpi-sub">segundos desperdiçados</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">Estações Ativas</div>
+        <div class="kpi-val" id="kStations">—</div>
+        <div class="kpi-sub">com operações atribuídas</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">UPH Teórico</div>
+        <div class="kpi-val" id="kUph">—</div>
+        <div class="kpi-sub">baseado no gargalo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de Operações -->
+  <div id="opsArea" class="d-none">
+    <div class="bal-card mb-3">
+      <div class="bal-header">
+        <div>
+          <div class="bal-header-title">Operações</div>
+          <div class="bal-header-sub">Atribua cada operação a uma estação de trabalho</div>
+        </div>
+        <div class="no-print d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="btnAutoBalance">
+            <i class="bi bi-magic me-1"></i>Auto-balancear
+          </button>
+        </div>
+      </div>
+      <div class="bal-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered ops-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th>N°</th>
+                <th>Operação</th>
+                <th>Tempo (s)</th>
+                <th>HC</th>
+                <th>UPH Real</th>
+                <th class="no-print">Estação</th>
+                <th class="text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="opsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo por Estação -->
+    <div class="bal-card mb-3">
+      <div class="bal-header">
+        <div class="bal-header-title">Resumo por Estação</div>
+      </div>
+      <div class="bal-body">
+        <div id="stationGrid" class="station-grid"></div>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="bal-card mb-3">
+      <div class="bal-header">
+        <div class="bal-header-title">Diagrama de Carga por Estação</div>
+        <div class="bal-header-sub">Comparação com Takt Time</div>
+      </div>
+      <div class="bal-body">
+        <div class="chart-wrap" style="max-height:320px;">
+          <canvas id="balanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  let studyData = null;
+  let chart     = null;
+  const stationMap = {};
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function fmt(n, d = 2) {
+    return isNaN(n) || n === null ? '—' : Number(n).toFixed(d);
+  }
+
+  function showMsg(kind, text) {
+    document.getElementById('loadMsg').innerHTML =
+      `<div class="alert alert-${kind} py-2 mt-2 mb-0">${esc(text)}</div>`;
+    if (kind !== 'danger') setTimeout(() => { document.getElementById('loadMsg').innerHTML = ''; }, 5000);
+  }
+
+  async function api(url) {
+    const r = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    return r.json().catch(() => ({}));
+  }
+
+  async function loadStudies() {
+    const sel = document.getElementById('studySelect');
+    sel.innerHTML = '<option value="">Carregando...</option>';
+    const data = await api('/api/time-studies?limit=100');
+    const list = Array.isArray(data) ? data : [];
+    if (!list.length) {
+      sel.innerHTML = '<option value="">Nenhum estudo — crie um em Estudo de Tempo</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">Selecione um estudo...</option>';
+    for (const s of list) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      const parts = [`#${s.id}`];
+      if (s.produto)   parts.push(s.produto);
+      if (s.cliente)   parts.push(`· ${s.cliente}`);
+      if (s.linha)     parts.push(`· ${s.linha}`);
+      if (s.uph_meta)  parts.push(`· UPH ${s.uph_meta}`);
+      opt.textContent = parts.join(' ');
+      sel.appendChild(opt);
+    }
+  }
+
+  async function loadStudy() {
+    const id = document.getElementById('studySelect').value;
+    if (!id) { showMsg('warning', 'Selecione um estudo.'); return; }
+
+    document.getElementById('loadMsg').innerHTML =
+      '<div class="d-flex align-items-center gap-2 py-1"><div class="spinner-border spinner-border-sm"></div><span>Carregando...</span></div>';
+
+    const data = await api(`/api/time-studies/${id}`);
+    document.getElementById('loadMsg').innerHTML = '';
+
+    if (!data || data.sucesso !== true) {
+      showMsg('danger', data.erro || 'Erro ao carregar estudo.'); return;
+    }
+
+    studyData = data;
+    const ops = (data.operations || []).sort((a, b) => a.ordem - b.ordem);
+
+    ops.forEach(op => {
+      if (!stationMap[op.id]) stationMap[op.id] = op.posto_trabalho || 1;
+    });
+
+    const numSt = parseInt(document.getElementById('numStations').value) || Math.max(...ops.map(o => stationMap[o.id]));
+    document.getElementById('numStations').value = numSt;
+
+    renderOps(ops, data.totals || {});
+    recalc(ops, data.totals || {});
+    document.getElementById('opsArea').classList.remove('d-none');
+    document.getElementById('kpiArea').classList.remove('d-none');
+  }
+
+  function renderOps(ops, totals) {
+    const tbody = document.getElementById('opsBody');
+    const takt  = getTakt(totals);
+
+    tbody.innerHTML = ops.map(op => {
+      const st = stationMap[op.id] || 1;
+      const tc = parseFloat(op.tempo_ciclo_sec) || 0;
+      const badge = tc > takt
+        ? '<span class="badge bg-danger">Acima do takt</span>'
+        : tc > takt * 0.9
+        ? '<span class="badge bg-warning text-dark">Próximo</span>'
+        : '<span class="badge bg-success">OK</span>';
+      return `<tr data-id="${op.id}">
+        <td class="fw-bold">${op.ordem}</td>
+        <td>${esc(op.operacao)}</td>
+        <td class="fw-bold">${fmt(op.tempo_ciclo_sec)}</td>
+        <td>${fmt(op.hc)}</td>
+        <td>${fmt(op.uph_real, 0)}</td>
+        <td class="no-print">
+          <input type="number" class="station-inp" min="1" max="50" value="${st}"
+                 data-op-id="${op.id}" onchange="onStationChange(this)">
+        </td>
+        <td class="text-center">${badge}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function getTakt(totals) {
+    const manual = parseFloat(document.getElementById('taktOverride').value);
+    if (manual > 0) return manual;
+    if (totals && totals.uph_meta) return 3600 / totals.uph_meta;
+    return null;
+  }
+
+  function recalc(opsIn, totals) {
+    const ops  = opsIn || ((studyData?.operations || []).sort((a, b) => a.ordem - b.ordem));
+    const takt = getTakt(totals || studyData?.totals || {});
+    const numSt = parseInt(document.getElementById('numStations').value) || 1;
+
+    const stations = {};
+    for (let i = 1; i <= numSt; i++) stations[i] = { ops: [], total: 0 };
+
+    ops.forEach(op => {
+      const st = stationMap[op.id] || 1;
+      if (!stations[st]) stations[st] = { ops: [], total: 0 };
+      stations[st].ops.push(op);
+      stations[st].total += parseFloat(op.tempo_ciclo_sec) || 0;
+    });
+
+    const times   = Object.values(stations).map(s => s.total).filter(t => t > 0);
+    const maxTime = Math.max(...times, 0);
+    const sumTime = times.reduce((a, b) => a + b, 0);
+    const stCount = times.length;
+
+    const eff     = takt && stCount ? (sumTime / (maxTime * stCount) * 100) : null;
+    const idle    = takt ? (stCount * takt - sumTime).toFixed(1) : null;
+
+    const kTakt       = document.getElementById('kTakt');
+    const kBottleneck = document.getElementById('kBottleneck');
+    const kEff        = document.getElementById('kEff');
+    const kIdle       = document.getElementById('kIdle');
+    const kStations   = document.getElementById('kStations');
+    const kUph        = document.getElementById('kUph');
+
+    if (takt) {
+      kTakt.textContent = fmt(takt);
+      kTakt.className   = 'kpi-val';
+    } else {
+      kTakt.textContent = '—';
+    }
+
+    kBottleneck.textContent = fmt(maxTime);
+    kBottleneck.className   = takt && maxTime > takt ? 'kpi-val bad' : takt && maxTime > takt * 0.9 ? 'kpi-val warn' : 'kpi-val ok';
+
+    if (eff !== null) {
+      kEff.textContent = `${eff.toFixed(1)}%`;
+      kEff.className   = eff >= 80 ? 'kpi-val ok' : eff >= 60 ? 'kpi-val warn' : 'kpi-val bad';
+    } else {
+      kEff.textContent = '—';
+    }
+
+    kIdle.textContent   = idle !== null ? `${idle}s` : '—';
+    kStations.textContent = stCount;
+    kUph.textContent    = maxTime > 0 ? Math.floor(3600 / maxTime) : '—';
+
+    renderStations(stations, takt, maxTime);
+    renderChart(stations, takt);
+  }
+
+  function renderStations(stations, takt, maxTime) {
+    const grid = document.getElementById('stationGrid');
+    const entries = Object.entries(stations)
+      .filter(([, s]) => s.total > 0)
+      .sort(([a], [b]) => Number(a) - Number(b));
+
+    if (!entries.length) { grid.innerHTML = '<p class="text-muted">Nenhuma operação atribuída.</p>'; return; }
+
+    grid.innerHTML = entries.map(([st, s]) => {
+      const pct      = maxTime > 0 ? Math.min(s.total / maxTime * 100, 100) : 0;
+      const pctTakt  = takt   ? Math.min(s.total / takt * 100, 100) : pct;
+      const idle     = takt   ? (takt - s.total).toFixed(2) : '—';
+      const cls      = takt && s.total > takt ? 'over-takt' : takt && s.total > takt * 0.9 ? 'near-takt' : 'ok-station';
+      const barColor = cls === 'over-takt' ? '#dc3545' : cls === 'near-takt' ? '#856404' : '#198754';
+      const opNames  = s.ops.map(o => esc(o.operacao)).join('<br>');
+      return `
+        <div class="station-box ${cls}">
+          <div class="station-num">Estação ${esc(st)}</div>
+          <div class="station-time">${fmt(s.total)}s</div>
+          <div class="station-idle">Ocioso: ${idle}s · ${s.ops.length} op(s)</div>
+          <div class="station-bar-wrap">
+            <div class="station-bar" style="width:${pctTakt}%;background:${barColor};"></div>
+          </div>
+          <div class="station-ops mt-2" style="font-size:0.7rem;">${opNames}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderChart(stations, takt) {
+    const entries = Object.entries(stations)
+      .filter(([, s]) => s.total > 0)
+      .sort(([a], [b]) => Number(a) - Number(b));
+
+    const labels = entries.map(([st]) => `Est. ${st}`);
+    const values = entries.map(([, s]) => parseFloat(s.total.toFixed(2)));
+
+    const ctx = document.getElementById('balanceChart').getContext('2d');
+    if (chart) chart.destroy();
+
+    const datasets = [{
+      label: 'Tempo de estação (s)',
+      data: values,
+      backgroundColor: values.map(v =>
+        takt && v > takt ? 'rgba(220,53,69,0.7)' :
+        takt && v > takt * 0.9 ? 'rgba(255,193,7,0.7)' : 'rgba(25,135,84,0.7)'
+      ),
+      borderRadius: 6,
+      borderSkipped: false,
+    }];
+
+    if (takt) {
+      datasets.push({
+        label: `Takt Time (${fmt(takt)}s)`,
+        data: Array(labels.length).fill(parseFloat(fmt(takt))),
+        type: 'line',
+        borderColor: '#0d6efd',
+        borderWidth: 2,
+        borderDash: [6, 3],
+        pointRadius: 0,
+        fill: false,
+      });
+    }
+
+    chart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}s` } }
+        },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: 'Tempo (s)', font: { size: 11 } } },
+          x: { title: { display: false } }
+        }
+      }
+    });
+  }
+
+  function autoBalance() {
+    if (!studyData) return;
+    const ops  = (studyData.operations || []).sort((a, b) => (parseFloat(a.tempo_ciclo_sec) || 0) - (parseFloat(b.tempo_ciclo_sec) || 0)).reverse();
+    const n    = parseInt(document.getElementById('numStations').value) || 1;
+    const sums = Array.from({ length: n }, () => 0);
+
+    ops.forEach(op => {
+      const minIdx = sums.indexOf(Math.min(...sums));
+      stationMap[op.id] = minIdx + 1;
+      sums[minIdx] += parseFloat(op.tempo_ciclo_sec) || 0;
+    });
+
+    document.querySelectorAll('.station-inp').forEach(inp => {
+      const id = parseInt(inp.dataset.opId);
+      if (stationMap[id]) inp.value = stationMap[id];
+    });
+    recalc(ops, studyData.totals || {});
+  }
+
+  window.onStationChange = function(inp) {
+    const id = parseInt(inp.dataset.opId);
+    stationMap[id] = parseInt(inp.value) || 1;
+    recalc(null, null);
+  };
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadStudies();
+    document.getElementById('btnLoad')         .addEventListener('click', loadStudy);
+    document.getElementById('btnRefresh')      .addEventListener('click', loadStudies);
+    document.getElementById('btnAutoBalance')  .addEventListener('click', autoBalance);
+    document.getElementById('taktOverride')    .addEventListener('input', () => { if (studyData) recalc(null, null); });
+    document.getElementById('numStations')     .addEventListener('change', () => { if (studyData) recalc(null, null); });
+  });
+})();
+</script>
 {% endblock %}

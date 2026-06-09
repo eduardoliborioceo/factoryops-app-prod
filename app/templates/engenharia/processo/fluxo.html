@@ -1,6 +1,105 @@
 {% extends "layouts/app.html" %}
 {% block title %}Fluxo de Produção — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+/* ── header card ─────────────────────────────────────── */
+.vsm-header-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+}
+.vsm-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  background: rgba(13,110,253,0.04);
+  font-size: 0.875rem; font-weight: 700; color: var(--text);
+}
+.vsm-body { padding: 18px; }
+
+/* ── flow diagram ────────────────────────────────────── */
+.flow-diagram {
+  display: flex; align-items: stretch; gap: 0;
+  overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px;
+}
+.flow-step {
+  display: flex; flex-direction: column; align-items: center; min-width: 140px;
+}
+.flow-box {
+  background: var(--card); border: 2px solid #0d6efd;
+  border-radius: 10px; padding: 10px 12px; text-align: center;
+  min-height: 80px; display: flex; flex-direction: column;
+  justify-content: center; width: 130px; cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.flow-box:hover { box-shadow: 0 4px 12px rgba(13,110,253,0.20); }
+.flow-box.bottleneck { border-color: #dc3545; }
+.flow-box-name { font-size: 0.8rem; font-weight: 700; }
+.flow-box-ct   { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; }
+.flow-inv {
+  font-size: 0.65rem; color: var(--text-muted); text-align: center;
+  margin-top: 4px; display: flex; align-items: center; gap: 3px;
+}
+.flow-arrow {
+  display: flex; align-items: center; color: #0d6efd;
+  font-size: 1.2rem; padding: 0 4px; align-self: center;
+  flex-shrink: 0;
+}
+.flow-inventory-badge {
+  font-size: 0.6rem; background: rgba(255,193,7,0.18);
+  border: 1px solid rgba(255,193,7,0.40); border-radius: 4px;
+  padding: 1px 5px; color: #664d03; margin-top: 4px;
+}
+
+/* ── steps table ─────────────────────────────────────── */
+.vsm-table { font-size: 0.82rem; }
+.vsm-table th {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; background: rgba(15,23,42,0.05);
+  padding: 8px 10px; white-space: nowrap;
+}
+.vsm-table td { padding: 7px 8px; vertical-align: middle; }
+.vsm-inp {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 8px; font-size: 0.8rem; width: 100%;
+  background: var(--card); color: var(--text);
+}
+.vsm-inp:focus {
+  outline: none; border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13,110,253,0.12);
+}
+
+/* ── KPI strip ───────────────────────────────────────── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px; margin-bottom: 20px;
+}
+.kpi-cell {
+  background: rgba(15,23,42,0.03); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px; text-align: center;
+}
+.kpi-cell-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-muted); }
+.kpi-cell-val { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+.kpi-cell-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+/* ── legend ──────────────────────────────────────────── */
+.legend-row { display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; margin-bottom: 4px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+@media print {
+  .no-print { display: none !important; }
+  .vsm-header-card { page-break-inside: avoid; }
+}
+@media (max-width: 767px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .flow-diagram { flex-direction: column; align-items: flex-start; }
+  .flow-arrow { transform: rotate(90deg); }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,6 +107,9 @@
     <h1 class="page-header-name">Fluxo de Produção</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
+      <i class="bi bi-printer"></i>
+    </button>
     <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -20,9 +122,300 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-diagram-3" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>VSM, mapeamento de fluxo de valor e análise de gargalos.</p>
+
+  <!-- Cabeçalho do mapa -->
+  <div class="vsm-header-card">
+    <div class="vsm-section-hdr">
+      <span><i class="bi bi-diagram-3 me-2"></i>Cabeçalho do Fluxo</span>
+      <button class="btn btn-primary btn-sm no-print" onclick="saveAll()">
+        <i class="bi bi-save me-1"></i>Salvar
+      </button>
+    </div>
+    <div class="vsm-body">
+      <div class="row g-2">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-bold" style="font-size:0.8rem;">Produto / Família</label>
+          <input id="hdrProduto" type="text" class="form-control form-control-sm" placeholder="Ex: PCBA Harman">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-bold" style="font-size:0.8rem;">Linha</label>
+          <input id="hdrLinha" type="text" class="form-control form-control-sm" placeholder="Ex: SMD 01">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-bold" style="font-size:0.8rem;">Demanda diária</label>
+          <input id="hdrDemanda" type="number" min="0" class="form-control form-control-sm" placeholder="Ex: 500">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-bold" style="font-size:0.8rem;">Turno (h)</label>
+          <input id="hdrTurno" type="number" step="0.5" min="1" value="8" class="form-control form-control-sm">
+        </div>
+        <div class="col-6 col-md-1">
+          <label class="form-label fw-bold" style="font-size:0.8rem;">Data</label>
+          <input id="hdrData" type="date" class="form-control form-control-sm">
+        </div>
+      </div>
+      <div id="saveMsg" class="mt-2"></div>
+    </div>
   </div>
+
+  <!-- KPIs calculados -->
+  <div id="kpiArea" class="kpi-row mb-3"></div>
+
+  <!-- Diagrama visual -->
+  <div class="vsm-header-card mb-3">
+    <div class="vsm-section-hdr">
+      <span><i class="bi bi-arrows-move me-2"></i>Mapa Visual do Fluxo</span>
+      <div class="d-flex gap-3 no-print">
+        <div class="legend-row"><div class="legend-dot" style="background:#0d6efd;"></div>Normal</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#dc3545;"></div>Gargalo</div>
+      </div>
+    </div>
+    <div class="vsm-body">
+      <div id="flowDiagram" class="flow-diagram"></div>
+    </div>
+  </div>
+
+  <!-- Tabela de etapas -->
+  <div class="vsm-header-card">
+    <div class="vsm-section-hdr">
+      <span><i class="bi bi-table me-2"></i>Etapas do Processo</span>
+      <button class="btn btn-success btn-sm no-print" id="btnAddStep">
+        <i class="bi bi-plus-lg me-1"></i>Nova etapa
+      </button>
+    </div>
+    <div class="vsm-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered vsm-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width:36px;">#</th>
+              <th style="min-width:140px;">Etapa</th>
+              <th>Responsável</th>
+              <th style="min-width:90px;">Tempo Ciclo (s)</th>
+              <th>Uptime (%)</th>
+              <th>Setup (min)</th>
+              <th style="min-width:80px;">Estoque Antes</th>
+              <th>Observações</th>
+              <th class="no-print" style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="stepsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+(function () {
+  "use strict";
+
+  let steps = [];
+  let idCounter = 1;
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function addStep(data) {
+    const id = idCounter++;
+    const step = Object.assign({
+      id, nome: '', responsavel: '', ct: '', uptime: 95, setup: 0, estoque: 0, obs: ''
+    }, data || {});
+    steps.push(step);
+    return step;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('stepsBody');
+    if (!steps.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4" style="color:var(--text-muted);font-size:0.8rem;">Nenhuma etapa. Clique em <strong>Nova etapa</strong> para começar.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = steps.map((s, i) => `
+      <tr data-id="${s.id}">
+        <td class="text-center fw-bold" style="color:var(--text-muted);">${i + 1}</td>
+        <td><input class="vsm-inp" type="text" value="${esc(s.nome)}" oninput="updateField(${s.id},'nome',this.value)" placeholder="Ex: Impressão de pasta"></td>
+        <td><input class="vsm-inp" type="text" value="${esc(s.responsavel)}" oninput="updateField(${s.id},'responsavel',this.value)" placeholder="Ex: Op. SMD" style="min-width:100px;"></td>
+        <td><input class="vsm-inp" type="number" step="0.1" min="0" value="${s.ct || ''}" oninput="updateField(${s.id},'ct',this.value)" placeholder="—" style="width:80px;"></td>
+        <td><input class="vsm-inp" type="number" step="1" min="0" max="100" value="${s.uptime}" oninput="updateField(${s.id},'uptime',this.value)" style="width:65px;"></td>
+        <td><input class="vsm-inp" type="number" step="1" min="0" value="${s.setup}" oninput="updateField(${s.id},'setup',this.value)" style="width:65px;"></td>
+        <td><input class="vsm-inp" type="number" step="1" min="0" value="${s.estoque}" oninput="updateField(${s.id},'estoque',this.value)" style="width:70px;" title="Unidades antes desta etapa"></td>
+        <td><input class="vsm-inp" type="text" value="${esc(s.obs)}" oninput="updateField(${s.id},'obs',this.value)" placeholder="—"></td>
+        <td class="no-print text-center">
+          <button class="btn btn-outline-danger btn-sm" style="padding:2px 7px;font-size:11px;" onclick="removeStep(${s.id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`).join('');
+  }
+
+  window.updateField = function(id, field, value) {
+    const step = steps.find(s => s.id === id);
+    if (!step) return;
+    step[field] = value;
+    recalcKPIs();
+    renderDiagram();
+    autoSave();
+  };
+
+  window.removeStep = function(id) {
+    steps = steps.filter(s => s.id !== id);
+    renderTable();
+    recalcKPIs();
+    renderDiagram();
+    autoSave();
+  };
+
+  function recalcKPIs() {
+    const cts = steps.map(s => parseFloat(s.ct) || 0).filter(v => v > 0);
+    const turno = parseFloat(document.getElementById('hdrTurno').value) || 8;
+    const demanda = parseFloat(document.getElementById('hdrDemanda').value) || 0;
+
+    const totalCT    = cts.reduce((a, b) => a + b, 0);
+    const maxCT      = Math.max(...cts, 0);
+    const takt       = demanda > 0 ? (turno * 3600 / demanda) : null;
+    const totalInv   = steps.reduce((a, s) => a + (parseFloat(s.estoque) || 0), 0);
+    const leadTime   = maxCT > 0 && totalInv > 0 ? (totalInv / (3600 / maxCT) * 3600) : null;
+    const vaRatio    = totalCT > 0 && leadTime ? (totalCT / leadTime * 100) : null;
+    const numSteps   = cts.length;
+
+    const kpiArea = document.getElementById('kpiArea');
+    kpiArea.innerHTML = `
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">Etapas</div>
+        <div class="kpi-cell-val">${steps.length}</div>
+        <div class="kpi-cell-sub">com tempo</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">Lead Time Total</div>
+        <div class="kpi-cell-val">${totalCT > 0 ? totalCT.toFixed(1) + 's' : '—'}</div>
+        <div class="kpi-cell-sub">soma dos tempos ciclo</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">Gargalo</div>
+        <div class="kpi-cell-val" style="color:${maxCT > 0 && takt && maxCT > takt ? '#dc3545' : '#198754'};">
+          ${maxCT > 0 ? maxCT.toFixed(1) + 's' : '—'}
+        </div>
+        <div class="kpi-cell-sub">maior tempo de ciclo</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">Takt Time</div>
+        <div class="kpi-cell-val">${takt ? takt.toFixed(1) + 's' : '—'}</div>
+        <div class="kpi-cell-sub">${demanda ? demanda + ' pç/turno' : 'informe a demanda'}</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">UPH Teórico</div>
+        <div class="kpi-cell-val">${maxCT > 0 ? Math.floor(3600 / maxCT) : '—'}</div>
+        <div class="kpi-cell-sub">baseado no gargalo</div>
+      </div>
+      <div class="kpi-cell">
+        <div class="kpi-cell-label">WIP Total</div>
+        <div class="kpi-cell-val">${totalInv}</div>
+        <div class="kpi-cell-sub">unidades em processo</div>
+      </div>`;
+  }
+
+  function renderDiagram() {
+    const diag = document.getElementById('flowDiagram');
+    const maxCT = Math.max(...steps.map(s => parseFloat(s.ct) || 0), 0);
+
+    if (!steps.length) {
+      diag.innerHTML = '<p class="text-muted" style="font-size:0.8rem;">Adicione etapas para ver o diagrama.</p>';
+      return;
+    }
+
+    diag.innerHTML = steps.map((s, i) => {
+      const ct = parseFloat(s.ct) || 0;
+      const isBottleneck = ct === maxCT && ct > 0;
+      const inv = parseFloat(s.estoque) || 0;
+      const arrow = i < steps.length - 1
+        ? `<div class="flow-arrow"><i class="bi bi-arrow-right"></i></div>` : '';
+      const invLabel = inv > 0 ? `<div class="flow-inventory-badge"><i class="bi bi-boxes me-1"></i>${inv}</div>` : '';
+      return `
+        <div class="flow-step">
+          <div class="flow-box ${isBottleneck ? 'bottleneck' : ''}">
+            <div class="flow-box-name">${esc(s.nome || 'Etapa ' + (i+1))}</div>
+            <div class="flow-box-ct">${ct > 0 ? ct.toFixed(1) + 's' : '—'}</div>
+            ${isBottleneck ? '<div style="font-size:0.6rem;color:#dc3545;font-weight:700;margin-top:3px;">GARGALO</div>' : ''}
+            ${invLabel}
+          </div>
+          ${inv > 0 ? `<div class="flow-inv"><i class="bi bi-boxes"></i>${inv} pç</div>` : ''}
+        </div>
+        ${arrow}`;
+    }).join('');
+  }
+
+  function autoSave() {
+    saveAll(true);
+  }
+
+  function saveAll(silent) {
+    const data = {
+      produto:  document.getElementById('hdrProduto').value,
+      linha:    document.getElementById('hdrLinha').value,
+      demanda:  document.getElementById('hdrDemanda').value,
+      turno:    document.getElementById('hdrTurno').value,
+      dataReg:  document.getElementById('hdrData').value,
+      steps:    steps,
+      idCounter,
+    };
+    localStorage.setItem('eng_fluxo', JSON.stringify(data));
+    if (!silent) {
+      const msg = document.getElementById('saveMsg');
+      msg.innerHTML = '<span class="text-success" style="font-size:0.8rem;"><i class="bi bi-check-circle me-1"></i>Salvo localmente.</span>';
+      setTimeout(() => { msg.innerHTML = ''; }, 3000);
+    }
+  }
+
+  window.saveAll = saveAll;
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem('eng_fluxo');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.produto)  document.getElementById('hdrProduto').value = data.produto;
+      if (data.linha)    document.getElementById('hdrLinha').value   = data.linha;
+      if (data.demanda)  document.getElementById('hdrDemanda').value = data.demanda;
+      if (data.turno)    document.getElementById('hdrTurno').value   = data.turno;
+      if (data.dataReg)  document.getElementById('hdrData').value    = data.dataReg;
+      if (data.steps)    { steps = data.steps; idCounter = data.idCounter || steps.length + 1; }
+    } catch {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('hdrData').value = new Date().toISOString().slice(0, 10);
+    loadFromStorage();
+    if (!steps.length) {
+      const defaults = [
+        { nome: 'Impressão de pasta', responsavel: 'Op. Pasta', ct: 40, uptime: 95, setup: 5, estoque: 0 },
+        { nome: 'Colocação SMT',      responsavel: 'Op. SMT',   ct: 52, uptime: 90, setup: 10, estoque: 5 },
+        { nome: 'Forno Reflow',       responsavel: 'Op. Forno', ct: 65, uptime: 98, setup: 0,  estoque: 3 },
+        { nome: 'Inspeção AOI',       responsavel: 'Op. AOI',   ct: 35, uptime: 95, setup: 0,  estoque: 2 },
+        { nome: 'Teste Funcional',    responsavel: 'Op. Teste', ct: 45, uptime: 92, setup: 0,  estoque: 5 },
+      ];
+      defaults.forEach(d => addStep(d));
+    }
+    renderTable();
+    recalcKPIs();
+    renderDiagram();
+
+    document.getElementById('btnAddStep').addEventListener('click', () => {
+      addStep();
+      renderTable();
+      recalcKPIs();
+      renderDiagram();
+    });
+
+    ['hdrDemanda', 'hdrTurno'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        recalcKPIs();
+        autoSave();
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

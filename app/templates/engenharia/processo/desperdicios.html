@@ -1,6 +1,90 @@
 {% extends "layouts/app.html" %}
 {% block title %}Redução de Desperdícios — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+/* ── cards ──────────────────────────────────────────── */
+.waste-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.waste-card:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.08); }
+.waste-card-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.waste-letter {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 900; flex-shrink: 0;
+}
+.waste-card-body { padding: 16px; }
+.waste-name  { font-size: 0.9rem; font-weight: 700; }
+.waste-desc  { font-size: 0.75rem; color: var(--text-muted); }
+
+/* ── severity selector ──────────────────────────────── */
+.sev-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.sev-btn {
+  flex: 1; min-width: 52px;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  background: transparent; color: var(--text-muted);
+  font-size: 0.72rem; font-weight: 600; padding: 6px 4px;
+  cursor: pointer; text-align: center; transition: all 0.1s;
+}
+.sev-btn.sel-0 { border-color: #198754; background: rgba(25,135,84,0.12); color: #146c43; }
+.sev-btn.sel-1 { border-color: #198754; background: rgba(25,135,84,0.20); color: #146c43; }
+.sev-btn.sel-2 { border-color: #856404; background: rgba(255,193,7,0.20); color: #664d03; }
+.sev-btn.sel-3 { border-color: #dc3545; background: rgba(220,53,69,0.18); color: #b02a37; }
+.sev-btn.sel-4 { border-color: #6f42c1; background: rgba(111,66,193,0.18); color: #59359a; }
+
+/* ── symptoms ───────────────────────────────────────── */
+.symptoms-list { margin-top: 10px; }
+.symptoms-list label {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 0.78rem; color: var(--text); margin-bottom: 5px; cursor: pointer;
+}
+.symptoms-list input[type=checkbox] { margin-top: 2px; flex-shrink: 0; }
+
+/* ── action area ────────────────────────────────────── */
+.action-inp {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-size: 0.78rem; resize: vertical; min-height: 52px;
+  margin-top: 8px; color: var(--text);
+}
+.action-inp:focus {
+  outline: none; border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+}
+
+/* ── summary ────────────────────────────────────────── */
+.rpn-bar-wrap { height: 8px; border-radius: 4px;
+  background: rgba(15,23,42,0.08); overflow: hidden; margin-top: 4px; }
+.rpn-bar { height: 100%; border-radius: 4px; transition: width 0.4s; }
+
+.summary-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-letter {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 900;
+}
+.summary-name { font-size: 0.82rem; font-weight: 600; flex: 1; }
+.rpn-badge {
+  font-size: 0.78rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,6 +92,9 @@
     <h1 class="page-header-name">Redução de Desperdícios</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir avaliação">
+      <i class="bi bi-printer"></i>
+    </button>
     <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
       <i class="bi bi-arrow-left"></i>
     </a>
@@ -20,9 +107,302 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-trash3" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Identificação e eliminação dos 8 desperdícios (Lean / TIMWOODS).</p>
+
+  <!-- Cabeçalho da avaliação -->
+  <div class="card border-0 mb-3 no-print" style="background:rgba(13,110,253,0.05);border-radius:12px;padding:14px 18px;">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label fw-bold" style="font-size:0.8rem;">Linha / Processo</label>
+        <input id="hdrLinha" type="text" class="form-control form-control-sm" placeholder="Ex: Linha SMD 01">
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label fw-bold" style="font-size:0.8rem;">Responsável</label>
+        <input id="hdrResp" type="text" class="form-control form-control-sm" placeholder="Engenheiro responsável">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label fw-bold" style="font-size:0.8rem;">Data</label>
+        <input id="hdrData" type="date" class="form-control form-control-sm">
+      </div>
+      <div class="col-6 col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary btn-sm w-100" onclick="saveToStorage()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div id="saveMsg" class="mt-2"></div>
   </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Cards de desperdícios -->
+    <div class="col-12 col-lg-8">
+      <div id="wasteCards"></div>
+    </div>
+
+    <!-- Painel de resumo -->
+    <div class="col-12 col-lg-4">
+      <div class="card" style="border:1px solid var(--border);border-radius:12px;position:sticky;top:80px;">
+        <div class="card-header fw-bold" style="font-size:0.875rem;background:rgba(15,23,42,0.04);">
+          <i class="bi bi-bar-chart-line me-2"></i>Índice de Desperdícios
+        </div>
+        <div class="card-body" id="summaryBody">
+          <p class="text-muted" style="font-size:0.8rem;">Avalie cada desperdício para ver o resumo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const WASTES = [
+    {
+      key: 'T', letter: 'T', name: 'Transporte',
+      color: '#0d6efd', bg: 'rgba(13,110,253,0.12)',
+      desc: 'Movimentação desnecessária de materiais, componentes ou PCBAs entre processos.',
+      symptoms: [
+        'Deslocamentos frequentes entre estoques e linhas',
+        'Layout não orientado ao fluxo',
+        'Material retornando a etapas anteriores',
+        'Uso excessivo de transportadores manuais',
+      ],
+      actions: 'Ex: reorganizar layout por fluxo de valor, aproximar fornecedores de linha.',
+    },
+    {
+      key: 'I', letter: 'I', name: 'Inventário',
+      color: '#6f42c1', bg: 'rgba(111,66,193,0.12)',
+      desc: 'Excesso de estoque de matéria-prima, WIP (work-in-process) ou produto acabado.',
+      symptoms: [
+        'WIP acumulado entre estações',
+        'Estoque de componentes além do necessário',
+        'Shelf-life de componentes em risco',
+        'Dificuldade em rastrear lotes',
+      ],
+      actions: 'Ex: implementar kanban de componentes, reduzir lote mínimo de compra.',
+    },
+    {
+      key: 'M', letter: 'M', name: 'Movimentação',
+      color: '#198754', bg: 'rgba(25,135,84,0.12)',
+      desc: 'Movimentos desnecessários dos operadores durante as operações de montagem.',
+      symptoms: [
+        'Alcances além de 60cm frequentes',
+        'Giros e torções repetitivos',
+        'Ferramentas não posicionadas ergonomicamente',
+        'Múltiplas buscas por materiais durante o ciclo',
+      ],
+      actions: 'Ex: redesenho do posto de trabalho, aplicação de 5S, layout de bancada.',
+    },
+    {
+      key: 'W', letter: 'W', name: 'Espera',
+      color: '#856404', bg: 'rgba(255,193,7,0.14)',
+      desc: 'Tempo em que operadores ou máquinas aguardam para executar a próxima operação.',
+      symptoms: [
+        'Operadores parados esperando teste finalizar',
+        'Linha parada por falta de material',
+        'Gargalos gerando fila de WIP',
+        'Espera por aprovação ou decisão',
+      ],
+      actions: 'Ex: balancear linha, reduzir tempo de ciclo do gargalo, automatizar liberações.',
+    },
+    {
+      key: 'O', letter: 'O', name: 'Superprodução',
+      color: '#dc3545', bg: 'rgba(220,53,69,0.12)',
+      desc: 'Produzir mais do que a demanda ou antes do necessário.',
+      symptoms: [
+        'Produção empurrada sem pedido firme',
+        'Lotes grandes para amortizar setup',
+        'Geração de estoque especulativo',
+        'Utilização de capacidade não planejada',
+      ],
+      actions: 'Ex: migrar para produção puxada, reduzir tempo de setup (SMED).',
+    },
+    {
+      key: 'O2', letter: 'P', name: 'Superprocessamento',
+      color: '#0dcaf0', bg: 'rgba(13,202,240,0.12)',
+      desc: 'Realizar etapas de processamento além do que o cliente exige.',
+      symptoms: [
+        'Inspeções duplicadas sem critério claro',
+        'Acabamentos excessivos não especificados',
+        'Programas de teste mais longos que o necessário',
+        'Relatórios detalhados que ninguém usa',
+      ],
+      actions: 'Ex: revisar especificações com o cliente, simplificar roteiros de teste.',
+    },
+    {
+      key: 'D', letter: 'D', name: 'Defeitos',
+      color: '#fd7e14', bg: 'rgba(253,126,20,0.12)',
+      desc: 'Produtos não conformes que exigem retrabalho, reparo ou descarte.',
+      symptoms: [
+        'FPY (First Pass Yield) abaixo da meta',
+        'Alto índice de retrabalho no teste funcional',
+        'Componentes mal posicionados na SMD',
+        'Falhas de soldagem recorrentes',
+      ],
+      actions: 'Ex: análise de causa raiz, poka-yoke, treinamento, revisão do processo.',
+    },
+    {
+      key: 'S', letter: 'S', name: 'Habilidades Subutilizadas',
+      color: '#20c997', bg: 'rgba(32,201,151,0.12)',
+      desc: 'Não aproveitar o conhecimento, criatividade e experiência dos colaboradores.',
+      symptoms: [
+        'Operadores sem canal para sugestões',
+        'Alta rotatividade na área técnica',
+        'Setores desconectados de Engenharia',
+        'Kaizens sem participação da linha',
+      ],
+      actions: 'Ex: programa de ideias, grupos kaizen, reuniões de feedback.',
+    },
+  ];
+
+  const scores = {};
+  WASTES.forEach(w => { scores[w.key] = 0; });
+
+  function renderCards() {
+    const container = document.getElementById('wasteCards');
+    container.innerHTML = WASTES.map((w, wi) => `
+      <div class="waste-card mb-3">
+        <div class="waste-card-header">
+          <div class="waste-letter" style="background:${w.bg};color:${w.color};">${w.letter}</div>
+          <div>
+            <div class="waste-name">${w.name}</div>
+            <div class="waste-desc">${w.desc}</div>
+          </div>
+        </div>
+        <div class="waste-card-body">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">NÍVEL DE IMPACTO</div>
+          <div class="sev-row" data-key="${w.key}">
+            ${[0,1,2,3,4].map(v => {
+              const labels = ['Inexistente', 'Baixo', 'Médio', 'Alto', 'Crítico'];
+              return `<button class="sev-btn ${scores[w.key]===v?'sel-'+v:''}"
+                        data-val="${v}" data-key="${w.key}" onclick="setScore(this)">
+                        ${labels[v]}
+                      </button>`;
+            }).join('')}
+          </div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-top:12px;">
+            SINTOMAS OBSERVADOS
+          </div>
+          <div class="symptoms-list">
+            ${w.symptoms.map((s, si) => `
+              <label>
+                <input type="checkbox" data-waste="${w.key}" data-si="${si}">
+                ${s}
+              </label>`).join('')}
+          </div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);margin-top:10px;">
+            PLANO DE AÇÃO
+          </div>
+          <textarea class="action-inp" id="action_${w.key}" placeholder="${w.actions}"></textarea>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  window.setScore = function(btn) {
+    const key = btn.dataset.key;
+    const val = parseInt(btn.dataset.val);
+    scores[key] = val;
+
+    btn.closest('.sev-row').querySelectorAll('.sev-btn').forEach((b, i) => {
+      b.className = 'sev-btn ' + (i === val ? 'sel-' + val : '');
+    });
+
+    renderSummary();
+    saveToStorage(true);
+  };
+
+  function renderSummary() {
+    const body = document.getElementById('summaryBody');
+    const sorted = [...WASTES].sort((a, b) => scores[b.key] - scores[a.key]);
+    const maxScore = Math.max(...Object.values(scores), 1);
+    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+    const maxPossible = WASTES.length * 4;
+    const pct = Math.round(totalScore / maxPossible * 100);
+
+    const pctColor = pct >= 60 ? '#dc3545' : pct >= 30 ? '#856404' : '#198754';
+
+    body.innerHTML = `
+      <div class="text-center mb-3">
+        <div style="font-size:2rem;font-weight:900;color:${pctColor};">${pct}%</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">Índice de Desperdícios (${totalScore}/${maxPossible})</div>
+        <div style="height:8px;border-radius:4px;background:rgba(15,23,42,0.08);margin-top:6px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${pctColor};border-radius:4px;transition:width 0.4s;"></div>
+        </div>
+      </div>
+      ${sorted.map(w => {
+        const s = scores[w.key];
+        const barW = Math.round(s / 4 * 100);
+        const barColor = s >= 3 ? '#dc3545' : s >= 2 ? '#856404' : '#198754';
+        const badgeClass = s >= 3 ? 'bg-danger' : s >= 2 ? 'bg-warning text-dark' : 'bg-success';
+        const labels = ['—', 'Baixo', 'Médio', 'Alto', 'Crítico'];
+        return `
+          <div class="summary-row">
+            <div class="summary-letter" style="background:${w.bg};color:${w.color};">${w.letter}</div>
+            <div class="summary-name">${w.name}</div>
+            <span class="rpn-badge ${badgeClass}">${s > 0 ? labels[s] : '—'}</span>
+          </div>`;
+      }).join('')}`;
+  }
+
+  function saveToStorage(silent) {
+    const data = {
+      linha: document.getElementById('hdrLinha')?.value || '',
+      resp:  document.getElementById('hdrResp')?.value  || '',
+      data:  document.getElementById('hdrData')?.value  || '',
+      scores: { ...scores },
+      actions: {},
+    };
+    WASTES.forEach(w => {
+      const el = document.getElementById('action_' + w.key);
+      if (el) data.actions[w.key] = el.value;
+    });
+    localStorage.setItem('eng_desperdicios', JSON.stringify(data));
+    if (!silent) {
+      const msg = document.getElementById('saveMsg');
+      if (msg) {
+        msg.innerHTML = '<span class="text-success" style="font-size:0.8rem;"><i class="bi bi-check-circle me-1"></i>Avaliação salva localmente.</span>';
+        setTimeout(() => { msg.innerHTML = ''; }, 3000);
+      }
+    }
+  }
+
+  window.saveToStorage = saveToStorage;
+
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem('eng_desperdicios');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.linha) document.getElementById('hdrLinha').value = data.linha;
+      if (data.resp)  document.getElementById('hdrResp').value  = data.resp;
+      if (data.data)  document.getElementById('hdrData').value  = data.data;
+      if (data.scores) {
+        Object.keys(data.scores).forEach(k => { if (k in scores) scores[k] = data.scores[k]; });
+      }
+      if (data.actions) {
+        Object.keys(data.actions).forEach(k => {
+          const el = document.getElementById('action_' + k);
+          if (el) el.value = data.actions[k];
+        });
+      }
+      document.querySelectorAll('.sev-row').forEach(row => {
+        const key = row.dataset.key;
+        const val = scores[key];
+        row.querySelectorAll('.sev-btn').forEach((btn, i) => {
+          btn.className = 'sev-btn ' + (i === val ? 'sel-' + val : '');
+        });
+      });
+    } catch {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('hdrData').value = new Date().toISOString().slice(0, 10);
+    renderCards();
+    loadFromStorage();
+    renderSummary();
+  });
+})();
+</script>
 {% endblock %}
