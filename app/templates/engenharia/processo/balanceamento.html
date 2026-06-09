@@ -1,0 +1,28 @@
+{% extends "layouts/app.html" %}
+{% block title %}Balanceamento de Linha — Engenharia{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Engenharia · Processo</span>
+    <h1 class="page-header-name">Balanceamento de Linha</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center py-5">
+    <i class="bi bi-bar-chart-steps" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Distribuição de carga entre estações e otimização do takt time.</p>
+  </div>
+</div>
+{% endblock %}
