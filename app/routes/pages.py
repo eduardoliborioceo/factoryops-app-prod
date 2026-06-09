@@ -2803,6 +2803,8 @@ def funcionalidades_pci_hub_revisao_salvar():
         defeitos  = body.get("defeitos", [])
         rel_id    = body.get("id")
 
+        cabecalho["criado_por"] = current_user.username
+
         if rel_id:
             svc.atualizar_relatorio(int(rel_id), cabecalho, horas, defeitos)
             return jsonify({"ok": True, "id": int(rel_id)})

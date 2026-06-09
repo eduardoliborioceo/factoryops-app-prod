@@ -547,7 +547,13 @@
               <div class="dcod-dropdown" id="dcod-drop-{{ n + 1 }}"></div>
             </td>
             <td class="td-left"><input type="text" class="d-pos" data-linha="{{ n + 1 }}" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"></td>
-            <td><input type="text" class="d-lado" data-linha="{{ n + 1 }}" style="text-transform:uppercase;width:30px;" oninput="this.value=this.value.toUpperCase()"></td>
+            <td>
+              <select class="d-lado" data-linha="{{ n + 1 }}" style="border:none;outline:none;width:100%;font-size:0.65rem;background:transparent;font-family:inherit;text-align:center;">
+                <option value="">—</option>
+                <option value="BOT">BOT</option>
+                <option value="TOP">TOP</option>
+              </select>
+            </td>
             {% for s in slots %}
             <td><input type="number" class="d-qtd" data-linha="{{ n + 1 }}" data-slot="{{ s.slot_ordem }}" min="0"
                        oninput="onDefeitoQtdInput(this,{{ n + 1 }})"></td>
@@ -1057,6 +1063,7 @@ function coletarForm(status) {
   const horas = [];
   document.querySelectorAll('.slot-chk').forEach(chk => {
     const s = parseInt(chk.dataset.slot);
+    const row = chk.closest('tr');
     const qEl = sel => document.querySelector(`${sel}[data-slot="${s}"]`);
     const radioHH  = document.querySelector(`.f-placahh-sim[name="placa${s}"]`);
     const radioNao = document.querySelector(`.f-placahh-nao[name="placa${s}"]`);
@@ -1065,10 +1072,12 @@ function coletarForm(status) {
     const placa_hh = radioHH?.checked ? true : radioNao?.checked ? false : null;
     const fase = radioBot?.checked ? 'BOT' : radioTop?.checked ? 'TOP' : null;
     const aprovEl = qEl('.f-aprov');
+    const horaTexto = row?.querySelector('.rev-cell-hora')?.textContent.trim() || '';
+    const [hora_ini_v, hora_fim_v] = horaTexto.split('/');
     horas.push({
       slot_ordem:    s,
-      hora_ini:      qEl('.rev-cell-hora')?.textContent.split('/')[0] || '',
-      hora_fim:      qEl('.rev-cell-hora')?.textContent.split('/')[1] || '',
+      hora_ini:      hora_ini_v?.trim() || '',
+      hora_fim:      hora_fim_v?.trim() || '',
       selecionado:   chk.checked,
       aprovados:     parseInt(aprovEl?.value) || null,
       reprovados:    parseInt(qEl('.f-reprov')?.value) || null,
