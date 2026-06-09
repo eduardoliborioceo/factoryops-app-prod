@@ -59,7 +59,7 @@
   'producao_medicao_pasta','producao_checklist_linha','producao_limpeza_stencil','smd_monitor_tv'
 ] %}
 {% set _eng_menus = [
-  'smt_estudo_tempo','engenharia_folha_crono'
+  'eng_hub','smt_estudo_tempo','engenharia_folha_crono'
 ] %}
 {% set _pcp_menus = [
   'pcp_controle_ops','pcp_apontamento','pcp_planejamento','pcp_entregas','pcp_producao_coletada','pcp_producao_mes','pcp_lancamento_producao','pcp_roteiros'
@@ -295,13 +295,9 @@
         <div class="collapse {% if active_menu in _eng_menus %}show{% endif %}"
              id="nav-engenharia">
           <div class="sidebar-group-items">
-            <a href="{{ url_for('pages.smt_estudo_tempo') }}"
-               class="{% if active_menu == 'smt_estudo_tempo' %}active{% endif %}">
-              <i class="bi bi-clock"></i> Estudo de Tempo
-            </a>
-            <a href="{{ url_for('pages.engenharia_folha_crono') }}"
-               class="{% if active_menu == 'engenharia_folha_crono' %}active{% endif %}">
-              <i class="bi bi-journal-text"></i> Folha de Cronometragem
+            <a href="{{ url_for('pages.eng_hub') }}"
+               class="{% if active_menu == 'eng_hub' %}active{% endif %}">
+              <i class="bi bi-grid-3x3-gap"></i> Hub Engenharia
             </a>
           </div>
         </div>

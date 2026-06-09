@@ -1,0 +1,28 @@
+{% extends "layouts/app.html" %}
+{% block title %}Manutenção Preditiva — Engenharia{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Engenharia · Manutenção</span>
+    <h1 class="page-header-name">Manutenção Preditiva</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_hub') }}#suporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="text-center py-5">
+    <i class="bi bi-activity" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Análise de vibração, termografia, ultrassom e trending de parâmetros.</p>
+  </div>
+</div>
+{% endblock %}

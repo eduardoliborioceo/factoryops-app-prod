@@ -3095,6 +3095,325 @@ def rh_relatorios_transporte():
     return render_template("rh_ops/relatorios/transporte.html", active_menu="rh_relatorios_transporte")
 
 
+# ENGENHARIA HUB
+
+
+@bp.route("/funcionalidades/sistemas/engenharia-hub", methods=["GET"])
+@login_required
+def eng_hub():
+    return render_template("engenharia/eng_hub.html", active_menu="eng_hub")
+
+
+# Engenharia de Processo
+
+@bp.route("/engenharia/processo/fluxo", methods=["GET"])
+@login_required
+def eng_processo_fluxo():
+    return render_template("engenharia/processo/fluxo.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/processo/balanceamento", methods=["GET"])
+@login_required
+def eng_processo_balanceamento():
+    return render_template("engenharia/processo/balanceamento.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/processo/desperdicios", methods=["GET"])
+@login_required
+def eng_processo_desperdicios():
+    return render_template("engenharia/processo/desperdicios.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/processo/pdca", methods=["GET"])
+@login_required
+def eng_processo_pdca():
+    return render_template("engenharia/processo/pdca.html", active_menu="eng_hub")
+
+
+# Engenharia Industrial
+
+@bp.route("/engenharia/industrial/layout", methods=["GET"])
+@login_required
+def eng_ind_layout():
+    return render_template("engenharia/industrial/layout.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/industrial/capacidade", methods=["GET"])
+@login_required
+def eng_ind_capacidade():
+    return render_template("engenharia/industrial/capacidade.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/industrial/custos", methods=["GET"])
+@login_required
+def eng_ind_custos():
+    return render_template("engenharia/industrial/custos.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/industrial/produtividade", methods=["GET"])
+@login_required
+def eng_ind_produtividade():
+    return render_template("engenharia/industrial/produtividade.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/industrial/logistica", methods=["GET"])
+@login_required
+def eng_ind_logistica():
+    return render_template("engenharia/industrial/logistica.html", active_menu="eng_hub")
+
+
+# Engenharia de Manufatura
+
+@bp.route("/engenharia/manufatura/npi", methods=["GET"])
+@login_required
+def eng_man_npi():
+    return render_template("engenharia/manufatura/npi.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manufatura/ferramentas", methods=["GET"])
+@login_required
+def eng_man_ferramentas():
+    return render_template("engenharia/manufatura/ferramentas.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manufatura/documentacao", methods=["GET"])
+@login_required
+def eng_man_documentacao():
+    return render_template("engenharia/manufatura/documentacao.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manufatura/jigs", methods=["GET"])
+@login_required
+def eng_man_jigs():
+    return render_template("engenharia/manufatura/jigs.html", active_menu="eng_hub")
+
+
+# Melhoria Contínua
+
+@bp.route("/engenharia/melhoria/lean", methods=["GET"])
+@login_required
+def eng_mc_lean():
+    return render_template("engenharia/melhoria/lean.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/melhoria/kaizen", methods=["GET"])
+@login_required
+def eng_mc_kaizen():
+    return render_template("engenharia/melhoria/kaizen.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/melhoria/six-sigma", methods=["GET"])
+@login_required
+def eng_mc_six_sigma():
+    return render_template("engenharia/melhoria/six_sigma.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/melhoria/projetos", methods=["GET"])
+@login_required
+def eng_mc_projetos():
+    return render_template("engenharia/melhoria/projetos.html", active_menu="eng_hub")
+
+
+# Engenharia de Teste
+
+@bp.route("/engenharia/teste/bancadas", methods=["GET"])
+@login_required
+def eng_teste_bancadas():
+    return render_template("engenharia/teste/bancadas.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/teste/programas", methods=["GET"])
+@login_required
+def eng_teste_programas():
+    return render_template("engenharia/teste/programas.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/teste/analise-falhas", methods=["GET"])
+@login_required
+def eng_teste_analise_falhas():
+    return render_template("engenharia/teste/analise_falhas.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/teste/validacao", methods=["GET"])
+@login_required
+def eng_teste_validacao():
+    return render_template("engenharia/teste/validacao.html", active_menu="eng_hub")
+
+
+# Engenharia de Desenvolvimento de Testes
+
+@bp.route("/engenharia/dev-testes/hardware", methods=["GET"])
+@login_required
+def eng_dev_hardware():
+    return render_template("engenharia/dev_testes/hardware.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/dev-testes/software", methods=["GET"])
+@login_required
+def eng_dev_software():
+    return render_template("engenharia/dev_testes/software.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/dev-testes/jigs", methods=["GET"])
+@login_required
+def eng_dev_jigs():
+    return render_template("engenharia/dev_testes/jigs.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/dev-testes/automaticos", methods=["GET"])
+@login_required
+def eng_dev_automaticos():
+    return render_template("engenharia/dev_testes/automaticos.html", active_menu="eng_hub")
+
+
+# Engenharia de Confiabilidade
+
+@bp.route("/engenharia/confiabilidade/vida-util", methods=["GET"])
+@login_required
+def eng_conf_vida_util():
+    return render_template("engenharia/confiabilidade/vida_util.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/confiabilidade/ensaios", methods=["GET"])
+@login_required
+def eng_conf_ensaios():
+    return render_template("engenharia/confiabilidade/ensaios.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/confiabilidade/estatistica", methods=["GET"])
+@login_required
+def eng_conf_estatistica():
+    return render_template("engenharia/confiabilidade/estatistica.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/confiabilidade/mtbf", methods=["GET"])
+@login_required
+def eng_conf_mtbf():
+    return render_template("engenharia/confiabilidade/mtbf.html", active_menu="eng_hub")
+
+
+# Engenharia de Qualidade
+
+@bp.route("/engenharia/qualidade/auditorias", methods=["GET"])
+@login_required
+def eng_qual_auditorias():
+    return render_template("engenharia/qualidade/auditorias.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/qualidade/fmea", methods=["GET"])
+@login_required
+def eng_qual_fmea():
+    return render_template("engenharia/qualidade/fmea.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/qualidade/cep", methods=["GET"])
+@login_required
+def eng_qual_cep():
+    return render_template("engenharia/qualidade/cep.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/qualidade/nao-conformidades", methods=["GET"])
+@login_required
+def eng_qual_nao_conformidades():
+    return render_template("engenharia/qualidade/nao_conformidades.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/qualidade/indicadores", methods=["GET"])
+@login_required
+def eng_qual_indicadores():
+    return render_template("engenharia/qualidade/indicadores.html", active_menu="eng_hub")
+
+
+# Engenharia de Produto
+
+@bp.route("/engenharia/produto/desenvolvimento", methods=["GET"])
+@login_required
+def eng_produto_desenvolvimento():
+    return render_template("engenharia/produto/desenvolvimento.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/produto/modificacoes", methods=["GET"])
+@login_required
+def eng_produto_modificacoes():
+    return render_template("engenharia/produto/modificacoes.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/produto/especificacoes", methods=["GET"])
+@login_required
+def eng_produto_especificacoes():
+    return render_template("engenharia/produto/especificacoes.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/produto/homologacao", methods=["GET"])
+@login_required
+def eng_produto_homologacao():
+    return render_template("engenharia/produto/homologacao.html", active_menu="eng_hub")
+
+
+# Engenharia de Automação
+
+@bp.route("/engenharia/automacao/clps", methods=["GET"])
+@login_required
+def eng_aut_clps():
+    return render_template("engenharia/automacao/clps.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/automacao/robotica", methods=["GET"])
+@login_required
+def eng_aut_robotica():
+    return render_template("engenharia/automacao/robotica.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/automacao/sensores", methods=["GET"])
+@login_required
+def eng_aut_sensores():
+    return render_template("engenharia/automacao/sensores.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/automacao/ihm", methods=["GET"])
+@login_required
+def eng_aut_ihm():
+    return render_template("engenharia/automacao/ihm.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/automacao/redes", methods=["GET"])
+@login_required
+def eng_aut_redes():
+    return render_template("engenharia/automacao/redes.html", active_menu="eng_hub")
+
+
+# Engenharia de Manutenção
+
+@bp.route("/engenharia/manutencao/preventiva", methods=["GET"])
+@login_required
+def eng_mnt_preventiva():
+    return render_template("engenharia/manutencao/preventiva.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manutencao/preditiva", methods=["GET"])
+@login_required
+def eng_mnt_preditiva():
+    return render_template("engenharia/manutencao/preditiva.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manutencao/corretiva", methods=["GET"])
+@login_required
+def eng_mnt_corretiva():
+    return render_template("engenharia/manutencao/corretiva.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manutencao/plano", methods=["GET"])
+@login_required
+def eng_mnt_plano():
+    return render_template("engenharia/manutencao/plano.html", active_menu="eng_hub")
+
+
+@bp.route("/engenharia/manutencao/indicadores", methods=["GET"])
+@login_required
+def eng_mnt_indicadores():
+    return render_template("engenharia/manutencao/indicadores.html", active_menu="eng_hub")
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, make_response, render_template
