@@ -213,6 +213,14 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  /* Anular o @media (max-width: 767px) que ativa durante impressao
+     e colapsa a grade de campos e oculta a tabela de defeitos */
+  .rev-fields-grid { grid-template-columns: repeat(4, 1fr) !important; }
+  .rev-doc-header  { grid-template-columns: 140px 1fr 160px !important; }
+  .rev-code-cell   { display: block !important; }
+  .rev-def-table   { display: table !important; }
+  .form-revisao    { font-size: 0.78rem !important; }
 }
 
 /* ─── Turno multi-select ─────────────────── */
