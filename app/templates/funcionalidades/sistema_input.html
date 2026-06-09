@@ -128,6 +128,17 @@
   margin-bottom: 2px;
 }
 .just-sug-item .sug-texto { color: var(--text); font-weight: 500; }
+.just-sug-item .sug-acao { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-style: italic; }
+.just-acao-chip { margin-top: 4px; }
+.just-acao-btn {
+  font-size: 0.72rem; font-weight: 500;
+  padding: 3px 10px 3px 7px; border-radius: 20px;
+  border: 1px dashed var(--primary); color: var(--primary);
+  background: rgba(13,110,253,0.05); cursor: pointer;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px; transition: background 0.12s;
+}
+.just-acao-btn:hover { background: rgba(13,110,253,0.12); }
 
 /* ── MOBILE ─────────────────────────────────── */
 @media (max-width: 767px) {
@@ -721,6 +732,7 @@ function buildJustRow(j, i, ji) {
                onfocus="filtrarSugestoes(${i},${ji},this.value)"
                onblur="setTimeout(()=>ocultarSugestoes(${i},${ji}),200)">
         <div class="just-sugestoes" id="s${i}_just_${ji}_sug"></div>
+        <div class="just-acao-chip" id="s${i}_just_${ji}_acao"></div>
       </div>
     </div>
   </div>`;
@@ -1157,73 +1169,107 @@ function imprimirPagina() {
 /* ─────────────── BASE DE CONHECIMENTO SMT ─────────────── */
 const SMT_SUGESTOES = [
   { processo: 'DEK', palavras: ['stencil','entupid','limpeza stencil'],
-    sugestao: 'Stencil entupido na impressora de pasta — limpeza completa realizada e intervalo de limpeza reduzido.' },
+    problema: 'Stencil entupido na impressora de pasta.',
+    acao: 'Limpeza completa realizada e intervalo de limpeza reduzido.' },
   { processo: 'DEK', palavras: ['offset impressao','offset impressão','desalinhamento impressora','fiducial dek'],
-    sugestao: 'Offset de impressão na DEK — fiduciais reconfigurados e alinhamento corrigido.' },
+    problema: 'Offset de impressão na DEK — fiduciais fora de posição.',
+    acao: 'Fiduciais reconfigurados e alinhamento corrigido.' },
   { processo: 'DEK', palavras: ['pasta seca','pasta degradad','troca de pasta'],
-    sugestao: 'Pasta de solda seca ou degradada — troca realizada e parâmetros de impressão ajustados.' },
+    problema: 'Pasta de solda seca ou degradada.',
+    acao: 'Troca realizada e parâmetros de impressão ajustados.' },
   { processo: 'DEK', palavras: ['ponte impressao','ponte impressão','excesso de pasta impressora'],
-    sugestao: 'Excesso de pasta gerando ponte na impressão — pressão do rodo e velocidade de impressão ajustados.' },
+    problema: 'Excesso de pasta gerando ponte na impressão.',
+    acao: 'Pressão do rodo e velocidade de impressão ajustados.' },
   { processo: 'DEK', palavras: ['rodo','pressao rodo','pressão rodo','snap-off','snap off'],
-    sugestao: 'Parâmetro de impressão (pressão/velocidade do rodo) fora do especificado — ajuste realizado na DEK.' },
+    problema: 'Parâmetro de impressão (pressão/velocidade do rodo) fora do especificado.',
+    acao: 'Ajuste realizado na DEK.' },
   { processo: 'SPI', palavras: ['spi','volume baixo','insufficient paste'],
-    sugestao: 'SPI apontando volume baixo de pasta — stencil limpo e impressão revalidada.' },
+    problema: 'SPI apontando volume baixo de pasta.',
+    acao: 'Stencil limpo e impressão revalidada.' },
   { processo: 'SPI', palavras: ['spi volume alto','excess paste'],
-    sugestao: 'SPI apontando volume alto de pasta — parâmetros de impressão ajustados.' },
+    problema: 'SPI apontando volume alto de pasta.',
+    acao: 'Parâmetros de impressão ajustados.' },
   { processo: 'SPI', palavras: ['spi offset','offset spi'],
-    sugestao: 'Offset X/Y detectado no SPI — alinhamento corrigido na impressora.' },
+    problema: 'Offset X/Y detectado no SPI.',
+    acao: 'Alinhamento corrigido na impressora.' },
   { processo: 'SPI', palavras: ['calibracao spi','calibração spi','medicao spi','medição spi'],
-    sugestao: 'Falha de medição no SPI — recalibração realizada e iluminação ajustada.' },
+    problema: 'Falha de medição no SPI.',
+    acao: 'Recalibração realizada e iluminação ajustada.' },
   { processo: 'Pick & Place', palavras: ['fiducial','mark recognition','reconhecimento de marca'],
-    sugestao: 'Mark recognition error — fiducial não localizado. PCB limpa, iluminação ajustada e fiduciais reconfigurados.' },
+    problema: 'Mark recognition error — fiducial não localizado.',
+    acao: 'PCB limpa, iluminação ajustada e fiduciais reconfigurados.' },
   { processo: 'Pick & Place', palavras: ['nozzle','bico','bocal','nozzle lost','bico perdido'],
-    sugestao: 'Nozzle perdido ou entupido — limpeza ultrassônica realizada e head recalibrado.' },
+    problema: 'Nozzle perdido ou entupido.',
+    acao: 'Limpeza ultrassônica realizada e head recalibrado.' },
   { processo: 'Pick & Place', palavras: ['vacuum','vacuo','vácuo','vacuum error','vacuum abnormal'],
-    sugestao: 'Vacuum error (vácuo anormal) — filtros limpos, mangueiras e ejetor verificados.' },
+    problema: 'Vacuum error (vácuo anormal).',
+    acao: 'Filtros limpos, mangueiras e ejetor verificados.' },
   { processo: 'Pick & Place', palavras: ['feeder pitch','pitch error','tape','cover tape'],
-    sugestao: 'Feeder pitch error — tape não avançava corretamente. Feeder calibrado e substituído.' },
+    problema: 'Feeder pitch error — tape não avançava corretamente.',
+    acao: 'Feeder calibrado e substituído.' },
   { processo: 'Pick & Place', palavras: ['feeder error','feeder defeituoso','feeder sensor'],
-    sugestao: 'Feeder error — sensor defeituoso identificado. Feeder limpo e substituído por reserva.' },
+    problema: 'Feeder error — sensor defeituoso identificado.',
+    acao: 'Feeder limpo e substituído por reserva.' },
   { processo: 'Pick & Place', palavras: ['part recognition','biblioteca','componente nao reconhecido','componente não reconhecido'],
-    sugestao: 'Part recognition error — biblioteca do componente inadequada. Teach refeito e validado em produção.' },
+    problema: 'Part recognition error — biblioteca do componente inadequada.',
+    acao: 'Teach refeito e validado em produção.' },
   { processo: 'Pick & Place', palavras: ['z-axis','z axis','over travel','eixo z'],
-    sugestao: 'Z-axis error / over travel — sensor fora de posição. Homing e calibração do eixo realizados.' },
+    problema: 'Z-axis error / over travel — sensor fora de posição.',
+    acao: 'Homing e calibração do eixo realizados.' },
   { processo: 'Pick & Place', palavras: ['missing component','componente faltando','pick fail','falha de pick'],
-    sugestao: 'Missing component — falha de pick detectada. Feeder verificado e abastecido. Parâmetros de vácuo ajustados.' },
+    problema: 'Missing component — falha de pick detectada.',
+    acao: 'Feeder verificado e abastecido. Parâmetros de vácuo ajustados.' },
   { processo: 'Pick & Place', palavras: ['component shift','deslocamento','placement force'],
-    sugestao: 'Component shift — deslocamento de componente após placement. Placement force e viscosidade da pasta ajustados.' },
+    problema: 'Component shift — deslocamento de componente após placement.',
+    acao: 'Placement force e viscosidade da pasta ajustados.' },
   { processo: 'Pick & Place', palavras: ['nxt','aimex','xp','yamaha','cm402','cm602','pick place'],
-    sugestao: 'Parada na pick and place — diagnóstico realizado e ajustes de parâmetros executados. Máquina liberada.' },
+    problema: 'Parada na pick and place.',
+    acao: 'Diagnóstico realizado e ajustes de parâmetros executados. Máquina liberada.' },
   { processo: 'Reflow', palavras: ['tombstone','lapide','lápide','tombstoning'],
-    sugestao: 'Tombstone no reflow — aquecimento desigual detectado. Perfil ramp-up ajustado e stencil revisado.' },
+    problema: 'Tombstone no reflow — aquecimento desigual detectado.',
+    acao: 'Perfil ramp-up ajustado e stencil revisado.' },
   { processo: 'Reflow', palavras: ['solda fria','cold solder','cold joint','junta fria'],
-    sugestao: 'Solda fria detectada no reflow — temperatura insuficiente na zona de pico. Perfil térmico ajustado.' },
+    problema: 'Solda fria detectada no reflow — temperatura insuficiente na zona de pico.',
+    acao: 'Perfil térmico ajustado.' },
   { processo: 'Reflow', palavras: ['head in pillow','hip','bga','warpage','empenamento'],
-    sugestao: 'Head-in-pillow (HIP) em BGA — warpage e oxidação identificados. TAL aumentado e atmosfera ajustada.' },
+    problema: 'Head-in-pillow (HIP) em BGA — warpage e oxidação identificados.',
+    acao: 'TAL aumentado e atmosfera ajustada.' },
   { processo: 'Reflow', palavras: ['void','bolha','vazio'],
-    sugestao: 'Voids detectados — umidade ou perfil inadequado. Baking realizado e zona de soak ajustada.' },
+    problema: 'Voids detectados — umidade ou perfil inadequado.',
+    acao: 'Baking realizado e zona de soak ajustada.' },
   { processo: 'Reflow', palavras: ['balling','esfera de solda','solder ball'],
-    sugestao: 'Solder balling — pasta degradada ou ramp-up agressivo. Troca de pasta e ajuste de perfil realizados.' },
+    problema: 'Solder balling — pasta degradada ou ramp-up agressivo.',
+    acao: 'Troca de pasta e ajuste de perfil realizados.' },
   { processo: 'Reflow', palavras: ['ponte reflow','bridging','bridge'],
-    sugestao: 'Ponte de solda no reflow — excesso de pasta identificado. Stencil revisado e perfil ajustado.' },
+    problema: 'Ponte de solda no reflow — excesso de pasta identificado.',
+    acao: 'Stencil revisado e perfil ajustado.' },
   { processo: 'Reflow', palavras: ['perfil termico','perfil térmico','temperatura forno','forno','reflow'],
-    sugestao: 'Perfil térmico do forno fora do especificado — zonas de aquecimento ajustadas e perfil revalidado.' },
+    problema: 'Perfil térmico do forno fora do especificado.',
+    acao: 'Zonas de aquecimento ajustadas e perfil revalidado.' },
   { processo: 'AOI', palavras: ['false call','falso positivo','falsa deteccao','falsa detecção','falso alarme'],
-    sugestao: 'False call no AOI — programa ajustado, limiares corrigidos e iluminação reconfigurada.' },
+    problema: 'False call no AOI.',
+    acao: 'Programa ajustado, limiares corrigidos e iluminação reconfigurada.' },
   { processo: 'AOI', palavras: ['polaridade','invertido','aoi polaridade'],
-    sugestao: 'Polaridade invertida detectada no AOI — feeder verificado e setup corrigido com barcode validation.' },
+    problema: 'Polaridade invertida detectada no AOI.',
+    acao: 'Feeder verificado e setup corrigido com barcode validation.' },
   { processo: 'AOI', palavras: ['lifted lead','coplanaridade','lead levantado'],
-    sugestao: 'Lifted lead detectado no AOI — coplanaridade ruim. Reflow ajustado e fornecedor notificado.' },
+    problema: 'Lifted lead detectado no AOI — coplanaridade ruim.',
+    acao: 'Reflow ajustado e fornecedor notificado.' },
   { processo: 'AOI', palavras: ['wrong component','componente errado','componente trocado'],
-    sugestao: 'Wrong component detectado — feeder carregado incorretamente. Setup revalidado com verificação de barcode.' },
+    problema: 'Wrong component detectado — feeder carregado incorretamente.',
+    acao: 'Setup revalidado com verificação de barcode.' },
   { processo: 'AOI', palavras: ['calibracao aoi','calibração aoi','aoi'],
-    sugestao: 'Falha de calibração no AOI — recalibração realizada e programa de inspeção reajustado.' },
+    problema: 'Falha de calibração no AOI.',
+    acao: 'Recalibração realizada e programa de inspeção reajustado.' },
   { processo: 'Preventiva', palavras: ['preventiva','pm ','manutencao preventiva','manutenção preventiva','plano de manutencao'],
-    sugestao: 'Manutenção preventiva programada (PM) executada conforme plano. Máquina liberada e testada em produção.' },
+    problema: 'Manutenção preventiva programada (PM) executada conforme plano.',
+    acao: 'Máquina liberada e testada em produção.' },
   { processo: 'Corretiva', palavras: ['corretiva','manutencao corretiva','manutenção corretiva','defeito mecanico','defeito mecânico'],
-    sugestao: 'Manutenção corretiva — defeito mecânico identificado e corrigido. Máquina testada e liberada para produção.' },
+    problema: 'Manutenção corretiva — defeito mecânico identificado e corrigido.',
+    acao: 'Máquina testada e liberada para produção.' },
   { processo: 'Suporte', palavras: ['suporte tecnico','suporte técnico','assistencia tecnica','assistência técnica'],
-    sugestao: 'Aguardando suporte técnico — técnico acionado e atendimento em andamento. Previsão de liberação em definição.' },
+    problema: 'Aguardando suporte técnico — técnico acionado e atendimento em andamento.',
+    acao: 'Previsão de liberação em definição.' },
 ];
 
 function normText(s) {
@@ -1248,7 +1294,8 @@ function filtrarSugestoes(i, ji, query) {
   } else {
     resultados = SMT_SUGESTOES.filter(s =>
       s.palavras.some(p => normText(p).includes(q) || q.includes(normText(p))) ||
-      normText(s.sugestao).includes(q) ||
+      normText(s.problema).includes(q) ||
+      normText(s.acao || '').includes(q) ||
       normText(s.processo).includes(q)
     ).slice(0, 8);
   }
@@ -1258,9 +1305,11 @@ function filtrarSugestoes(i, ji, query) {
   if (hintEl) hintEl.textContent = '— sugestões SMT disponíveis';
 
   sugEl.innerHTML = resultados.map(s =>
-    `<div class="just-sug-item" onmousedown="selecionarSugestao(event,${i},${ji},this.dataset.texto)" data-texto="${esc(s.sugestao)}">
+    `<div class="just-sug-item" onmousedown="selecionarSugestao(event,${i},${ji},this)"
+          data-problema="${esc(s.problema)}" data-acao="${esc(s.acao||'')}">
       <div class="sug-processo">${s.processo}</div>
-      <div class="sug-texto">${s.sugestao}</div>
+      <div class="sug-texto">${s.problema}</div>
+      ${s.acao ? `<div class="sug-acao">→ ${s.acao}</div>` : ''}
     </div>`
   ).join('');
   sugEl.style.display = 'block';
@@ -1273,14 +1322,45 @@ function ocultarSugestoes(i, ji) {
   if (hintEl) hintEl.textContent = '';
 }
 
-function selecionarSugestao(e, i, ji, texto) {
+const _acaoPendente = {};
+
+function _decHtml(s) {
+  return (s || '').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+function selecionarSugestao(e, i, ji, el) {
   e.preventDefault();
+  const problema = _decHtml(el.dataset.problema);
+  const acao = _decHtml(el.dataset.acao);
   const txtEl = document.getElementById(`s${i}_just_${ji}_txt`);
   if (txtEl) {
-    txtEl.value = texto.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    txtEl.value = problema;
     txtEl.focus();
   }
   ocultarSugestoes(i, ji);
+  const chipEl = document.getElementById(`s${i}_just_${ji}_acao`);
+  if (acao && chipEl) {
+    _acaoPendente[`${i}_${ji}`] = acao;
+    chipEl.innerHTML = `<button type="button" class="just-acao-btn" onclick="anexarAcao(${i},${ji})" title="${esc(acao)}"><i class="bi bi-plus-lg" style="font-size:0.7rem;"></i> ${esc(acao)}</button>`;
+  } else if (chipEl) {
+    chipEl.innerHTML = '';
+    delete _acaoPendente[`${i}_${ji}`];
+  }
+}
+
+function anexarAcao(i, ji) {
+  const acao = _acaoPendente[`${i}_${ji}`];
+  if (!acao) return;
+  const txtEl = document.getElementById(`s${i}_just_${ji}_txt`);
+  if (txtEl) {
+    const atual = txtEl.value.trimEnd();
+    const sep = atual && !/[.!?]$/.test(atual) ? '. ' : (atual ? ' ' : '');
+    txtEl.value = atual + sep + acao;
+    txtEl.focus();
+  }
+  delete _acaoPendente[`${i}_${ji}`];
+  const chipEl = document.getElementById(`s${i}_just_${ji}_acao`);
+  if (chipEl) chipEl.innerHTML = '';
 }
 
 function formatJustificativa(txt) {
