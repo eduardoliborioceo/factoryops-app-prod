@@ -640,6 +640,24 @@ body.fullscreen-mode .content {
 }
 
 /* =========================
+   PAGE ACTION BAR — content-level actions
+========================= */
+.page-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.page-action-bar .btn-header-icon {
+  background: var(--card);
+}
+
+@media print {
+  .page-action-bar { display: none !important; }
+}
+
+/* =========================
    BOOTSTRAP CARD — REFINAMENTO GLOBAL
 ========================= */
 .card {

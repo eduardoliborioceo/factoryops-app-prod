@@ -67,6 +67,29 @@ function setupMobileZoomFix() {
   vv.addEventListener("scroll", sync);
 }
 
+function setupPageActions() {
+  const actionsEl = document.querySelector(".page-header-actions");
+  if (!actionsEl) return;
+
+  const toMove = Array.from(actionsEl.querySelectorAll(".btn-header-icon"))
+    .filter(btn => !btn.querySelector(".bi-arrows-fullscreen"));
+
+  if (!toMove.length) return;
+
+  const container = document.querySelector(".main .container-fluid");
+  if (!container) return;
+
+  const bar = document.createElement("div");
+  bar.className = "page-action-bar";
+
+  toMove.forEach(btn => {
+    actionsEl.removeChild(btn);
+    bar.appendChild(btn);
+  });
+
+  container.insertBefore(bar, container.firstChild);
+}
+
 function setupBackButtons() {
   document.querySelectorAll(".btn-header-icon").forEach(el => {
     if (el.querySelector(".bi-arrow-left")) {
@@ -83,5 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.add("fullscreen-mode");
   }
   setupMobileZoomFix();
+  setupPageActions();
   setupBackButtons();
 });
