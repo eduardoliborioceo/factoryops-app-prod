@@ -1,6 +1,61 @@
 {% extends "layouts/app.html" %}
 {% block title %}Candidatos — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.rec-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.rec-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:150px; }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+
+/* Pipeline Kanban */
+.pipeline-wrap { display:flex;gap:12px;padding:16px 18px;overflow-x:auto; }
+.pipeline-col { min-width:200px;flex:1;min-height:300px; }
+.pipeline-col-hdr { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  padding:8px 12px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;
+  display:flex;align-items:center;justify-content:space-between; }
+.pipeline-col-body { border:1px solid var(--border);border-radius:0 0 10px 10px;
+  padding:8px;min-height:200px;background:rgba(15,23,42,0.02); }
+.cand-card { background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:8px;transition:box-shadow 0.12s;cursor:pointer; }
+.cand-card:hover { box-shadow:0 3px 12px rgba(15,23,42,0.09);border-color:rgba(13,110,253,0.3); }
+.cand-name  { font-size:0.875rem;font-weight:700;margin-bottom:3px; }
+.cand-vaga  { font-size:0.72rem;color:var(--text-muted);margin-bottom:6px; }
+.cand-meta  { display:flex;gap:6px;flex-wrap:wrap;font-size:0.68rem; }
+.cand-tag   { padding:2px 7px;border-radius:5px;font-weight:700; }
+.tag-filial { background:rgba(13,110,253,0.10);color:#084298; }
+.tag-data   { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+.tag-score  { background:rgba(25,135,84,0.10);color:#0a3622; }
+
+.col-tri   { background:rgba(108,117,125,0.08);color:var(--text-muted); }
+.col-ent   { background:rgba(13,110,253,0.08);color:#0d6efd; }
+.col-tec   { background:rgba(255,193,7,0.10);color:#856404; }
+.col-prop  { background:rgba(111,66,193,0.08);color:#6f42c1; }
+.col-apr   { background:rgba(25,135,84,0.10);color:#198754; }
+.col-repr  { background:rgba(220,53,69,0.08);color:#dc3545; }
+
+.empty-col { text-align:center;padding:24px 8px;color:var(--text-muted);font-size:0.75rem; }
+.add-btn { width:100%;text-align:center;padding:8px;border:1px dashed var(--border);border-radius:8px;
+  font-size:0.75rem;color:var(--text-muted);cursor:pointer;background:none;transition:background 0.12s,color 0.12s; }
+.add-btn:hover { background:rgba(13,110,253,0.06);color:#0d6efd;border-color:rgba(13,110,253,0.3); }
+
+@media (max-width:767px) {
+  .rec-hdr { flex-direction:column;align-items:flex-start; }
+  .pipeline-wrap { flex-direction:column; }
+  .pipeline-col { min-width:unset;width:100%; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +75,200 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-person-lines-fill" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Pipeline de candidatos por vaga e etapa do processo seletivo.</p>
+
+  <div class="rec-card">
+    <div class="rec-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-person-lines-fill text-success"></i>
+        <span>Pipeline de Candidatos</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success btn-sm" onclick="openAdd()"><i class="bi bi-person-plus me-1"></i>Candidato</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <div class="filters-bar">
+      <input type="text" id="fBusca" placeholder="Buscar candidato…" oninput="renderPipeline()">
+      <select id="fVaga" onchange="renderPipeline()">
+        <option value="">Todas as vagas</option>
+      </select>
+    </div>
+
+    <div class="pipeline-wrap" id="pipelineWrap"></div>
+  </div>
+
+</div>
+
+<!-- Modal Novo Candidato -->
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1050;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:min(440px,95vw);">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;"><i class="bi bi-person-plus me-2"></i>Novo Candidato</h2>
+    <div class="row g-3">
+      <div class="col-12">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Nome Completo</label>
+        <input id="mNome" type="text" placeholder="Nome do candidato"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Vaga</label>
+        <select id="mVaga" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+          <option>Operadora SMT</option><option>Técnico de Manutenção</option>
+          <option>Analista de Qualidade</option><option>Auxiliar de Produção PTH</option>
+          <option>Assistente de RH</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Filial</label>
+        <select id="mFilial" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+          <option>Filial SP</option><option>Filial MG</option><option>Filial RJ</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Data de Candidatura</label>
+        <input id="mData" type="date" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Score (0–100)</label>
+        <input id="mScore" type="number" min="0" max="100" placeholder="75"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAdd()">Adicionar</button>
+    </div>
   </div>
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_candidatos";
+  const ETAPAS = [
+    {key:"triagem",  label:"Triagem",       cls:"col-tri"},
+    {key:"entrevista",label:"Entrevista RH", cls:"col-ent"},
+    {key:"tecnico",  label:"Técnico",        cls:"col-tec"},
+    {key:"proposta", label:"Proposta",       cls:"col-prop"},
+    {key:"aprovado", label:"Aprovado",       cls:"col-apr"},
+    {key:"reprovado",label:"Reprovado",      cls:"col-repr"}
+  ];
+  let rows = []; let nextId = 1;
+
+  function updateKpis() {
+    const total = rows.length;
+    const emAndamento = rows.filter(r=>!["aprovado","reprovado"].includes(r.etapa)).length;
+    const aprovados = rows.filter(r=>r.etapa==="aprovado").length;
+    const vagas = new Set(rows.map(r=>r.vaga)).size;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${emAndamento}</div><div class="kpi-chip-lbl">Em Andamento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${aprovados}</div><div class="kpi-chip-lbl">Aprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${vagas}</div><div class="kpi-chip-lbl">Vagas</div></div>
+    `;
+  }
+
+  function populateVagaFilter() {
+    const el = document.getElementById("fVaga"); const cur = el.value;
+    el.innerHTML = '<option value="">Todas as vagas</option>';
+    [...new Set(rows.map(r=>r.vaga).filter(Boolean))].sort().forEach(v=>{
+      const o = document.createElement("option"); o.value=o.textContent=v;
+      if(v===cur) o.selected=true; el.appendChild(o);
+    });
+  }
+
+  function renderPipeline() {
+    const busca = document.getElementById("fBusca").value.toLowerCase();
+    const fv = document.getElementById("fVaga").value;
+    const filtered = rows.filter(r=>
+      (!busca||r.nome.toLowerCase().includes(busca))&&(!fv||r.vaga===fv)
+    );
+    const wrap = document.getElementById("pipelineWrap");
+    wrap.innerHTML = "";
+    ETAPAS.forEach(et => {
+      const cands = filtered.filter(r=>r.etapa===et.key);
+      const col = document.createElement("div");
+      col.className = "pipeline-col";
+      let cardsHTML = cands.length === 0
+        ? `<div class="empty-col"><i class="bi bi-inbox" style="display:block;font-size:1.5rem;opacity:0.2;"></i>Sem candidatos</div>`
+        : cands.map(r=>`
+          <div class="cand-card" onclick="advanceEtapa(${r.id})">
+            <div class="cand-name">${r.nome}</div>
+            <div class="cand-vaga"><i class="bi bi-briefcase me-1"></i>${r.vaga}</div>
+            <div class="cand-meta">
+              <span class="cand-tag tag-filial">${r.filial}</span>
+              <span class="cand-tag tag-data">${r.data}</span>
+              ${r.score?`<span class="cand-tag tag-score">${r.score}pts</span>`:""}
+            </div>
+          </div>`).join("");
+      col.innerHTML = `
+        <div class="pipeline-col-hdr ${et.cls}">
+          <span>${et.label}</span>
+          <span style="background:rgba(255,255,255,0.3);border-radius:10px;padding:1px 8px;font-size:0.7rem;">${cands.length}</span>
+        </div>
+        <div class="pipeline-col-body">
+          ${cardsHTML}
+          <button class="add-btn" onclick="openAddForEtapa('${et.key}')"><i class="bi bi-plus"></i></button>
+        </div>`;
+      wrap.appendChild(col);
+    });
+    updateKpis();
+  }
+
+  window.advanceEtapa = function(id) {
+    const r = rows.find(r=>r.id===id);
+    if (!r) return;
+    const idx = ETAPAS.findIndex(e=>e.key===r.etapa);
+    if (idx < ETAPAS.length-1) {
+      r.etapa = ETAPAS[idx+1].key;
+      saveData(); renderPipeline();
+    }
+  };
+
+  let _targetEtapa = "triagem";
+  window.openAdd = function() { _targetEtapa = "triagem"; showModal(); };
+  window.openAddForEtapa = function(et) { _targetEtapa = et; showModal(); };
+  function showModal() {
+    const mData = document.getElementById("mData");
+    if (!mData.value) mData.value = new Date().toISOString().split("T")[0];
+    document.getElementById("modalOverlay").style.display = "flex";
+  }
+  window.closeModal = function() { document.getElementById("modalOverlay").style.display = "none"; };
+  window.confirmAdd = function() {
+    const nome = document.getElementById("mNome").value.trim();
+    if (!nome) { alert("Informe o nome do candidato."); return; }
+    const vaga  = document.getElementById("mVaga").value;
+    const filial= document.getElementById("mFilial").value;
+    const rawData = document.getElementById("mData").value;
+    const data  = rawData ? rawData.split("-").reverse().join("/") : new Date().toLocaleDateString("pt-BR");
+    const score = document.getElementById("mScore").value;
+    rows.push({id:nextId++, nome, vaga, filial, data, score, etapa:_targetEtapa});
+    populateVagaFilter(); saveData(); renderPipeline();
+    document.getElementById("mNome").value = "";
+    document.getElementById("mScore").value = "";
+    closeModal();
+  };
+
+  function saveData() { localStorage.setItem(SK, JSON.stringify({rows,nextId})); }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; populateVagaFilter(); renderPipeline(); return; }
+    } catch(e){}
+    const today = new Date().toLocaleDateString("pt-BR");
+    rows.push({id:nextId++,nome:"Lucas Ferreira",vaga:"Operadora SMT",filial:"Filial SP",data:today,score:"82",etapa:"triagem"});
+    rows.push({id:nextId++,nome:"Marina Costa",vaga:"Operadora SMT",filial:"Filial SP",data:today,score:"75",etapa:"entrevista"});
+    rows.push({id:nextId++,nome:"Rafael Alves",vaga:"Técnico de Manutenção",filial:"Filial SP",data:today,score:"88",etapa:"tecnico"});
+    rows.push({id:nextId++,nome:"Bianca Souza",vaga:"Analista de Qualidade",filial:"Filial MG",data:today,score:"91",etapa:"proposta"});
+    rows.push({id:nextId++,nome:"Gabriel Nunes",vaga:"Auxiliar de Produção PTH",filial:"Filial SP",data:today,score:"70",etapa:"triagem"});
+    rows.push({id:nextId++,nome:"Camila Torres",vaga:"Assistente de RH",filial:"Filial SP",data:today,score:"85",etapa:"aprovado"});
+    rows.push({id:nextId++,nome:"André Mendes",vaga:"Operadora SMT",filial:"Filial SP",data:today,score:"55",etapa:"reprovado"});
+    populateVagaFilter(); saveData(); renderPipeline();
+  });
+})();
+</script>
 {% endblock %}

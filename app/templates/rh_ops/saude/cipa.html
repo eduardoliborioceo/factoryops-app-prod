@@ -1,6 +1,49 @@
 {% extends "layouts/app.html" %}
 {% block title %}CIPA — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.cipa-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.cipa-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.cipa-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.cipa-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.cipa-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.cipa-table td input,.cipa-table td select,.cipa-table td textarea {
+  border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.cipa-table td input:focus,.cipa-table td select:focus,.cipa-table td textarea:focus { outline:none;border-color:#0d6efd; }
+.cipa-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.hub-nav { display:flex;gap:4px;background:rgba(15,23,42,0.05);border-radius:10px;padding:4px;margin:12px 18px 0; }
+.hub-nav-btn { padding:7px 20px;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;
+  background:transparent;color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s;white-space:nowrap; }
+.hub-nav-btn.active { background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,0.10); }
+.cargo-presidente { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.cargo-vice      { background:rgba(255,193,7,0.13);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.cargo-secretario{ background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.cargo-membro    { background:rgba(15,23,42,0.07);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tipo-eleito     { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tipo-designado  { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.st-ativo  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.st-inativo{ background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.ata-card { border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:rgba(15,23,42,0.02); }
+.ata-hdr  { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px; }
+.ata-num  { font-size:0.75rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px; }
+.ata-data { font-size:0.875rem;font-weight:700; }
+.ata-body { font-size:0.83rem;color:var(--text); }
+@media (max-width:767px) {
+  .cipa-hdr { flex-direction:column;align-items:flex-start; }
+  .cipa-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .cipa-table th:nth-child(n+5),.cipa-table td:nth-child(n+5) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +63,225 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-people-fill" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Gestão dos membros e atas da Comissão Interna de Prevenção de Acidentes.</p>
+
+  <div class="cipa-card">
+    <div class="cipa-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-people-fill text-success"></i>
+        <span>Comissão Interna de Prevenção de Acidentes</span>
+      </div>
+      <div class="d-flex gap-2" id="headerActions">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" id="btnAdd" onclick="addItem()"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="hub-nav">
+      <button class="hub-nav-btn active" id="navMembros" onclick="setView('membros')">
+        <i class="bi bi-person-badge me-1"></i>Membros
+      </button>
+      <button class="hub-nav-btn" id="navAtas" onclick="setView('atas')">
+        <i class="bi bi-journal-text me-1"></i>Atas
+      </button>
+    </div>
+
+    <!-- Membros -->
+    <div id="viewMembros" style="padding:16px 0;">
+      <div class="table-responsive">
+        <table class="cipa-table">
+          <thead>
+            <tr>
+              <th style="min-width:160px;">Colaborador</th>
+              <th>Cargo na CIPA</th>
+              <th>Tipo</th>
+              <th>Início do Mandato</th>
+              <th>Fim do Mandato</th>
+              <th>Filial</th>
+              <th>Status</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tMembros"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Atas -->
+    <div id="viewAtas" class="d-none" style="padding:16px;">
+      <div id="atasList"></div>
+    </div>
+
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_cipa";
+  const CARGOS_CIPA = ["Presidente","Vice-Presidente","Secretário","Membro Titular","Membro Suplente"];
+  const TIPOS_CIPA  = ["Eleito","Designado"];
+  const STATUS_CIPA = ["Ativo","Inativo"];
+  const CARGO_CLS   = {"Presidente":"cargo-presidente","Vice-Presidente":"cargo-vice","Secretário":"cargo-secretario","Membro Titular":"cargo-membro","Membro Suplente":"cargo-membro"};
+  let membros = []; let atas = [];
+  let nextMid = 1; let nextAid = 1;
+  let currentView = "membros";
+
+  function updateKpis() {
+    const totalM = membros.length;
+    const ativos = membros.filter(m=>m.status==="Ativo").length;
+    const eleitos = membros.filter(m=>m.tipo==="Eleito").length;
+    const designados = membros.filter(m=>m.tipo==="Designado").length;
+    const totalAtas = atas.length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalM}</div><div class="kpi-chip-lbl">Membros</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ativos}</div><div class="kpi-chip-lbl">Ativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${eleitos}</div><div class="kpi-chip-lbl">Eleitos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${designados}</div><div class="kpi-chip-lbl">Designados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalAtas}</div><div class="kpi-chip-lbl">Atas</div></div>
+    `;
+  }
+
+  window.setView = function(v) {
+    currentView = v;
+    document.getElementById("viewMembros").classList.toggle("d-none", v!=="membros");
+    document.getElementById("viewAtas").classList.toggle("d-none", v!=="atas");
+    document.getElementById("navMembros").classList.toggle("active", v==="membros");
+    document.getElementById("navAtas").classList.toggle("active", v==="atas");
+    document.getElementById("btnAdd").textContent = v==="membros" ? "+ Membro" : "+ Ata";
+    document.getElementById("btnAdd").innerHTML = v==="membros"
+      ? '<i class="bi bi-person-plus me-1"></i>Membro'
+      : '<i class="bi bi-plus-lg me-1"></i>Nova Ata';
+  };
+
+  window.addItem = function() {
+    if (currentView === "membros") addMembro();
+    else addAta();
+  };
+
+  function renderMembros() {
+    const tbody = document.getElementById("tMembros");
+    tbody.innerHTML = "";
+    membros.forEach(m => {
+      const cOpts = CARGOS_CIPA.map(c=>`<option${c===m.cargo?" selected":""}>${c}</option>`).join("");
+      const tOpts = TIPOS_CIPA.map(t=>`<option${t===m.tipo?" selected":""}>${t}</option>`).join("");
+      const sOpts = STATUS_CIPA.map(s=>`<option${s===m.status?" selected":""}>${s}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" value="${m.nome}" placeholder="Nome" style="font-weight:600;" onchange="onM(${m.id},'nome',this.value)"></td>
+        <td>
+          <select onchange="onM(${m.id},'cargo',this.value)">${cOpts}</select>
+          <span class="${CARGO_CLS[m.cargo]||'cargo-membro'}" style="display:block;margin-top:3px;">${m.cargo}</span>
+        </td>
+        <td>
+          <select onchange="onM(${m.id},'tipo',this.value)" style="max-width:100px;">${tOpts}</select>
+          <span class="${m.tipo==='Eleito'?'tipo-eleito':'tipo-designado'}" style="display:block;margin-top:3px;">${m.tipo}</span>
+        </td>
+        <td><input type="date" value="${m.inicio}" onchange="onM(${m.id},'inicio',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="date" value="${m.fim}" onchange="onM(${m.id},'fim',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="text" value="${m.filial}" placeholder="Filial" onchange="onM(${m.id},'filial',this.value)"></td>
+        <td>
+          <select onchange="onM(${m.id},'status',this.value)" style="max-width:80px;">${sOpts}</select>
+          <span class="${m.status==='Ativo'?'st-ativo':'st-inativo'}" style="display:block;margin-top:3px;">${m.status}</span>
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeMembro(${m.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    updateKpis();
+  }
+
+  function renderAtas() {
+    const wrap = document.getElementById("atasList");
+    if (atas.length === 0) {
+      wrap.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">
+        <i class="bi bi-journal-x" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:8px;"></i>
+        Nenhuma ata registrada.</div>`;
+      return;
+    }
+    wrap.innerHTML = [...atas].reverse().map(a=>`
+      <div class="ata-card">
+        <div class="ata-hdr">
+          <div>
+            <span class="ata-num">Ata Nº ${a.numero}</span>
+            <div class="ata-data"><i class="bi bi-calendar3 me-1 text-muted"></i>${a.data}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="font-size:0.72rem;background:rgba(25,135,84,0.10);color:#0a3622;padding:2px 7px;border-radius:5px;font-weight:700;">
+              <i class="bi bi-people me-1"></i>${a.presentes} presentes
+            </span>
+            <button onclick="removeAta(${a.id})" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.72rem;color:#dc3545;cursor:pointer;">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="ata-body">
+          <p style="font-weight:700;font-size:0.8rem;margin-bottom:4px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;">Pauta</p>
+          <p style="margin-bottom:10px;">${a.pauta}</p>
+          <p style="font-weight:700;font-size:0.8rem;margin-bottom:4px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;">Deliberações</p>
+          <p style="margin:0;">${a.deliberacoes}</p>
+        </div>
+      </div>`).join("");
+    updateKpis();
+  }
+
+  window.onM = function(id,f,v) { const m=membros.find(m=>m.id===id); if(m) m[f]=v; updateKpis(); };
+  window.addMembro = function(d={}) {
+    membros.push({id:nextMid++,nome:d.nome||"",cargo:d.cargo||"Membro Titular",tipo:d.tipo||"Eleito",
+      inicio:d.inicio||"",fim:d.fim||"",filial:d.filial||"Filial SP",status:d.status||"Ativo"});
+    renderMembros();
+  };
+  window.removeMembro = function(id) { membros=membros.filter(m=>m.id!==id); renderMembros(); };
+  window.addAta = function() {
+    const numero = prompt("Número da ata:");
+    if (!numero) return;
+    const data  = prompt("Data da reunião (dd/mm/aaaa):", new Date().toLocaleDateString("pt-BR"));
+    const pauta = prompt("Pauta da reunião:");
+    const delib = prompt("Deliberações:");
+    const pres  = prompt("Número de presentes:", "8");
+    if (!pauta) return;
+    atas.push({id:nextAid++, numero, data:data||new Date().toLocaleDateString("pt-BR"),
+      pauta:pauta||"—", deliberacoes:delib||"—", presentes:pres||"0"});
+    saveData(); renderAtas();
+  };
+  window.removeAta = function(id) {
+    if (!confirm("Remover esta ata?")) return;
+    atas=atas.filter(a=>a.id!==id); saveData(); renderAtas(); updateKpis();
+  };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({membros,atas,nextMid,nextAid}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextMid) nextMid=d.nextMid;
+      if(d.nextAid) nextAid=d.nextAid;
+      if(d.membros&&d.membros.length) membros=d.membros;
+      if(d.atas&&d.atas.length) atas=d.atas;
+      if(membros.length||atas.length){ renderMembros(); renderAtas(); return; }
+    } catch(e){}
+    addMembro({nome:"Pedro Supervisor",cargo:"Presidente",tipo:"Designado",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial SP",status:"Ativo"});
+    addMembro({nome:"Ana Carolina Lima",cargo:"Vice-Presidente",tipo:"Eleito",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial SP",status:"Ativo"});
+    addMembro({nome:"Carlos Eduardo Santos",cargo:"Secretário",tipo:"Eleito",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial SP",status:"Ativo"});
+    addMembro({nome:"Fernanda Rocha Oliveira",cargo:"Membro Titular",tipo:"Eleito",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial SP",status:"Ativo"});
+    addMembro({nome:"Diego Henrique Araujo",cargo:"Membro Titular",tipo:"Eleito",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial RJ",status:"Ativo"});
+    addMembro({nome:"Juliana Costa Ferreira",cargo:"Membro Suplente",tipo:"Eleito",inicio:"2026-01-01",fim:"2027-12-31",filial:"Filial SP",status:"Ativo"});
+    atas.push({id:nextAid++,numero:"01/2026",data:"10/01/2026",pauta:"Eleição da mesa diretora CIPA. Apresentação do plano anual de prevenção de acidentes. Definição do calendário de reuniões mensais.",deliberacoes:"Mesa diretora eleita por unanimidade. Plano de prevenção aprovado. Calendário definido: toda segunda sexta do mês às 17h.",presentes:"8"});
+    atas.push({id:nextAid++,numero:"02/2026",data:"14/02/2026",pauta:"Análise de incidentes do mês de janeiro. Proposta de treinamento NR-05. Avaliação dos EPIs.",deliberacoes:"1 incidente registrado, sem afastamento. Treinamento NR-05 agendado para março. Aprovada substituição de luvas no setor SMT.",presentes:"7"});
+    atas.push({id:nextAid++,numero:"03/2026",data:"14/03/2026",pauta:"Resultado do treinamento NR-05. Inspeção de segurança nas linhas. Programa de prevenção de acidentes Q2.",deliberacoes:"Treinamento realizado com 100% de participação. Inspeção: 3 pontos de atenção identificados, todos endereçados. Programa Q2 aprovado.",presentes:"8"});
+    saveData(); renderMembros(); renderAtas();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,46 @@
 {% extends "layouts/app.html" %}
 {% block title %}Colaboradores — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.col-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.col-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.col-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.col-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.col-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.col-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:130px; }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.badge-ativo  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-inativo{ background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-afastado{ background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-ferias { background:rgba(13,110,253,0.12);color:#084298;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.avatar-cell { width:34px;height:34px;border-radius:50%;background:rgba(13,110,253,0.12);color:#0d6efd;
+  display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;flex-shrink:0; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:0.75rem;
+  color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s; }
+.action-btn:hover { background:rgba(13,110,253,0.08);color:#0d6efd;border-color:rgba(13,110,253,0.3); }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+.empty-state p { font-size:0.875rem;margin:0; }
+@media (max-width:767px) {
+  .col-hdr { flex-direction:column;align-items:flex-start; }
+  .col-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select { width:100%;min-width:unset; }
+  .col-table th:nth-child(n+5),.col-table td:nth-child(n+5) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +60,256 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-people" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Listagem de colaboradores com filtros por filial, cargo, turno e status.</p>
+
+  <div class="col-card">
+    <div class="col-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-people text-primary"></i>
+        <span>Quadro de Colaboradores</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success btn-sm" onclick="openCadastro()">
+          <i class="bi bi-person-plus me-1"></i>Novo
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="exportCSV()">
+          <i class="bi bi-download me-1"></i>Exportar
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <div class="filters-bar">
+      <input type="text" id="fBusca" placeholder="Buscar por nome ou matrícula…" oninput="renderTable()">
+      <select id="fFilial" onchange="renderTable()">
+        <option value="">Todas as filiais</option>
+      </select>
+      <select id="fCargo" onchange="renderTable()">
+        <option value="">Todos os cargos</option>
+      </select>
+      <select id="fTurno" onchange="renderTable()">
+        <option value="">Todos os turnos</option>
+        <option>1º Turno</option>
+        <option>2º Turno</option>
+        <option>3º Turno</option>
+        <option>Administrativo</option>
+      </select>
+      <select id="fStatus" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Ativo</option>
+        <option>Inativo</option>
+        <option>Afastado</option>
+        <option>Férias</option>
+      </select>
+    </div>
+
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+    <div class="table-responsive">
+      <table class="col-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Matrícula</th>
+            <th style="min-width:160px;">Nome</th>
+            <th>CPF</th>
+            <th>Cargo</th>
+            <th>Filial</th>
+            <th>Turno</th>
+            <th>Admissão</th>
+            <th>Status</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty-state d-none">
+      <i class="bi bi-search"></i>
+      <p>Nenhum colaborador encontrado com os filtros aplicados.</p>
+    </div>
+    <div style="padding:10px 18px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      <span id="countLabel"></span>
+    </div>
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_colaboradores";
+  let rows = []; let nextId = 1;
+
+  const STATUS_CLS = {
+    "Ativo":"badge-ativo","Inativo":"badge-inativo",
+    "Afastado":"badge-afastado","Férias":"badge-ferias"
+  };
+
+  function initials(name) {
+    const parts = name.trim().split(" ");
+    return (parts[0][0] + (parts[parts.length-1][0]||"")).toUpperCase();
+  }
+
+  function maskCPF(cpf) {
+    return cpf.replace(/(\d{3})\d{3}\d{3}(\d{2})/, "$1.***.***-$2");
+  }
+
+  function populateFiliais() {
+    const el = document.getElementById("fFilial");
+    const cur = el.value;
+    el.innerHTML = '<option value="">Todas as filiais</option>';
+    [...new Set(rows.map(r=>r.filial).filter(Boolean))].forEach(f => {
+      const o = document.createElement("option");
+      o.value = o.textContent = f;
+      if (f === cur) o.selected = true;
+      el.appendChild(o);
+    });
+  }
+
+  function populateCargos() {
+    const el = document.getElementById("fCargo");
+    const cur = el.value;
+    el.innerHTML = '<option value="">Todos os cargos</option>';
+    [...new Set(rows.map(r=>r.cargo).filter(Boolean))].forEach(c => {
+      const o = document.createElement("option");
+      o.value = o.textContent = c;
+      if (c === cur) o.selected = true;
+      el.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const total = rows.length;
+    const ativos = rows.filter(r=>r.status==="Ativo").length;
+    const inativos = rows.filter(r=>r.status==="Inativo").length;
+    const afastados = rows.filter(r=>r.status==="Afastado").length;
+    const ferias = rows.filter(r=>r.status==="Férias").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ativos}</div><div class="kpi-chip-lbl">Ativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6c757d;">${inativos}</div><div class="kpi-chip-lbl">Inativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${afastados}</div><div class="kpi-chip-lbl">Afastados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${ferias}</div><div class="kpi-chip-lbl">Férias</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const busca = document.getElementById("fBusca").value.toLowerCase();
+    const filial = document.getElementById("fFilial").value;
+    const cargo  = document.getElementById("fCargo").value;
+    const turno  = document.getElementById("fTurno").value;
+    const status = document.getElementById("fStatus").value;
+
+    const filtered = rows.filter(r =>
+      (!busca  || r.nome.toLowerCase().includes(busca) || r.matricula.toLowerCase().includes(busca)) &&
+      (!filial || r.filial === filial) &&
+      (!cargo  || r.cargo === cargo) &&
+      (!turno  || r.turno === turno) &&
+      (!status || r.status === status)
+    );
+
+    const tbody = document.getElementById("tBody");
+    const empty = document.getElementById("emptyState");
+    tbody.innerHTML = "";
+    empty.classList.toggle("d-none", filtered.length > 0);
+
+    filtered.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><div class="avatar-cell">${initials(r.nome)}</div></td>
+        <td style="font-family:monospace;font-weight:700;font-size:0.8rem;">${r.matricula}</td>
+        <td style="font-weight:600;">${r.nome}</td>
+        <td style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">${maskCPF(r.cpf)}</td>
+        <td style="font-size:0.82rem;">${r.cargo}</td>
+        <td style="font-size:0.82rem;">${r.filial}</td>
+        <td style="font-size:0.82rem;">${r.turno}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${r.admissao}</td>
+        <td><span class="${STATUS_CLS[r.status]||'badge-inativo'}">${r.status}</span></td>
+        <td>
+          <button class="action-btn" onclick="editRow(${r.id})"><i class="bi bi-pencil"></i></button>
+          <button class="action-btn ms-1" onclick="removeRow(${r.id})" style="border-color:rgba(220,53,69,0.3);">
+            <i class="bi bi-trash" style="color:#dc3545;"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("countLabel").textContent =
+      `Exibindo ${filtered.length} de ${rows.length} colaborador${rows.length!==1?"es":""}`;
+  }
+
+  window.editRow = function(id) {
+    const r = rows.find(r=>r.id===id);
+    if (!r) return;
+    const novoStatus = prompt(`Status de ${r.nome}:\n(Ativo / Inativo / Afastado / Férias)`, r.status);
+    if (novoStatus && ["Ativo","Inativo","Afastado","Férias"].includes(novoStatus)) {
+      r.status = novoStatus;
+      saveData(false); renderTable(); updateKpis();
+    }
+  };
+
+  window.removeRow = function(id) {
+    const r = rows.find(r=>r.id===id);
+    if (!r) return;
+    if (!confirm(`Remover ${r.nome} da listagem?`)) return;
+    rows = rows.filter(r=>r.id!==id);
+    populateFiliais(); populateCargos();
+    saveData(false); renderTable(); updateKpis();
+  };
+
+  window.openCadastro = function() {
+    window.location.href = "{{ url_for('pages.rh_colaboradores_cadastrar') }}";
+  };
+
+  window.exportCSV = function() {
+    const header = ["Matricula","Nome","CPF","Cargo","Filial","Turno","Admissao","Status"];
+    const lines = rows.map(r=>[r.matricula,r.nome,r.cpf,r.cargo,r.filial,r.turno,r.admissao,r.status].join(";"));
+    const blob = new Blob([header.join(";")+"\n"+lines.join("\n")], {type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "colaboradores.csv";
+    a.click();
+  };
+
+  function saveData(msg=true) {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    if (msg) {
+      const m = document.getElementById("saveMsg");
+      m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+      setTimeout(()=>m.innerHTML="", 3000);
+    }
+  }
+
+  function addSample(d) {
+    rows.push({id:nextId++, ...d});
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if (d.nextId) nextId = d.nextId;
+      if (d.rows && d.rows.length) {
+        rows = d.rows;
+        populateFiliais(); populateCargos();
+        renderTable(); updateKpis(); return;
+      }
+    } catch(e) {}
+    addSample({matricula:"RH-001",nome:"Ana Carolina Lima",cpf:"123.456.789-01",cargo:"Operadora SMT",filial:"Filial SP",turno:"2º Turno",admissao:"15/03/2021",status:"Ativo"});
+    addSample({matricula:"RH-002",nome:"Carlos Eduardo Santos",cpf:"234.567.890-12",cargo:"Técnico de Manutenção",filial:"Filial SP",turno:"1º Turno",admissao:"02/07/2019",status:"Ativo"});
+    addSample({matricula:"RH-003",nome:"Fernanda Rocha Oliveira",cpf:"345.678.901-23",cargo:"Analista de Qualidade",filial:"Filial MG",turno:"Administrativo",admissao:"10/01/2022",status:"Ativo"});
+    addSample({matricula:"RH-004",nome:"Marcos Vinícius Pereira",cpf:"456.789.012-34",cargo:"Supervisor de Produção",filial:"Filial SP",turno:"2º Turno",admissao:"20/08/2018",status:"Férias"});
+    addSample({matricula:"RH-005",nome:"Juliana Costa Ferreira",cpf:"567.890.123-45",cargo:"Assistente Administrativo",filial:"Filial MG",turno:"Administrativo",admissao:"05/06/2023",status:"Ativo"});
+    addSample({matricula:"RH-006",nome:"Roberto Alves Souza",cpf:"678.901.234-56",cargo:"Operador PTH",filial:"Filial SP",turno:"3º Turno",admissao:"12/11/2020",status:"Afastado"});
+    addSample({matricula:"RH-007",nome:"Patrícia Mendes Gomes",cpf:"789.012.345-67",cargo:"Engenheira de Processos",filial:"Filial RJ",turno:"Administrativo",admissao:"14/04/2017",status:"Ativo"});
+    addSample({matricula:"RH-008",nome:"Diego Henrique Araujo",cpf:"890.123.456-78",cargo:"Técnico de Qualidade",filial:"Filial RJ",turno:"1º Turno",admissao:"08/09/2021",status:"Ativo"});
+    addSample({matricula:"RH-009",nome:"Simone Aparecida Nunes",cpf:"901.234.567-89",cargo:"Operadora SMT",filial:"Filial SP",turno:"1º Turno",admissao:"22/02/2022",status:"Inativo"});
+    addSample({matricula:"RH-010",nome:"Leandro Barbosa Torres",cpf:"012.345.678-90",cargo:"Assistente de RH",filial:"Filial SP",turno:"Administrativo",admissao:"30/05/2023",status:"Ativo"});
+    populateFiliais(); populateCargos();
+    saveData(false); renderTable(); updateKpis();
+  });
+})();
+</script>
 {% endblock %}

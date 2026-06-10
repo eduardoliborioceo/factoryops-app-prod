@@ -1,6 +1,44 @@
 {% extends "layouts/app.html" %}
 {% block title %}Processo Seletivo — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.rec-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.rec-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.rec-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.rec-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.rec-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.rec-table td input,.rec-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.rec-table td input:focus,.rec-table td select:focus { outline:none;border-color:#0d6efd; }
+.rec-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select,.filters-bar input { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:140px; }
+.filters-bar select:focus,.filters-bar input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.et-triagem    { background:rgba(108,117,125,0.10);color:#6c757d;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.et-entrevista { background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.et-tecnico    { background:rgba(255,193,7,0.13);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.et-proposta   { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.res-aprovado  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.res-reprovado { background:rgba(220,53,69,0.10);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.res-pendente  { background:rgba(15,23,42,0.07);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+@media (max-width:767px) {
+  .rec-hdr { flex-direction:column;align-items:flex-start; }
+  .rec-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select,.filters-bar input { width:100%; }
+  .rec-table th:nth-child(n+6),.rec-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +58,166 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-funnel" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Etapas, entrevistas e status por candidato.</p>
+
+  <div class="rec-card">
+    <div class="rec-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-funnel text-warning"></i>
+        <span>Etapas e Status por Candidato</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Registrar</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="filters-bar">
+      <input type="text" id="fBusca" placeholder="Buscar candidato…" oninput="renderTable()">
+      <select id="fVaga" onchange="renderTable()">
+        <option value="">Todas as vagas</option>
+      </select>
+      <select id="fEtapa" onchange="renderTable()">
+        <option value="">Todas as etapas</option>
+        <option>Triagem</option><option>Entrevista RH</option>
+        <option>Entrevista Técnica</option><option>Proposta</option>
+      </select>
+      <select id="fRes" onchange="renderTable()">
+        <option value="">Todos os resultados</option>
+        <option>Aprovado</option><option>Reprovado</option><option>Pendente</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="rec-table">
+        <thead>
+          <tr>
+            <th style="min-width:150px;">Candidato</th>
+            <th>Vaga</th>
+            <th>Etapa</th>
+            <th>Data</th>
+            <th>Responsável</th>
+            <th>Score</th>
+            <th>Resultado</th>
+            <th style="min-width:140px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_processo";
+  const ETAPAS = ["Triagem","Entrevista RH","Entrevista Técnica","Proposta"];
+  const RESULTADOS = ["Aprovado","Reprovado","Pendente"];
+  const VAGAS = ["Operadora SMT","Técnico de Manutenção","Analista de Qualidade","Auxiliar de Produção PTH","Assistente de RH"];
+  const ET_CLS = {"Triagem":"et-triagem","Entrevista RH":"et-entrevista","Entrevista Técnica":"et-tecnico","Proposta":"et-proposta"};
+  const RES_CLS= {"Aprovado":"res-aprovado","Reprovado":"res-reprovado","Pendente":"res-pendente"};
+  let rows = []; let nextId = 1;
+
+  function populateVagas() {
+    const el = document.getElementById("fVaga"); const cur = el.value;
+    el.innerHTML = '<option value="">Todas as vagas</option>';
+    [...new Set(rows.map(r=>r.vaga).filter(Boolean))].sort().forEach(v=>{
+      const o = document.createElement("option"); o.value=o.textContent=v;
+      if(v===cur)o.selected=true; el.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const total     = rows.length;
+    const aprovados = rows.filter(r=>r.resultado==="Aprovado").length;
+    const reprovados= rows.filter(r=>r.resultado==="Reprovado").length;
+    const pendentes = rows.filter(r=>r.resultado==="Pendente").length;
+    const taxa = total > 0 ? Math.round((aprovados/total)*100) : 0;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Entrevistas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${aprovados}</div><div class="kpi-chip-lbl">Aprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${reprovados}</div><div class="kpi-chip-lbl">Reprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${pendentes}</div><div class="kpi-chip-lbl">Pendentes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${taxa}%</div><div class="kpi-chip-lbl">Taxa Aprovação</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const fb  = document.getElementById("fBusca").value.toLowerCase();
+    const fv  = document.getElementById("fVaga").value;
+    const fet = document.getElementById("fEtapa").value;
+    const fr  = document.getElementById("fRes").value;
+    const filtered = rows.filter(r=>
+      (!fb||r.candidato.toLowerCase().includes(fb))&&
+      (!fv||r.vaga===fv)&&(!fet||r.etapa===fet)&&(!fr||r.resultado===fr)
+    );
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const vOpts  = VAGAS.map(v=>`<option${v===r.vaga?" selected":""}>${v}</option>`).join("");
+      const eOpts  = ETAPAS.map(e=>`<option${e===r.etapa?" selected":""}>${e}</option>`).join("");
+      const rOpts  = RESULTADOS.map(res=>`<option${res===r.resultado?" selected":""}>${res}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:600;"><input type="text" value="${r.candidato}" onchange="onF(${r.id},'candidato',this.value)" style="font-weight:600;"></td>
+        <td><select onchange="onF(${r.id},'vaga',this.value)" style="min-width:120px;">${vOpts}</select></td>
+        <td>
+          <select onchange="onF(${r.id},'etapa',this.value)" style="max-width:150px;">${eOpts}</select>
+          <span class="${ET_CLS[r.etapa]||'et-triagem'}" style="display:block;margin-top:3px;">${r.etapa}</span>
+        </td>
+        <td><input type="date" value="${r.data}" onchange="onF(${r.id},'data',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="text" value="${r.responsavel}" placeholder="Responsável" onchange="onF(${r.id},'responsavel',this.value)"></td>
+        <td><input type="number" min="0" max="100" value="${r.score}" placeholder="0–100"
+          onchange="onF(${r.id},'score',this.value)" style="max-width:60px;text-align:center;font-weight:700;"></td>
+        <td>
+          <select onchange="onF(${r.id},'resultado',this.value)" style="max-width:110px;">${rOpts}</select>
+          <span class="${RES_CLS[r.resultado]||'res-pendente'}" style="display:block;margin-top:3px;">${r.resultado}</span>
+        </td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações…" onchange="onF(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    updateKpis();
+  }
+
+  window.onF = function(id,f,v) { const r=rows.find(r=>r.id===id); if(r){ r[f]=v; if(f==="vaga")populateVagas(); } updateKpis(); };
+  window.addRow = function(d={}) {
+    rows.push({id:nextId++,candidato:d.candidato||"",vaga:d.vaga||"Operadora SMT",
+      etapa:d.etapa||"Triagem",data:d.data||new Date().toISOString().split("T")[0],
+      responsavel:d.responsavel||"",score:d.score||"",resultado:d.resultado||"Pendente",obs:d.obs||""});
+    populateVagas(); renderTable();
+  };
+  window.removeRow = function(id) { rows=rows.filter(r=>r.id!==id); populateVagas(); renderTable(); };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({rows,nextId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; populateVagas(); renderTable(); return; }
+    } catch(e){}
+    const td = new Date().toISOString().split("T")[0];
+    addRow({candidato:"Lucas Ferreira",vaga:"Operadora SMT",etapa:"Triagem",data:td,responsavel:"Maria RH",score:"82",resultado:"Aprovado",obs:"Perfil aderente"});
+    addRow({candidato:"Marina Costa",vaga:"Operadora SMT",etapa:"Entrevista RH",data:td,responsavel:"Maria RH",score:"75",resultado:"Pendente",obs:"Aguardando retorno"});
+    addRow({candidato:"Rafael Alves",vaga:"Técnico de Manutenção",etapa:"Entrevista Técnica",data:td,responsavel:"Carlos Eng",score:"88",resultado:"Aprovado",obs:"Forte em elétrica"});
+    addRow({candidato:"Bianca Souza",vaga:"Analista de Qualidade",etapa:"Proposta",data:td,responsavel:"Patrícia RH",score:"91",resultado:"Pendente",obs:"Proposta enviada"});
+    addRow({candidato:"André Mendes",vaga:"Operadora SMT",etapa:"Triagem",data:td,responsavel:"Maria RH",score:"55",resultado:"Reprovado",obs:"Sem experiência na área"});
+  });
+})();
+</script>
 {% endblock %}

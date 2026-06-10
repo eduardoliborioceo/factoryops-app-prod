@@ -1,6 +1,42 @@
 {% extends "layouts/app.html" %}
 {% block title %}Vagas Abertas — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.rec-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.rec-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.rec-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.rec-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.rec-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.rec-table td input,.rec-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.rec-table td input:focus,.rec-table td select:focus { outline:none;border-color:#0d6efd; }
+.rec-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:140px; }
+.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.st-aberta     { background:rgba(13,110,253,0.12);color:#084298;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-processo   { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-encerrada  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-cancelada  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-suspensa   { background:rgba(220,53,69,0.10);color:#842029;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+@media (max-width:767px) {
+  .rec-hdr { flex-direction:column;align-items:flex-start; }
+  .rec-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select { width:100%; }
+  .rec-table th:nth-child(n+6),.rec-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +56,157 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-briefcase" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Posições abertas por filial e departamento.</p>
+
+  <div class="rec-card">
+    <div class="rec-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-briefcase text-primary"></i>
+        <span>Gestão de Vagas</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Nova Vaga</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="filters-bar">
+      <select id="fFilial" onchange="renderTable()">
+        <option value="">Todas as filiais</option>
+        <option>Filial SP</option><option>Filial MG</option><option>Filial RJ</option>
+      </select>
+      <select id="fDept" onchange="renderTable()">
+        <option value="">Todos os departamentos</option>
+        <option>Produção - SMT</option><option>Produção - PTH</option><option>Qualidade</option>
+        <option>Engenharia</option><option>Manutenção</option><option>RH / Administrativo</option>
+      </select>
+      <select id="fStatus" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Aberta</option><option>Em Processo</option><option>Encerrada</option>
+        <option>Cancelada</option><option>Suspensa</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="rec-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th style="min-width:150px;">Cargo / Título</th>
+            <th>Filial</th>
+            <th>Departamento</th>
+            <th>Vagas</th>
+            <th>Candidatos</th>
+            <th>Abertura</th>
+            <th>Prazo</th>
+            <th>Status</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_vagas";
+  const STATUS_CLS = {
+    "Aberta":"st-aberta","Em Processo":"st-processo","Encerrada":"st-encerrada",
+    "Cancelada":"st-cancelada","Suspensa":"st-suspensa"
+  };
+  const STATUS_LIST = ["Aberta","Em Processo","Encerrada","Cancelada","Suspensa"];
+  const FILIAIS = ["Filial SP","Filial MG","Filial RJ"];
+  const DEPTS   = ["Produção - SMT","Produção - PTH","Qualidade","Engenharia","Manutenção","Logística","RH / Administrativo","TI"];
+  let rows = []; let nextId = 1; let seq = 1;
+
+  function updateKpis() {
+    const total    = rows.length;
+    const abertas  = rows.filter(r=>r.status==="Aberta").length;
+    const processo = rows.filter(r=>r.status==="Em Processo").length;
+    const encerradas = rows.filter(r=>r.status==="Encerrada").length;
+    const totalVagas = rows.reduce((s,r)=>s+(parseInt(r.qtd)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Posições</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${abertas}</div><div class="kpi-chip-lbl">Abertas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${processo}</div><div class="kpi-chip-lbl">Em Processo</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${encerradas}</div><div class="kpi-chip-lbl">Encerradas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalVagas}</div><div class="kpi-chip-lbl">Total Vagas</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const ff = document.getElementById("fFilial").value;
+    const fd = document.getElementById("fDept").value;
+    const fs = document.getElementById("fStatus").value;
+    const filtered = rows.filter(r=>(!ff||r.filial===ff)&&(!fd||r.dept===fd)&&(!fs||r.status===fs));
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const fOpts = FILIAIS.map(f=>`<option${f===r.filial?" selected":""}>${f}</option>`).join("");
+      const dOpts = DEPTS.map(d=>`<option${d===r.dept?" selected":""}>${d}</option>`).join("");
+      const sOpts = STATUS_LIST.map(s=>`<option${s===r.status?" selected":""}>${s}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-family:monospace;font-weight:700;font-size:0.78rem;">${r.codigo}</td>
+        <td><input type="text" value="${r.titulo}" placeholder="Título da vaga" style="font-weight:600;" onchange="onF(${r.id},'titulo',this.value)"></td>
+        <td><select onchange="onF(${r.id},'filial',this.value)" style="min-width:90px;">${fOpts}</select></td>
+        <td><select onchange="onF(${r.id},'dept',this.value)">${dOpts}</select></td>
+        <td><input type="number" min="1" value="${r.qtd}" onchange="onF(${r.id},'qtd',this.value)"
+          style="max-width:50px;text-align:center;font-weight:700;"></td>
+        <td style="text-align:center;font-weight:700;color:var(--text-muted);">${r.candidatos}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">${r.abertura}</td>
+        <td><input type="date" value="${r.prazo}" onchange="onF(${r.id},'prazo',this.value)" style="font-size:0.78rem;"></td>
+        <td>
+          <select onchange="onF(${r.id},'status',this.value)" style="max-width:110px;">${sOpts}</select>
+          <span class="${STATUS_CLS[r.status]||'st-aberta'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    updateKpis();
+  }
+
+  window.onF = function(id,f,v) { const r=rows.find(r=>r.id===id); if(r) r[f]=v; updateKpis(); };
+  window.addRow = function(d={}) {
+    const code = `VAG-${String(seq++).padStart(3,"0")}`;
+    rows.push({id:nextId++,codigo:d.codigo||code,titulo:d.titulo||"",filial:d.filial||"Filial SP",
+      dept:d.dept||"Produção - SMT",qtd:d.qtd||"1",candidatos:d.candidatos||"0",
+      abertura:d.abertura||new Date().toLocaleDateString("pt-BR"),prazo:d.prazo||"",status:d.status||"Aberta"});
+    renderTable();
+  };
+  window.removeRow = function(id) { rows=rows.filter(r=>r.id!==id); renderTable(); };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({rows,nextId,seq}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.seq) seq=d.seq;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); return; }
+    } catch(e){}
+    addRow({codigo:"VAG-001",titulo:"Operadora SMT",filial:"Filial SP",dept:"Produção - SMT",qtd:"3",candidatos:"7",abertura:"02/06/2026",prazo:"2026-06-30",status:"Em Processo"});
+    addRow({codigo:"VAG-002",titulo:"Técnico de Manutenção",filial:"Filial SP",dept:"Manutenção",qtd:"1",candidatos:"4",abertura:"05/06/2026",prazo:"2026-06-25",status:"Em Processo"});
+    addRow({codigo:"VAG-003",titulo:"Analista de Qualidade",filial:"Filial MG",dept:"Qualidade",qtd:"2",candidatos:"0",abertura:"09/06/2026",prazo:"2026-07-15",status:"Aberta"});
+    addRow({codigo:"VAG-004",titulo:"Auxiliar de Produção PTH",filial:"Filial SP",dept:"Produção - PTH",qtd:"5",candidatos:"2",abertura:"10/06/2026",prazo:"2026-06-30",status:"Aberta"});
+    addRow({codigo:"VAG-005",titulo:"Engenheiro de Processos",filial:"Filial RJ",dept:"Engenharia",qtd:"1",candidatos:"12",abertura:"01/05/2026",prazo:"2026-05-31",status:"Encerrada"});
+    addRow({codigo:"VAG-006",titulo:"Assistente de RH",filial:"Filial SP",dept:"RH / Administrativo",qtd:"1",candidatos:"0",abertura:"10/06/2026",prazo:"2026-07-10",status:"Aberta"});
+  });
+})();
+</script>
 {% endblock %}
