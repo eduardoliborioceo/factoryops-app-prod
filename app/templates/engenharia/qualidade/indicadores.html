@@ -1,6 +1,41 @@
 {% extends "layouts/app.html" %}
 {% block title %}Indicadores de Qualidade — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.ind-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.ind-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.ind-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.ind-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ind-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ind-table td input,.ind-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.ind-table td input:focus { outline:none;border-color:#6f42c1; }
+.num-inp { max-width:80px;text-align:right; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.sigma-badge { font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:5px; }
+.sigma-6 { background:rgba(25,135,84,0.15);color:#0a3622; }
+.sigma-5 { background:rgba(25,135,84,0.10);color:#198754; }
+.sigma-4 { background:rgba(255,193,7,0.18);color:#664d03; }
+.sigma-3 { background:rgba(253,126,20,0.15);color:#8a3d00; }
+.sigma-2 { background:rgba(220,53,69,0.12);color:#842029; }
+.info-panel { background:rgba(111,66,193,0.05);border:1px solid rgba(111,66,193,0.18);border-radius:10px;
+  padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--text-muted); }
+.info-panel strong { color:var(--text); }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .ind-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .ind-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .ind-table th:nth-child(n+7),.ind-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +55,187 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-bar-chart-fill" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>DPU, DPMO, FPY, índice de retrabalho e custo da qualidade.</p>
+
+  <div class="info-panel">
+    <strong>DPU</strong> = Defeitos / Unidades &nbsp;|&nbsp;
+    <strong>DPMO</strong> = DPU / Oportunidades × 1.000.000 &nbsp;|&nbsp;
+    <strong>FPY</strong> = Unidades aprovadas na 1ª vez / Total × 100% &nbsp;|&nbsp;
+    <strong>Nível Sigma</strong> estimado a partir do DPMO (referência Six Sigma).
   </div>
+
+  <div class="ind-card">
+    <div class="ind-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-bar-chart-fill" style="color:#6f42c1;" class="me-1"></i>DPU · DPMO · FPY · Custo da Qualidade — por Período</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <input type="month" id="filterMes" class="form-control form-control-sm" style="width:auto;" onchange="renderTable()" title="Filtrar período">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-sm" style="background:#6f42c1;color:#fff;" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Período</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="ind-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Período</th>
+            <th style="min-width:120px;">Produto / Processo</th>
+            <th>Unidades</th>
+            <th>Defeitos</th>
+            <th>Retrabalhos</th>
+            <th>Oport./Unid.</th>
+            <th>DPU</th>
+            <th>DPMO</th>
+            <th>Nível σ</th>
+            <th>FPY (%)</th>
+            <th>Custo Retrab. (R$)</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_indicadores_qual";
+
+  const DPMO_SIGMA = [
+    {dpmo:3.4,sigma:6},{dpmo:233,sigma:5.5},{dpmo:1350,sigma:5},{dpmo:6210,sigma:4.5},
+    {dpmo:22700,sigma:4},{dpmo:66800,sigma:3.5},{dpmo:158700,sigma:3},
+    {dpmo:308500,sigma:2.5},{dpmo:500000,sigma:2},{dpmo:841300,sigma:1.5},{dpmo:1000000,sigma:1}
+  ];
+
+  function sigmaFromDPMO(dpmo) {
+    if(!dpmo||dpmo<=0) return null;
+    for(let i=0;i<DPMO_SIGMA.length;i++) {
+      if(dpmo<=DPMO_SIGMA[i].dpmo) return DPMO_SIGMA[i].sigma;
+      if(i+1<DPMO_SIGMA.length && dpmo<=DPMO_SIGMA[i+1].dpmo) {
+        const t = (dpmo-DPMO_SIGMA[i].dpmo)/(DPMO_SIGMA[i+1].dpmo-DPMO_SIGMA[i].dpmo);
+        return +(DPMO_SIGMA[i].sigma + t*(DPMO_SIGMA[i+1].sigma-DPMO_SIGMA[i].sigma)).toFixed(1);
+      }
+    }
+    return 1;
+  }
+  function sigmaClass(s) {
+    if(!s) return "sigma-2";
+    if(s>=6) return "sigma-6";
+    if(s>=5) return "sigma-5";
+    if(s>=4) return "sigma-4";
+    if(s>=3) return "sigma-3";
+    return "sigma-2";
+  }
+  function fmtBRL(v) { return v===null?"—":parseFloat(v).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  let rows = []; let nextId = 1;
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const now = new Date().toISOString().slice(0,7);
+    rows.push({id, periodo:d.periodo||now, produto:d.produto||"",
+      unidades:d.unidades||"", defeitos:d.defeitos||"0",
+      retrabalhos:d.retrabalhos||"0", opp:d.opp||"1",
+      custoRetrab:d.custoRetrab||"0"});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function calcRow(r) {
+    const u=parseInt(r.unidades)||0, d=parseInt(r.defeitos)||0;
+    const ret=parseInt(r.retrabalhos)||0, opp=parseFloat(r.opp)||1;
+    const dpu  = u>0 ? d/u : null;
+    const dpmo = dpu!==null ? dpu/opp*1e6 : null;
+    const sigma= dpmo!==null ? sigmaFromDPMO(dpmo) : null;
+    const fpy  = u>0 ? Math.max(0,(u-ret)/u*100) : null;
+    return {dpu,dpmo,sigma,fpy};
+  }
+
+  function renderTable() {
+    const fm = document.getElementById("filterMes").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fm||r.periodo===fm).forEach(r=>{
+      const {dpu,dpmo,sigma,fpy} = calcRow(r);
+      const sigCls = sigma!==null?sigmaClass(sigma):"sigma-2";
+      const fpyColor = fpy===null?"var(--text-muted)":fpy>=99?"#198754":fpy>=95?"#856404":"#dc3545";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="month" value="${r.periodo}" onchange="onField(${r.id},'periodo',this.value)" style="font-size:0.75rem;min-width:120px;"></td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto / Processo" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><input type="number" min="0" value="${r.unidades}" placeholder="u" onchange="onField(${r.id},'unidades',this.value)" class="num-inp"></td>
+        <td><input type="number" min="0" value="${r.defeitos}" placeholder="d" onchange="onField(${r.id},'defeitos',this.value)" class="num-inp"></td>
+        <td><input type="number" min="0" value="${r.retrabalhos}" placeholder="r" onchange="onField(${r.id},'retrabalhos',this.value)" class="num-inp"></td>
+        <td><input type="number" min="1" step="1" value="${r.opp}" placeholder="o" onchange="onField(${r.id},'opp',this.value)" class="num-inp" title="Oportunidades de defeito por unidade"></td>
+        <td style="text-align:right;"><span style="font-weight:700;">${dpu!==null?dpu.toFixed(4):"—"}</span></td>
+        <td style="text-align:right;"><span style="font-weight:700;color:${dpmo!==null&&dpmo>66800?"#dc3545":dpmo>6210?"#856404":"#198754"};">${dpmo!==null?Math.round(dpmo).toLocaleString("pt-BR"):"—"}</span></td>
+        <td style="text-align:center;"><span class="sigma-badge ${sigCls}">${sigma!==null?sigma+"σ":"—"}</span></td>
+        <td style="text-align:right;"><span style="font-weight:700;color:${fpyColor};">${fpy!==null?fpy.toFixed(2)+"%":"—"}</span></td>
+        <td style="text-align:right;"><input type="number" min="0" step="0.01" value="${r.custoRetrab}" placeholder="R$" onchange="onField(${r.id},'custoRetrab',this.value)" class="num-inp"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const calcs = rows.map(calcRow);
+    const dpus  = calcs.filter(c=>c.dpu!==null).map(c=>c.dpu);
+    const dpmos = calcs.filter(c=>c.dpmo!==null).map(c=>c.dpmo);
+    const fpys  = calcs.filter(c=>c.fpy!==null).map(c=>c.fpy);
+    const custos= rows.map(r=>parseFloat(r.custoRetrab)||0);
+    const avgDpu  = dpus.length  ? dpus.reduce((a,b)=>a+b,0)/dpus.length : null;
+    const avgDpmo = dpmos.length ? dpmos.reduce((a,b)=>a+b,0)/dpmos.length : null;
+    const avgFpy  = fpys.length  ? fpys.reduce((a,b)=>a+b,0)/fpys.length : null;
+    const totalCusto = custos.reduce((a,b)=>a+b,0);
+    const avgSigma = avgDpmo!==null ? sigmaFromDPMO(avgDpmo) : null;
+    const fpyC = avgFpy===null?"var(--text)":avgFpy>=99?"#198754":avgFpy>=95?"#856404":"#dc3545";
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Períodos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${avgDpu!==null?avgDpu.toFixed(4):"—"}</div><div class="kpi-chip-lbl">DPU Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${avgDpmo!==null&&avgDpmo>66800?"#dc3545":avgDpmo>6210?"#856404":"#198754"};">${avgDpmo!==null?Math.round(avgDpmo).toLocaleString("pt-BR"):"—"}</div><div class="kpi-chip-lbl">DPMO Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${avgSigma!==null?avgSigma+"σ":"—"}</div><div class="kpi-chip-lbl">Nível Sigma</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${fpyC};">${avgFpy!==null?avgFpy.toFixed(2)+"%":"—"}</div><div class="kpi-chip-lbl">FPY Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">R$ ${fmtBRL(totalCusto)}</div><div class="kpi-chip-lbl">Custo Total</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({periodo:"2026-03",produto:"Placa Controladora v2",unidades:"1200",defeitos:"8",retrabalhos:"14",opp:"8",custoRetrab:"420.00"});
+    addRow({periodo:"2026-04",produto:"Placa Controladora v2",unidades:"1350",defeitos:"5",retrabalhos:"9",opp:"8",custoRetrab:"270.00"});
+    addRow({periodo:"2026-05",produto:"Placa Controladora v2",unidades:"1400",defeitos:"4",retrabalhos:"7",opp:"8",custoRetrab:"210.00"});
+    addRow({periodo:"2026-05",produto:"Módulo BT 5.0",unidades:"800",defeitos:"12",retrabalhos:"18",opp:"6",custoRetrab:"540.00"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

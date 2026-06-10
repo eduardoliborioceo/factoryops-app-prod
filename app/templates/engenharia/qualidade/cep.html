@@ -1,6 +1,41 @@
 {% extends "layouts/app.html" %}
 {% block title %}CEP — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.cep-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.cep-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.cep-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.cep-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.cep-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.cep-table td input,.cep-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.cep-table td input:focus,.cep-table td select:focus { outline:none;border-color:#198754; }
+.num-inp { max-width:80px;text-align:right; }
+.calc-good { font-weight:700;color:#198754;font-size:0.85rem; }
+.calc-warn { font-weight:700;color:#856404;font-size:0.85rem; }
+.calc-bad  { font-weight:700;color:#dc3545;font-size:0.85rem; }
+.st-cap  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-marg { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-incap{ background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.info-panel { background:rgba(25,135,84,0.05);border:1px solid rgba(25,135,84,0.18);border-radius:10px;
+  padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--text-muted); }
+.info-panel strong { color:var(--text); }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .cep-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .cep-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .cep-table th:nth-child(n+8),.cep-table td:nth-child(n+8) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +55,183 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-graph-up" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Controle Estatístico de Processo, cartas de controle e Cp/Cpk.</p>
+
+  <div class="info-panel">
+    <strong>Cp</strong> = (USL − LSL) / (6σ) — capacidade potencial (independe do centramento). &nbsp;|&nbsp;
+    <strong>Cpk</strong> = min[(USL − X̄) / (3σ), (X̄ − LSL) / (3σ)] — capacidade real (centrada). &nbsp;|&nbsp;
+    <span class="st-cap">Cpk ≥ 1,33</span> Capaz &nbsp;
+    <span class="st-marg">1,00 ≤ Cpk &lt; 1,33</span> Marginal &nbsp;
+    <span class="st-incap">Cpk &lt; 1,00</span> Incapaz
   </div>
+
+  <div class="cep-card">
+    <div class="cep-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-graph-up text-success me-1"></i>Controle Estatístico de Processo — Índices Cp e Cpk</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Capaz</option><option>Marginal</option><option>Incapaz</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Processo</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="cep-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:140px;">Processo / Característica</th>
+            <th>Unidade</th>
+            <th>LSL</th>
+            <th>Nominal</th>
+            <th>USL</th>
+            <th>Amostras (n)</th>
+            <th>Média (X̄)</th>
+            <th>Desvio (σ)</th>
+            <th>Cp</th>
+            <th>Cpk</th>
+            <th>Status</th>
+            <th>Atualização</th>
+            <th>Responsável</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_cep";
+  let rows = []; let nextId = 1;
+
+  function calcCp(lsl,usl,sigma) {
+    if(!sigma||sigma<=0) return null;
+    return (usl-lsl)/(6*sigma);
+  }
+  function calcCpk(lsl,usl,mean,sigma) {
+    if(!sigma||sigma<=0) return null;
+    return Math.min((usl-mean)/(3*sigma),(mean-lsl)/(3*sigma));
+  }
+  function cpkStatus(cpk) {
+    if(cpk===null) return "—";
+    if(cpk>=1.33) return "Capaz";
+    if(cpk>=1.0)  return "Marginal";
+    return "Incapaz";
+  }
+  function cpkCls(cpk) {
+    if(cpk===null) return "";
+    if(cpk>=1.33) return "st-cap";
+    if(cpk>=1.0)  return "st-marg";
+    return "st-incap";
+  }
+  function fmtNum(v,dec=3) { return v===null?"—":parseFloat(v.toFixed(dec)).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, processo:d.processo||"", unidade:d.unidade||"",
+      lsl:d.lsl!=null?d.lsl:"", nominal:d.nominal!=null?d.nominal:"",
+      usl:d.usl!=null?d.usl:"", n:d.n||"",
+      media:d.media!=null?d.media:"", sigma:d.sigma!=null?d.sigma:"",
+      atualizacao:d.atualizacao||"", resp:d.resp||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.forEach(r=>{
+      const lsl=parseFloat(r.lsl), usl=parseFloat(r.usl);
+      const nom=parseFloat(r.nominal), mean=parseFloat(r.media), sigma=parseFloat(r.sigma);
+      const cp  = (!isNaN(lsl)&&!isNaN(usl)&&!isNaN(sigma)) ? calcCp(lsl,usl,sigma) : null;
+      const cpk = (!isNaN(lsl)&&!isNaN(usl)&&!isNaN(mean)&&!isNaN(sigma)) ? calcCpk(lsl,usl,mean,sigma) : null;
+      const st  = cpkStatus(cpk);
+      if(fs&&st!==fs) return;
+      const cpkC = cpkCls(cpk);
+      const cpkColor = cpk===null?"var(--text-muted)":cpk>=1.33?"#198754":cpk>=1.0?"#856404":"#dc3545";
+      const cpColor  = cp===null?"var(--text-muted)":cp>=1.33?"#198754":cp>=1.0?"#856404":"#dc3545";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.processo}" placeholder="Ex: Tensão Vout 5V" onchange="onField(${r.id},'processo',this.value)"></td>
+        <td><input type="text" value="${r.unidade}" placeholder="V, mm, Ω..." onchange="onField(${r.id},'unidade',this.value)" style="max-width:60px;"></td>
+        <td><input type="number" step="any" value="${r.lsl}" placeholder="LSL" onchange="onField(${r.id},'lsl',this.value)" class="num-inp"></td>
+        <td><input type="number" step="any" value="${r.nominal}" placeholder="Nom." onchange="onField(${r.id},'nominal',this.value)" class="num-inp"></td>
+        <td><input type="number" step="any" value="${r.usl}" placeholder="USL" onchange="onField(${r.id},'usl',this.value)" class="num-inp"></td>
+        <td><input type="number" min="2" value="${r.n}" placeholder="n" onchange="onField(${r.id},'n',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td><input type="number" step="any" value="${r.media}" placeholder="X̄" onchange="onField(${r.id},'media',this.value)" class="num-inp"></td>
+        <td><input type="number" step="any" min="0" value="${r.sigma}" placeholder="σ" onchange="onField(${r.id},'sigma',this.value)" class="num-inp"></td>
+        <td style="text-align:right;"><span style="font-weight:700;color:${cpColor};">${fmtNum(cp,3)}</span></td>
+        <td style="text-align:right;"><span style="font-weight:700;color:${cpkColor};">${fmtNum(cpk,3)}</span></td>
+        <td><span class="${cpkC||''}" style="${cpkC?'':'color:var(--text-muted);font-size:0.78rem;'}">${st}</span></td>
+        <td><input type="date" value="${r.atualizacao}" onchange="onField(${r.id},'atualizacao',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const calc = rows.map(r=>{
+      const lsl=parseFloat(r.lsl), usl=parseFloat(r.usl), mean=parseFloat(r.media), sigma=parseFloat(r.sigma);
+      return (!isNaN(lsl)&&!isNaN(usl)&&!isNaN(mean)&&!isNaN(sigma)&&sigma>0) ? calcCpk(lsl,usl,mean,sigma) : null;
+    }).filter(v=>v!==null);
+    const capazes  = calc.filter(v=>v>=1.33).length;
+    const marginais= calc.filter(v=>v>=1.0&&v<1.33).length;
+    const incapazes= calc.filter(v=>v<1.0).length;
+    const avgCpk = calc.length ? calc.reduce((a,b)=>a+b,0)/calc.length : null;
+    const pctCap = calc.length ? Math.round(capazes/calc.length*100) : 0;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Processos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${capazes}</div><div class="kpi-chip-lbl">Capazes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${marginais}</div><div class="kpi-chip-lbl">Marginais</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${incapazes}</div><div class="kpi-chip-lbl">Incapazes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${avgCpk>=1.33?"#198754":avgCpk>=1.0?"#856404":"#dc3545"};">${avgCpk!==null?avgCpk.toFixed(2):"—"}</div><div class="kpi-chip-lbl">Cpk Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${pctCap>=80?"#198754":pctCap>=60?"#856404":"#dc3545"};">${pctCap}%</div><div class="kpi-chip-lbl">% Capazes</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({processo:"Tensão de saída VOUT 5V",unidade:"V",lsl:4.9,nominal:5.0,usl:5.1,n:30,media:5.003,sigma:0.018,atualizacao:"2026-05-15",resp:"Carlos Mendes"});
+    addRow({processo:"Corrente em stand-by",unidade:"mA",lsl:0,nominal:8,usl:12,n:25,media:8.5,sigma:1.1,atualizacao:"2026-05-15",resp:"Ana Lima"});
+    addRow({processo:"Resistência de isolamento",unidade:"MΩ",lsl:10,nominal:50,usl:200,n:20,media:48,sigma:9.5,atualizacao:"2026-04-20",resp:"Pedro Costa"});
+    addRow({processo:"Tempo de resposta BT",unidade:"ms",lsl:0,nominal:15,usl:20,n:40,media:16.2,sigma:2.8,atualizacao:"2026-05-30",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

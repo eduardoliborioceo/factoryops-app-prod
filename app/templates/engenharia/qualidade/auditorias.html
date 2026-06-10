@@ -1,6 +1,36 @@
 {% extends "layouts/app.html" %}
 {% block title %}Auditorias — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.aud-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.aud-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.aud-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.aud-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.aud-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.aud-table td input,.aud-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.aud-table td input:focus,.aud-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-plan  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-exec  { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-conc  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-pend  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.nc-num { font-weight:700;font-size:0.82rem; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .aud-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .aud-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .aud-table th:nth-child(n+7),.aud-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +50,168 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-clipboard2-check" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Auditorias de processo, produto e sistema (interna e externas).</p>
+
+  <div class="aud-card">
+    <div class="aud-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-clipboard2-check text-primary me-1"></i>Plano de Auditorias — Processo · Produto · Sistema</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Planejada</option><option>Em Execução</option><option>Concluída</option><option>Pendente AC</option>
+        </select>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>Interna</option><option>Externa</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Auditoria</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="aud-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>N° Auditoria</th>
+            <th>Tipo</th>
+            <th>Escopo</th>
+            <th>Norma / Ref.</th>
+            <th>Auditor</th>
+            <th>Data Planejada</th>
+            <th>Data Realizada</th>
+            <th title="Não Conformidades">NC</th>
+            <th title="Observações">Obs</th>
+            <th title="Oportunidades de Melhoria">OM</th>
+            <th>Status</th>
+            <th>Ação Corretiva</th>
+            <th>Prazo AC</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_auditorias";
+  const TIPOS = ["Interna","Externa"];
+  const ESCOPOS = ["Processo","Produto","Sistema","Fornecedor","Processo + Produto","Sistema (ISO 9001)","Sistema (IATF)","Outro"];
+  const STATUS = ["Planejada","Em Execução","Concluída","Pendente AC"];
+  const ST_CLS = {"Planejada":"st-plan","Em Execução":"st-exec","Concluída":"st-conc","Pendente AC":"st-pend"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel)   { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function escopoOpts(sel) { return ESCOPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)     { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, num:d.num||`AUD-${String(id).padStart(3,"0")}`,
+      tipo:d.tipo||"Interna", escopo:d.escopo||"Processo",
+      norma:d.norma||"", auditor:d.auditor||"",
+      dataPlan:d.dataPlan||"", dataReal:d.dataReal||"",
+      nc:d.nc||"0", obs:d.obs||"0", om:d.om||"0",
+      status:d.status||"Planejada", acao:d.acao||"", prazoAC:d.prazoAC||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!ft||r.tipo===ft)).forEach(r=>{
+      const ncN = parseInt(r.nc)||0;
+      const today = new Date().toISOString().slice(0,10);
+      const vencida = r.prazoAC && r.prazoAC < today && r.status==="Pendente AC";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.num}" onchange="onField(${r.id},'num',this.value)" style="max-width:110px;font-weight:700;"></td>
+        <td>
+          <select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select>
+          <span style="font-size:0.65rem;font-weight:700;color:${r.tipo==='Externa'?'#0d6efd':'var(--text-muted)'};display:block;margin-top:2px;">${r.tipo}</span>
+        </td>
+        <td><select onchange="onField(${r.id},'escopo',this.value)">${escopoOpts(r.escopo)}</select></td>
+        <td><input type="text" value="${r.norma}" placeholder="ISO 9001, IATF..." onchange="onField(${r.id},'norma',this.value)"></td>
+        <td><input type="text" value="${r.auditor}" placeholder="Nome auditor" onchange="onField(${r.id},'auditor',this.value)"></td>
+        <td><input type="date" value="${r.dataPlan}" onchange="onField(${r.id},'dataPlan',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="date" value="${r.dataReal}" onchange="onField(${r.id},'dataReal',this.value)" style="font-size:0.75rem;"></td>
+        <td style="text-align:center;"><input type="number" min="0" value="${r.nc}" onchange="onField(${r.id},'nc',this.value)" style="max-width:50px;text-align:center;font-weight:700;color:${ncN>0?"#dc3545":"var(--text)"};" class="nc-num"></td>
+        <td style="text-align:center;"><input type="number" min="0" value="${r.obs}" onchange="onField(${r.id},'obs',this.value)" style="max-width:50px;text-align:center;"></td>
+        <td style="text-align:center;"><input type="number" min="0" value="${r.om}" onchange="onField(${r.id},'om',this.value)" style="max-width:50px;text-align:center;"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-plan'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.acao}" placeholder="Plano de ação corretiva" onchange="onField(${r.id},'acao',this.value)"></td>
+        <td>
+          <input type="date" value="${r.prazoAC}" onchange="onField(${r.id},'prazoAC',this.value)" style="font-size:0.75rem;">
+          ${vencida?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Vencida</span>':''}
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const plan = rows.filter(r=>r.status==="Planejada").length;
+    const exec = rows.filter(r=>r.status==="Em Execução").length;
+    const conc = rows.filter(r=>r.status==="Concluída").length;
+    const pAC  = rows.filter(r=>r.status==="Pendente AC").length;
+    const totalNC = rows.reduce((a,r)=>a+(parseInt(r.nc)||0),0);
+    const execPct = rows.length?Math.round((conc+exec)/rows.length*100):0;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${plan}</div><div class="kpi-chip-lbl">Planejadas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${exec}</div><div class="kpi-chip-lbl">Em Execução</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${conc}</div><div class="kpi-chip-lbl">Concluídas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${pAC}</div><div class="kpi-chip-lbl">Pendente AC</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${totalNC}</div><div class="kpi-chip-lbl">Total NC</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${execPct>=80?"#198754":execPct>=50?"#856404":"#dc3545"};">${execPct}%</div><div class="kpi-chip-lbl">Execução</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({num:"AUD-001",tipo:"Interna",escopo:"Processo",norma:"ISO 9001:2015",auditor:"Carlos Mendes",dataPlan:"2026-02-10",dataReal:"2026-02-10",nc:"2",obs:"3",om:"1",status:"Pendente AC",acao:"Revisão dos procedimentos de soldagem",prazoAC:"2026-06-30"});
+    addRow({num:"AUD-002",tipo:"Interna",escopo:"Produto",norma:"Plano de Controle",auditor:"Ana Lima",dataPlan:"2026-04-15",dataReal:"2026-04-18",nc:"0",obs:"1",om:"2",status:"Concluída"});
+    addRow({num:"AUD-003",tipo:"Externa",escopo:"Sistema (ISO 9001)",norma:"ISO 9001:2015",auditor:"Bureau Veritas",dataPlan:"2026-07-10",dataReal:"",nc:"0",obs:"0",om:"0",status:"Planejada"});
+    addRow({num:"AUD-004",tipo:"Interna",escopo:"Fornecedor",norma:"CSR Venttos",auditor:"Pedro Costa",dataPlan:"2026-06-20",dataReal:"",nc:"0",obs:"0",om:"0",status:"Em Execução"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,39 @@
 {% extends "layouts/app.html" %}
 {% block title %}Desenvolvimento — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.dev-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.dev-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.dev-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.dev-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.dev-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.dev-table td input,.dev-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.dev-table td input:focus,.dev-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.gate-conc { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.gate-dev  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.gate-val  { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.gate-ind  { background:rgba(13,202,240,0.12);color:#055160;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.gate-lan  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.gate-canc { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.prog-bar  { height:6px;border-radius:3px;background:rgba(15,23,42,0.08);overflow:hidden; }
+.prog-fill { height:100%;border-radius:3px;transition:width 0.3s; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .dev-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .dev-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .dev-table th:nth-child(n+7),.dev-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +53,170 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-pen" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Gate reviews, cronograma de desenvolvimento e entregáveis por fase.</p>
+
+  <div class="dev-card">
+    <div class="dev-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-pen text-primary me-1"></i>Pipeline de Desenvolvimento — Stage-Gate · Gate Reviews · Entregáveis</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterGate" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os gates</option>
+          <option>Conceito</option><option>Desenvolvimento</option><option>Validação</option>
+          <option>Industrialização</option><option>Lançado</option><option>Cancelado</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Projeto</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="dev-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:130px;">Projeto</th>
+            <th style="min-width:110px;">Produto</th>
+            <th>Tipo</th>
+            <th>Gate Atual</th>
+            <th>Gate Status</th>
+            <th style="min-width:120px;">Entregáveis Pendentes</th>
+            <th style="text-align:center;">Avanço</th>
+            <th>Início</th>
+            <th>Alvo Lançamento</th>
+            <th>Responsável</th>
+            <th style="min-width:110px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_desenvolvimento";
+  const TIPOS = ["Novo Produto","Melhoria","Redesign","Descontinuação","Migração de Plataforma"];
+  const GATES = ["Conceito","Desenvolvimento","Validação","Industrialização","Lançado","Cancelado"];
+  const GATE_ST = ["Aprovado","Em Análise","Pendente","Reprovado"];
+  const GATE_CLS = {"Conceito":"gate-conc","Desenvolvimento":"gate-dev","Validação":"gate-val",
+    "Industrialização":"gate-ind","Lançado":"gate-lan","Cancelado":"gate-canc"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel)   { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function gateOpts(sel)   { return GATES.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function gateStOpts(sel) { return GATE_ST.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function progColor(p) { return p>=100?"#198754":p>=60?"#0d6efd":p>=30?"#856404":"#dc3545"; }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, projeto:d.projeto||"", produto:d.produto||"",
+      tipo:d.tipo||"Novo Produto", gate:d.gate||"Conceito",
+      gateSt:d.gateSt||"Em Análise", entregaveis:d.entregaveis||"",
+      avanco:d.avanco||"0", inicio:d.inicio||"", alvo:d.alvo||"",
+      resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fg = document.getElementById("filterGate").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    const today = new Date().toISOString().slice(0,10);
+    rows.filter(r=>!fg||r.gate===fg).forEach(r=>{
+      const p = Math.min(100,Math.max(0,parseInt(r.avanco)||0));
+      const atrasado = r.alvo && r.alvo < today && r.gate!=="Lançado" && r.gate!=="Cancelado";
+      const pc = progColor(p);
+      const gateStColor = r.gateSt==="Aprovado"?"#198754":r.gateSt==="Reprovado"?"#dc3545":"#856404";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.projeto}" placeholder="Ex: NPI-2026-BT60" onchange="onField(${r.id},'projeto',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.produto}" placeholder="Nome produto" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td>
+          <select onchange="onField(${r.id},'gate',this.value)">${gateOpts(r.gate)}</select>
+          <span class="${GATE_CLS[r.gate]||''}" style="display:block;margin-top:3px;">${r.gate}</span>
+        </td>
+        <td>
+          <select onchange="onField(${r.id},'gateSt',this.value)">${gateStOpts(r.gateSt)}</select>
+          <span style="font-size:0.68rem;font-weight:700;color:${gateStColor};display:block;margin-top:2px;">${r.gateSt}</span>
+        </td>
+        <td><input type="text" value="${r.entregaveis}" placeholder="Ex: DVT report, FMEA, DFM" onchange="onField(${r.id},'entregaveis',this.value)"></td>
+        <td style="min-width:100px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" min="0" max="100" value="${p}" onchange="onField(${r.id},'avanco',this.value)" style="max-width:50px;text-align:center;font-weight:700;color:${pc};">
+            <div style="flex:1;">
+              <div class="prog-bar"><div class="prog-fill" style="width:${p}%;background:${pc};"></div></div>
+            </div>
+          </div>
+        </td>
+        <td><input type="date" value="${r.inicio}" onchange="onField(${r.id},'inicio',this.value)" style="font-size:0.75rem;"></td>
+        <td>
+          <input type="date" value="${r.alvo}" onchange="onField(${r.id},'alvo',this.value)" style="font-size:0.75rem;">
+          ${atrasado?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Atrasado</span>':''}
+        </td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ativos = rows.filter(r=>r.gate!=="Lançado"&&r.gate!=="Cancelado").length;
+    const lanc   = rows.filter(r=>r.gate==="Lançado").length;
+    const canc   = rows.filter(r=>r.gate==="Cancelado").length;
+    const today  = new Date().toISOString().slice(0,10);
+    const atras  = rows.filter(r=>r.alvo&&r.alvo<today&&r.gate!=="Lançado"&&r.gate!=="Cancelado").length;
+    const avgAv  = rows.length ? Math.round(rows.reduce((a,r)=>a+(parseInt(r.avanco)||0),0)/rows.length) : 0;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Projetos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${ativos}</div><div class="kpi-chip-lbl">Em Desenv.</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${lanc}</div><div class="kpi-chip-lbl">Lançados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${canc}</div><div class="kpi-chip-lbl">Cancelados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${atras}</div><div class="kpi-chip-lbl">Atrasados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${avgAv}%</div><div class="kpi-chip-lbl">Avanço Médio</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({projeto:"NPI-2026-CTRL-V3",produto:"Placa Controladora v3",tipo:"Novo Produto",gate:"Validação",gateSt:"Em Análise",entregaveis:"DVT report, FMEA v2, Cpk 1ª série",avanco:"65",inicio:"2025-09-01",alvo:"2026-09-30",resp:"Carlos Mendes"});
+    addRow({projeto:"NPI-2026-GPS-V2",produto:"Módulo GPS v2",tipo:"Redesign",gate:"Desenvolvimento",gateSt:"Aprovado",entregaveis:"Schematics rev.B, BOM aprovada, Protótipo",avanco:"40",inicio:"2026-01-15",alvo:"2026-12-31",resp:"Ana Lima"});
+    addRow({projeto:"NPI-2025-BT50",produto:"Módulo BT 5.0",tipo:"Novo Produto",gate:"Lançado",gateSt:"Aprovado",avanco:"100",inicio:"2024-03-01",alvo:"2025-06-30",resp:"Pedro Costa"});
+    addRow({projeto:"MEJORA-2026-ALIM",produto:"Placa Alimentação",tipo:"Melhoria",gate:"Conceito",gateSt:"Pendente",entregaveis:"Business case, especificação preliminar",avanco:"10",inicio:"2026-05-01",alvo:"2027-03-31",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,37 @@
 {% extends "layouts/app.html" %}
 {% block title %}Homologação de Componentes — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.hom-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.hom-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.hom-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.hom-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.hom-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.hom-table td input,.hom-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.hom-table td input:focus,.hom-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-qual { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-eq   { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-rest { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-rej  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.tp-prim { background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-alt  { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .hom-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .hom-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .hom-table th:nth-child(n+7),.hom-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +51,176 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-award" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>AVL, aprovação de fornecedores e substituição de componentes.</p>
+
+  <div class="hom-card">
+    <div class="hom-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-patch-check text-primary me-1"></i>AVL — Approved Vendor List · Qualificação de Fornecedores · Substituição de Componentes</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Qualificado</option><option>Em Qualificação</option><option>Restrito</option><option>Rejeitado</option>
+        </select>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>Primário</option><option>Alternativo</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Componente</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="hom-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:120px;">Componente</th>
+            <th style="min-width:100px;">Fabricante</th>
+            <th style="min-width:110px;">MPN</th>
+            <th>Tipo AVL</th>
+            <th>Categoria</th>
+            <th>Status Qualif.</th>
+            <th style="min-width:120px;">Produtos que Usam</th>
+            <th>Fornecedor</th>
+            <th>Data Qualif.</th>
+            <th>Validade</th>
+            <th>Compliance</th>
+            <th>Lead Time (dias)</th>
+            <th>MOQ</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_homologacao";
+  const TIPOS   = ["Primário","Alternativo"];
+  const CATS    = ["CI Analógico","CI Digital","Microcontrolador","Passivo","Conector","Sensor","Módulo RF","Componente Mecânico","Outro"];
+  const STATUS  = ["Qualificado","Em Qualificação","Restrito","Rejeitado"];
+  const COMPS   = ["RoHS + REACH","RoHS","REACH","Sem certificação"];
+  const ST_CLS  = {"Qualificado":"st-qual","Em Qualificação":"st-eq","Restrito":"st-rest","Rejeitado":"st-rej"};
+  const TP_CLS  = {"Primário":"tp-prim","Alternativo":"tp-alt"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel)  { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function catOpts(sel)   { return CATS.map(c=>`<option${c===sel?" selected":""}>${c}</option>`).join(""); }
+  function stOpts(sel)    { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+  function compOpts(sel)  { return COMPS.map(c=>`<option${c===sel?" selected":""}>${c}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, comp:d.comp||"", fab:d.fab||"", mpn:d.mpn||"",
+      tipo:d.tipo||"Primário", cat:d.cat||"CI Analógico",
+      status:d.status||"Em Qualificação", produtos:d.produtos||"",
+      forn:d.forn||"", dataQ:d.dataQ||"", validade:d.validade||"",
+      comp_cert:d.comp_cert||"RoHS + REACH", lt:d.lt||"", moq:d.moq||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    const today = new Date().toISOString().slice(0,10);
+    rows.filter(r=>(!fs||r.status===fs)&&(!ft||r.tipo===ft)).forEach(r=>{
+      const expirado = r.validade && r.validade < today && r.status === "Qualificado";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.comp}" placeholder="Capacitor 100µF/16V" onchange="onField(${r.id},'comp',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.fab}" placeholder="Murata, TI, Molex..." onchange="onField(${r.id},'fab',this.value)"></td>
+        <td><input type="text" value="${r.mpn}" placeholder="GRM188R61C106ME69" onchange="onField(${r.id},'mpn',this.value)" style="font-family:monospace;font-size:0.75rem;"></td>
+        <td>
+          <select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select>
+          <span class="${TP_CLS[r.tipo]||''}" style="display:block;margin-top:3px;">${r.tipo}</span>
+        </td>
+        <td><select onchange="onField(${r.id},'cat',this.value)">${catOpts(r.cat)}</select></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-eq'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.produtos}" placeholder="Placa Ctrl v3, Módulo GPS" onchange="onField(${r.id},'produtos',this.value)"></td>
+        <td><input type="text" value="${r.forn}" placeholder="DigiKey, Mouser, Arrow" onchange="onField(${r.id},'forn',this.value)"></td>
+        <td><input type="date" value="${r.dataQ}" onchange="onField(${r.id},'dataQ',this.value)" style="font-size:0.75rem;"></td>
+        <td>
+          <input type="date" value="${r.validade}" onchange="onField(${r.id},'validade',this.value)" style="font-size:0.75rem;">
+          ${expirado?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Vencida</span>':''}
+        </td>
+        <td><select onchange="onField(${r.id},'comp_cert',this.value)">${compOpts(r.comp_cert)}</select></td>
+        <td><input type="number" min="0" value="${r.lt}" placeholder="45" onchange="onField(${r.id},'lt',this.value)" style="max-width:65px;text-align:center;"></td>
+        <td><input type="text" value="${r.moq}" placeholder="1000" onchange="onField(${r.id},'moq',this.value)" style="max-width:70px;text-align:center;"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const qual  = rows.filter(r=>r.status==="Qualificado").length;
+    const emQ   = rows.filter(r=>r.status==="Em Qualificação").length;
+    const rest  = rows.filter(r=>r.status==="Restrito").length;
+    const rej   = rows.filter(r=>r.status==="Rejeitado").length;
+    const prim  = rows.filter(r=>r.tipo==="Primário").length;
+    const alt   = rows.filter(r=>r.tipo==="Alternativo").length;
+    const today = new Date().toISOString().slice(0,10);
+    const venc  = rows.filter(r=>r.validade&&r.validade<today&&r.status==="Qualificado").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total AVL</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${qual}</div><div class="kpi-chip-lbl">Qualificados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${emQ}</div><div class="kpi-chip-lbl">Em Qualif.</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${rest}</div><div class="kpi-chip-lbl">Restritos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${rej}</div><div class="kpi-chip-lbl">Rejeitados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#084298;">${prim}</div><div class="kpi-chip-lbl">Primários</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#3d1a78;">${alt}</div><div class="kpi-chip-lbl">Alternativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${venc}</div><div class="kpi-chip-lbl">Qualif. Vencida</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({comp:"Capacitor 100µF/16V",fab:"Murata",mpn:"GRM188R61C106ME69",tipo:"Primário",cat:"Passivo",status:"Qualificado",produtos:"Placa Ctrl v3, Placa Alimentação",forn:"DigiKey",dataQ:"2025-03-15",validade:"2027-03-15",comp_cert:"RoHS + REACH",lt:"14",moq:"1000"});
+    addRow({comp:"Capacitor 100µF/16V",fab:"TDK",mpn:"CGA6P3X5R1C106M250AB",tipo:"Alternativo",cat:"Passivo",status:"Qualificado",produtos:"Placa Ctrl v3",forn:"Mouser",dataQ:"2025-06-01",validade:"2027-06-01",comp_cert:"RoHS + REACH",lt:"21",moq:"500"});
+    addRow({comp:"MCU STM32F4",fab:"STMicroelectronics",mpn:"STM32F407VGT6",tipo:"Primário",cat:"Microcontrolador",status:"Qualificado",produtos:"Placa Controladora v3",forn:"Arrow",dataQ:"2024-01-10",validade:"2026-01-10",comp_cert:"RoHS + REACH",lt:"28",moq:"100",obs:"EOL previsto 2027"});
+    addRow({comp:"Módulo GPS L89H",fab:"Quectel",mpn:"L89H-M09",tipo:"Primário",cat:"Módulo RF",status:"Em Qualificação",produtos:"Módulo GPS v2",forn:"DigiKey",dataQ:"",validade:"",comp_cert:"RoHS",lt:"45",moq:"50",obs:"Aguardando testes de campo"});
+    addRow({comp:"Conector USB-C 2.0",fab:"Molex",mpn:"2172031001",tipo:"Primário",cat:"Conector",status:"Qualificado",produtos:"Placa Ctrl v3, Placa BT 5.0",forn:"DigiKey",dataQ:"2024-11-20",validade:"2026-11-20",comp_cert:"RoHS + REACH",lt:"7",moq:"250"});
+    addRow({comp:"IC BT CC2640R2F",fab:"Texas Instruments",mpn:"CC2640R2FRHBT",tipo:"Primário",cat:"CI Digital",status:"Restrito",produtos:"Placa BT 5.0",forn:"DigiKey",dataQ:"2023-05-01",validade:"2025-05-01",comp_cert:"RoHS",lt:"60",moq:"100",obs:"EOL confirmado – em processo de substituição"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
