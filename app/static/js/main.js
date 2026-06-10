@@ -93,6 +93,7 @@ function setupPageActions() {
 function setupBackButtons() {
   document.querySelectorAll(".btn-header-icon").forEach(el => {
     if (el.querySelector(".bi-arrow-left")) {
+      if (el.tagName === "A" && el.getAttribute("href") && el.getAttribute("href") !== "#") return;
       el.addEventListener("click", e => {
         e.preventDefault();
         history.back();
