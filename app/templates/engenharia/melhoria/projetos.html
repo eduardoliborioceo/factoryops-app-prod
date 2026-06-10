@@ -1,6 +1,33 @@
 {% extends "layouts/app.html" %}
 {% block title %}Projetos de Redução de Custo — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.prc-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.prc-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.prc-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.prc-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.prc-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.prc-table td input { border:none;background:transparent;font-size:0.82rem;color:var(--text);width:100%;padding:2px 0; }
+.prc-table td input:focus { outline:none;border-bottom:1px solid #0d6efd; }
+.prc-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text); }
+.status-badge { font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-plan  { background:rgba(13,110,253,0.12);color:#084298; }
+.st-exec  { background:rgba(253,126,20,0.15);color:#8a3d00; }
+.st-done  { background:rgba(25,135,84,0.12);color:#0a3622; }
+.st-cancel{ background:rgba(15,23,42,0.08);color:var(--text-muted); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.saving-pos { color:#198754;font-weight:700; } .saving-neg { color:#dc3545;font-weight:700; }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +35,6 @@
     <h1 class="page-header-name">Projetos de Redução de Custo</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +44,143 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-kanban" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Pipeline de projetos com metas, responsáveis e savings realizados.</p>
+
+  <div class="prc-card">
+    <div class="prc-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-piggy-bank text-primary me-1"></i>Pipeline de Projetos — Redução de Custo</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option><option>Identificado</option><option>Em Análise</option>
+          <option>Implementando</option><option>Concluído</option><option>Cancelado</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addProject()"><i class="bi bi-plus-lg me-1"></i>Projeto</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="prc-table">
+          <thead>
+            <tr>
+              <th>#</th><th style="min-width:160px;">Projeto</th><th>Área</th><th>Categoria</th>
+              <th>Economia alvo (R$)</th><th>Responsável</th><th>Prazo</th>
+              <th>Status</th><th>Economia realizada (R$)</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="projBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_projetos_custo";
+  const CATS=["Material","Processo","Energia","Mão de Obra","Logística","Overhead","Outro"];
+  const STATUS=["Identificado","Em Análise","Implementando","Concluído","Cancelado"];
+  let projects=[]; let nextId=1;
+
+  function catOpts(sel) { return CATS.map(c=>`<option${c===sel?" selected":""}>${c}</option>`).join(""); }
+  function statusOpts(sel) { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addProject(d={}) {
+    const id=nextId++;
+    projects.push({id,nome:d.nome||"",area:d.area||"",cat:d.cat||"Processo",
+      alvo:d.alvo||"",resp:d.resp||"",prazo:d.prazo||"",status:d.status||"Identificado",realizado:d.realizado||""});
+    renderTable(); updateKpis();
+  }
+  window.addProject=addProject;
+
+  function removeProject(id) { projects=projects.filter(p=>p.id!==id); renderTable(); updateKpis(); }
+  window.removeProject=removeProject;
+
+  function onField(id,field,val) { const p=projects.find(p=>p.id===id); if(p){p[field]=val; updateKpis();} }
+  window.onField=onField;
+
+  function renderTable() {
+    const fs=document.getElementById("filterStatus").value;
+    const tbody=document.getElementById("projBody");
+    tbody.innerHTML="";
+    projects.filter(p=>!fs||p.status===fs).forEach(p=>{
+      const alvo=parseFloat(p.alvo)||0;
+      const real=parseFloat(p.realizado)||0;
+      const atingiu=alvo>0?Math.round((real/alvo)*100):null;
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.78rem;">#${p.id}</td>
+        <td><input type="text" value="${p.nome}" placeholder="Nome do projeto" onchange="onField(${p.id},'nome',this.value)"></td>
+        <td><input type="text" value="${p.area}" placeholder="Área/Linha" onchange="onField(${p.id},'area',this.value)"></td>
+        <td><select onchange="onField(${p.id},'cat',this.value)">${catOpts(p.cat)}</select></td>
+        <td><input type="number" min="0" step="100" value="${p.alvo}" placeholder="0.00"
+          onchange="onField(${p.id},'alvo',this.value)" style="text-align:right;"></td>
+        <td><input type="text" value="${p.resp}" placeholder="Responsável" onchange="onField(${p.id},'resp',this.value)"></td>
+        <td><input type="date" value="${p.prazo}" onchange="onField(${p.id},'prazo',this.value)" style="font-size:0.78rem;"></td>
+        <td><select onchange="onField(${p.id},'status',this.value)">${statusOpts(p.status)}</select></td>
+        <td>
+          <input type="number" min="0" step="100" value="${p.realizado}" placeholder="0.00"
+            onchange="onField(${p.id},'realizado',this.value)" style="text-align:right;">
+          ${atingiu!==null?`<div style="font-size:0.68rem;font-weight:700;color:${atingiu>=100?"#198754":"#fd7e14"};">${atingiu}%</div>`:""}
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeProject(${p.id})"
+            style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const active=projects.filter(p=>["Identificado","Em Análise","Implementando"].includes(p.status)).length;
+    const done=projects.filter(p=>p.status==="Concluído").length;
+    const pipeline=projects.reduce((s,p)=>s+(parseFloat(p.alvo)||0),0);
+    const realized=projects.reduce((s,p)=>s+(parseFloat(p.realizado)||0),0);
+    const rate=pipeline>0?Math.round((realized/pipeline)*100):0;
+    const overdue=projects.filter(p=>p.prazo&&new Date(p.prazo)<new Date()&&p.status!=="Concluído"&&p.status!=="Cancelado").length;
+    document.getElementById("kpiStrip").innerHTML=`
+      <div class="kpi-chip"><div class="kpi-chip-val">${projects.length}</div><div class="kpi-chip-lbl">Total Projetos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${active}</div><div class="kpi-chip-lbl">Ativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${done}</div><div class="kpi-chip-lbl">Concluídos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">R$ ${(pipeline/1000).toFixed(0)}K</div><div class="kpi-chip-lbl">Pipeline</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">R$ ${(realized/1000).toFixed(0)}K</div><div class="kpi-chip-lbl">Realizado</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${rate>=80?"#198754":rate>=50?"#fd7e14":"#dc3545"};">${rate}%</div><div class="kpi-chip-lbl">Taxa Atingimento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${overdue>0?"#dc3545":"var(--text)"};">${overdue}</div><div class="kpi-chip-lbl">Atrasados</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({projects,nextId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.projects&&d.projects.length){ projects=d.projects; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addProject({nome:"Substituição de componente R120 → alternativo",area:"SMD 01",cat:"Material",alvo:"12000",status:"Implementando"});
+    addProject({nome:"Redução de setup na linha SMD",area:"SMD",cat:"Processo",alvo:"8000",status:"Em Análise"});
+    addProject({nome:"Otimização consumo energia fornos reflow",area:"Reflow",cat:"Energia",alvo:"3500",status:"Identificado"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

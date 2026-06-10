@@ -1,6 +1,45 @@
 {% extends "layouts/app.html" %}
 {% block title %}Capacidade Produtiva — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.cap-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.cap-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.cap-body { padding:16px 18px; }
+
+.oee-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px; }
+.oee-cell { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center; }
+.oee-cell-label { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.oee-cell-val   { font-size:1.8rem;font-weight:900; }
+.oee-cell-sub   { font-size:0.72rem;color:var(--text-muted);margin-top:2px; }
+.oee-bar-wrap   { height:10px;border-radius:5px;background:rgba(15,23,42,0.08);overflow:hidden;margin-top:8px; }
+.oee-bar        { height:100%;border-radius:5px;transition:width 0.4s; }
+.oee-world { font-size:0.68rem;color:var(--text-muted);margin-top:4px; }
+
+.lines-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.lines-table th {
+  font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap;
+}
+.lines-table td { padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.lines-table td input { width:100%;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);font-size:0.8rem;color:var(--text);padding:4px 7px;text-align:right; }
+.lines-table td input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,0.12); }
+.lines-table .calc { background:rgba(13,110,253,0.04);font-weight:700;text-align:right;padding:6px 10px; }
+
+.pct-badge { font-size:0.72rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.pct-world  { background:rgba(25,135,84,0.12);color:#0a3622; }
+.pct-ok     { background:rgba(13,110,253,0.12);color:#084298; }
+.pct-warn   { background:rgba(253,126,20,0.15);color:#8a3d00; }
+.pct-crit   { background:rgba(220,53,69,0.15); color:#9b1e27; }
+
+@media (max-width:767px) { .oee-grid { grid-template-columns:repeat(2,1fr); } }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +47,6 @@
     <h1 class="page-header-name">Capacidade Produtiva</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +56,228 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-speedometer2" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>OEE, planejamento de capacidade e análise de restrições.</p>
+
+  <!-- OEE Calculator -->
+  <div class="cap-card">
+    <div class="cap-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-speedometer2 text-primary me-1"></i>Calculadora OEE — Eficiência Global do Equipamento</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="cap-body">
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Linha / Equipamento</label>
+          <input id="oeeNome" type="text" class="form-control form-control-sm" placeholder="Ex: Linha SMD 01">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Turno disponível (h)</label>
+          <input id="oeeTurno" type="number" step="0.5" min="1" value="8" class="form-control form-control-sm" oninput="calcOee()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Paradas (min)</label>
+          <input id="oeeParadas" type="number" min="0" value="30" class="form-control form-control-sm" oninput="calcOee()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Vel. ideal (pcs/h)</label>
+          <input id="oeeVelIdeal" type="number" min="1" value="200" class="form-control form-control-sm" oninput="calcOee()">
+        </div>
+        <div class="col-6 col-md-1">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Produzido</label>
+          <input id="oeeProd" type="number" min="0" value="1400" class="form-control form-control-sm" oninput="calcOee()">
+        </div>
+        <div class="col-6 col-md-1">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Defeitos</label>
+          <input id="oeeDefeitosPcs" type="number" min="0" value="28" class="form-control form-control-sm" oninput="calcOee()">
+        </div>
+      </div>
+      <div id="saveMsg" style="font-size:0.8rem;" class="mb-3"></div>
+      <div class="oee-grid" id="oeeGrid"></div>
+      <div style="background:rgba(15,23,42,0.03);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:0.8rem;">
+        <strong>Referências World-Class:</strong>
+        Disponibilidade ≥ 90% &nbsp;|&nbsp; Desempenho ≥ 95% &nbsp;|&nbsp; Qualidade ≥ 99% &nbsp;|&nbsp;
+        <strong>OEE ≥ 85%</strong>
+      </div>
+    </div>
   </div>
+
+  <!-- Linhas de produção -->
+  <div class="cap-card">
+    <div class="cap-hdr">
+      <span><i class="bi bi-table me-2"></i>Capacidade por Linha de Produção</span>
+      <button class="btn btn-success btn-sm no-print" onclick="addLine()">
+        <i class="bi bi-plus-lg me-1"></i>Linha
+      </button>
+    </div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="lines-table">
+          <thead>
+            <tr>
+              <th>Linha</th>
+              <th>TC Ciclo (s)</th>
+              <th>Uptime (%)</th>
+              <th>Turno (h)</th>
+              <th>Operadores</th>
+              <th class="calc">Takt (s)</th>
+              <th class="calc">Cap/Turno</th>
+              <th class="calc">Cap/Dia</th>
+              <th class="calc">UPH</th>
+              <th>OEE (%)</th>
+              <th class="calc">Cap Efetiva</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="linesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_capacidade";
+
+  function oeeColor(v) {
+    return v>=85?"#198754":v>=60?"#fd7e14":"#dc3545";
+  }
+  function oeeClass(v) {
+    return v>=85?"pct-world":v>=65?"pct-ok":v>=45?"pct-warn":"pct-crit";
+  }
+
+  function calcOee() {
+    const turno   = parseFloat(document.getElementById("oeeTurno").value)||8;
+    const paradas = parseFloat(document.getElementById("oeeParadas").value)||0;
+    const velId   = parseFloat(document.getElementById("oeeVelIdeal").value)||200;
+    const prod    = parseFloat(document.getElementById("oeeProd").value)||0;
+    const defQt   = parseFloat(document.getElementById("oeeDefeitosPcs").value)||0;
+
+    const dispMin = turno*60;
+    const opMin   = dispMin - paradas;
+    const disp    = dispMin>0 ? Math.min((opMin/dispMin)*100, 100) : 0;
+    const velReal = opMin>0 ? prod/(opMin/60) : 0;
+    const desemp  = velId>0 ? Math.min((velReal/velId)*100, 100) : 0;
+    const qual    = prod>0  ? Math.max(((prod-defQt)/prod)*100, 0) : 0;
+    const oee     = (disp/100)*(desemp/100)*(qual/100)*100;
+
+    const g = document.getElementById("oeeGrid");
+    function cell(label, val, ref, sub) {
+      const color = oeeColor(val);
+      return `<div class="oee-cell">
+        <div class="oee-cell-label">${label}</div>
+        <div class="oee-cell-val" style="color:${color};">${val.toFixed(1)}%</div>
+        <div class="oee-bar-wrap"><div class="oee-bar" style="width:${Math.min(val,100)}%;background:${color};"></div></div>
+        <div class="oee-world">Meta world-class: ${ref}%</div>
+        ${sub?`<div class="oee-cell-sub">${sub}</div>`:""}
+      </div>`;
+    }
+    g.innerHTML =
+      cell("Disponibilidade", disp, 90, `Paradas: ${paradas}min`) +
+      cell("Desempenho", desemp, 95, `Vel. real: ${velReal.toFixed(0)} pcs/h`) +
+      cell("Qualidade", qual, 99, `Defeitos: ${defQt} pcs`) +
+      cell("OEE", oee, 85, `${prod} pcs produzidos`);
+  }
+  window.calcOee=calcOee;
+
+  function addLine(d={}) {
+    const tbody=document.getElementById("linesBody");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="text" value="${d.nome||""}" placeholder="Linha SMD 01"></td>
+      <td><input type="number" min="1" step="0.1" value="${d.tc||""}" placeholder="Ex: 18" oninput="recalcLines()"></td>
+      <td><input type="number" min="1" max="100" value="${d.up||90}" oninput="recalcLines()"></td>
+      <td><input type="number" min="1" step="0.5" value="${d.turno||8}" oninput="recalcLines()"></td>
+      <td><input type="number" min="1" value="${d.op||1}" oninput="recalcLines()"></td>
+      <td class="calc" data-takt></td>
+      <td class="calc" data-capturno></td>
+      <td class="calc" data-capdia></td>
+      <td class="calc" data-uph></td>
+      <td><input type="number" min="0" max="100" step="0.1" value="${d.oee||85}" oninput="recalcLines()"></td>
+      <td class="calc" data-efetiva></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="this.closest('tr').remove();recalcLines()"
+          style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    recalcLines();
+  }
+  window.addLine=addLine;
+
+  function recalcLines() {
+    document.querySelectorAll("#linesBody tr").forEach(tr=>{
+      const ins=tr.querySelectorAll("input");
+      const tc=parseFloat(ins[1].value)||0;
+      const up=parseFloat(ins[2].value)||90;
+      const turno=parseFloat(ins[3].value)||8;
+      const oee=parseFloat(ins[5].value)||85;
+      const takt = tc>0 ? tc/(up/100) : 0;
+      const capT = takt>0 ? Math.floor(turno*3600/takt) : 0;
+      const uph  = takt>0 ? Math.round(3600/takt) : 0;
+      const efet = Math.round(capT*(oee/100));
+      tr.querySelector("[data-takt]").textContent     = takt>0 ? takt.toFixed(1)+"s" : "—";
+      tr.querySelector("[data-capturno]").textContent = capT>0 ? capT.toLocaleString("pt-BR") : "—";
+      tr.querySelector("[data-capdia]").textContent   = capT>0 ? (capT*2).toLocaleString("pt-BR") : "—";
+      tr.querySelector("[data-uph]").textContent      = uph>0 ? uph.toLocaleString("pt-BR") : "—";
+      tr.querySelector("[data-efetiva]").textContent  = efet>0 ? efet.toLocaleString("pt-BR") : "—";
+    });
+  }
+  window.recalcLines=recalcLines;
+
+  function collectLines() {
+    return Array.from(document.querySelectorAll("#linesBody tr")).map(tr=>{
+      const ins=tr.querySelectorAll("input");
+      return {nome:ins[0].value,tc:ins[1].value,up:ins[2].value,turno:ins[3].value,op:ins[4].value,oee:ins[5].value};
+    });
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({
+      nome:document.getElementById("oeeNome").value,
+      turno:document.getElementById("oeeTurno").value,
+      paradas:document.getElementById("oeeParadas").value,
+      velIdeal:document.getElementById("oeeVelIdeal").value,
+      prod:document.getElementById("oeeProd").value,
+      defeitos:document.getElementById("oeeDefeitosPcs").value,
+      lines:collectLines()
+    }));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nome)    document.getElementById("oeeNome").value=d.nome;
+      if(d.turno)   document.getElementById("oeeTurno").value=d.turno;
+      if(d.paradas) document.getElementById("oeeParadas").value=d.paradas;
+      if(d.velIdeal)document.getElementById("oeeVelIdeal").value=d.velIdeal;
+      if(d.prod)    document.getElementById("oeeProd").value=d.prod;
+      if(d.defeitos)document.getElementById("oeeDefeitosPcs").value=d.defeitos;
+      if(d.lines&&d.lines.length) d.lines.forEach(l=>addLine(l));
+      else ["Linha SMD 01","Linha SMD 02","Linha THT","Linha Final"].forEach(n=>addLine({nome:n}));
+    } catch(e){
+      ["Linha SMD 01","Linha SMD 02"].forEach(n=>addLine({nome:n}));
+    }
+    calcOee();
+    recalcLines();
+  });
+})();
+</script>
 {% endblock %}

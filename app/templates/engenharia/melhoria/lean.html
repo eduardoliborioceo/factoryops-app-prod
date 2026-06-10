@@ -1,6 +1,38 @@
 {% extends "layouts/app.html" %}
 {% block title %}Lean Manufacturing — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.lean-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.lean-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.lean-body { padding:16px 18px; }
+.s5-grid { display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px; }
+.s5-cell { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
+.s5-header { padding:8px 10px;font-size:0.78rem;font-weight:700;text-align:center;color:#fff; }
+.s5-1 .s5-header{background:#0d6efd;} .s5-2 .s5-header{background:#6f42c1;}
+.s5-3 .s5-header{background:#198754;} .s5-4 .s5-header{background:#fd7e14;}
+.s5-5 .s5-header{background:#dc3545;}
+.s5-criteria { padding:8px; }
+.s5-criterion { display:flex;align-items:center;justify-content:space-between;
+  padding:5px 0;border-bottom:1px solid var(--border);font-size:0.75rem; }
+.s5-criterion:last-child { border-bottom:none; }
+.s5-score-sel { border:1px solid var(--border);border-radius:5px;font-size:0.72rem;
+  padding:2px 4px;background:var(--card);color:var(--text);width:45px; }
+.s5-score-sel:focus { outline:none;border-color:#0d6efd; }
+.s5-total { padding:8px 10px;font-size:0.82rem;font-weight:700;text-align:center;
+  border-top:2px solid var(--border);background:rgba(15,23,42,0.03); }
+.s5-bar-wrap { height:8px;border-radius:4px;background:rgba(15,23,42,0.08);overflow:hidden;margin-top:4px; }
+.s5-bar { height:100%;border-radius:4px;transition:width 0.3s; }
+.s5-total-badge { display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px; }
+.s5-badge-val { font-size:2.5rem;font-weight:900; }
+.s5-badge-lbl { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+@media (max-width:767px) { .s5-grid { grid-template-columns:1fr 1fr; } }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +40,6 @@
     <h1 class="page-header-name">Lean Manufacturing</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +49,207 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-lightning-charge" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>5S, kanban, poka-yoke e fluxo contínuo.</p>
+
+  <div class="lean-card">
+    <div class="lean-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-check2-all text-primary me-1"></i>Auditoria 5S</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="lean-body">
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Área / Linha</label>
+          <input id="hdrArea" type="text" class="form-control form-control-sm" placeholder="Ex: Linha SMD 01">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Auditor</label>
+          <input id="hdrAuditor" type="text" class="form-control form-control-sm" placeholder="Nome">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Data</label>
+          <input id="hdrData" type="date" class="form-control form-control-sm">
+        </div>
+        <div class="col-12 col-md-3">
+          <div class="s5-total-badge">
+            <div class="s5-badge-val" id="totalScore" style="color:#fd7e14;">0</div>
+            <div class="s5-badge-lbl">Score 5S / 100</div>
+            <div class="s5-bar-wrap" style="width:100%;margin-top:6px;">
+              <div id="totalBar" class="s5-bar" style="width:0%;background:#fd7e14;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="saveMsg" style="font-size:0.8rem;" class="mb-3"></div>
+      <div class="s5-grid" id="s5Grid"></div>
+      <div class="lean-card" style="margin-bottom:0;border:1px solid rgba(255,193,7,0.30);background:rgba(255,193,7,0.05);">
+        <div class="lean-hdr" style="background:rgba(255,193,7,0.08);">
+          <span><i class="bi bi-pencil-square me-2" style="color:#664d03;"></i>Ações de Melhoria Identificadas</span>
+        </div>
+        <div style="padding:14px 18px;">
+          <textarea id="acoesText" class="form-control form-control-sm" rows="4"
+            style="border-radius:8px;font-size:0.82rem;resize:vertical;"
+            placeholder="Liste as oportunidades de melhoria identificadas na auditoria..."></textarea>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Referência Lean -->
+  <div class="lean-card">
+    <div class="lean-hdr"><span><i class="bi bi-book me-2"></i>Princípios Lean — Checklist de Implementação</span></div>
+    <div class="lean-body">
+      <div class="row g-3" id="leanPrinciples"></div>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_lean";
+  const S5 = [
+    { key:"seiri", label:"1S — Seiri (Utilização)", cls:"s5-1",
+      criteria:["Itens desnecessários removidos","Apenas equipamentos necessários presentes","Área sem materiais obsoletos",
+        "Ferramentas sem uso identificadas e removidas","Documentos desnecessários eliminados"] },
+    { key:"seiton", label:"2S — Seiton (Organização)", cls:"s5-2",
+      criteria:["Itens têm local definido e identificado","Endereços visuais aplicados","Ferramentas acessíveis e organizadas",
+        "Fluxo de materiais visível","Limites e marcações no piso existem"] },
+    { key:"seiso", label:"3S — Seiso (Limpeza)", cls:"s5-3",
+      criteria:["Área livre de sujeira e resíduos","Equipamentos limpos e funcionando","Responsáveis de limpeza definidos",
+        "Programação de limpeza existe","Fontes de contaminação identificadas"] },
+    { key:"seiketsu", label:"4S — Seiketsu (Padronização)", cls:"s5-4",
+      criteria:["Padrões visuais aplicados","Instruções visuais disponíveis","Uniformidade entre turnos",
+        "Indicadores 5S visíveis","Revisões periódicas agendadas"] },
+    { key:"shitsuke", label:"5S — Shitsuke (Disciplina)", cls:"s5-5",
+      criteria:["Equipe cumpre os padrões","Auditoria regular realizada","Plano de ação em dia",
+        "Resultados comunicados à equipe","Cultura de melhoria evidenciada"] },
+  ];
+  const LEAN_PRINCIPLES = [
+    { icon:"bi-diagram-3",label:"Mapeamento do Fluxo de Valor",desc:"VSM mapeado e atualizado?" },
+    { icon:"bi-arrow-right-circle",label:"Fluxo Contínuo",desc:"Produção em fluxo, sem estoques intermediários?" },
+    { icon:"bi-card-list",label:"Sistema Puxado (Kanban)",desc:"Kanban implementado nas linhas?" },
+    { icon:"bi-speedometer2",label:"Heijunka (Nivelamento)",desc:"Produção nivelada por mix e volume?" },
+    { icon:"bi-check-circle",label:"Jidoka (Autonomação)",desc:"Máquinas param automaticamente em anomalias?" },
+    { icon:"bi-stopwatch",label:"Troca Rápida (SMED)",desc:"Setup < 10 minutos nas linhas críticas?" },
+    { icon:"bi-clipboard-check",label:"TPM (Manutenção Produtiva)",desc:"Programa de manutenção autônoma ativo?" },
+  ];
+
+  let scores={};
+
+  function buildS5() {
+    const grid=document.getElementById("s5Grid");
+    grid.innerHTML="";
+    S5.forEach(s=>{
+      const sc=scores[s.key]||Array(5).fill(3);
+      const total=sc.reduce((a,b)=>a+b,0);
+      const pct=Math.round((total/25)*100);
+      const criteriaHtml=s.criteria.map((c,i)=>`
+        <div class="s5-criterion">
+          <span>${c}</span>
+          <select class="s5-score-sel" onchange="onScore('${s.key}',${i},parseInt(this.value))">
+            ${[1,2,3,4,5].map(n=>`<option${n===sc[i]?" selected":""}>${n}</option>`).join("")}
+          </select>
+        </div>`).join("");
+      const barColor=pct>=80?"#198754":pct>=60?"#fd7e14":"#dc3545";
+      grid.innerHTML+=`
+        <div class="s5-cell ${s.cls}">
+          <div class="s5-header">${s.label}</div>
+          <div class="s5-criteria">${criteriaHtml}</div>
+          <div class="s5-total" id="s5tot-${s.key}">
+            ${total}/25
+            <div class="s5-bar-wrap">
+              <div class="s5-bar" id="s5bar-${s.key}" style="width:${pct}%;background:${barColor};"></div>
+            </div>
+          </div>
+        </div>`;
+    });
+    updateTotal();
+  }
+
+  function onScore(sKey, idx, val) {
+    if(!scores[sKey]) scores[sKey]=Array(5).fill(3);
+    scores[sKey][idx]=val;
+    const total=scores[sKey].reduce((a,b)=>a+b,0);
+    const pct=Math.round((total/25)*100);
+    const barColor=pct>=80?"#198754":pct>=60?"#fd7e14":"#dc3545";
+    const totEl=document.getElementById("s5tot-"+sKey);
+    const barEl=document.getElementById("s5bar-"+sKey);
+    if(totEl) totEl.firstChild.textContent=`${total}/25`;
+    if(barEl) { barEl.style.width=pct+"%"; barEl.style.background=barColor; }
+    updateTotal();
+  }
+  window.onScore=onScore;
+
+  function updateTotal() {
+    let grand=0;
+    S5.forEach(s=>{ grand+=(scores[s.key]||Array(5).fill(3)).reduce((a,b)=>a+b,0); });
+    const pct=Math.round((grand/125)*100);
+    const color=pct>=80?"#198754":pct>=60?"#fd7e14":"#dc3545";
+    document.getElementById("totalScore").textContent=pct;
+    document.getElementById("totalScore").style.color=color;
+    document.getElementById("totalBar").style.width=pct+"%";
+    document.getElementById("totalBar").style.background=color;
+  }
+
+  function buildPrinciples() {
+    const area=document.getElementById("leanPrinciples");
+    area.innerHTML=LEAN_PRINCIPLES.map(p=>`
+      <div class="col-12 col-md-6 col-lg-4">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid var(--border);border-radius:10px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:rgba(13,110,253,0.10);
+            display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi ${p.icon}" style="color:#0d6efd;font-size:1rem;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:0.82rem;font-weight:700;">${p.label}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin:3px 0 6px;">${p.desc}</div>
+            <select style="width:100%;border:1px solid var(--border);border-radius:6px;font-size:0.75rem;padding:3px 6px;background:var(--card);">
+              <option>Não implementado</option><option>Parcialmente</option><option>Implementado</option>
+            </select>
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({
+      area:document.getElementById("hdrArea").value,
+      auditor:document.getElementById("hdrAuditor").value,
+      data:document.getElementById("hdrData").value,
+      acoes:document.getElementById("acoesText").value,
+      scores
+    }));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.area)    document.getElementById("hdrArea").value=d.area;
+      if(d.auditor) document.getElementById("hdrAuditor").value=d.auditor;
+      if(d.data)    document.getElementById("hdrData").value=d.data;
+      if(d.acoes)   document.getElementById("acoesText").value=d.acoes;
+      if(d.scores)  scores=d.scores;
+    } catch(e){}
+    document.getElementById("hdrData").value=document.getElementById("hdrData").value||new Date().toISOString().slice(0,10);
+    buildS5();
+    buildPrinciples();
+  });
+})();
+</script>
 {% endblock %}

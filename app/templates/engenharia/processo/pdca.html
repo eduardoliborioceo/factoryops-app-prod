@@ -1,6 +1,119 @@
 {% extends "layouts/app.html" %}
 {% block title %}PDCA de Processo — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.pdca-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.pdca-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pdca-plan  { border-top: 4px solid #0d6efd; }
+.pdca-do    { border-top: 4px solid #198754; }
+.pdca-check { border-top: 4px solid #fd7e14; }
+.pdca-act   { border-top: 4px solid #6f42c1; }
+
+.pdca-card-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,0.03);
+}
+.pdca-letter {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; font-weight: 900; color: #fff; flex-shrink: 0;
+}
+.pdca-card-title { font-size: 0.9rem; font-weight: 700; }
+.pdca-card-sub   { font-size: 0.72rem; color: var(--text-muted); }
+.pdca-card-body  { padding: 14px 16px; }
+
+.pdca-label {
+  font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.pdca-inp, .pdca-ta {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 10px; font-size: 0.825rem; color: var(--text);
+  background: var(--card); transition: border-color 0.12s, box-shadow 0.12s;
+  margin-bottom: 10px; font-family: inherit;
+}
+.pdca-inp:focus, .pdca-ta:focus {
+  outline: none; border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13,110,253,0.12);
+}
+.pdca-ta { resize: vertical; min-height: 70px; }
+
+.whys-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.whys-table th {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--text-muted);
+  padding: 6px 8px; border-bottom: 2px solid var(--border);
+  background: rgba(15,23,42,0.04);
+}
+.whys-table td { padding: 5px 6px; border-bottom: 1px solid var(--border); }
+.whys-table td input {
+  width: 100%; border: none; background: transparent;
+  font-size: 0.8rem; color: var(--text); padding: 2px 4px;
+}
+.whys-table td input:focus { outline: 1px solid #0d6efd; border-radius: 4px; }
+
+.actions-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 0.8rem; }
+.actions-table th {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--text-muted);
+  padding: 6px 8px; border-bottom: 2px solid var(--border);
+  background: rgba(15,23,42,0.04); white-space: nowrap;
+}
+.actions-table td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.actions-table td input, .actions-table td select {
+  width: 100%; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); font-size: 0.78rem; color: var(--text); padding: 4px 6px;
+}
+.actions-table td input:focus, .actions-table td select:focus {
+  outline: none; border-color: #0d6efd;
+}
+
+.status-badge {
+  font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+}
+.status-aberto    { background: rgba(13,110,253,0.12); color: #084298; }
+.status-andamento { background: rgba(253,126,20,0.15); color: #8a3d00; }
+.status-concluido { background: rgba(25,135,84,0.12);  color: #0a3622; }
+.status-verificado{ background: rgba(111,66,193,0.12); color: #3d1a7a; }
+
+.kpi-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.kpi-chip {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 16px; text-align: center; min-width: 100px;
+}
+.kpi-chip-val  { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+.kpi-chip-lbl  { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-muted); }
+
+.sec-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sec-hdr-title { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 700; }
+
+@media (max-width: 767px) {
+  .pdca-grid { grid-template-columns: 1fr; }
+}
+@media print {
+  .no-print { display: none !important; }
+  .pdca-card { break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +121,6 @@
     <h1 class="page-header-name">PDCA de Processo</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +130,332 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-arrow-clockwise" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Ciclos de melhoria, ações corretivas e follow-up de resultados.</p>
+
+  <!-- Cabeçalho -->
+  <div class="card mb-3" style="border:1px solid var(--border);border-radius:12px;padding:14px 18px;">
+    <div class="sec-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span style="font-size:0.875rem;font-weight:700;">
+          <i class="bi bi-arrow-clockwise text-primary me-1"></i>Identificação do Ciclo PDCA
+        </span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="newPdca()">
+          <i class="bi bi-plus me-1"></i>Novo
+        </button>
+      </div>
+    </div>
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <div class="pdca-label">Título / Problema</div>
+        <input id="hdrTitulo" type="text" class="pdca-inp" placeholder="Ex: Reduzir falhas no processo de solda">
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="pdca-label">Responsável</div>
+        <input id="hdrResp" type="text" class="pdca-inp" placeholder="Nome do engenheiro">
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="pdca-label">Data de abertura</div>
+        <input id="hdrAbertura" type="date" class="pdca-inp">
+      </div>
+      <div class="col-6 col-md-2">
+        <div class="pdca-label">Prazo final</div>
+        <input id="hdrPrazo" type="date" class="pdca-inp">
+      </div>
+      <div class="col-6 col-md-1 d-flex align-items-end">
+        <select id="hdrStatus" class="pdca-inp mb-0">
+          <option value="aberto">Aberto</option>
+          <option value="andamento">Em andamento</option>
+          <option value="concluido">Concluído</option>
+          <option value="verificado">Verificado</option>
+        </select>
+      </div>
+    </div>
+    <div id="saveMsg" class="mt-2" style="font-size:0.8rem;"></div>
   </div>
+
+  <!-- KPIs -->
+  <div class="kpi-bar" id="kpiBar"></div>
+
+  <!-- Canvas PDCA -->
+  <div class="pdca-grid">
+
+    <!-- PLAN -->
+    <div class="pdca-card pdca-plan">
+      <div class="pdca-card-hdr">
+        <div class="pdca-letter" style="background:#0d6efd;">P</div>
+        <div>
+          <div class="pdca-card-title">Plan — Planejar</div>
+          <div class="pdca-card-sub">Definir problema, meta e análise de causa raiz</div>
+        </div>
+      </div>
+      <div class="pdca-card-body">
+        <div class="pdca-label">Descrição do problema</div>
+        <textarea id="planProblema" class="pdca-ta" rows="3" placeholder="Descreva o problema de forma clara e mensurável..."></textarea>
+        <div class="pdca-label">Meta (SMART)</div>
+        <input id="planMeta" type="text" class="pdca-inp" placeholder="Ex: Reduzir defeitos de solda de 3,2% para menos de 0,5% em 60 dias">
+        <div class="pdca-label">Análise 5 Porquês</div>
+        <table class="whys-table">
+          <thead><tr><th style="width:36px;">#</th><th>Por quê?</th><th>Causa encontrada</th></tr></thead>
+          <tbody id="whysBody"></tbody>
+        </table>
+        <div class="pdca-label">Causa raiz confirmada</div>
+        <textarea id="planCausa" class="pdca-ta" rows="2" placeholder="Descreva a causa raiz identificada pela análise..."></textarea>
+      </div>
+    </div>
+
+    <!-- DO -->
+    <div class="pdca-card pdca-do">
+      <div class="pdca-card-hdr">
+        <div class="pdca-letter" style="background:#198754;">D</div>
+        <div>
+          <div class="pdca-card-title">Do — Executar</div>
+          <div class="pdca-card-sub">Plano de ação com responsáveis e prazos</div>
+        </div>
+      </div>
+      <div class="pdca-card-body">
+        <div class="sec-hdr">
+          <span class="pdca-label mb-0">Plano de ação (5W2H)</span>
+          <button class="btn btn-success btn-sm no-print" onclick="addAction()">
+            <i class="bi bi-plus-lg me-1"></i>Ação
+          </button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="actions-table">
+            <thead>
+              <tr>
+                <th>O quê (What)</th>
+                <th>Quem (Who)</th>
+                <th>Quando (When)</th>
+                <th>Como (How)</th>
+                <th style="width:100px;">Status</th>
+                <th class="no-print" style="width:36px;"></th>
+              </tr>
+            </thead>
+            <tbody id="actionsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHECK -->
+    <div class="pdca-card pdca-check">
+      <div class="pdca-card-hdr">
+        <div class="pdca-letter" style="background:#fd7e14;">C</div>
+        <div>
+          <div class="pdca-card-title">Check — Verificar</div>
+          <div class="pdca-card-sub">Comparar resultados obtidos com a meta definida</div>
+        </div>
+      </div>
+      <div class="pdca-card-body">
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <div class="pdca-label">Resultado antes</div>
+            <input id="checkAntes" type="text" class="pdca-inp" placeholder="Ex: 3,2% defeitos">
+          </div>
+          <div class="col-6">
+            <div class="pdca-label">Resultado depois</div>
+            <input id="checkDepois" type="text" class="pdca-inp" placeholder="Ex: 0,4% defeitos">
+          </div>
+        </div>
+        <div class="pdca-label">Análise dos resultados</div>
+        <textarea id="checkAnalise" class="pdca-ta" rows="3" placeholder="A meta foi atingida? Quais desvios ocorreram? Quais fatores impactaram os resultados?"></textarea>
+        <div class="pdca-label">Evidências e registros</div>
+        <textarea id="checkEvidencias" class="pdca-ta" rows="2" placeholder="Gráficos, relatórios, laudos, fotos, medições..."></textarea>
+      </div>
+    </div>
+
+    <!-- ACT -->
+    <div class="pdca-card pdca-act">
+      <div class="pdca-card-hdr">
+        <div class="pdca-letter" style="background:#6f42c1;">A</div>
+        <div>
+          <div class="pdca-card-title">Act — Agir</div>
+          <div class="pdca-card-sub">Padronizar melhorias e planejar próximo ciclo</div>
+        </div>
+      </div>
+      <div class="pdca-card-body">
+        <div class="pdca-label">Ações de padronização</div>
+        <textarea id="actPadronizacao" class="pdca-ta" rows="3" placeholder="Quais procedimentos, instruções de trabalho ou parâmetros foram atualizados? Documentos revisados?"></textarea>
+        <div class="pdca-label">Lições aprendidas</div>
+        <textarea id="actLicoes" class="pdca-ta" rows="2" placeholder="O que este ciclo ensinou? O que pode ser replicado em outros processos?"></textarea>
+        <div class="pdca-label">Próximo ciclo PDCA (se necessário)</div>
+        <textarea id="actProximo" class="pdca-ta" rows="2" placeholder="Descreva o próximo problema a ser atacado ou o ponto residual que requer novo ciclo..."></textarea>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<script>
+(function () {
+  "use strict";
+
+  const WHYS_COUNT = 5;
+  const STORAGE_KEY = "eng_pdca";
+
+  function buildWhys() {
+    const tbody = document.getElementById("whysBody");
+    for (let i = 1; i <= WHYS_COUNT; i++) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.8rem;">${i}°</td>
+        <td><input type="text" id="why${i}q" placeholder="Por que ocorre?"></td>
+        <td><input type="text" id="why${i}a" placeholder="Causa identificada"></td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function addAction(data = {}) {
+    const tbody = document.getElementById("actionsBody");
+    const idx = tbody.children.length;
+    const statusOpts = ["Pendente","Em andamento","Concluída","Bloqueada"].map(s =>
+      `<option${data.status === s ? " selected" : ""}>${s}</option>`).join("");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${data.oque || ""}" placeholder="Ação a tomar"></td>
+      <td><input type="text" value="${data.quem || ""}" placeholder="Responsável" style="min-width:90px;"></td>
+      <td><input type="date" value="${data.quando || ""}"></td>
+      <td><input type="text" value="${data.como || ""}" placeholder="Método / recurso"></td>
+      <td>
+        <select>${statusOpts}</select>
+      </td>
+      <td class="no-print">
+        <button type="button" onclick="this.closest('tr').remove();updateKpis()" style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+
+  function collectActions() {
+    return Array.from(document.querySelectorAll("#actionsBody tr")).map(tr => {
+      const inputs = tr.querySelectorAll("input,select");
+      return {
+        oque: inputs[0].value, quem: inputs[1].value,
+        quando: inputs[2].value, como: inputs[3].value, status: inputs[4].value
+      };
+    });
+  }
+
+  function collectWhys() {
+    const result = [];
+    for (let i = 1; i <= WHYS_COUNT; i++) {
+      result.push({q: document.getElementById(`why${i}q`).value, a: document.getElementById(`why${i}a`).value});
+    }
+    return result;
+  }
+
+  function loadWhys(data) {
+    data.forEach((w, i) => {
+      const q = document.getElementById(`why${i+1}q`);
+      const a = document.getElementById(`why${i+1}a`);
+      if (q) q.value = w.q || "";
+      if (a) a.value = w.a || "";
+    });
+  }
+
+  function updateKpis() {
+    const actions = collectActions();
+    const total = actions.length;
+    const done = actions.filter(a => a.status === "Concluída").length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const overdue = actions.filter(a => {
+      return a.quando && new Date(a.quando) < new Date() && a.status !== "Concluída";
+    }).length;
+
+    const bar = document.getElementById("kpiBar");
+    bar.innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Ações</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${done}</div><div class="kpi-chip-lbl">Concluídas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${pct>=80?"#198754":pct>=50?"#fd7e14":"#dc3545"};">${pct}%</div><div class="kpi-chip-lbl">Progresso</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${overdue>0?"#dc3545":"var(--text)"};">${overdue}</div><div class="kpi-chip-lbl">Em atraso</div></div>
+    `;
+  }
+
+  function saveData() {
+    const data = {
+      titulo: document.getElementById("hdrTitulo").value,
+      resp: document.getElementById("hdrResp").value,
+      abertura: document.getElementById("hdrAbertura").value,
+      prazo: document.getElementById("hdrPrazo").value,
+      status: document.getElementById("hdrStatus").value,
+      planProblema: document.getElementById("planProblema").value,
+      planMeta: document.getElementById("planMeta").value,
+      planCausa: document.getElementById("planCausa").value,
+      whys: collectWhys(),
+      actions: collectActions(),
+      checkAntes: document.getElementById("checkAntes").value,
+      checkDepois: document.getElementById("checkDepois").value,
+      checkAnalise: document.getElementById("checkAnalise").value,
+      checkEvidencias: document.getElementById("checkEvidencias").value,
+      actPadronizacao: document.getElementById("actPadronizacao").value,
+      actLicoes: document.getElementById("actLicoes").value,
+      actProximo: document.getElementById("actProximo").value,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const msg = document.getElementById("saveMsg");
+    msg.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(() => msg.innerHTML = "", 3000);
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      document.getElementById("hdrTitulo").value   = d.titulo    || "";
+      document.getElementById("hdrResp").value     = d.resp      || "";
+      document.getElementById("hdrAbertura").value = d.abertura  || "";
+      document.getElementById("hdrPrazo").value    = d.prazo     || "";
+      document.getElementById("hdrStatus").value   = d.status    || "aberto";
+      document.getElementById("planProblema").value = d.planProblema || "";
+      document.getElementById("planMeta").value    = d.planMeta  || "";
+      document.getElementById("planCausa").value   = d.planCausa || "";
+      if (d.whys) loadWhys(d.whys);
+      if (d.actions) d.actions.forEach(a => addAction(a));
+      document.getElementById("checkAntes").value       = d.checkAntes      || "";
+      document.getElementById("checkDepois").value      = d.checkDepois     || "";
+      document.getElementById("checkAnalise").value     = d.checkAnalise    || "";
+      document.getElementById("checkEvidencias").value  = d.checkEvidencias || "";
+      document.getElementById("actPadronizacao").value  = d.actPadronizacao || "";
+      document.getElementById("actLicoes").value        = d.actLicoes       || "";
+      document.getElementById("actProximo").value       = d.actProximo      || "";
+      updateKpis();
+    } catch (e) {}
+  }
+
+  function newPdca() {
+    if (!confirm("Iniciar um novo PDCA? Os dados atuais serão apagados.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  window.addAction = addAction;
+  window.saveData  = saveData;
+  window.newPdca   = newPdca;
+  window.updateKpis = updateKpis;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    buildWhys();
+    loadData();
+    if (document.getElementById("actionsBody").children.length === 0) {
+      addAction(); addAction(); addAction();
+    }
+    updateKpis();
+    document.getElementById("hdrAbertura").value = document.getElementById("hdrAbertura").value || new Date().toISOString().slice(0,10);
+    document.querySelectorAll("#actionsBody").forEach(el =>
+      el.addEventListener("change", updateKpis));
+  });
+})();
+</script>
 {% endblock %}

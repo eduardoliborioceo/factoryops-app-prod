@@ -1,6 +1,32 @@
 {% extends "layouts/app.html" %}
 {% block title %}Produtividade — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.prod-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.prod-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.prod-body { padding:16px 18px; }
+.prod-kpi-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px; }
+.prod-kpi { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center; }
+.prod-kpi-val { font-size:1.4rem;font-weight:800;color:var(--text); }
+.prod-kpi-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.prd-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.prd-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.prd-table td { padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.prd-table td input { width:100%;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);font-size:0.8rem;color:var(--text);padding:4px 7px;text-align:right; }
+.prd-table td input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,0.12); }
+.calc-td { background:rgba(13,110,253,0.04);font-weight:700;padding:6px 10px;text-align:right; }
+.eff-ok   { color:#198754; } .eff-warn { color:#fd7e14; } .eff-crit { color:#dc3545; }
+.trend-bar-wrap { height:8px;border-radius:4px;background:rgba(15,23,42,0.08);overflow:hidden; }
+.trend-bar      { height:100%;border-radius:4px;transition:width 0.4s; }
+@media (max-width:767px) { .prod-kpi-grid { grid-template-columns:repeat(2,1fr); } }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +34,6 @@
     <h1 class="page-header-name">Produtividade</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +43,193 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-graph-up-arrow" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Indicadores de eficiência, throughput e headcount produtivo.</p>
+
+  <!-- Metas e parâmetros -->
+  <div class="prod-card">
+    <div class="prod-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-graph-up text-primary me-1"></i>Metas de Produtividade</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="prod-body">
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Linha / Processo</label>
+          <input id="hdrLinha" type="text" class="form-control form-control-sm" placeholder="Ex: Linha SMD 01">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Meta produção/turno</label>
+          <input id="metaProd" type="number" min="0" value="1600" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Meta UPH (pcs/h)</label>
+          <input id="metaUPH" type="number" min="0" value="200" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">HC padrão</label>
+          <input id="metaHC" type="number" min="1" value="8" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Turno (h)</label>
+          <input id="metaTurno" type="number" min="1" step="0.5" value="8" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+      </div>
+      <div id="saveMsg" style="font-size:0.8rem;" class="mb-3"></div>
+      <div class="prod-kpi-grid" id="kpiGrid"></div>
+    </div>
   </div>
+
+  <!-- Registro diário -->
+  <div class="prod-card">
+    <div class="prod-hdr">
+      <span><i class="bi bi-calendar3 me-2"></i>Registro de Produção Diária</span>
+      <button class="btn btn-success btn-sm no-print" onclick="addEntry()">
+        <i class="bi bi-plus-lg me-1"></i>Entrada
+      </button>
+    </div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="prd-table">
+          <thead>
+            <tr>
+              <th>Data</th><th>Turno</th><th>Produzido</th><th>Defeitos</th>
+              <th>HC real</th><th>Horas trab.</th>
+              <th class="calc-td" style="padding:8px 10px;">UPH</th>
+              <th class="calc-td" style="padding:8px 10px;">Ef. HC%</th>
+              <th class="calc-td" style="padding:8px 10px;">Ef. Prod%</th>
+              <th class="calc-td" style="padding:8px 10px;">Qualid.</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_produtividade";
+
+  function addEntry(d={}) {
+    const tbody=document.getElementById("entriesBody");
+    const tr=document.createElement("tr");
+    const turnos=["1º Turno","2º Turno","3º Turno"].map(t=>`<option${t===(d.turno||"1º Turno")?" selected":""}>${t}</option>`).join("");
+    tr.innerHTML=`
+      <td><input type="date" value="${d.data||new Date().toISOString().slice(0,10)}" oninput="recalcAll()"></td>
+      <td><select onchange="recalcAll()" style="border:1px solid var(--border);border-radius:6px;font-size:0.8rem;padding:4px 6px;background:var(--card);color:var(--text);">${turnos}</select></td>
+      <td><input type="number" min="0" value="${d.prod||""}" placeholder="pcs" oninput="recalcAll()"></td>
+      <td><input type="number" min="0" value="${d.def||0}"  oninput="recalcAll()"></td>
+      <td><input type="number" min="1" value="${d.hc||""}"  placeholder="HC" oninput="recalcAll()"></td>
+      <td><input type="number" min="0" step="0.5" value="${d.horas||""}" placeholder="h" oninput="recalcAll()"></td>
+      <td class="calc-td" data-uph></td>
+      <td class="calc-td" data-efhc></td>
+      <td class="calc-td" data-efprod></td>
+      <td class="calc-td" data-qual></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="this.closest('tr').remove();recalcAll()"
+          style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    recalcAll();
+  }
+  window.addEntry=addEntry;
+
+  function effClass(v) { return v>=95?"eff-ok":v>=80?"eff-warn":"eff-crit"; }
+
+  function recalcAll() {
+    const metaProd=parseFloat(document.getElementById("metaProd").value)||1600;
+    const metaUPH=parseFloat(document.getElementById("metaUPH").value)||200;
+    const metaHC=parseFloat(document.getElementById("metaHC").value)||8;
+    const metaTurno=parseFloat(document.getElementById("metaTurno").value)||8;
+    let sumProd=0, sumDef=0, sumRows=0, sumUPH=0;
+
+    document.querySelectorAll("#entriesBody tr").forEach(tr=>{
+      const ins=tr.querySelectorAll("input");
+      const prod=parseFloat(ins[2].value)||0;
+      const def=parseFloat(ins[3].value)||0;
+      const hc=parseFloat(ins[4].value)||metaHC;
+      const horas=parseFloat(ins[5].value)||metaTurno;
+      const uph = horas>0 ? prod/horas : 0;
+      const efHC  = metaHC>0 ? (metaHC/hc)*100 : 0;
+      const efProd= metaProd>0 ? (prod/metaProd)*100 : 0;
+      const qual  = prod>0 ? ((prod-def)/prod)*100 : 0;
+      tr.querySelector("[data-uph]").textContent    = uph>0 ? uph.toFixed(0) : "—";
+      tr.querySelector("[data-efhc]").textContent   = efHC>0 ? efHC.toFixed(0)+"%" : "—";
+      tr.querySelector("[data-efprod]").textContent = efProd>0 ? efProd.toFixed(0)+"%" : "—";
+      tr.querySelector("[data-qual]").textContent   = prod>0 ? qual.toFixed(1)+"%" : "—";
+      const efEl=tr.querySelector("[data-efprod]");
+      efEl.className="calc-td "+(efProd>=95?"eff-ok":efProd>=80?"eff-warn":"eff-crit");
+      sumProd+=prod; sumDef+=def; sumRows++; sumUPH+=uph;
+    });
+
+    const avgUPH = sumRows>0 ? sumUPH/sumRows : 0;
+    const avgEff = metaProd>0&&sumRows>0 ? (sumProd/(sumRows*metaProd))*100 : 0;
+    const avgQual= sumProd>0 ? ((sumProd-sumDef)/sumProd)*100 : 0;
+    document.getElementById("kpiGrid").innerHTML=`
+      <div class="prod-kpi"><div class="prod-kpi-val">${sumProd.toLocaleString("pt-BR")}</div><div class="prod-kpi-lbl">Total Produzido</div></div>
+      <div class="prod-kpi"><div class="prod-kpi-val" style="color:#198754;">${metaProd.toLocaleString("pt-BR")}</div><div class="prod-kpi-lbl">Meta/Turno</div></div>
+      <div class="prod-kpi"><div class="prod-kpi-val">${avgUPH.toFixed(0)}</div><div class="prod-kpi-lbl">UPH Médio</div></div>
+      <div class="prod-kpi"><div class="prod-kpi-val" style="color:${metaUPH>0?(avgUPH/metaUPH)>=0.95?"#198754":(avgUPH/metaUPH)>=0.80?"#fd7e14":"#dc3545":"var(--text)"};">${metaUPH}</div><div class="prod-kpi-lbl">Meta UPH</div></div>
+      <div class="prod-kpi"><div class="prod-kpi-val ${effClass(avgEff)}">${avgEff.toFixed(1)}%</div><div class="prod-kpi-lbl">Ef. Produção</div></div>
+      <div class="prod-kpi"><div class="prod-kpi-val ${effClass(avgQual)}">${avgQual.toFixed(1)}%</div><div class="prod-kpi-lbl">Qualidade</div></div>
+    `;
+  }
+  window.recalcAll=recalcAll;
+
+  function collectEntries() {
+    return Array.from(document.querySelectorAll("#entriesBody tr")).map(tr=>{
+      const ins=tr.querySelectorAll("input");
+      return {data:ins[0].value,turno:tr.querySelector("select").value,prod:ins[2].value,def:ins[3].value,hc:ins[4].value,horas:ins[5].value};
+    });
+  }
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({
+      linha:document.getElementById("hdrLinha").value,
+      metaProd:document.getElementById("metaProd").value,metaUPH:document.getElementById("metaUPH").value,
+      metaHC:document.getElementById("metaHC").value,metaTurno:document.getElementById("metaTurno").value,
+      entries:collectEntries()
+    }));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.linha)     document.getElementById("hdrLinha").value=d.linha;
+      if(d.metaProd)  document.getElementById("metaProd").value=d.metaProd;
+      if(d.metaUPH)   document.getElementById("metaUPH").value=d.metaUPH;
+      if(d.metaHC)    document.getElementById("metaHC").value=d.metaHC;
+      if(d.metaTurno) document.getElementById("metaTurno").value=d.metaTurno;
+      if(d.entries&&d.entries.length) d.entries.forEach(e=>addEntry(e));
+      else {
+        const today=new Date();
+        for(let i=4;i>=0;i--) {
+          const dt=new Date(today); dt.setDate(dt.getDate()-i);
+          addEntry({data:dt.toISOString().slice(0,10)});
+        }
+      }
+    } catch(e){ addEntry(); }
+    recalcAll();
+  });
+})();
+</script>
 {% endblock %}

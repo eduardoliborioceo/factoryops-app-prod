@@ -1,6 +1,32 @@
 {% extends "layouts/app.html" %}
 {% block title %}Logística Interna — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.log-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.log-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.log-body { padding:16px 18px; }
+.calc-box { background:rgba(13,110,253,0.06);border:1px solid rgba(13,110,253,0.18);border-radius:10px;padding:14px;margin-top:12px; }
+.calc-result { font-size:1.4rem;font-weight:800;color:#0d6efd; }
+.calc-label  { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.log-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.log-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.log-table td { padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.log-table td input, .log-table td select { width:100%;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);font-size:0.8rem;color:var(--text);padding:4px 7px; }
+.log-table td input:focus, .log-table td select:focus {
+  outline:none;border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,0.12); }
+.freq-badge { font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:5px; }
+.freq-high { background:rgba(220,53,69,0.12);color:#9b1e27; }
+.freq-med  { background:rgba(253,126,20,0.15);color:#8a3d00; }
+.freq-low  { background:rgba(25,135,84,0.12);color:#0a3622; }
+.inp-lbl { font-size:0.78rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:3px; }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +34,6 @@
     <h1 class="page-header-name">Logística Interna</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +43,224 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-truck" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Abastecimento de linha, supermercado e milk run interno.</p>
+
+  <div class="log-card">
+    <div class="log-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-truck text-primary me-1"></i>Ferramentas de Logística Interna</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="log-body">
+      <div id="saveMsg" style="font-size:0.8rem;"></div>
+    </div>
   </div>
+
+  <div class="row g-3 mb-3">
+    <!-- Kanban -->
+    <div class="col-12 col-md-6">
+      <div class="log-card" style="margin-bottom:0;height:100%;">
+        <div class="log-hdr">
+          <span><i class="bi bi-card-list me-2"></i>Dimensionamento de Kanban</span>
+        </div>
+        <div class="log-body">
+          <label class="inp-lbl">Demanda média (pcs/dia)</label>
+          <input id="kbDemanda" type="number" min="0" value="500" class="form-control form-control-sm mb-2" oninput="calcKanban()">
+          <label class="inp-lbl">Lead time de reposição (dias)</label>
+          <input id="kbLT" type="number" min="0.1" step="0.1" value="0.5" class="form-control form-control-sm mb-2" oninput="calcKanban()">
+          <label class="inp-lbl">Estoque de segurança (dias)</label>
+          <input id="kbSS" type="number" min="0" step="0.1" value="0.5" class="form-control form-control-sm mb-2" oninput="calcKanban()">
+          <label class="inp-lbl">Capacidade da embalagem (pcs)</label>
+          <input id="kbEmb" type="number" min="1" value="50" class="form-control form-control-sm mb-2" oninput="calcKanban()">
+          <div class="calc-box">
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="calc-label">Estoque max.</div>
+                <div class="calc-result" id="kbEstMax">—</div>
+                <small style="color:var(--text-muted);font-size:0.7rem;">pcs</small>
+              </div>
+              <div class="col-4">
+                <div class="calc-label">Nº Kanbans</div>
+                <div class="calc-result" id="kbNum">—</div>
+                <small style="color:var(--text-muted);font-size:0.7rem;">cartões</small>
+              </div>
+              <div class="col-4">
+                <div class="calc-label">Ponto reposição</div>
+                <div class="calc-result" id="kbPR">—</div>
+                <small style="color:var(--text-muted);font-size:0.7rem;">pcs</small>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:0.75rem;color:var(--text-muted);">
+              Fórmula: K = D × (LT + SS) / Embalagem
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milk Run -->
+    <div class="col-12 col-md-6">
+      <div class="log-card" style="margin-bottom:0;height:100%;">
+        <div class="log-hdr">
+          <span><i class="bi bi-arrow-repeat me-2"></i>Frequência Milk Run</span>
+        </div>
+        <div class="log-body">
+          <label class="inp-lbl">Demanda por turno (pcs)</label>
+          <input id="mrDemanda" type="number" min="0" value="1600" class="form-control form-control-sm mb-2" oninput="calcMilkRun()">
+          <label class="inp-lbl">Capacidade do carrinho/contentor (pcs)</label>
+          <input id="mrCap" type="number" min="1" value="200" class="form-control form-control-sm mb-2" oninput="calcMilkRun()">
+          <label class="inp-lbl">Tempo do turno (min)</label>
+          <input id="mrTurno" type="number" min="1" value="480" class="form-control form-control-sm mb-2" oninput="calcMilkRun()">
+          <label class="inp-lbl">Tempo de ciclo da rota (min)</label>
+          <input id="mrCiclo" type="number" min="1" value="15" class="form-control form-control-sm mb-2" oninput="calcMilkRun()">
+          <div class="calc-box">
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="calc-label">Viagens/turno</div>
+                <div class="calc-result" id="mrViagens">—</div>
+              </div>
+              <div class="col-4">
+                <div class="calc-label">Intervalo</div>
+                <div class="calc-result" id="mrIntervalo">—</div>
+                <small style="color:var(--text-muted);font-size:0.7rem;">min</small>
+              </div>
+              <div class="col-4">
+                <div class="calc-label">Lotes/viagem</div>
+                <div class="calc-result" id="mrLotes">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pontos de abastecimento -->
+  <div class="log-card">
+    <div class="log-hdr">
+      <span><i class="bi bi-pin-map me-2"></i>Pontos de Abastecimento</span>
+      <button class="btn btn-success btn-sm no-print" onclick="addPoint()">
+        <i class="bi bi-plus-lg me-1"></i>Ponto
+      </button>
+    </div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>Material / Componente</th><th>Linha / Destino</th><th>Localização</th>
+              <th>Freq. reposição</th><th>Qtd. por entrega</th><th>Responsável</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="pointsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_logistica";
+  const FREQS=["A cada 15min","A cada 30min","Por hora","A cada 2h","Por turno"];
+
+  function calcKanban() {
+    const D=parseFloat(document.getElementById("kbDemanda").value)||0;
+    const LT=parseFloat(document.getElementById("kbLT").value)||0;
+    const SS=parseFloat(document.getElementById("kbSS").value)||0;
+    const emb=parseFloat(document.getElementById("kbEmb").value)||1;
+    const estMax=D*(LT+SS);
+    const k=Math.ceil(estMax/emb);
+    const pr=D*LT;
+    document.getElementById("kbEstMax").textContent=estMax>0?estMax.toFixed(0):"—";
+    document.getElementById("kbNum").textContent=k>0?k:"—";
+    document.getElementById("kbPR").textContent=pr>0?pr.toFixed(0):"—";
+  }
+  window.calcKanban=calcKanban;
+
+  function calcMilkRun() {
+    const D=parseFloat(document.getElementById("mrDemanda").value)||0;
+    const cap=parseFloat(document.getElementById("mrCap").value)||1;
+    const turno=parseFloat(document.getElementById("mrTurno").value)||480;
+    const ciclo=parseFloat(document.getElementById("mrCiclo").value)||15;
+    const viagens=Math.ceil(D/cap);
+    const intervalo=viagens>0?Math.round(turno/viagens):0;
+    const lotes=cap>0?Math.ceil(cap/cap):1;
+    document.getElementById("mrViagens").textContent=viagens>0?viagens:"—";
+    document.getElementById("mrIntervalo").textContent=intervalo>0?intervalo+"min":"—";
+    document.getElementById("mrLotes").textContent=cap>0?cap.toLocaleString("pt-BR"):"—";
+  }
+  window.calcMilkRun=calcMilkRun;
+
+  function freqOpts(sel) {
+    return FREQS.map(f=>`<option${f===sel?" selected":""}>${f}</option>`).join("");
+  }
+
+  function addPoint(d={}) {
+    const tbody=document.getElementById("pointsBody");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="text" value="${d.mat||""}" placeholder="Ex: Resistores 0402 10K"></td>
+      <td><input type="text" value="${d.linha||""}" placeholder="Linha SMD 01"></td>
+      <td><input type="text" value="${d.local||""}" placeholder="Armazém A-12"></td>
+      <td><select onchange="saveData()">${freqOpts(d.freq||"Por hora")}</select></td>
+      <td><input type="number" min="0" value="${d.qtd||""}" placeholder="pcs/entrega" style="text-align:right;"></td>
+      <td><input type="text" value="${d.resp||""}" placeholder="Nome"></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="this.closest('tr').remove()"
+          style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+  window.addPoint=addPoint;
+
+  function collectPoints() {
+    return Array.from(document.querySelectorAll("#pointsBody tr")).map(tr=>{
+      const ins=tr.querySelectorAll("input");
+      return {mat:ins[0].value,linha:ins[1].value,local:ins[2].value,
+        freq:tr.querySelector("select").value,qtd:ins[3].value,resp:ins[4].value};
+    });
+  }
+
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({
+      kbDemanda:document.getElementById("kbDemanda").value,kbLT:document.getElementById("kbLT").value,
+      kbSS:document.getElementById("kbSS").value,kbEmb:document.getElementById("kbEmb").value,
+      mrDemanda:document.getElementById("mrDemanda").value,mrCap:document.getElementById("mrCap").value,
+      mrTurno:document.getElementById("mrTurno").value,mrCiclo:document.getElementById("mrCiclo").value,
+      points:collectPoints()
+    }));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      ["kbDemanda","kbLT","kbSS","kbEmb","mrDemanda","mrCap","mrTurno","mrCiclo"].forEach(id=>{
+        if(d[id]) document.getElementById(id).value=d[id];
+      });
+      if(d.points&&d.points.length) d.points.forEach(p=>addPoint(p));
+      else ["Resistores 0402 10K","Capacitores 100nF","IC Controller X","Conectores SMD"].forEach(m=>addPoint({mat:m}));
+    } catch(e){ addPoint(); }
+    calcKanban(); calcMilkRun();
+  });
+})();
+</script>
 {% endblock %}
