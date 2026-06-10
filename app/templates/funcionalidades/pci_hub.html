@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Sistema PCI Hub</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" onclick="history.back()" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -109,20 +106,25 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Navegação de módulos -->
-  <div class="hub-nav">
-    <button class="hub-nav-btn active" id="navProduto"   onclick="setTab('produto')">
-      <i class="bi bi-box-seam me-1"></i>Produto
-    </button>
-    <button class="hub-nav-btn" id="navCadastro"  onclick="setTab('cadastro')">
-      <i class="bi bi-clipboard-data me-1"></i>Cadastro
-    </button>
-    <button class="hub-nav-btn" id="navOperacao"  onclick="setTab('operacao')">
-      <i class="bi bi-play-circle me-1"></i>Operação
-    </button>
-    <button class="hub-nav-btn" id="navRelatorio" onclick="setTab('relatorio')">
-      <i class="bi bi-bar-chart-line me-1"></i>Relatório
-    </button>
+  <!-- Voltar + Navegação de módulos -->
+  <div class="d-flex align-items-center gap-2 mb-5">
+    <a href="{{ url_for('pages.dashboard') }}" class="btn-header-icon flex-shrink-0" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="hub-nav flex-fill" style="margin-bottom:0;">
+      <button class="hub-nav-btn active" id="navProduto"   onclick="setTab('produto')">
+        <i class="bi bi-box-seam me-1"></i>Produto
+      </button>
+      <button class="hub-nav-btn" id="navCadastro"  onclick="setTab('cadastro')">
+        <i class="bi bi-clipboard-data me-1"></i>Cadastro
+      </button>
+      <button class="hub-nav-btn" id="navOperacao"  onclick="setTab('operacao')">
+        <i class="bi bi-play-circle me-1"></i>Operação
+      </button>
+      <button class="hub-nav-btn" id="navRelatorio" onclick="setTab('relatorio')">
+        <i class="bi bi-bar-chart-line me-1"></i>Relatório
+      </button>
+    </div>
   </div>
 
   <!-- ── ABA: PRODUTO ── -->
@@ -146,9 +148,44 @@
 
   <!-- ── ABA: CADASTRO ── -->
   <div id="tabCadastro" class="d-none">
-    <div class="em-dev">
-      <i class="bi bi-clipboard-data"></i>
-      <p>Módulo Cadastro em desenvolvimento.<br>As funcionalidades serão disponibilizadas em breve.</p>
+    <p class="hub-section-title"><i class="bi bi-clipboard-data me-2"></i>Cadastro</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_cadastro_motivos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(255,193,7,0.13);color:#856404;">
+            <i class="bi bi-exclamation-triangle"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Motivos de Parada</div>
+            <div class="hub-card-desc">Cadastre e gerencie os códigos de motivos de parada utilizados nos lançamentos de produção</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_cadastro_defeitos') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+            <i class="bi bi-x-octagon"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Tipos de Defeito</div>
+            <div class="hub-card-desc">Gerencie a biblioteca de defeitos de PCI categorizados por processo e severidade</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_cadastro_linhas') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-diagram-3"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Linhas e Setores</div>
+            <div class="hub-card-desc">Configure linhas de produção, setores e capacidades operacionais do parque fabril</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
     </div>
   </div>
 
@@ -197,9 +234,44 @@
 
   <!-- ── ABA: RELATÓRIO ── -->
   <div id="tabRelatorio" class="d-none">
-    <div class="em-dev">
-      <i class="bi bi-bar-chart-line"></i>
-      <p>Módulo Relatório em desenvolvimento.<br>As funcionalidades serão disponibilizadas em breve.</p>
+    <p class="hub-section-title"><i class="bi bi-bar-chart-line me-2"></i>Relatório</p>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_relatorio_producao') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(13,110,253,0.10);color:#0d6efd;">
+            <i class="bi bi-speedometer2"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Produtividade por Linha</div>
+            <div class="hub-card-desc">Acompanhe OEE, eficiência e volume produzido por linha, turno e período</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_relatorio_qualidade') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(111,66,193,0.12);color:#6f42c1;">
+            <i class="bi bi-clipboard2-pulse"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Análise de Qualidade</div>
+            <div class="hub-card-desc">Relatório de defeitos por tipo, processo e modelo — DPU, rendimento por operação</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ url_for('pages.funcionalidades_pci_hub_relatorio_rastreabilidade') }}" class="hub-card">
+          <div class="hub-card-icon" style="background:rgba(25,135,84,0.10);color:#198754;">
+            <i class="bi bi-qr-code-scan"></i>
+          </div>
+          <div class="hub-card-body">
+            <div class="hub-card-name">Rastreabilidade</div>
+            <div class="hub-card-desc">Consulta consolidada de scans, rastreio de placas por número de série e OP</div>
+          </div>
+          <i class="bi bi-chevron-right hub-card-arrow"></i>
+        </a>
+      </div>
     </div>
   </div>
 

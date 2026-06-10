@@ -8,12 +8,6 @@
     <h1 class="page-header-name">Sistema INPUT</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" onclick="history.back()" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </button>
-    <button class="btn-header-icon" onclick="imprimirPagina()" title="Imprimir / Exportar">
-      <i class="bi bi-printer"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -220,14 +214,19 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Navegação interna -->
-  <div class="input-nav">
-    <button class="input-nav-btn active" id="navHxH" onclick="setTab('hxh')">
-      <i class="bi bi-table me-1"></i>Lançamento H×H
-    </button>
-    <button class="input-nav-btn" id="navHist" onclick="setTab('historico')">
-      <i class="bi bi-clock-history me-1"></i>Histórico
-    </button>
+  <!-- Voltar + Navegação interna -->
+  <div class="d-flex align-items-center gap-2 mb-5">
+    <a href="{{ url_for('pages.dashboard') }}" class="btn-header-icon flex-shrink-0" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="input-nav flex-fill" style="margin-bottom:0;">
+      <button class="input-nav-btn active" id="navHxH" onclick="setTab('hxh')">
+        <i class="bi bi-table me-1"></i>Lançamento H×H
+      </button>
+      <button class="input-nav-btn" id="navHist" onclick="setTab('historico')">
+        <i class="bi bi-clock-history me-1"></i>Histórico
+      </button>
+    </div>
   </div>
 
   <!-- ── ABA: LANÇAMENTO H×H ── -->
@@ -1156,14 +1155,6 @@ function fmtDate(d) {
 
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function imprimirPagina() {
-  _slotsState.forEach((_, i) => {
-    const body = document.getElementById(`slot-body-${i}`);
-    if (body) body.classList.remove('d-none');
-  });
-  window.print();
 }
 
 /* ─────────────── BASE DE CONHECIMENTO SMT ─────────────── */

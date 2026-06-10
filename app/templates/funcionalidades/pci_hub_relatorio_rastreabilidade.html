@@ -1,0 +1,160 @@
+{% extends "layouts/app.html" %}
+{% block title %}Rastreabilidade — PCI Hub{% endblock %}
+
+{% block styles %}
+<style>
+.rel-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.rel-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.rel-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.rel-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.rel-table td { padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.sn-tag { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd;background:rgba(13,110,253,0.08);
+  padding:2px 7px;border-radius:5px; }
+.st-ok   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.st-rep  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.st-fail { background:rgba(220,53,69,0.10);color:#842029;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .rel-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .rel-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .rel-table th:nth-child(n+6),.rel-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="d-flex align-items-center gap-2">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#relatorio" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="page-header-title">
+      <span class="page-header-section">PCI Hub · Relatório</span>
+      <h1 class="page-header-name">Rastreabilidade</h1>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
+      <i class="bi bi-printer"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="rel-card">
+    <div class="rel-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-qr-code-scan text-success me-1"></i>Consulta Consolidada — Rastreio de Placas por S/N, OP e Período</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <input type="text" id="filtroSN" class="form-control form-control-sm"
+               placeholder="Buscar S/N ou OP..." style="width:200px;border-radius:8px;"
+               oninput="renderAll()">
+        <input type="date" id="filtroInicio" class="form-control form-control-sm" style="width:auto;border-radius:8px;">
+        <input type="date" id="filtroFim" class="form-control form-select-sm" style="width:auto;border-radius:8px;">
+        <button class="btn btn-primary btn-sm" onclick="renderAll()"><i class="bi bi-search me-1"></i>Filtrar</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div class="table-responsive">
+      <table class="rel-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Número de Série</th>
+            <th>OP</th>
+            <th>Modelo</th>
+            <th>Linha</th>
+            <th>Operação</th>
+            <th>Operador</th>
+            <th>Status</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyMsg" class="text-center py-5 text-muted" style="font-size:0.875rem;display:none;">
+      <i class="bi bi-search fs-2 mb-2 d-block"></i>Nenhum registro encontrado para os filtros selecionados.
+    </div>
+  </div>
+
+  <div class="rel-card p-3" style="font-size:0.78rem;color:var(--text-muted);">
+    <i class="bi bi-info-circle me-1"></i>
+    <strong>Nota:</strong> Esta página apresenta o histórico consolidado de scans. Para consultas em tempo real por sessão de embalagem,
+    utilize <a href="{{ url_for('pages.funcionalidades_pci_hub_consultar_embalagem') }}" class="text-primary fw-600">Consultar Embalagem</a> na aba Operação.
+  </div>
+
+</div>
+<script>
+(function(){
+  "use strict";
+  const SAMPLE = [
+    {dt:"2026-06-09 07:12:34",sn:"BR240609001",op:"OP-2406-001",modelo:"ModeloA-Rev3",linha:"IM-01",oper:"Embalagem",operador:"Pedro Costa",status:"Aprovado",obs:""},
+    {dt:"2026-06-09 07:14:55",sn:"BR240609002",op:"OP-2406-001",modelo:"ModeloA-Rev3",linha:"IM-01",oper:"Embalagem",operador:"Pedro Costa",status:"Aprovado",obs:""},
+    {dt:"2026-06-09 07:16:20",sn:"BR240609003",op:"OP-2406-001",modelo:"ModeloA-Rev3",linha:"IM-01",oper:"Embalagem",operador:"Pedro Costa",status:"Reprovado",obs:"Falha ICT"},
+    {dt:"2026-06-09 08:05:11",sn:"BR240609104",op:"OP-2406-002",modelo:"ModeloB-Rev1",linha:"IM-02",oper:"Embalagem",operador:"Ana Lima",status:"Aprovado",obs:""},
+    {dt:"2026-06-09 08:07:44",sn:"BR240609105",op:"OP-2406-002",modelo:"ModeloB-Rev1",linha:"IM-02",oper:"Embalagem",operador:"Ana Lima",status:"Retrabalho",obs:"Ponte reflow corrigida"},
+  ];
+  const ST_CLS = {"Aprovado":"st-ok","Reprovado":"st-fail","Retrabalho":"st-rep"};
+
+  function renderAll(){
+    const q   = (document.getElementById("filtroSN").value||"").toLowerCase();
+    const di  = document.getElementById("filtroInicio").value;
+    const df  = document.getElementById("filtroFim").value;
+    const tbody=document.getElementById("tBody");
+    const empty=document.getElementById("emptyMsg");
+    tbody.innerHTML="";
+    const filtered=SAMPLE.filter(r=>{
+      const dateStr=r.dt.split(" ")[0];
+      if(q&&!r.sn.toLowerCase().includes(q)&&!r.op.toLowerCase().includes(q)) return false;
+      if(di&&dateStr<di) return false;
+      if(df&&dateStr>df) return false;
+      return true;
+    });
+    if(!filtered.length){empty.style.display="";return;}
+    empty.style.display="none";
+    filtered.forEach(r=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;">${r.dt}</td>
+        <td><span class="sn-tag">${r.sn}</span></td>
+        <td style="font-size:0.75rem;font-family:monospace;">${r.op}</td>
+        <td style="font-weight:600;">${r.modelo}</td>
+        <td><span style="font-family:monospace;font-size:0.8rem;">${r.linha}</span></td>
+        <td>${r.oper}</td>
+        <td>${r.operador}</td>
+        <td><span class="${ST_CLS[r.status]||''}">${r.status}</span></td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${r.obs||"—"}</td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("kpiStrip").innerHTML=`
+      <div class="kpi-chip"><div class="kpi-chip-val">${filtered.length}</div><div class="kpi-chip-lbl">Registros</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${filtered.filter(r=>r.status==="Aprovado").length}</div><div class="kpi-chip-lbl">Aprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#fd7e14;">${filtered.filter(r=>r.status==="Retrabalho").length}</div><div class="kpi-chip-lbl">Retrabalho</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${filtered.filter(r=>r.status==="Reprovado").length}</div><div class="kpi-chip-lbl">Reprovados</div></div>
+    `;
+  }
+  window.renderAll=renderAll;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    const hoje=new Date().toISOString().split("T")[0];
+    document.getElementById("filtroInicio").value=hoje;
+    document.getElementById("filtroFim").value=hoje;
+    renderAll();
+  });
+})();
+</script>
+{% endblock %}

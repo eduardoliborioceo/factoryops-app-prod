@@ -3,17 +3,19 @@
 
 {% block page_title %}
 <div class="page-header">
-  <div class="page-header-title">
-    <span class="page-header-section">Sistemas · Sistema INPUT</span>
-    <h1 class="page-header-name">Lançamento Hora a Hora</h1>
+  <div class="d-flex align-items-center gap-2">
+    <a href="{{ url_for('pages.funcionalidades_sistema_input') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="page-header-title">
+      <span class="page-header-section">Sistemas · Sistema INPUT</span>
+      <h1 class="page-header-name">Lançamento Hora a Hora</h1>
+    </div>
   </div>
   <div class="page-header-actions">
     <button class="btn-header-icon" id="btnVerHistorico" title="Histórico">
       <i class="bi bi-clock-history"></i>
     </button>
-    <a href="{{ url_for('pages.funcionalidades_sistema_input') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
