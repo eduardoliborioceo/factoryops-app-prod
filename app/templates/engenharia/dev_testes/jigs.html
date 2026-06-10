@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Jigs & Fixtures de Teste — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.jig-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.jig-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.jig-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.jig-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.jig-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.jig-table td input,.jig-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.jig-table td input:focus,.jig-table td select:focus { outline:none;border-color:#856404; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-disp { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-uso  { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-mnt  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-suc  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .jig-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .jig-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .jig-table th:nth-child(n+7),.jig-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +49,139 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-wrench-adjustable" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Projetos e controle de gabaritos e dispositivos para teste.</p>
+
+  <div class="jig-card">
+    <div class="jig-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-wrench-adjustable" style="color:#856404;" class="me-1"></i>Controle de Gabaritos e Dispositivos para Teste</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os status</option>
+          <option>Disponível</option><option>Em Uso</option><option>Manutenção</option><option>Sucateado</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-sm" style="background:#856404;color:#fff;" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Jig</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="jig-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:130px;">Nome / ID Jig</th>
+            <th>Tipo</th>
+            <th>Produto</th>
+            <th style="text-align:center;">Qtd.</th>
+            <th>Status</th>
+            <th>Última Inspeção</th>
+            <th>Localização</th>
+            <th style="min-width:120px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_jigs_teste";
+  const TIPOS = ["Fixture FCT","Fixture ICT","Bed of Nails","Press Fixture","Guia de Inserção","Gabarito de Furação","Suporte AOI","Outro"];
+  const STATUS = ["Disponível","Em Uso","Manutenção","Sucateado"];
+  const ST_CLS = {"Disponível":"st-disp","Em Uso":"st-uso","Manutenção":"st-mnt","Sucateado":"st-suc"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, nome:d.nome||"", tipo:d.tipo||"Fixture FCT", produto:d.produto||"",
+      qtd:d.qtd||"1", status:d.status||"Disponível",
+      inspecao:d.inspecao||"", local:d.local||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fs||r.status===fs).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.nome}" placeholder="Ex: JIG-FCT-BT50" onchange="onField(${r.id},'nome',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td style="text-align:center;"><input type="number" min="0" value="${r.qtd}" onchange="onField(${r.id},'qtd',this.value)" style="max-width:55px;text-align:center;"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-suc'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.inspecao}" onchange="onField(${r.id},'inspecao',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.local}" placeholder="Ex: Almoxarifado A3" onchange="onField(${r.id},'local',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const disp = rows.filter(r=>r.status==="Disponível").length;
+    const uso  = rows.filter(r=>r.status==="Em Uso").length;
+    const mnt  = rows.filter(r=>r.status==="Manutenção").length;
+    const suc  = rows.filter(r=>r.status==="Sucateado").length;
+    const total = rows.reduce((a,r)=>a+(parseInt(r.qtd)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Modelos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Unidades</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${disp}</div><div class="kpi-chip-lbl">Disponíveis</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${uso}</div><div class="kpi-chip-lbl">Em Uso</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${mnt}</div><div class="kpi-chip-lbl">Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${suc}</div><div class="kpi-chip-lbl">Sucateados</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({nome:"JIG-FCT-CTRL-V2",tipo:"Fixture FCT",produto:"Placa Controladora v2",qtd:"3",status:"Disponível",inspecao:"2026-04-10",local:"Linha SMD 01"});
+    addRow({nome:"JIG-FCT-BT50",tipo:"Fixture FCT",produto:"Módulo BT 5.0",qtd:"2",status:"Em Uso",inspecao:"2026-03-15",local:"BNC-FCT-02"});
+    addRow({nome:"JIG-ICT-ALIM",tipo:"Bed of Nails",produto:"Placa Alimentação",qtd:"1",status:"Manutenção",inspecao:"2026-02-28",local:"Manutenção TI",obs:"Agulha #7 quebrada"});
+    addRow({nome:"JIG-AOI-MULTI",tipo:"Suporte AOI",produto:"Multi-produto",qtd:"4",status:"Disponível",inspecao:"2026-05-01",local:"AOI Line 1"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

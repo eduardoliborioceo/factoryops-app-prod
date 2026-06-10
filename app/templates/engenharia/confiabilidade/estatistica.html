@@ -1,6 +1,37 @@
 {% extends "layouts/app.html" %}
 {% block title %}Análise Estatística de Falhas — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.est-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.est-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.est-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.est-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.est-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.est-table td input,.est-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.est-table td input:focus,.est-table td select:focus { outline:none;border-color:#856404; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.res-ok   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.res-alerta{ background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.res-crit { background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.res-pend { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.info-panel { background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:0.82rem;color:var(--text-muted); }
+.info-panel strong { color:var(--text); }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .est-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .est-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .est-table th:nth-child(n+6),.est-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +51,157 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-bar-chart-line" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Weibull, distribuições de falha e análise de campo.</p>
+
+  <div class="info-panel">
+    <strong>Distribuição de Weibull:</strong>
+    &nbsp;<strong>β (forma)</strong> — β &lt; 1: mortalidade infantil | β = 1: falhas aleatórias | β &gt; 1: desgaste.&nbsp;
+    <strong>η (escala)</strong> — vida característica (63,2% das peças terão falhado).&nbsp;
+    <strong>Confiança</strong> — % de certeza estatística na estimativa dos parâmetros.
   </div>
+
+  <div class="est-card">
+    <div class="est-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-bar-chart-line" style="color:#856404;" class="me-1"></i>Weibull, Distribuições de Falha e Análise de Campo</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os tipos</option>
+          <option>Weibull 2P</option><option>Weibull 3P</option><option>Log-Normal</option><option>Exponencial</option><option>Normal</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-sm" style="background:#856404;color:#fff;" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Análise</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="est-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:130px;">Produto / Componente</th>
+            <th>Tipo Análise</th>
+            <th>β (forma)</th>
+            <th>η — h (escala)</th>
+            <th>Falhas Obs.</th>
+            <th>Confiança (%)</th>
+            <th>Resultado</th>
+            <th>Data</th>
+            <th style="min-width:110px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_est_falhas";
+  const TIPOS = ["Weibull 2P","Weibull 3P","Log-Normal","Exponencial","Normal","Outro"];
+  const RESULTADOS = ["OK — Dentro do Alvo","Alerta — Revisar Design","Crítico — Ação Imediata","Pendente"];
+  const RES_CLS = {"OK — Dentro do Alvo":"res-ok","Alerta — Revisar Design":"res-alerta","Crítico — Ação Imediata":"res-crit","Pendente":"res-pend"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function resOpts(sel)  { return RESULTADOS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, produto:d.produto||"", tipo:d.tipo||"Weibull 2P",
+      beta:d.beta||"", eta:d.eta||"", falhas:d.falhas||"",
+      confianca:d.confianca||"90", resultado:d.resultado||"Pendente",
+      data:d.data||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function betaClass(beta) {
+    const b = parseFloat(beta);
+    if(!b) return "";
+    if(b < 1) return "style='color:#0dcaf0;font-weight:700;'";
+    if(b === 1) return "style='color:#198754;font-weight:700;'";
+    return "style='color:#dc3545;font-weight:700;'";
+  }
+
+  function renderTable() {
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!ft||r.tipo===ft).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.produto}" placeholder="Ex: Cap 100µF" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td><input type="number" step="0.01" min="0" value="${r.beta}" placeholder="β" onchange="onField(${r.id},'beta',this.value)" style="max-width:70px;text-align:center;" ${betaClass(r.beta)}></td>
+        <td><input type="number" min="0" value="${r.eta}" placeholder="h" onchange="onField(${r.id},'eta',this.value)" style="max-width:90px;text-align:right;"></td>
+        <td><input type="number" min="0" value="${r.falhas}" placeholder="n" onchange="onField(${r.id},'falhas',this.value)" style="max-width:70px;text-align:center;"></td>
+        <td><input type="number" min="0" max="99.9" step="0.1" value="${r.confianca}" placeholder="%" onchange="onField(${r.id},'confianca',this.value)" style="max-width:70px;text-align:center;"></td>
+        <td>
+          <select onchange="onField(${r.id},'resultado',this.value)">${resOpts(r.resultado)}</select>
+          <span class="${RES_CLS[r.resultado]||'res-pend'}" style="display:block;margin-top:3px;white-space:nowrap;">${r.resultado}</span>
+        </td>
+        <td><input type="date" value="${r.data}" onchange="onField(${r.id},'data',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const betas = rows.filter(r=>r.beta&&parseFloat(r.beta)>0).map(r=>parseFloat(r.beta));
+    const etas  = rows.filter(r=>r.eta&&parseFloat(r.eta)>0).map(r=>parseFloat(r.eta));
+    const betaMed = betas.length ? (betas.reduce((a,b)=>a+b,0)/betas.length).toFixed(2) : "—";
+    const etaMed  = etas.length  ? Math.round(etas.reduce((a,b)=>a+b,0)/etas.length) : "—";
+    const totalFalhas = rows.reduce((a,r)=>a+(parseInt(r.falhas)||0),0);
+    const crits = rows.filter(r=>r.resultado==="Crítico — Ação Imediata").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Análises</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${betaMed}</div><div class="kpi-chip-lbl">β Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${typeof etaMed==="number"?etaMed.toLocaleString("pt-BR"):etaMed} h</div><div class="kpi-chip-lbl">η Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalFalhas}</div><div class="kpi-chip-lbl">Falhas Campo</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${crits>0?"#dc3545":"#198754"};">${crits}</div><div class="kpi-chip-lbl">Críticos</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({produto:"Capacitor 100µF/16V",tipo:"Weibull 2P",beta:"2.8",eta:"28000",falhas:"12",confianca:"90",resultado:"OK — Dentro do Alvo",data:"2026-03-10",obs:"Acelerado a 85°C"});
+    addRow({produto:"Conector USB-C",tipo:"Weibull 3P",beta:"3.5",eta:"9500",falhas:"8",confianca:"90",resultado:"Alerta — Revisar Design",data:"2026-04-02",obs:"Ciclos inserção/remoção"});
+    addRow({produto:"CI PMIC v1.0",tipo:"Exponencial",beta:"1.0",eta:"120000",falhas:"3",confianca:"95",resultado:"OK — Dentro do Alvo",data:"2026-02-20"});
+    addRow({produto:"Relé 10A",tipo:"Weibull 2P",beta:"0.7",eta:"",falhas:"5",confianca:"80",resultado:"Pendente",data:"",obs:"Dados insuficientes"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

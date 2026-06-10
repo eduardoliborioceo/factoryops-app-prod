@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Ensaios Ambientais — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.ens-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.ens-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.ens-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.ens-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.ens-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ens-table td input,.ens-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.ens-table td input:focus,.ens-table td select:focus { outline:none;border-color:#198754; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-aprov { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-reprov{ background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-and   { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-plan  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .ens-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .ens-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .ens-table th:nth-child(n+6),.ens-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +49,147 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-thermometer-sun" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Câmara climática, vibração, choque térmico e testes HALT/HASS.</p>
+
+  <div class="ens-card">
+    <div class="ens-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-thermometer-sun text-success me-1"></i>Câmara Climática, Vibração, Choque Térmico e HALT/HASS</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os status</option>
+          <option>Aprovado</option><option>Reprovado</option><option>Em Andamento</option><option>Planejado</option>
+        </select>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os tipos</option>
+          <option>Câmara Climática</option><option>Vibração</option><option>Choque Térmico</option>
+          <option>HALT</option><option>HASS</option><option>Imunidade EMC</option><option>IP/Waterproof</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Ensaio</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="ens-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:120px;">Produto</th>
+            <th>Tipo de Ensaio</th>
+            <th>Norma / Spec</th>
+            <th style="min-width:140px;">Condições</th>
+            <th>Duração (h)</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Responsável</th>
+            <th style="min-width:110px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_ensaios_ambientais";
+  const TIPOS = ["Câmara Climática","Vibração","Choque Térmico","HALT","HASS","Imunidade EMC","IP/Waterproof","Altitude","Salt Spray","Outro"];
+  const STATUS = ["Aprovado","Reprovado","Em Andamento","Planejado"];
+  const ST_CLS = {"Aprovado":"st-aprov","Reprovado":"st-reprov","Em Andamento":"st-and","Planejado":"st-plan"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, produto:d.produto||"", tipo:d.tipo||"Câmara Climática",
+      norma:d.norma||"", conds:d.conds||"", duracao:d.duracao||"",
+      status:d.status||"Planejado", data:d.data||"", resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!ft||r.tipo===ft)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td><input type="text" value="${r.norma}" placeholder="Ex: IEC 60068-2-14" onchange="onField(${r.id},'norma',this.value)"></td>
+        <td><input type="text" value="${r.conds}" placeholder="Ex: -40°C a +85°C, 10 ciclos" onchange="onField(${r.id},'conds',this.value)"></td>
+        <td><input type="number" min="0" value="${r.duracao}" placeholder="h" onchange="onField(${r.id},'duracao',this.value)" style="max-width:70px;text-align:right;"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-plan'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.data}" onchange="onField(${r.id},'data',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ap  = rows.filter(r=>r.status==="Aprovado").length;
+    const re  = rows.filter(r=>r.status==="Reprovado").length;
+    const and = rows.filter(r=>r.status==="Em Andamento").length;
+    const pl  = rows.filter(r=>r.status==="Planejado").length;
+    const hTotal = rows.reduce((a,r)=>a+(parseFloat(r.duracao)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ap}</div><div class="kpi-chip-lbl">Aprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${re}</div><div class="kpi-chip-lbl">Reprovados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${and}</div><div class="kpi-chip-lbl">Em Andamento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${pl}</div><div class="kpi-chip-lbl">Planejados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${hTotal.toLocaleString("pt-BR")} h</div><div class="kpi-chip-lbl">Total Horas</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({produto:"Placa Controladora v2",tipo:"Câmara Climática",norma:"IEC 60068-2-1/2",conds:"-40°C a +85°C, 50 ciclos",duracao:"500",status:"Aprovado",data:"2026-02-14",resp:"Carlos Mendes"});
+    addRow({produto:"Módulo BT 5.0",tipo:"Vibração",norma:"IEC 60068-2-6",conds:"10~500Hz, 2G, 3 eixos",duracao:"48",status:"Aprovado",data:"2026-03-05",resp:"Ana Lima"});
+    addRow({produto:"Placa Controladora v2",tipo:"HALT",norma:"JEDEC JEP150",conds:"Temp. ±5°C/min, vib. 6 Grms",duracao:"72",status:"Em Andamento",data:"2026-06-01",resp:"Pedro Costa"});
+    addRow({produto:"GPS Module v1",tipo:"IP/Waterproof",norma:"IEC 60529 IP67",conds:"Imersão 1m / 30min",duracao:"1",status:"Planejado",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

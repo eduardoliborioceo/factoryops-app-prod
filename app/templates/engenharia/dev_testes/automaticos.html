@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Sistemas Automáticos — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.aut-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.aut-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.aut-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.aut-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.aut-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.aut-table td input,.aut-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.aut-table td input:focus,.aut-table td select:focus { outline:none;border-color:#6f42c1; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-on   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-off  { background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-mnt  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-dev  { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .aut-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .aut-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .aut-table th:nth-child(n+6),.aut-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +49,144 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-robot" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Integração de sistemas automáticos nas estações de teste.</p>
+
+  <div class="aut-card">
+    <div class="aut-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-robot" style="color:#6f42c1;" class="me-1"></i>Integração de Sistemas Automáticos nas Estações de Teste</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os status</option>
+          <option>Online</option><option>Offline</option><option>Manutenção</option><option>Desenvolvimento</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-sm" style="background:#6f42c1;color:#fff;" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Sistema</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="aut-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:130px;">Estação / ID</th>
+            <th>Tecnologia</th>
+            <th>Produto / Linha</th>
+            <th>Status</th>
+            <th>Protocolo</th>
+            <th>Integração</th>
+            <th>Responsável</th>
+            <th style="min-width:120px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_sis_automaticos";
+  const TECNS = ["Robô Cartesiano","Robô SCARA","Conveyor Automático","Pick & Place","Visão Computacional","Leitor de Código","Impressora Automática","Outro"];
+  const PROTOS = ["OPC-UA","Modbus TCP","Profinet","EtherCAT","MQTT","REST API","Serial RS232","Outro"];
+  const INTS = ["MES","SCADA","ERP","BD Local","Standalone","Outro"];
+  const STATUS = ["Online","Offline","Manutenção","Desenvolvimento"];
+  const ST_CLS = {"Online":"st-on","Offline":"st-off","Manutenção":"st-mnt","Desenvolvimento":"st-dev"};
+  let rows = []; let nextId = 1;
+
+  function tecnOpts(sel)  { return TECNS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function protoOpts(sel) { return PROTOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function intOpts(sel)   { return INTS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)    { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, estacao:d.estacao||"", tecn:d.tecn||"Robô Cartesiano",
+      produto:d.produto||"", status:d.status||"Desenvolvimento",
+      proto:d.proto||"OPC-UA", integ:d.integ||"MES",
+      resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fs||r.status===fs).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.estacao}" placeholder="Ex: EST-AUTO-01" onchange="onField(${r.id},'estacao',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tecn',this.value)">${tecnOpts(r.tecn)}</select></td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto / Linha" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-dev'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><select onchange="onField(${r.id},'proto',this.value)">${protoOpts(r.proto)}</select></td>
+        <td><select onchange="onField(${r.id},'integ',this.value)">${intOpts(r.integ)}</select></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const on  = rows.filter(r=>r.status==="Online").length;
+    const off = rows.filter(r=>r.status==="Offline").length;
+    const mnt = rows.filter(r=>r.status==="Manutenção").length;
+    const dev = rows.filter(r=>r.status==="Desenvolvimento").length;
+    const disp = rows.length ? Math.round((on/rows.length)*100) : 0;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${on}</div><div class="kpi-chip-lbl">Online</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${off}</div><div class="kpi-chip-lbl">Offline</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${mnt}</div><div class="kpi-chip-lbl">Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${dev}</div><div class="kpi-chip-lbl">Desenvolvimento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${disp>=80?"#198754":disp>=60?"#856404":"#dc3545"};">${disp}%</div><div class="kpi-chip-lbl">Disponibilidade</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({estacao:"EST-AUTO-01",tecn:"Robô Cartesiano",produto:"Multi-produto / Linha SMD 01",status:"Online",proto:"OPC-UA",integ:"MES",resp:"Carlos Mendes"});
+    addRow({estacao:"EST-VISION-01",tecn:"Visão Computacional",produto:"Placa Controladora",status:"Online",proto:"REST API",integ:"BD Local",resp:"Ana Lima"});
+    addRow({estacao:"EST-CONV-01",tecn:"Conveyor Automático",produto:"Linha SMD 02",status:"Manutenção",proto:"Modbus TCP",integ:"SCADA",resp:"Pedro Costa",obs:"Encoder com falha intermitente"});
+    addRow({estacao:"EST-SCARA-01",tecn:"Robô SCARA",produto:"Módulo BT 5.0",status:"Desenvolvimento",proto:"EtherCAT",integ:"MES",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
