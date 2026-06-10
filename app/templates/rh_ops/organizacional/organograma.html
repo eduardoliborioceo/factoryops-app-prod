@@ -1,6 +1,69 @@
 {% extends "layouts/app.html" %}
 {% block title %}Organograma — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.org-wrap { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.org-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.org-toolbar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.org-toolbar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:150px; }
+.org-toolbar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+
+.tree-container { padding:24px;overflow-x:auto;min-height:400px; }
+.tree-level { display:flex;justify-content:center;gap:16px;position:relative;margin-bottom:8px; }
+.tree-connector { display:flex;justify-content:center;gap:0;position:relative;margin-bottom:0; }
+.tree-connector-line { width:100%;height:24px;display:flex;align-items:flex-end;justify-content:center; }
+.tree-connector-line::before { content:"";border-top:2px solid var(--border);width:calc(100% - 80px); }
+.tree-branch { display:flex;justify-content:center;gap:16px; }
+
+.node-card {
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;text-align:center;min-width:140px;max-width:170px;position:relative;
+  transition:box-shadow 0.15s,border-color 0.15s;cursor:default;
+}
+.node-card:hover { box-shadow:0 4px 16px rgba(15,23,42,0.09);border-color:rgba(13,110,253,0.3); }
+.node-avatar { width:44px;height:44px;border-radius:50%;margin:0 auto 8px;
+  display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800; }
+.node-cargo { font-size:0.72rem;font-weight:700;margin-bottom:4px; }
+.node-name  { font-size:0.78rem;font-weight:600;color:var(--text); }
+.node-dept  { font-size:0.68rem;color:var(--text-muted);margin-top:2px; }
+.node-colabs{ font-size:0.65rem;font-weight:700;margin-top:4px;padding:2px 6px;border-radius:4px;
+  background:rgba(15,23,42,0.06);color:var(--text-muted);display:inline-block; }
+
+.n-dir   { background:rgba(220,53,69,0.10);color:#dc3545; }
+.n-ger   { background:rgba(255,193,7,0.15);color:#856404; }
+.n-coord { background:rgba(13,110,253,0.12);color:#0d6efd; }
+.n-tec   { background:rgba(25,135,84,0.12);color:#198754; }
+.n-op    { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+
+.av-dir  { background:rgba(220,53,69,0.12);color:#dc3545; }
+.av-ger  { background:rgba(255,193,7,0.15);color:#856404; }
+.av-coord{ background:rgba(13,110,253,0.12);color:#0d6efd; }
+.av-tec  { background:rgba(25,135,84,0.12);color:#198754; }
+.av-op   { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+
+.vert-line { width:2px;background:var(--border);height:20px;margin:0 auto; }
+.horiz-connector { height:2px;background:var(--border);flex:1; }
+.node-line-wrap { display:flex;flex-direction:column;align-items:center; }
+
+.legend-strip { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-top:1px solid var(--border);
+  background:rgba(15,23,42,0.02);font-size:0.72rem; }
+.legend-item { display:flex;align-items:center;gap:6px;font-weight:600; }
+.legend-dot { width:10px;height:10px;border-radius:50%; }
+
+@media (max-width:767px) {
+  .org-hdr { flex-direction:column;align-items:flex-start; }
+  .tree-container { padding:14px; }
+  .node-card { min-width:110px;padding:8px 10px; }
+  .node-name { font-size:0.7rem; }
+  .org-toolbar { flex-direction:column; }
+  .org-toolbar select { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +83,125 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-diagram-2" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Visualização interativa da hierarquia organizacional.</p>
+
+  <div class="org-wrap">
+    <div class="org-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-diagram-2 text-warning"></i>
+        <span>Hierarquia Organizacional</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="org-toolbar">
+      <select id="fFilial" onchange="renderOrg()">
+        <option value="all">Todas as filiais</option>
+        <option value="sp">Filial SP</option>
+        <option value="mg">Filial MG</option>
+        <option value="rj">Filial RJ</option>
+      </select>
+      <select id="fDept" onchange="renderOrg()">
+        <option value="all">Todos os departamentos</option>
+        <option value="producao">Produção</option>
+        <option value="qualidade">Qualidade</option>
+        <option value="engenharia">Engenharia</option>
+        <option value="manutencao">Manutenção</option>
+        <option value="rh">RH / Administrativo</option>
+      </select>
+    </div>
+
+    <div class="tree-container" id="treeContainer"></div>
+
+    <div class="legend-strip">
+      <span style="font-weight:700;color:var(--text-muted);margin-right:4px;">Nível:</span>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc3545;"></div>Diretoria</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#856404;"></div>Gerência</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0d6efd;"></div>Coordenação</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#198754;"></div>Técnico / Analista</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#adb5bd;"></div>Operacional</div>
+    </div>
   </div>
+
 </div>
+
+<script>
+const ORG_DATA = {
+  all: [
+    {nivel:"dir",cargo:"Diretor Industrial",nome:"João Almeida",dept:"Geral",colabs:78,av:"av-dir",nc:"n-dir",children:[
+      {nivel:"ger",cargo:"Gerente de Produção",nome:"Maria Silva",dept:"Produção",colabs:48,av:"av-ger",nc:"n-ger",children:[
+        {nivel:"coord",cargo:"Supervisor SMT",nome:"Pedro Rocha",dept:"SMT",colabs:25,av:"av-coord",nc:"n-coord",children:[
+          {nivel:"op",cargo:"Operadoras SMT",nome:"25 colaboradores",dept:"Turno 1 e 2",colabs:25,av:"av-op",nc:"n-op",children:[]}
+        ]},
+        {nivel:"coord",cargo:"Supervisor PTH",nome:"Ana Lima",dept:"PTH",colabs:18,av:"av-coord",nc:"n-coord",children:[
+          {nivel:"op",cargo:"Operadores PTH",nome:"18 colaboradores",dept:"Turno 1",colabs:18,av:"av-op",nc:"n-op",children:[]}
+        ]}
+      ]},
+      {nivel:"ger",cargo:"Gerente de Qualidade",nome:"Carlos Souza",dept:"Qualidade",colabs:13,av:"av-ger",nc:"n-ger",children:[
+        {nivel:"tec",cargo:"Analista de Qualidade",nome:"Fernanda Rocha",dept:"Qualidade",colabs:5,av:"av-tec",nc:"n-tec",children:[]},
+        {nivel:"tec",cargo:"Técnico de Qualidade",nome:"Diego Araujo",dept:"Qualidade",colabs:8,av:"av-tec",nc:"n-tec",children:[]}
+      ]},
+      {nivel:"ger",cargo:"Gerente de Engenharia",nome:"Patrícia Gomes",dept:"Engenharia",colabs:10,av:"av-ger",nc:"n-ger",children:[
+        {nivel:"tec",cargo:"Engenheiro de Processos",nome:"Lucas Mendes",dept:"Engenharia",colabs:4,av:"av-tec",nc:"n-tec",children:[]},
+        {nivel:"tec",cargo:"Técnico de Manutenção",nome:"Carlos Santos",dept:"Manutenção",colabs:6,av:"av-tec",nc:"n-tec",children:[]}
+      ]}
+    ]}
+  ]
+};
+
+function initials(name) {
+  const p = name.trim().split(" ");
+  return p.length > 1 ? (p[0][0]+(p[p.length-1][0]||"")).toUpperCase() : name.substring(0,2).toUpperCase();
+}
+
+function buildNode(n) {
+  return `<div class="node-line-wrap">
+    <div class="node-card">
+      <div class="node-avatar ${n.av}">${initials(n.nome)}</div>
+      <div class="node-cargo ${n.nc}">${n.cargo}</div>
+      <div class="node-name">${n.nome}</div>
+      <div class="node-dept">${n.dept}</div>
+      ${n.colabs > 0 ? `<span class="node-colabs"><i class="bi bi-people me-1"></i>${n.colabs}</span>` : ""}
+    </div>
+  </div>`;
+}
+
+function buildTree(nodes) {
+  if (!nodes || nodes.length === 0) return "";
+  let html = `<div class="tree-level">`;
+  nodes.forEach(n => {
+    html += `<div style="display:flex;flex-direction:column;align-items:center;">`;
+    html += buildNode(n);
+    if (n.children && n.children.length > 0) {
+      html += `<div class="vert-line"></div>`;
+      if (n.children.length > 1) {
+        html += `<div style="display:flex;align-items:flex-start;gap:0;width:100%;">`;
+        n.children.forEach((ch, i) => {
+          html += `<div style="display:flex;flex-direction:column;align-items:center;flex:1;">`;
+          html += `<div style="height:2px;background:var(--border);width:100%;"></div>`;
+          html += `<div class="vert-line"></div>`;
+          html += buildTree([ch]);
+          html += `</div>`;
+        });
+        html += `</div>`;
+      } else {
+        html += buildTree(n.children);
+      }
+    }
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function renderOrg() {
+  const data = ORG_DATA.all;
+  document.getElementById("treeContainer").innerHTML = buildTree(data);
+}
+
+document.addEventListener("DOMContentLoaded", renderOrg);
+</script>
 {% endblock %}

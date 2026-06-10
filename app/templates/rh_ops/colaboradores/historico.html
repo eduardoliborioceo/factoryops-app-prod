@@ -1,6 +1,44 @@
 {% extends "layouts/app.html" %}
 {% block title %}Histórico de Alterações — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.hist-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.hist-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.hist-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.hist-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.hist-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.hist-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text); }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.chip-cargo  { background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.chip-salario{ background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.chip-filial { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.chip-turno  { background:rgba(255,193,7,0.13);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.chip-status { background:rgba(220,53,69,0.10);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.chip-outros { background:rgba(15,23,42,0.07);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.change-arrow { color:var(--text-muted);font-size:0.8rem;margin:0 6px; }
+.change-old { text-decoration:line-through;color:var(--text-muted);font-size:0.8rem; }
+.change-new { color:var(--text);font-weight:600;font-size:0.8rem; }
+.avatar-cell { width:30px;height:30px;border-radius:50%;background:rgba(13,110,253,0.12);color:#0d6efd;
+  display:inline-flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;flex-shrink:0; }
+@media (max-width:767px) {
+  .hist-hdr { flex-direction:column;align-items:flex-start; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select { width:100%; }
+  .hist-table th:nth-child(n+6),.hist-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +58,253 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-clock-history" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Log de mudanças de cargo, salário e filial por colaborador.</p>
+
+  <div class="hist-card">
+    <div class="hist-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history text-primary"></i>
+        <span>Log de Alterações Cadastrais</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success btn-sm" onclick="addManual()">
+          <i class="bi bi-plus-lg me-1"></i>Registrar
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <div class="filters-bar">
+      <select id="fColab" onchange="renderTable()" style="min-width:180px;">
+        <option value="">Todos os colaboradores</option>
+      </select>
+      <select id="fCampo" onchange="renderTable()" style="min-width:130px;">
+        <option value="">Todos os campos</option>
+        <option>Cargo</option>
+        <option>Salário</option>
+        <option>Filial</option>
+        <option>Turno</option>
+        <option>Status</option>
+        <option>Outros</option>
+      </select>
+      <input type="date" id="fDe"   onchange="renderTable()" title="Data inicial" style="min-width:130px;">
+      <input type="date" id="fAte"  onchange="renderTable()" title="Data final"   style="min-width:130px;">
+      <input type="text" id="fBusca" placeholder="Buscar responsável…" oninput="renderTable()" style="min-width:160px;">
+    </div>
+
+    <div class="table-responsive">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Data / Hora</th>
+            <th style="min-width:160px;">Colaborador</th>
+            <th>Campo</th>
+            <th style="min-width:300px;">Alteração</th>
+            <th>Responsável</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      <span id="countLabel"></span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal registro manual -->
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1050;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:min(480px,95vw);max-height:90vh;overflow-y:auto;">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;">Registrar Alteração</h2>
+    <div class="row g-3">
+      <div class="col-12">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Colaborador</label>
+        <select id="mColab" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+          <option value="">Selecionar…</option>
+          <option>Ana Carolina Lima</option>
+          <option>Carlos Eduardo Santos</option>
+          <option>Fernanda Rocha Oliveira</option>
+          <option>Marcos Vinícius Pereira</option>
+          <option>Juliana Costa Ferreira</option>
+          <option>Roberto Alves Souza</option>
+          <option>Patrícia Mendes Gomes</option>
+          <option>Diego Henrique Araujo</option>
+          <option>Simone Aparecida Nunes</option>
+          <option>Leandro Barbosa Torres</option>
+        </select>
+      </div>
+      <div class="col-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Campo Alterado</label>
+        <select id="mCampo" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+          <option>Cargo</option><option>Salário</option><option>Filial</option>
+          <option>Turno</option><option>Status</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="col-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Responsável</label>
+        <input type="text" id="mResp" placeholder="Nome do responsável" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Valor Anterior</label>
+        <input type="text" id="mAnterior" placeholder="Valor anterior" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Novo Valor</label>
+        <input type="text" id="mNovo" placeholder="Novo valor" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-12">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Motivo</label>
+        <input type="text" id="mMotivo" placeholder="Motivo da alteração…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAdd()">Registrar</button>
+    </div>
   </div>
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_historico_alteracoes";
+  let rows = []; let nextId = 1;
+
+  const CAMPO_CLS = {
+    "Cargo":"chip-cargo","Salário":"chip-salario","Filial":"chip-filial",
+    "Turno":"chip-turno","Status":"chip-status","Outros":"chip-outros"
+  };
+
+  function initials(name) {
+    const p = name.trim().split(" ");
+    return (p[0][0]+(p[p.length-1][0]||"")).toUpperCase();
+  }
+
+  function populateFilters() {
+    const el = document.getElementById("fColab"); const cur = el.value;
+    el.innerHTML = '<option value="">Todos os colaboradores</option>';
+    [...new Set(rows.map(r=>r.colaborador).filter(Boolean))].sort().forEach(n=>{
+      const o = document.createElement("option"); o.value=o.textContent=n;
+      if(n===cur)o.selected=true; el.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const total = rows.length;
+    const cargo  = rows.filter(r=>r.campo==="Cargo").length;
+    const salario= rows.filter(r=>r.campo==="Salário").length;
+    const filial = rows.filter(r=>r.campo==="Filial").length;
+    const turno  = rows.filter(r=>r.campo==="Turno").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${cargo}</div><div class="kpi-chip-lbl">Cargo</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${salario}</div><div class="kpi-chip-lbl">Salário</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${filial}</div><div class="kpi-chip-lbl">Filial</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${turno}</div><div class="kpi-chip-lbl">Turno</div></div>
+    `;
+  }
+
+  function parseDate(str) {
+    if (!str) return null;
+    const [d,m,y] = str.split("/");
+    return new Date(`${y}-${m}-${d}`);
+  }
+
+  function renderTable() {
+    const fc = document.getElementById("fColab").value;
+    const fca = document.getElementById("fCampo").value;
+    const fDe = document.getElementById("fDe").value ? new Date(document.getElementById("fDe").value) : null;
+    const fAte = document.getElementById("fAte").value ? new Date(document.getElementById("fAte").value) : null;
+    const fb = document.getElementById("fBusca").value.toLowerCase();
+
+    const filtered = rows.filter(r => {
+      if (fc && r.colaborador !== fc) return false;
+      if (fca && r.campo !== fca) return false;
+      if (fb && !r.responsavel.toLowerCase().includes(fb)) return false;
+      if (fDe || fAte) {
+        const dt = parseDate(r.dataHora.split(" ")[0]);
+        if (dt) {
+          if (fDe && dt < fDe) return false;
+          if (fAte && dt > fAte) return false;
+        }
+      }
+      return true;
+    }).slice().reverse();
+
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><div class="avatar-cell">${initials(r.colaborador)}</div></td>
+        <td style="font-size:0.78rem;font-family:monospace;white-space:nowrap;">${r.dataHora}</td>
+        <td style="font-weight:600;">${r.colaborador}</td>
+        <td><span class="${CAMPO_CLS[r.campo]||'chip-outros'}">${r.campo}</span></td>
+        <td>
+          <span class="change-old">${r.anterior}</span>
+          <i class="bi bi-arrow-right change-arrow"></i>
+          <span class="change-new">${r.novo}</span>
+        </td>
+        <td style="font-size:0.82rem;">${r.responsavel}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${r.motivo}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("countLabel").textContent =
+      `${filtered.length} registro${filtered.length!==1?"s":""} encontrado${filtered.length!==1?"s":""}`;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+  }
+
+  window.addManual = function() {
+    document.getElementById("modalOverlay").style.display = "flex";
+  };
+  window.closeModal = function() {
+    document.getElementById("modalOverlay").style.display = "none";
+  };
+  window.confirmAdd = function() {
+    const colab = document.getElementById("mColab").value;
+    const campo = document.getElementById("mCampo").value;
+    const resp  = document.getElementById("mResp").value.trim();
+    const ant   = document.getElementById("mAnterior").value.trim();
+    const novo  = document.getElementById("mNovo").value.trim();
+    const motivo= document.getElementById("mMotivo").value.trim();
+    if (!colab || !resp || !ant || !novo) {
+      alert("Preencha colaborador, responsável, valor anterior e novo valor."); return;
+    }
+    const agora = new Date().toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"}).replace(",","");
+    rows.push({id:nextId++, dataHora:agora, colaborador:colab, campo, anterior:ant, novo, responsavel:resp, motivo:motivo||"—"});
+    populateFilters(); saveData(); renderTable(); updateKpis();
+    closeModal();
+  };
+
+  function addSample(d) { rows.push({id:nextId++, ...d}); }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if (d.nextId) nextId = d.nextId;
+      if (d.rows && d.rows.length) {
+        rows = d.rows; populateFilters(); renderTable(); updateKpis(); return;
+      }
+    } catch(e) {}
+    addSample({dataHora:"10/06/2026 08:30",colaborador:"Carlos Eduardo Santos",campo:"Cargo",anterior:"Auxiliar de Manutenção",novo:"Técnico de Manutenção",responsavel:"Maria Gestora",motivo:"Promoção por mérito"});
+    addSample({dataHora:"08/06/2026 14:15",colaborador:"Ana Carolina Lima",campo:"Turno",anterior:"1º Turno",novo:"2º Turno",responsavel:"Pedro Supervisor",motivo:"Necessidade operacional"});
+    addSample({dataHora:"05/06/2026 09:00",colaborador:"Marcos Vinícius Pereira",campo:"Status",anterior:"Ativo",novo:"Férias",responsavel:"Maria Gestora",motivo:"Gozo de férias programado"});
+    addSample({dataHora:"01/06/2026 11:45",colaborador:"Roberto Alves Souza",campo:"Status",anterior:"Ativo",novo:"Afastado",responsavel:"Maria Gestora",motivo:"Licença médica — CID M54.5"});
+    addSample({dataHora:"28/05/2026 16:00",colaborador:"Fernanda Rocha Oliveira",campo:"Filial",anterior:"Filial SP",novo:"Filial MG",responsavel:"Diretoria",motivo:"Transferência a pedido"});
+    addSample({dataHora:"20/05/2026 10:30",colaborador:"Diego Henrique Araujo",campo:"Salário",anterior:"R$ 3.200,00",novo:"R$ 3.600,00",responsavel:"Maria Gestora",motivo:"Reajuste anual + mérito"});
+    addSample({dataHora:"15/05/2026 08:00",colaborador:"Juliana Costa Ferreira",campo:"Cargo",anterior:"Auxiliar Administrativo",novo:"Assistente Administrativo",responsavel:"Maria Gestora",motivo:"Progressão de carreira"});
+    populateFilters(); saveData(); renderTable(); updateKpis();
+  });
+})();
+</script>
 {% endblock %}

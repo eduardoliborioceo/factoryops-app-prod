@@ -1,6 +1,44 @@
 {% extends "layouts/app.html" %}
 {% block title %}Cargos — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.org-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.org-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.org-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.org-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.org-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.org-table td input,.org-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.org-table td input:focus,.org-table td select:focus { outline:none;border-color:#0d6efd; }
+.org-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select,.filters-bar input { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:140px; }
+.filters-bar select:focus,.filters-bar input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.badge-ativo  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-inativo{ background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.nivel-1 { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.nivel-2 { background:rgba(255,193,7,0.13);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.nivel-3 { background:rgba(13,110,253,0.12);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.nivel-4 { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.nivel-5 { background:rgba(15,23,42,0.07);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+@media (max-width:767px) {
+  .org-hdr { flex-direction:column;align-items:flex-start; }
+  .org-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select,.filters-bar input { width:100%; }
+  .org-table th:nth-child(n+6),.org-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +58,175 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-award" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Tabela de cargos com nível hierárquico e faixa salarial.</p>
+
+  <div class="org-card">
+    <div class="org-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-award text-success"></i>
+        <span>Tabela de Cargos — Hierarquia e Faixa Salarial</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Cargo</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="filters-bar">
+      <input type="text" id="fBusca" placeholder="Buscar cargo…" oninput="renderTable()">
+      <select id="fNivel" onchange="renderTable()">
+        <option value="">Todos os níveis</option>
+        <option>Diretoria</option>
+        <option>Gerência</option>
+        <option>Coordenação / Supervisão</option>
+        <option>Analista / Técnico</option>
+        <option>Operacional</option>
+      </select>
+      <select id="fDept" onchange="renderTable()">
+        <option value="">Todos os departamentos</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="org-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th style="min-width:160px;">Cargo</th>
+            <th>Nível Hierárquico</th>
+            <th>Departamento</th>
+            <th>Salário Mínimo</th>
+            <th>Salário Máximo</th>
+            <th>Colaboradores</th>
+            <th>Status</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_cargos";
+  const NIVEIS = ["Diretoria","Gerência","Coordenação / Supervisão","Analista / Técnico","Operacional"];
+  const DEPTS  = ["Produção - SMT","Produção - PTH","Qualidade","Engenharia","Manutenção","Logística","RH / Administrativo","TI","Comercial"];
+  const STATUS = ["Ativo","Inativo"];
+  const N_CLS  = {"Diretoria":"nivel-1","Gerência":"nivel-2","Coordenação / Supervisão":"nivel-3","Analista / Técnico":"nivel-4","Operacional":"nivel-5"};
+  let rows = []; let nextId = 1;
+
+  function fmt(v) { return v ? `R$ ${parseFloat(v).toLocaleString("pt-BR",{minimumFractionDigits:2})}` : "—"; }
+
+  function populateDepts() {
+    const el = document.getElementById("fDept"); const cur = el.value;
+    el.innerHTML = '<option value="">Todos os departamentos</option>';
+    [...new Set(rows.map(r=>r.dept).filter(Boolean))].sort().forEach(d=>{
+      const o = document.createElement("option"); o.value=o.textContent=d;
+      if(d===cur)o.selected=true; el.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const total = rows.length;
+    const ativos = rows.filter(r=>r.status==="Ativo").length;
+    const valid = rows.filter(r=>r.salMin&&r.salMax);
+    const salMin = valid.length ? Math.min(...valid.map(r=>parseFloat(r.salMin)||0)) : 0;
+    const salMax = valid.length ? Math.max(...valid.map(r=>parseFloat(r.salMax)||0)) : 0;
+    const niveis = new Set(rows.map(r=>r.nivel).filter(Boolean)).size;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total Cargos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ativos}</div><div class="kpi-chip-lbl">Ativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${niveis}</div><div class="kpi-chip-lbl">Níveis</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="font-size:0.95rem;color:#198754;">R$ ${salMin.toLocaleString("pt-BR")}</div><div class="kpi-chip-lbl">Menor piso</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="font-size:0.95rem;color:#6f42c1;">R$ ${salMax.toLocaleString("pt-BR")}</div><div class="kpi-chip-lbl">Maior teto</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const fb = document.getElementById("fBusca").value.toLowerCase();
+    const fn = document.getElementById("fNivel").value;
+    const fd = document.getElementById("fDept").value;
+    const filtered = rows.filter(r=>
+      (!fb||r.nome.toLowerCase().includes(fb))&&
+      (!fn||r.nivel===fn)&&
+      (!fd||r.dept===fd)
+    );
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const nOpts = NIVEIS.map(n=>`<option${n===r.nivel?" selected":""}>${n}</option>`).join("");
+      const dOpts = DEPTS.map(d=>`<option${d===r.dept?" selected":""}>${d}</option>`).join("");
+      const sOpts = STATUS.map(s=>`<option${s===r.status?" selected":""}>${s}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" value="${r.codigo}" placeholder="CGO-01"
+          style="max-width:75px;font-family:monospace;font-weight:700;text-transform:uppercase;"
+          oninput="this.value=this.value.toUpperCase()" onchange="onF(${r.id},'codigo',this.value)"></td>
+        <td><input type="text" value="${r.nome}" placeholder="Nome do cargo" style="font-weight:600;" onchange="onF(${r.id},'nome',this.value)"></td>
+        <td>
+          <select onchange="onF(${r.id},'nivel',this.value)" style="max-width:180px;">${nOpts}</select>
+          <span class="${N_CLS[r.nivel]||'nivel-5'}" style="display:block;margin-top:3px;">${r.nivel}</span>
+        </td>
+        <td><select onchange="onF(${r.id},'dept',this.value)">${dOpts}</select></td>
+        <td><input type="number" min="0" step="50" value="${r.salMin}" placeholder="1320"
+          onchange="onF(${r.id},'salMin',this.value)" style="max-width:100px;text-align:right;"></td>
+        <td><input type="number" min="0" step="50" value="${r.salMax}" placeholder="2000"
+          onchange="onF(${r.id},'salMax',this.value)" style="max-width:100px;text-align:right;"></td>
+        <td><input type="number" min="0" value="${r.colabs}" placeholder="0"
+          onchange="onF(${r.id},'colabs',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td>
+          <select onchange="onF(${r.id},'status',this.value)" style="max-width:80px;">${sOpts}</select>
+          <span class="${r.status==='Ativo'?'badge-ativo':'badge-inativo'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    updateKpis();
+  }
+
+  window.onF = function(id,f,v) { const r=rows.find(r=>r.id===id); if(r){ r[f]=v; if(f==="dept")populateDepts(); } updateKpis(); };
+  window.addRow = function(d={}) {
+    rows.push({id:nextId++,codigo:d.codigo||"",nome:d.nome||"",nivel:d.nivel||"Operacional",
+      dept:d.dept||"Produção - SMT",salMin:d.salMin||"",salMax:d.salMax||"",colabs:d.colabs||"0",status:d.status||"Ativo"});
+    populateDepts(); renderTable();
+  };
+  window.removeRow = function(id) { rows=rows.filter(r=>r.id!==id); populateDepts(); renderTable(); };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({rows,nextId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; populateDepts(); renderTable(); return; }
+    } catch(e){}
+    addRow({codigo:"CGO-01",nome:"Diretor Industrial",nivel:"Diretoria",dept:"Engenharia",salMin:"18000",salMax:"30000",colabs:"1",status:"Ativo"});
+    addRow({codigo:"CGO-02",nome:"Gerente de Produção",nivel:"Gerência",dept:"Produção - SMT",salMin:"9000",salMax:"14000",colabs:"2",status:"Ativo"});
+    addRow({codigo:"CGO-03",nome:"Supervisor de Produção",nivel:"Coordenação / Supervisão",dept:"Produção - SMT",salMin:"4500",salMax:"7000",colabs:"4",status:"Ativo"});
+    addRow({codigo:"CGO-04",nome:"Engenheira de Processos",nivel:"Analista / Técnico",dept:"Engenharia",salMin:"5500",salMax:"9000",colabs:"3",status:"Ativo"});
+    addRow({codigo:"CGO-05",nome:"Analista de Qualidade",nivel:"Analista / Técnico",dept:"Qualidade",salMin:"3500",salMax:"6000",colabs:"5",status:"Ativo"});
+    addRow({codigo:"CGO-06",nome:"Técnico de Manutenção",nivel:"Analista / Técnico",dept:"Manutenção",salMin:"2800",salMax:"5000",colabs:"6",status:"Ativo"});
+    addRow({codigo:"CGO-07",nome:"Técnico de Qualidade",nivel:"Analista / Técnico",dept:"Qualidade",salMin:"2200",salMax:"4000",colabs:"8",status:"Ativo"});
+    addRow({codigo:"CGO-08",nome:"Operadora SMT",nivel:"Operacional",dept:"Produção - SMT",salMin:"1800",salMax:"2800",colabs:"25",status:"Ativo"});
+    addRow({codigo:"CGO-09",nome:"Operador PTH",nivel:"Operacional",dept:"Produção - PTH",salMin:"1700",salMax:"2600",colabs:"18",status:"Ativo"});
+    addRow({codigo:"CGO-10",nome:"Assistente Administrativo",nivel:"Operacional",dept:"RH / Administrativo",salMin:"1500",salMax:"2400",colabs:"4",status:"Ativo"});
+    addRow({codigo:"CGO-11",nome:"Assistente de RH",nivel:"Operacional",dept:"RH / Administrativo",salMin:"1600",salMax:"2600",colabs:"2",status:"Ativo"});
+  });
+})();
+</script>
 {% endblock %}

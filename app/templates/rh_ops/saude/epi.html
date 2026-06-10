@@ -1,6 +1,45 @@
 {% extends "layouts/app.html" %}
 {% block title %}EPI — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.sau-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.sau-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.sau-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.sau-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.sau-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.sau-table td input,.sau-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.sau-table td input:focus,.sau-table td select:focus { outline:none;border-color:#0d6efd; }
+.sau-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select,.filters-bar input { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:140px; }
+.filters-bar select:focus,.filters-bar input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.st-entregue  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-devolver  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-devolvido { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.st-vencido   { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.hub-nav { display:flex;gap:4px;background:rgba(15,23,42,0.05);border-radius:10px;padding:4px;margin:0 18px 16px; }
+.hub-nav-btn { padding:7px 20px;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;
+  background:transparent;color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s;white-space:nowrap; }
+.hub-nav-btn.active { background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(15,23,42,0.10); }
+@media (max-width:767px) {
+  .sau-hdr { flex-direction:column;align-items:flex-start; }
+  .sau-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select,.filters-bar input { width:100%; }
+  .sau-table th:nth-child(n+5),.sau-table td:nth-child(n+5) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +59,238 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-shield-check" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Controle de entrega e devolução de EPIs por colaborador.</p>
+
+  <div class="sau-card">
+    <div class="sau-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-shield-check text-primary"></i>
+        <span>Controle de Entrega e Devolução de EPIs</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addEntrega()"><i class="bi bi-plus-lg me-1"></i>Registrar Entrega</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="hub-nav" style="margin-top:12px;">
+      <button class="hub-nav-btn active" id="navEntregas" onclick="setView('entregas')">
+        <i class="bi bi-box-arrow-right me-1"></i>Entregas
+      </button>
+      <button class="hub-nav-btn" id="navEstoque" onclick="setView('estoque')">
+        <i class="bi bi-archive me-1"></i>Tipos de EPI
+      </button>
+    </div>
+
+    <!-- Entregas -->
+    <div id="viewEntregas">
+      <div class="filters-bar">
+        <input type="text" id="fColab" placeholder="Buscar colaborador…" oninput="renderEntregas()">
+        <select id="fEPI" onchange="renderEntregas()">
+          <option value="">Todos os EPIs</option>
+        </select>
+        <select id="fStatus" onchange="renderEntregas()">
+          <option value="">Todos</option>
+          <option>Entregue</option><option>Devolução Pendente</option>
+          <option>Devolvido</option><option>Vencido</option>
+        </select>
+      </div>
+      <div class="table-responsive">
+        <table class="sau-table">
+          <thead>
+            <tr>
+              <th style="min-width:150px;">Colaborador</th>
+              <th>EPI</th>
+              <th>Qtd</th>
+              <th>Entrega</th>
+              <th>Validade</th>
+              <th>Devolução</th>
+              <th>Status</th>
+              <th>CA Nº</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tBodyEntregas"></tbody>
+        </table>
+      </div>
+      <div style="padding:10px 18px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+        <span id="countLabel"></span>
+      </div>
+    </div>
+
+    <!-- Estoque / Tipos -->
+    <div id="viewEstoque" class="d-none">
+      <div style="padding:12px 18px 0;">
+        <button class="btn btn-success btn-sm mb-3" onclick="addEPI()"><i class="bi bi-plus-lg me-1"></i>Novo EPI</button>
+      </div>
+      <div class="table-responsive">
+        <table class="sau-table">
+          <thead>
+            <tr>
+              <th>Código CA</th>
+              <th style="min-width:150px;">Nome do EPI</th>
+              <th>Tipo</th>
+              <th>Fabricante</th>
+              <th>Estoque</th>
+              <th>Validade (anos)</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="tBodyEPI"></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_epi";
+  const STATUS_CLS = {"Entregue":"st-entregue","Devolução Pendente":"st-devolver","Devolvido":"st-devolvido","Vencido":"st-vencido"};
+  const STATUS_LIST = ["Entregue","Devolução Pendente","Devolvido","Vencido"];
+  let entregas = []; let epis = []; let nextEntId=1; let nextEpiId=1;
+
+  function populateEPIFilter() {
+    const el = document.getElementById("fEPI"); const cur = el.value;
+    el.innerHTML = '<option value="">Todos os EPIs</option>';
+    epis.forEach(e => {
+      const o = document.createElement("option"); o.value=o.textContent=e.nome;
+      if(e.nome===cur)o.selected=true; el.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const totalEnt = entregas.length;
+    const entregues = entregas.filter(e=>e.status==="Entregue").length;
+    const pendentes = entregas.filter(e=>e.status==="Devolução Pendente").length;
+    const tiposEPI  = epis.length;
+    const totalEstoque = epis.reduce((s,e)=>s+(parseInt(e.estoque)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${tiposEPI}</div><div class="kpi-chip-lbl">Tipos de EPI</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalEstoque}</div><div class="kpi-chip-lbl">Estoque</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${entregues}</div><div class="kpi-chip-lbl">Entregues</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${pendentes}</div><div class="kpi-chip-lbl">Devolução Pend.</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${totalEnt}</div><div class="kpi-chip-lbl">Total Registros</div></div>
+    `;
+  }
+
+  window.setView = function(v) {
+    document.getElementById("viewEntregas").classList.toggle("d-none", v!=="entregas");
+    document.getElementById("viewEstoque").classList.toggle("d-none", v!=="estoque");
+    document.getElementById("navEntregas").classList.toggle("active", v==="entregas");
+    document.getElementById("navEstoque").classList.toggle("active", v==="estoque");
+  };
+
+  function renderEntregas() {
+    const fb = document.getElementById("fColab").value.toLowerCase();
+    const fe = document.getElementById("fEPI").value;
+    const fs = document.getElementById("fStatus").value;
+    const filtered = entregas.filter(r=>
+      (!fb||r.colaborador.toLowerCase().includes(fb))&&
+      (!fe||r.epi===fe)&&(!fs||r.status===fs)
+    );
+    const tbody = document.getElementById("tBodyEntregas");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const eOpts = epis.map(e=>`<option${e.nome===r.epi?" selected":""}>${e.nome}</option>`).join("");
+      const sOpts = STATUS_LIST.map(s=>`<option${s===r.status?" selected":""}>${s}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:600;"><input type="text" value="${r.colaborador}" style="font-weight:600;" onchange="onEnt(${r.id},'colaborador',this.value)"></td>
+        <td><select onchange="onEnt(${r.id},'epi',this.value)">${eOpts}</select></td>
+        <td><input type="number" min="1" value="${r.qtd}" onchange="onEnt(${r.id},'qtd',this.value)" style="max-width:50px;text-align:center;font-weight:700;"></td>
+        <td><input type="date" value="${r.entrega}" onchange="onEnt(${r.id},'entrega',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="date" value="${r.validade}" onchange="onEnt(${r.id},'validade',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="date" value="${r.devolucao}" onchange="onEnt(${r.id},'devolucao',this.value)" style="font-size:0.78rem;"></td>
+        <td>
+          <select onchange="onEnt(${r.id},'status',this.value)" style="max-width:140px;">${sOpts}</select>
+          <span class="${STATUS_CLS[r.status]||'st-entregue'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.ca}" placeholder="CA Nº" style="max-width:80px;font-family:monospace;" onchange="onEnt(${r.id},'ca',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeEnt(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("countLabel").textContent = `${filtered.length} registro${filtered.length!==1?"s":""}`;
+    updateKpis();
+  }
+
+  function renderEPIs() {
+    const tbody = document.getElementById("tBodyEPI");
+    tbody.innerHTML = "";
+    epis.forEach(e => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="text" value="${e.ca}" placeholder="CA Nº" style="max-width:80px;font-family:monospace;" onchange="onEPI(${e.id},'ca',this.value)"></td>
+        <td><input type="text" value="${e.nome}" placeholder="Nome do EPI" style="font-weight:600;" onchange="onEPI(${e.id},'nome',this.value)"></td>
+        <td><input type="text" value="${e.tipo}" placeholder="Tipo" onchange="onEPI(${e.id},'tipo',this.value)"></td>
+        <td><input type="text" value="${e.fabricante}" placeholder="Fabricante" onchange="onEPI(${e.id},'fabricante',this.value)"></td>
+        <td><input type="number" min="0" value="${e.estoque}" style="max-width:70px;text-align:center;font-weight:700;" onchange="onEPI(${e.id},'estoque',this.value)"></td>
+        <td><input type="number" min="0" step="0.5" value="${e.validade}" placeholder="2" style="max-width:60px;text-align:center;" onchange="onEPI(${e.id},'validade',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeEPI(${e.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    populateEPIFilter();
+  }
+
+  window.onEnt = function(id,f,v) { const r=entregas.find(r=>r.id===id); if(r) r[f]=v; updateKpis(); };
+  window.onEPI = function(id,f,v) { const e=epis.find(e=>e.id===id); if(e){ e[f]=v; if(f==="nome")populateEPIFilter(); } updateKpis(); };
+  window.removeEnt = function(id) { entregas=entregas.filter(r=>r.id!==id); renderEntregas(); };
+  window.removeEPI = function(id) { epis=epis.filter(e=>e.id!==id); renderEPIs(); };
+  window.addEntrega = function(d={}) {
+    const epiDef = epis.length ? epis[0].nome : "";
+    entregas.push({id:nextEntId++,colaborador:d.colaborador||"",epi:d.epi||epiDef,
+      qtd:d.qtd||"1",entrega:d.entrega||new Date().toISOString().split("T")[0],
+      validade:d.validade||"",devolucao:d.devolucao||"",status:d.status||"Entregue",ca:d.ca||""});
+    populateEPIFilter(); renderEntregas();
+  };
+  window.addEPI = function(d={}) {
+    epis.push({id:nextEpiId++,ca:d.ca||"",nome:d.nome||"",tipo:d.tipo||"",fabricante:d.fabricante||"",estoque:d.estoque||"0",validade:d.validade||"2"});
+    renderEPIs(); populateEPIFilter();
+  };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({entregas,epis,nextEntId,nextEpiId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  function isoToday() { return new Date().toISOString().split("T")[0]; }
+  function futureISO(d){ const dt=new Date(); dt.setDate(dt.getDate()+d); return dt.toISOString().split("T")[0]; }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextEntId) nextEntId=d.nextEntId;
+      if(d.nextEpiId) nextEpiId=d.nextEpiId;
+      if(d.epis&&d.epis.length) epis=d.epis;
+      if(d.entregas&&d.entregas.length){ entregas=d.entregas; renderEPIs(); populateEPIFilter(); renderEntregas(); return; }
+    } catch(e){}
+    addEPI({ca:"12345",nome:"Capacete de Segurança",tipo:"Proteção da Cabeça",fabricante:"3M",estoque:"25",validade:"5"});
+    addEPI({ca:"23456",nome:"Óculos de Segurança",tipo:"Proteção Ocular",fabricante:"Honeywell",estoque:"40",validade:"3"});
+    addEPI({ca:"34567",nome:"Luva de Nitrila",tipo:"Proteção das Mãos",fabricante:"Volk",estoque:"200",validade:"1"});
+    addEPI({ca:"45678",nome:"Protetor Auricular",tipo:"Proteção Auditiva",fabricante:"3M",estoque:"100",validade:"2"});
+    addEPI({ca:"56789",nome:"Calçado de Segurança",tipo:"Proteção dos Pés",fabricante:"Marluvas",estoque:"30",validade:"2"});
+    addEntrega({colaborador:"Ana Carolina Lima",epi:"Capacete de Segurança",qtd:"1",entrega:isoToday(),validade:futureISO(1825),status:"Entregue",ca:"12345"});
+    addEntrega({colaborador:"Ana Carolina Lima",epi:"Óculos de Segurança",qtd:"1",entrega:isoToday(),validade:futureISO(1095),status:"Entregue",ca:"23456"});
+    addEntrega({colaborador:"Carlos Eduardo Santos",epi:"Calçado de Segurança",qtd:"1",entrega:isoToday(),validade:futureISO(730),status:"Devolução Pendente",ca:"56789"});
+    addEntrega({colaborador:"Roberto Alves Souza",epi:"Luva de Nitrila",qtd:"5",entrega:isoToday(),validade:futureISO(365),status:"Entregue",ca:"34567"});
+    addEntrega({colaborador:"Diego Henrique Araujo",epi:"Protetor Auricular",qtd:"1",entrega:isoToday(),validade:futureISO(730),status:"Entregue",ca:"45678"});
+    saveData(); renderEPIs(); populateEPIFilter(); renderEntregas();
+  });
+})();
+</script>
 {% endblock %}

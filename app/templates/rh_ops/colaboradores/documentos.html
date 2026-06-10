@@ -1,6 +1,50 @@
 {% extends "layouts/app.html" %}
 {% block title %}Documentos — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.doc-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.doc-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.doc-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.doc-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.doc-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.doc-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:150px; }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.badge-valido   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-vencer   { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-vencido  { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-semvalid { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.doc-icon { width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:0.95rem; }
+.doc-icon-pdf  { background:rgba(220,53,69,0.12);color:#dc3545; }
+.doc-icon-img  { background:rgba(13,110,253,0.12);color:#0d6efd; }
+.doc-icon-word { background:rgba(13,110,253,0.12);color:#0d6efd; }
+.doc-icon-gen  { background:rgba(108,117,125,0.12);color:#6c757d; }
+.upload-zone { border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;
+  cursor:pointer;transition:border-color 0.15s,background 0.15s; }
+.upload-zone:hover,.upload-zone.dragover { border-color:#0d6efd;background:rgba(13,110,253,0.04); }
+.upload-zone i { font-size:2rem;color:var(--text-muted);display:block;margin-bottom:8px; }
+.upload-zone p { font-size:0.83rem;color:var(--text-muted);margin:0; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:0.75rem;
+  color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s; }
+.action-btn:hover { background:rgba(13,110,253,0.08);color:#0d6efd;border-color:rgba(13,110,253,0.3); }
+@media (max-width:767px) {
+  .doc-hdr { flex-direction:column;align-items:flex-start; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select { width:100%;min-width:unset; }
+  .doc-table th:nth-child(n+6),.doc-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +64,313 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-folder2-open" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Upload e consulta de documentos por colaborador (RG, CPF, ASO, contratos).</p>
+
+  <!-- Upload -->
+  <div class="doc-card">
+    <div class="doc-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-cloud-upload text-primary"></i>
+        <span>Upload de Documentos</span>
+      </div>
+    </div>
+    <div style="padding:16px;">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label style="font-size:0.8rem;font-weight:600;margin-bottom:4px;display:block;">Colaborador</label>
+          <select id="uploadColab" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+            <option value="">Selecionar colaborador…</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label style="font-size:0.8rem;font-weight:600;margin-bottom:4px;display:block;">Tipo de Documento</label>
+          <select id="uploadTipo" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+            <option>RG</option>
+            <option>CPF</option>
+            <option>ASO Admissional</option>
+            <option>ASO Periódico</option>
+            <option>ASO Demissional</option>
+            <option>Contrato de Trabalho</option>
+            <option>Atestado Médico</option>
+            <option>Certificado de Treinamento</option>
+            <option>Comprovante de Residência</option>
+            <option>Diploma / Certificado</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label style="font-size:0.8rem;font-weight:600;margin-bottom:4px;display:block;">Validade (se aplicável)</label>
+          <input type="date" id="uploadValidade" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100" onclick="uploadDoc()">
+            <i class="bi bi-cloud-upload me-1"></i>Enviar Arquivo
+          </button>
+        </div>
+        <div class="col-12">
+          <div class="upload-zone" id="uploadZone"
+            ondragover="event.preventDefault();this.classList.add('dragover')"
+            ondragleave="this.classList.remove('dragover')"
+            ondrop="handleDrop(event)"
+            onclick="document.getElementById('inputFile').click()">
+            <i class="bi bi-file-earmark-arrow-up"></i>
+            <p><strong>Arraste e solte</strong> o arquivo aqui ou <strong>clique para selecionar</strong><br>
+               <small>PDF, JPG, PNG, DOC, DOCX — máx. 20MB</small></p>
+            <div id="fileSelected" style="margin-top:8px;font-size:0.8rem;font-weight:600;color:#0d6efd;"></div>
+          </div>
+          <input type="file" id="inputFile" style="display:none;" onchange="fileChosen(this)">
+        </div>
+      </div>
+      <div id="uploadMsg" style="min-height:24px;font-size:0.8rem;margin-top:8px;"></div>
+    </div>
   </div>
+
+  <!-- Listagem -->
+  <div class="doc-card">
+    <div class="doc-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-folder2-open text-warning"></i>
+        <span>Documentos por Colaborador</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <div class="filters-bar">
+      <select id="fColab" onchange="renderTable()">
+        <option value="">Todos os colaboradores</option>
+      </select>
+      <select id="fTipo" onchange="renderTable()">
+        <option value="">Todos os tipos</option>
+        <option>RG</option><option>CPF</option><option>ASO Admissional</option>
+        <option>ASO Periódico</option><option>Contrato de Trabalho</option>
+        <option>Atestado Médico</option><option>Certificado de Treinamento</option>
+        <option>Diploma / Certificado</option><option>Outros</option>
+      </select>
+      <select id="fStatus" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option>Válido</option>
+        <option>Vence em 30 dias</option>
+        <option>Vencido</option>
+        <option>Sem validade</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th style="min-width:160px;">Colaborador</th>
+            <th>Tipo de Documento</th>
+            <th style="min-width:140px;">Arquivo</th>
+            <th>Validade</th>
+            <th>Status</th>
+            <th>Upload em</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      <span id="countLabel"></span>
+    </div>
+  </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_documentos";
+  let rows = []; let nextId = 1;
+
+  const TIPO_ICON = {
+    "RG":"doc-icon-img","CPF":"doc-icon-img",
+    "ASO Admissional":"doc-icon-pdf","ASO Periódico":"doc-icon-pdf","ASO Demissional":"doc-icon-pdf",
+    "Contrato de Trabalho":"doc-icon-word","Atestado Médico":"doc-icon-pdf",
+    "Certificado de Treinamento":"doc-icon-pdf","Diploma / Certificado":"doc-icon-pdf",
+    "Comprovante de Residência":"doc-icon-gen","Outros":"doc-icon-gen"
+  };
+  const TIPO_ICON_BI = {
+    "RG":"bi-person-vcard","CPF":"bi-card-text",
+    "ASO Admissional":"bi-clipboard2-pulse","ASO Periódico":"bi-clipboard2-pulse","ASO Demissional":"bi-clipboard2-pulse",
+    "Contrato de Trabalho":"bi-file-earmark-word","Atestado Médico":"bi-file-earmark-medical",
+    "Certificado de Treinamento":"bi-patch-check","Diploma / Certificado":"bi-award",
+    "Comprovante de Residência":"bi-house","Outros":"bi-file-earmark"
+  };
+
+  function statusValidade(validade) {
+    if (!validade || validade === "—") return "Sem validade";
+    const [d,m,y] = validade.split("/").map(Number);
+    const dt = new Date(y, m-1, d);
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const diff = (dt - hoje) / 86400000;
+    if (diff < 0) return "Vencido";
+    if (diff <= 30) return "Vence em 30 dias";
+    return "Válido";
+  }
+
+  function statusBadge(s) {
+    const map = {"Válido":"badge-valido","Vence em 30 dias":"badge-vencer","Vencido":"badge-vencido","Sem validade":"badge-semvalid"};
+    return `<span class="${map[s]||'badge-semvalid'}">${s}</span>`;
+  }
+
+  function populateFilters() {
+    const c = document.getElementById("fColab"); const cc = c.value;
+    c.innerHTML = '<option value="">Todos os colaboradores</option>';
+    [...new Set(rows.map(r=>r.colaborador).filter(Boolean))].forEach(n=>{
+      const o = document.createElement("option"); o.value=o.textContent=n;
+      if(n===cc)o.selected=true; c.appendChild(o);
+    });
+    const uc = document.getElementById("uploadColab"); const ucc = uc.value;
+    uc.innerHTML = '<option value="">Selecionar colaborador…</option>';
+    [...new Set(rows.map(r=>r.colaborador).filter(Boolean))].concat([
+      "Ana Carolina Lima","Carlos Eduardo Santos","Fernanda Rocha Oliveira",
+      "Marcos Vinícius Pereira","Juliana Costa Ferreira","Roberto Alves Souza",
+      "Patrícia Mendes Gomes","Diego Henrique Araujo","Simone Aparecida Nunes","Leandro Barbosa Torres"
+    ]).filter((v,i,a)=>a.indexOf(v)===i).sort().forEach(n=>{
+      const o = document.createElement("option"); o.value=o.textContent=n;
+      if(n===ucc)o.selected=true; uc.appendChild(o);
+    });
+  }
+
+  function updateKpis() {
+    const total = rows.length;
+    const validos = rows.filter(r=>statusValidade(r.validade)==="Válido").length;
+    const vencer = rows.filter(r=>statusValidade(r.validade)==="Vence em 30 dias").length;
+    const vencidos = rows.filter(r=>statusValidade(r.validade)==="Vencido").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${validos}</div><div class="kpi-chip-lbl">Válidos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${vencer}</div><div class="kpi-chip-lbl">Vence em 30d</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${vencidos}</div><div class="kpi-chip-lbl">Vencidos</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const fc = document.getElementById("fColab").value;
+    const ft = document.getElementById("fTipo").value;
+    const fs = document.getElementById("fStatus").value;
+
+    const filtered = rows.filter(r =>
+      (!fc || r.colaborador === fc) &&
+      (!ft || r.tipo === ft) &&
+      (!fs || statusValidade(r.validade) === fs)
+    );
+
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    filtered.forEach(r => {
+      const s = statusValidade(r.validade);
+      const iconCls = TIPO_ICON[r.tipo] || "doc-icon-gen";
+      const iconBi  = TIPO_ICON_BI[r.tipo] || "bi-file-earmark";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><div class="doc-icon ${iconCls}"><i class="bi ${iconBi}"></i></div></td>
+        <td style="font-weight:600;">${r.colaborador}</td>
+        <td>${r.tipo}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${r.arquivo}</td>
+        <td style="font-size:0.8rem;">${r.validade}</td>
+        <td>${statusBadge(s)}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${r.uploadEm}</td>
+        <td>
+          <button class="action-btn" title="Visualizar"><i class="bi bi-eye"></i></button>
+          <button class="action-btn ms-1" onclick="removeRow(${r.id})" style="border-color:rgba(220,53,69,0.3);">
+            <i class="bi bi-trash" style="color:#dc3545;"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("countLabel").textContent = `${filtered.length} documento${filtered.length!==1?"s":""} encontrado${filtered.length!==1?"s":""}`;
+  }
+
+  window.removeRow = function(id) {
+    rows = rows.filter(r=>r.id!==id);
+    populateFilters(); saveData(); renderTable(); updateKpis();
+  };
+
+  window.fileChosen = function(input) {
+    if (input.files.length) {
+      document.getElementById("fileSelected").textContent = `✓ ${input.files[0].name}`;
+    }
+  };
+
+  window.handleDrop = function(e) {
+    e.preventDefault();
+    document.getElementById("uploadZone").classList.remove("dragover");
+    const f = e.dataTransfer.files[0];
+    if (f) document.getElementById("fileSelected").textContent = `✓ ${f.name}`;
+  };
+
+  window.uploadDoc = function() {
+    const colab   = document.getElementById("uploadColab").value;
+    const tipo    = document.getElementById("uploadTipo").value;
+    const valDate = document.getElementById("uploadValidade").value;
+    const fileEl  = document.getElementById("inputFile");
+
+    if (!colab) {
+      const m = document.getElementById("uploadMsg");
+      m.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Selecione o colaborador.</span>`;
+      setTimeout(()=>m.innerHTML="", 3000); return;
+    }
+
+    const arquivo = fileEl.files.length ? fileEl.files[0].name : `${tipo.replace(/ /g,"_").toLowerCase()}_${colab.split(" ")[0].toLowerCase()}.pdf`;
+    const validade = valDate ? valDate.split("-").reverse().join("/") : "—";
+    const hoje = new Date().toLocaleDateString("pt-BR");
+
+    rows.push({id:nextId++, colaborador:colab, tipo, arquivo, validade, uploadEm:hoje});
+    populateFilters(); saveData(); renderTable(); updateKpis();
+
+    document.getElementById("uploadColab").value = "";
+    document.getElementById("uploadValidade").value = "";
+    document.getElementById("fileSelected").textContent = "";
+    fileEl.value = "";
+
+    const m = document.getElementById("uploadMsg");
+    m.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>Documento enviado com sucesso.</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  };
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+  }
+
+  function today() { return new Date().toLocaleDateString("pt-BR"); }
+  function futureDate(days) {
+    const d = new Date(); d.setDate(d.getDate()+days);
+    return d.toLocaleDateString("pt-BR");
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if (d.nextId) nextId = d.nextId;
+      if (d.rows && d.rows.length) {
+        rows = d.rows; populateFilters(); renderTable(); updateKpis(); return;
+      }
+    } catch(e) {}
+
+    const data = [
+      {colaborador:"Ana Carolina Lima",tipo:"RG",arquivo:"rg_ana_lima.jpg",validade:"—",uploadEm:today()},
+      {colaborador:"Ana Carolina Lima",tipo:"ASO Periódico",arquivo:"aso_periodico_ana.pdf",validade:futureDate(180),uploadEm:today()},
+      {colaborador:"Carlos Eduardo Santos",tipo:"CPF",arquivo:"cpf_carlos.pdf",validade:"—",uploadEm:today()},
+      {colaborador:"Carlos Eduardo Santos",tipo:"Contrato de Trabalho",arquivo:"contrato_carlos.pdf",validade:"—",uploadEm:today()},
+      {colaborador:"Carlos Eduardo Santos",tipo:"Certificado de Treinamento",arquivo:"nr10_carlos.pdf",validade:futureDate(25),uploadEm:today()},
+      {colaborador:"Fernanda Rocha Oliveira",tipo:"ASO Admissional",arquivo:"aso_adm_fernanda.pdf",validade:futureDate(365),uploadEm:today()},
+      {colaborador:"Roberto Alves Souza",tipo:"Atestado Médico",arquivo:"atestado_roberto.pdf",validade:"—",uploadEm:today()},
+      {colaborador:"Marcos Vinícius Pereira",tipo:"ASO Periódico",arquivo:"aso_marcos.pdf",validade:futureDate(-15),uploadEm:today()},
+      {colaborador:"Patrícia Mendes Gomes",tipo:"Diploma / Certificado",arquivo:"diploma_patricia.pdf",validade:"—",uploadEm:today()},
+    ];
+    data.forEach(d => rows.push({id:nextId++, ...d}));
+    populateFilters(); saveData(); renderTable(); updateKpis();
+  });
+})();
+</script>
 {% endblock %}

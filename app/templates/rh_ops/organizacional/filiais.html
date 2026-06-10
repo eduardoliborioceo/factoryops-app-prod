@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Filiais — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.org-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.org-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.org-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.org-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:10px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.org-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.org-table td input,.org-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
+  padding:4px 8px;background:var(--card);color:var(--text);width:100%; }
+.org-table td input:focus,.org-table td select:focus { outline:none;border-color:#0d6efd; }
+.org-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.badge-ativa  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-inativa{ background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.filial-avatar { width:38px;height:38px;border-radius:10px;background:rgba(13,110,253,0.12);color:#0d6efd;
+  display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;flex-shrink:0; }
+@media (max-width:767px) {
+  .org-hdr { flex-direction:column;align-items:flex-start; }
+  .org-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .org-table th:nth-child(n+6),.org-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +49,125 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-building" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro e gestão das filiais da empresa.</p>
+
+  <div class="org-card">
+    <div class="org-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-building text-primary"></i>
+        <span>Cadastro de Filiais</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Filial</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="org-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Código</th>
+            <th style="min-width:140px;">Nome da Filial</th>
+            <th style="min-width:120px;">Cidade</th>
+            <th>UF</th>
+            <th style="min-width:200px;">Endereço</th>
+            <th>CNPJ</th>
+            <th>Responsável</th>
+            <th>Status</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_filiais";
+  const UFS = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SP","SE","TO"];
+  const STATUS = ["Ativa","Inativa"];
+  let rows = []; let nextId = 1;
+
+  function codFromNome(n) { return n.replace(/[^a-zA-Z0-9]/g,"").substring(0,3).toUpperCase(); }
+
+  function updateKpis() {
+    const total  = rows.length;
+    const ativas = rows.filter(r=>r.status==="Ativa").length;
+    const cidades = new Set(rows.map(r=>r.cidade).filter(Boolean)).size;
+    const estados = new Set(rows.map(r=>r.uf).filter(Boolean)).size;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ativas}</div><div class="kpi-chip-lbl">Ativas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${cidades}</div><div class="kpi-chip-lbl">Cidades</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${estados}</div><div class="kpi-chip-lbl">Estados</div></div>
+    `;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.forEach(r => {
+      const ufOpts = UFS.map(u=>`<option${u===r.uf?" selected":""}>${u}</option>`).join("");
+      const stOpts = STATUS.map(s=>`<option${s===r.status?" selected":""}>${s}</option>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><div class="filial-avatar">${codFromNome(r.nome||r.codigo)}</div></td>
+        <td><input type="text" value="${r.codigo}" placeholder="SP01"
+          style="max-width:60px;font-family:monospace;font-weight:700;text-transform:uppercase;"
+          oninput="this.value=this.value.toUpperCase()" onchange="onF(${r.id},'codigo',this.value)"></td>
+        <td><input type="text" value="${r.nome}" placeholder="Filial São Paulo" style="font-weight:600;" onchange="onF(${r.id},'nome',this.value)"></td>
+        <td><input type="text" value="${r.cidade}" placeholder="São Paulo" onchange="onF(${r.id},'cidade',this.value)"></td>
+        <td><select onchange="onF(${r.id},'uf',this.value)" style="max-width:65px;">${ufOpts}</select></td>
+        <td><input type="text" value="${r.endereco}" placeholder="Rua, número…" onchange="onF(${r.id},'endereco',this.value)"></td>
+        <td><input type="text" value="${r.cnpj}" placeholder="00.000.000/0001-00" style="font-family:monospace;font-size:0.78rem;" onchange="onF(${r.id},'cnpj',this.value)"></td>
+        <td><input type="text" value="${r.responsavel}" placeholder="Nome" onchange="onF(${r.id},'responsavel',this.value)"></td>
+        <td>
+          <select onchange="onF(${r.id},'status',this.value)" style="max-width:90px;">${stOpts}</select>
+          <span class="${r.status==='Ativa'?'badge-ativa':'badge-inativa'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    updateKpis();
+  }
+
+  window.onF = function(id,f,v) { const r=rows.find(r=>r.id===id); if(r) r[f]=v; updateKpis(); };
+  window.addRow = function(d={}) {
+    rows.push({id:nextId++,codigo:d.codigo||"",nome:d.nome||"",cidade:d.cidade||"",uf:d.uf||"SP",
+      endereco:d.endereco||"",cnpj:d.cnpj||"",responsavel:d.responsavel||"",status:d.status||"Ativa"});
+    renderTable();
+  };
+  window.removeRow = function(id) { rows=rows.filter(r=>r.id!==id); renderTable(); };
+  window.saveData = function() {
+    localStorage.setItem(SK, JSON.stringify({rows,nextId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); return; }
+    } catch(e){}
+    addRow({codigo:"SP01",nome:"Filial SP",cidade:"São Paulo",uf:"SP",endereco:"Av. Industrial, 1200 — Diadema",cnpj:"12.345.678/0001-01",responsavel:"Diretor Geral",status:"Ativa"});
+    addRow({codigo:"MG01",nome:"Filial MG",cidade:"Belo Horizonte",uf:"MG",endereco:"Rua das Flores, 300 — Contagem",cnpj:"12.345.678/0002-02",responsavel:"Gerente Regional MG",status:"Ativa"});
+    addRow({codigo:"RJ01",nome:"Filial RJ",cidade:"Rio de Janeiro",uf:"RJ",endereco:"Rua do Comércio, 45 — Duque de Caxias",cnpj:"12.345.678/0003-03",responsavel:"Gerente Regional RJ",status:"Ativa"});
+  });
+})();
+</script>
 {% endblock %}

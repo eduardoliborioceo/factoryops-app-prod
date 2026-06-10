@@ -1,6 +1,58 @@
 {% extends "layouts/app.html" %}
 {% block title %}Onboarding — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.onb-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.onb-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.25rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select,.filters-bar input { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:160px; }
+.filters-bar select:focus,.filters-bar input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+
+/* Colaborador checklist cards */
+.colab-onb-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.colab-onb-hdr  { display:flex;align-items:center;gap:12px;padding:14px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03); }
+.colab-avatar { width:40px;height:40px;border-radius:50%;background:rgba(13,110,253,0.12);color:#0d6efd;
+  display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;flex-shrink:0; }
+.colab-info { flex:1; }
+.colab-name { font-size:0.95rem;font-weight:700; }
+.colab-sub  { font-size:0.75rem;color:var(--text-muted); }
+.progress-bar-wrap { flex:1;height:8px;background:rgba(15,23,42,0.08);border-radius:4px;overflow:hidden;min-width:80px; }
+.progress-bar-fill { height:100%;border-radius:4px;background:#0d6efd;transition:width 0.3s; }
+.progress-label { font-size:0.72rem;font-weight:700;color:var(--text-muted);white-space:nowrap;min-width:40px;text-align:right; }
+
+.checklist-body { padding:12px 18px; }
+.check-item { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border); }
+.check-item:last-child { border-bottom:none; }
+.check-item input[type=checkbox] { width:16px;height:16px;cursor:pointer;flex-shrink:0; }
+.check-item-label { flex:1;font-size:0.875rem;cursor:pointer;transition:color 0.12s; }
+.check-item.done .check-item-label { text-decoration:line-through;color:var(--text-muted); }
+.check-cat { font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap; }
+.cat-doc  { background:rgba(13,110,253,0.10);color:#084298; }
+.cat-eq   { background:rgba(25,135,84,0.10);color:#0a3622; }
+.cat-acesso { background:rgba(255,193,7,0.12);color:#664d03; }
+.cat-trein{ background:rgba(111,66,193,0.10);color:#3d1a78; }
+.cat-seg  { background:rgba(220,53,69,0.10);color:#842029; }
+.cat-adm  { background:rgba(108,117,125,0.10);color:#6c757d; }
+.check-data { font-size:0.72rem;color:var(--text-muted);white-space:nowrap; }
+@media (max-width:767px) {
+  .onb-hdr { flex-direction:column;align-items:flex-start; }
+  .onb-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select,.filters-bar input { width:100%; }
+  .colab-onb-hdr { flex-wrap:wrap; }
+  .progress-bar-wrap { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +72,215 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-rocket-takeoff" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Checklist de admissão, documentos pendentes e treinamentos iniciais.</p>
+
+  <div class="onb-card">
+    <div class="onb-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-rocket-takeoff text-primary"></i>
+        <span>Checklist de Admissão por Colaborador</span>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success btn-sm" onclick="openAdd()"><i class="bi bi-person-plus me-1"></i>Novo Onboarding</button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+      </div>
+    </div>
+
+    <div class="kpi-strip" id="kpiStrip"></div>
+
+    <div class="filters-bar">
+      <input type="text" id="fBusca" placeholder="Buscar colaborador…" oninput="renderAll()">
+      <select id="fStatus" onchange="renderAll()">
+        <option value="">Todos</option>
+        <option value="completo">Completo (100%)</option>
+        <option value="andamento">Em andamento</option>
+        <option value="nao">Não iniciado</option>
+      </select>
+    </div>
+
+    <div id="listWrap" style="padding:16px;display:flex;flex-direction:column;gap:16px;"></div>
+  </div>
+
+</div>
+
+<!-- Modal Novo Onboarding -->
+<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1050;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:min(420px,95vw);">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;"><i class="bi bi-rocket-takeoff me-2"></i>Novo Onboarding</h2>
+    <div class="row g-3">
+      <div class="col-12">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Nome do Colaborador</label>
+        <input id="mNome" type="text" placeholder="Nome completo"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Cargo</label>
+        <input id="mCargo" type="text" placeholder="Cargo"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+      <div class="col-md-6">
+        <label style="font-size:0.8rem;font-weight:600;display:block;margin-bottom:4px;">Data de Admissão</label>
+        <input id="mAdmissao" type="date"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.875rem;background:var(--card);color:var(--text);">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-outline-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAdd()">Criar Checklist</button>
+    </div>
   </div>
 </div>
+
+<script>
+(function(){
+  "use strict";
+  const SK = "rh_onboarding";
+  const TEMPLATE_ITEMS = [
+    {cat:"doc",catLabel:"Documentos",label:"Entregar RG e CPF"},
+    {cat:"doc",catLabel:"Documentos",label:"Assinar Contrato de Trabalho"},
+    {cat:"doc",catLabel:"Documentos",label:"Entregar Comprovante de Residência"},
+    {cat:"doc",catLabel:"Documentos",label:"Realizar ASO Admissional"},
+    {cat:"adm",catLabel:"Administrativo",label:"Cadastrar no sistema de ponto"},
+    {cat:"adm",catLabel:"Administrativo",label:"Emitir crachá de identificação"},
+    {cat:"adm",catLabel:"Administrativo",label:"Registrar na folha de pagamento"},
+    {cat:"acesso",catLabel:"Acessos",label:"Criar login nos sistemas"},
+    {cat:"acesso",catLabel:"Acessos",label:"Configurar e-mail corporativo"},
+    {cat:"eq",catLabel:"Equipamentos",label:"Entregar uniforme e EPIs"},
+    {cat:"eq",catLabel:"Equipamentos",label:"Entregar ferramentas e materiais"},
+    {cat:"trein",catLabel:"Treinamentos",label:"Integração — política da empresa"},
+    {cat:"trein",catLabel:"Treinamentos",label:"Treinamento de segurança (NR-01)"},
+    {cat:"trein",catLabel:"Treinamentos",label:"Treinamento no cargo / função"},
+    {cat:"seg",catLabel:"Segurança",label:"Assinar PCMSO e PPRA"},
+    {cat:"seg",catLabel:"Segurança",label:"Treinamento sobre EPIs obrigatórios"},
+  ];
+  const CAT_CLS = {doc:"cat-doc",eq:"cat-eq",acesso:"cat-acesso",trein:"cat-trein",seg:"cat-seg",adm:"cat-adm"};
+
+  let colabs = []; let nextId = 1;
+
+  function initials(name) {
+    const p = name.trim().split(" ");
+    return (p[0][0]+(p[p.length-1][0]||"")).toUpperCase();
+  }
+
+  function pct(colab) {
+    const done = colab.items.filter(i=>i.done).length;
+    return colab.items.length > 0 ? Math.round((done/colab.items.length)*100) : 0;
+  }
+
+  function updateKpis() {
+    const total = colabs.length;
+    const completos = colabs.filter(c=>pct(c)===100).length;
+    const andamento = colabs.filter(c=>{ const p=pct(c); return p>0&&p<100; }).length;
+    const naoIniciados = colabs.filter(c=>pct(c)===0).length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${total}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${completos}</div><div class="kpi-chip-lbl">Concluídos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${andamento}</div><div class="kpi-chip-lbl">Em Andamento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${naoIniciados}</div><div class="kpi-chip-lbl">Não Iniciados</div></div>
+    `;
+  }
+
+  function renderAll() {
+    const fb = document.getElementById("fBusca").value.toLowerCase();
+    const fs = document.getElementById("fStatus").value;
+    const filtered = colabs.filter(c => {
+      if (fb && !c.nome.toLowerCase().includes(fb)) return false;
+      if (fs === "completo" && pct(c) !== 100) return false;
+      if (fs === "andamento") { const p=pct(c); if(p===0||p===100) return false; }
+      if (fs === "nao" && pct(c) !== 0) return false;
+      return true;
+    });
+    const wrap = document.getElementById("listWrap");
+    wrap.innerHTML = "";
+    if (filtered.length === 0) {
+      wrap.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);">
+        <i class="bi bi-inbox" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:8px;"></i>
+        Nenhum colaborador encontrado.</div>`;
+      updateKpis(); return;
+    }
+    filtered.forEach(c => {
+      const p = pct(c);
+      const pColor = p===100?"#198754":p>0?"#0d6efd":"#856404";
+      const card = document.createElement("div");
+      card.className = "colab-onb-card";
+      const itemsHTML = c.items.map((item,i) => `
+        <div class="check-item${item.done?" done":""}" id="ci-${c.id}-${i}">
+          <input type="checkbox" id="chk-${c.id}-${i}" ${item.done?"checked":""}
+            onchange="toggleItem(${c.id},${i},this.checked)">
+          <label class="check-item-label" for="chk-${c.id}-${i}">${item.label}</label>
+          <span class="check-cat ${CAT_CLS[item.cat]||'cat-adm'}">${item.catLabel}</span>
+          ${item.done&&item.dataConc?`<span class="check-data">${item.dataConc}</span>`:""}
+        </div>`).join("");
+      card.innerHTML = `
+        <div class="colab-onb-hdr">
+          <div class="colab-avatar">${initials(c.nome)}</div>
+          <div class="colab-info">
+            <div class="colab-name">${c.nome}</div>
+            <div class="colab-sub">${c.cargo} · Admissão: ${c.admissao}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:${p}%;background:${pColor};"></div>
+            </div>
+            <span class="progress-label" style="color:${pColor};">${p}%</span>
+            <button style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:0.75rem;color:#dc3545;cursor:pointer;" onclick="removeColab(${c.id})"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+        <div class="checklist-body">${itemsHTML}</div>`;
+      wrap.appendChild(card);
+    });
+    updateKpis();
+  }
+
+  window.toggleItem = function(colabId, itemIdx, checked) {
+    const c = colabs.find(c=>c.id===colabId);
+    if (!c) return;
+    c.items[itemIdx].done = checked;
+    c.items[itemIdx].dataConc = checked ? new Date().toLocaleDateString("pt-BR") : "";
+    saveData(); renderAll();
+  };
+
+  window.removeColab = function(id) {
+    if (!confirm("Remover checklist de onboarding?")) return;
+    colabs = colabs.filter(c=>c.id!==id);
+    saveData(); renderAll();
+  };
+
+  window.openAdd = function() {
+    document.getElementById("mAdmissao").value = new Date().toISOString().split("T")[0];
+    document.getElementById("modalOverlay").style.display = "flex";
+  };
+  window.closeModal = function() { document.getElementById("modalOverlay").style.display = "none"; };
+  window.confirmAdd = function() {
+    const nome = document.getElementById("mNome").value.trim();
+    const cargo = document.getElementById("mCargo").value.trim();
+    const rawAdm = document.getElementById("mAdmissao").value;
+    if (!nome) { alert("Informe o nome."); return; }
+    const admissao = rawAdm ? rawAdm.split("-").reverse().join("/") : new Date().toLocaleDateString("pt-BR");
+    const items = TEMPLATE_ITEMS.map(t=>({...t,done:false,dataConc:""}));
+    colabs.push({id:nextId++, nome, cargo:cargo||"—", admissao, items});
+    saveData(); renderAll(); closeModal();
+    document.getElementById("mNome").value="";
+    document.getElementById("mCargo").value="";
+  };
+
+  function saveData() { localStorage.setItem(SK, JSON.stringify({colabs,nextId})); }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.colabs&&d.colabs.length){ colabs=d.colabs; renderAll(); return; }
+    } catch(e){}
+    const addColab = (nome, cargo, admissao, doneCount) => {
+      const items = TEMPLATE_ITEMS.map((t,i)=>({...t,done:i<doneCount,dataConc:i<doneCount?new Date().toLocaleDateString("pt-BR"):""}));
+      colabs.push({id:nextId++, nome, cargo, admissao, items});
+    };
+    addColab("Leandro Barbosa Torres","Assistente de RH","30/05/2026",10);
+    addColab("Simone Aparecida Nunes","Operadora SMT","22/02/2026",16);
+    addColab("Diego Henrique Araujo","Técnico de Qualidade","08/09/2021",16);
+    addColab("Juliana Costa Ferreira","Assistente Administrativo","05/06/2026",4);
+    saveData(); renderAll();
+  });
+})();
+</script>
 {% endblock %}
