@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Bancadas de Teste — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.bnc-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.bnc-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.bnc-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.bnc-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.bnc-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.bnc-table td input,.bnc-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.bnc-table td input:focus,.bnc-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-ok   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-mnt  { background:rgba(253,126,20,0.15);color:#8a3d00;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-off  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-cal  { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .bnc-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .bnc-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .bnc-table th:nth-child(n+7),.bnc-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +37,6 @@
     <h1 class="page-header-name">Bancadas de Teste</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#teste" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +46,144 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-motherboard" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro e monitoramento das bancadas de teste funcional.</p>
+
+  <div class="bnc-card">
+    <div class="bnc-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('pages.eng_hub') }}#teste" class="btn-header-icon no-print" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <span><i class="bi bi-motherboard text-primary me-1"></i>Cadastro de Bancadas de Teste</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os status</option>
+          <option>Operacional</option><option>Em Manutenção</option><option>Calibração</option><option>Desativada</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Bancada</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="bnc-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:140px;">Nome / ID Bancada</th>
+            <th>Tipo</th>
+            <th>Setor / Linha</th>
+            <th>Responsável</th>
+            <th>Status</th>
+            <th>Últ. Manutenção</th>
+            <th>Próx. Calibração</th>
+            <th style="min-width:140px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_bancadas";
+  const TIPOS = ["FCT","ICT","JTAG/ISP","ATE","AOI","AXI","SPI","Manual","Outro"];
+  const STATUS = ["Operacional","Em Manutenção","Calibração","Desativada"];
+  const ST_CLS = {"Operacional":"st-ok","Em Manutenção":"st-mnt","Calibração":"st-cal","Desativada":"st-off"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, nome:d.nome||"", tipo:d.tipo||"FCT", setor:d.setor||"", resp:d.resp||"",
+      status:d.status||"Operacional", ultMnt:d.ultMnt||"", proxCal:d.proxCal||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fs||r.status===fs).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.nome}" placeholder="Ex: BNC-FCT-01" onchange="onField(${r.id},'nome',this.value)"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td><input type="text" value="${r.setor}" placeholder="Ex: Linha SMD 01" onchange="onField(${r.id},'setor',this.value)"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-off'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.ultMnt}" onchange="onField(${r.id},'ultMnt',this.value)" style="font-size:0.75rem;"></td>
+        <td>
+          <input type="date" value="${r.proxCal}" onchange="onField(${r.id},'proxCal',this.value)" style="font-size:0.75rem;">
+          ${r.proxCal && new Date(r.proxCal)<new Date() ? '<span style="font-size:0.68rem;color:#dc3545;font-weight:700;">Vencida</span>' : ''}
+        </td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const op = rows.filter(r=>r.status==="Operacional").length;
+    const mnt = rows.filter(r=>r.status==="Em Manutenção").length;
+    const cal = rows.filter(r=>r.status==="Calibração").length;
+    const off = rows.filter(r=>r.status==="Desativada").length;
+    const venc = rows.filter(r=>r.proxCal&&new Date(r.proxCal)<new Date()).length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${op}</div><div class="kpi-chip-lbl">Operacionais</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#fd7e14;">${mnt}</div><div class="kpi-chip-lbl">Em Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${cal}</div><div class="kpi-chip-lbl">Calibração</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${off}</div><div class="kpi-chip-lbl">Desativadas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${venc>0?"#dc3545":"var(--text)"};">${venc}</div><div class="kpi-chip-lbl">Cal. Vencida</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({nome:"BNC-FCT-01",tipo:"FCT",setor:"Linha SMD 01",resp:"João Silva",status:"Operacional"});
+    addRow({nome:"BNC-FCT-02",tipo:"FCT",setor:"Linha SMD 02",resp:"Maria Santos",status:"Em Manutenção"});
+    addRow({nome:"BNC-ICT-01",tipo:"ICT",setor:"Inspeção",resp:"Pedro Lima",status:"Operacional"});
+    addRow({nome:"BNC-AOI-01",tipo:"AOI",setor:"Linha SMD 01",resp:"Ana Costa",status:"Calibração"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,34 @@
 {% extends "layouts/app.html" %}
 {% block title %}MTBF & MTTR — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.mtbf-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.mtbf-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.mtbf-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.mtbf-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.mtbf-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.mtbf-table td input,.mtbf-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.mtbf-table td input:focus,.mtbf-table td select:focus { outline:none;border-color:#dc3545; }
+.calc-val { font-weight:700;font-size:0.82rem; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.info-panel { background:rgba(220,53,69,0.05);border:1px solid rgba(220,53,69,0.15);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:0.82rem;color:var(--text-muted); }
+.info-panel strong { color:var(--text); }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .mtbf-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .mtbf-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .mtbf-table th:nth-child(n+6),.mtbf-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +48,167 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-clipboard-data" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Indicadores de confiabilidade e disponibilidade dos equipamentos.</p>
+
+  <div class="info-panel">
+    <strong>MTBF</strong> = Horas de Operação ÷ N° de Falhas &nbsp;|&nbsp;
+    <strong>MTTR</strong> = Tempo Total de Reparo ÷ N° de Falhas &nbsp;|&nbsp;
+    <strong>Disponibilidade</strong> = MTBF ÷ (MTBF + MTTR) × 100% &nbsp;|&nbsp;
+    Insira as horas de operação, falhas e tempo total de reparo — os demais valores são calculados automaticamente.
   </div>
+
+  <div class="mtbf-card">
+    <div class="mtbf-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-clipboard-data text-danger me-1"></i>Indicadores de Confiabilidade e Disponibilidade dos Equipamentos</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <input type="month" id="filterPeriodo" class="form-control form-control-sm" style="width:auto;" onchange="renderTable()" title="Filtrar por período">
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Equipamento</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="mtbf-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:130px;">Equipamento</th>
+            <th>Produto / Linha</th>
+            <th>Período</th>
+            <th style="text-align:right;">Horas Op.</th>
+            <th style="text-align:center;">Falhas</th>
+            <th style="text-align:right;">T. Reparo (h)</th>
+            <th style="text-align:right;">MTBF (h)</th>
+            <th style="text-align:right;">MTTR (h)</th>
+            <th style="text-align:right;">Disp. (%)</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_mtbf_mttr";
+  let rows = []; let nextId = 1;
+
+  function calcMTBF(h,f)  { return f>0 ? (h/f).toFixed(1) : "—"; }
+  function calcMTTR(t,f)  { return f>0 ? (t/f).toFixed(2) : "—"; }
+  function calcDisp(h,t)  {
+    const mtbf = parseFloat(calcMTBF(h, rows.length));
+    return (h>0&&t>=0) ? (h/(h+t)*100).toFixed(1) : "—";
+  }
+  function dispColor(val) {
+    if(val==="—") return "var(--text-muted)";
+    const v = parseFloat(val);
+    return v>=98?"#198754":v>=90?"#856404":"#dc3545";
+  }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const now = new Date().toISOString().slice(0,7);
+    rows.push({id, equip:d.equip||"", produto:d.produto||"", periodo:d.periodo||now,
+      horas:d.horas||"", falhas:d.falhas||"0", tReparo:d.tReparo||"0"});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fp = document.getElementById("filterPeriodo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fp||r.periodo===fp).forEach(r=>{
+      const h = parseFloat(r.horas)||0;
+      const f = parseInt(r.falhas)||0;
+      const t = parseFloat(r.tReparo)||0;
+      const mtbf = f>0 ? (h/f).toFixed(1) : "—";
+      const mttr = f>0 ? (t/f).toFixed(2) : "—";
+      const dispVal = (h>0) ? (h/(h+t)*100).toFixed(1) : "—";
+      const dispC = dispColor(dispVal);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.equip}" placeholder="Ex: BNC-FCT-01" onchange="onField(${r.id},'equip',this.value)"></td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto / Linha" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><input type="month" value="${r.periodo}" onchange="onField(${r.id},'periodo',this.value)" style="font-size:0.75rem;max-width:120px;"></td>
+        <td style="text-align:right;">
+          <input type="number" min="0" step="0.5" value="${r.horas}" placeholder="h" onchange="onField(${r.id},'horas',this.value)" style="max-width:80px;text-align:right;">
+        </td>
+        <td style="text-align:center;">
+          <input type="number" min="0" value="${r.falhas}" placeholder="0" onchange="onField(${r.id},'falhas',this.value)" style="max-width:60px;text-align:center;">
+        </td>
+        <td style="text-align:right;">
+          <input type="number" min="0" step="0.1" value="${r.tReparo}" placeholder="h" onchange="onField(${r.id},'tReparo',this.value)" style="max-width:80px;text-align:right;">
+        </td>
+        <td style="text-align:right;"><span class="calc-val" style="color:#0d6efd;">${mtbf}</span></td>
+        <td style="text-align:right;"><span class="calc-val" style="color:#856404;">${mttr}</span></td>
+        <td style="text-align:right;"><span class="calc-val" style="color:${dispC};">${dispVal}${dispVal!=="—"?"%":""}</span></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const valid = rows.filter(r=>parseFloat(r.horas)>0&&parseInt(r.falhas)>0);
+    const mtbfs = valid.map(r=>parseFloat(r.horas)/parseInt(r.falhas));
+    const mttrs = valid.map(r=>parseFloat(r.tReparo)/parseInt(r.falhas));
+    const disps = rows.filter(r=>parseFloat(r.horas)>0).map(r=>{
+      const h=parseFloat(r.horas)||0, t=parseFloat(r.tReparo)||0;
+      return h/(h+t)*100;
+    });
+    const mtbfMed = mtbfs.length ? (mtbfs.reduce((a,b)=>a+b,0)/mtbfs.length).toFixed(1) : "—";
+    const mttrMed = mttrs.length ? (mttrs.reduce((a,b)=>a+b,0)/mttrs.length).toFixed(2) : "—";
+    const dispMed = disps.length ? (disps.reduce((a,b)=>a+b,0)/disps.length).toFixed(1) : "—";
+    const dispC   = dispColor(dispMed);
+    const totalFalhas = rows.reduce((a,r)=>a+(parseInt(r.falhas)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Equipamentos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${mtbfMed} h</div><div class="kpi-chip-lbl">MTBF Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${mttrMed} h</div><div class="kpi-chip-lbl">MTTR Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${dispC};">${dispMed}${dispMed!=="—"?"%":""}</div><div class="kpi-chip-lbl">Disponibilidade</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${totalFalhas}</div><div class="kpi-chip-lbl">Total Falhas</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({equip:"BNC-FCT-01",produto:"Placa Controladora / Linha 01",periodo:"2026-05",horas:"720",falhas:"2",tReparo:"3.5"});
+    addRow({equip:"BNC-FCT-02",produto:"Módulo BT 5.0 / Linha 01",periodo:"2026-05",horas:"720",falhas:"0",tReparo:"0"});
+    addRow({equip:"BNC-ICT-01",produto:"Placa Alimentação / Inspeção",periodo:"2026-05",horas:"480",falhas:"3",tReparo:"6.0"});
+    addRow({equip:"BNC-AOI-01",produto:"Multi-produto / SMD Line",periodo:"2026-05",horas:"720",falhas:"1",tReparo:"1.5"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

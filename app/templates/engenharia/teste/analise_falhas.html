@@ -1,6 +1,35 @@
 {% extends "layouts/app.html" %}
 {% block title %}Análise de Falhas — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.af-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.af-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.af-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.af-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.af-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.af-table td input,.af-table td select,.af-table td textarea { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.af-table td input:focus,.af-table td select:focus,.af-table td textarea:focus { outline:none;border-color:#dc3545; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-open { background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-anal { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-done { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-rein { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .af-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .af-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .af-table th:nth-child(n+6),.af-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +49,146 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-bug" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Registro, categorização e root cause de falhas detectadas no teste.</p>
+
+  <div class="af-card">
+    <div class="af-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-bug text-danger me-1"></i>Registro e Root Cause de Falhas de Teste</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos os status</option>
+          <option>Aberta</option><option>Em Análise</option><option>Concluída</option><option>Reincidência</option>
+        </select>
+        <select id="filterCat" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas categorias</option>
+          <option>Elétrica</option><option>Mecânica</option><option>Firmware</option><option>Software</option><option>Processo</option><option>Componente</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Falha</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="af-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Data</th>
+            <th style="min-width:130px;">Produto / PCI</th>
+            <th>Modo de Falha</th>
+            <th>Categoria</th>
+            <th style="min-width:160px;">Causa Raiz</th>
+            <th style="min-width:160px;">Ação Corretiva</th>
+            <th>Status</th>
+            <th>Responsável</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_analise_falhas";
+  const MODOS = ["Curto-circuito","Circuito aberto","Tensão fora de spec","Corrente excessiva",
+    "Falha de comunicação","Timeout","Firmware corrompido","Componente danificado","Solda fria","Outro"];
+  const CATS = ["Elétrica","Mecânica","Firmware","Software","Processo","Componente","Outro"];
+  const STATUS = ["Aberta","Em Análise","Concluída","Reincidência"];
+  const ST_CLS = {"Aberta":"st-open","Em Análise":"st-anal","Concluída":"st-done","Reincidência":"st-rein"};
+  let rows = []; let nextId = 1;
+
+  function modoOpts(sel) { return MODOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function catOpts(sel)  { return CATS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const today = new Date().toISOString().slice(0,10);
+    rows.push({id, data:d.data||today, produto:d.produto||"", modo:d.modo||"Curto-circuito",
+      cat:d.cat||"Elétrica", causa:d.causa||"", acao:d.acao||"",
+      status:d.status||"Aberta", resp:d.resp||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const fc = document.getElementById("filterCat").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!fc||r.cat===fc)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="date" value="${r.data}" onchange="onField(${r.id},'data',this.value)" style="font-size:0.75rem;min-width:110px;"></td>
+        <td><input type="text" value="${r.produto}" placeholder="Ex: PCB-BT-01" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><select onchange="onField(${r.id},'modo',this.value)">${modoOpts(r.modo)}</select></td>
+        <td><select onchange="onField(${r.id},'cat',this.value)">${catOpts(r.cat)}</select></td>
+        <td><input type="text" value="${r.causa}" placeholder="Causa raiz identificada" onchange="onField(${r.id},'causa',this.value)"></td>
+        <td><input type="text" value="${r.acao}" placeholder="Ação corretiva aplicada" onchange="onField(${r.id},'acao',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-open'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ab  = rows.filter(r=>r.status==="Aberta").length;
+    const an  = rows.filter(r=>r.status==="Em Análise").length;
+    const co  = rows.filter(r=>r.status==="Concluída").length;
+    const re  = rows.filter(r=>r.status==="Reincidência").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${ab}</div><div class="kpi-chip-lbl">Abertas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${an}</div><div class="kpi-chip-lbl">Em Análise</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${co}</div><div class="kpi-chip-lbl">Concluídas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${re}</div><div class="kpi-chip-lbl">Reincidências</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({produto:"PCB-FCT-BT50",modo:"Falha de comunicação",cat:"Firmware",causa:"Versão de FW desatualizada",acao:"Atualização de FW para v2.1.3",status:"Concluída",resp:"Ana Lima"});
+    addRow({produto:"Placa Controladora v2",modo:"Tensão fora de spec",cat:"Elétrica",causa:"Componente C12 fora de tolerância",acao:"Substituição do componente e reinspeção",status:"Em Análise",resp:"Carlos Mendes"});
+    addRow({produto:"Módulo GPS",modo:"Timeout",cat:"Software",causa:"Em investigação",acao:"",status:"Aberta",resp:"Pedro Costa"});
+    addRow({produto:"PCB-FCT-BT50",modo:"Curto-circuito",cat:"Processo",causa:"Excesso de solda no pad J5",acao:"Revisão do perfil de solda",status:"Reincidência",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

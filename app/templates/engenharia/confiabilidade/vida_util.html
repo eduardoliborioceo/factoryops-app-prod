@@ -1,6 +1,36 @@
 {% extends "layouts/app.html" %}
 {% block title %}Vida Útil — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.vu-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.vu-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.vu-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.vu-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.vu-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.vu-table td input,.vu-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text);width:100%; }
+.vu-table td input:focus,.vu-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.fase-infant   { background:rgba(13,202,240,0.12);color:#055160;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.fase-random   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.fase-wearout  { background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.info-panel { background:rgba(13,110,253,0.05);border:1px solid rgba(13,110,253,0.15);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:0.82rem;color:var(--text-muted); }
+.info-panel strong { color:var(--text); }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .vu-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .vu-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .vu-table th:nth-child(n+6),.vu-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +50,144 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-hourglass-split" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Modelos de vida útil, curva da banheira e degradação de componentes.</p>
+
+  <div class="info-panel">
+    <strong>Curva da Banheira:</strong>
+    &nbsp;<span class="fase-infant">Mortalidade Infantil</span> — falhas precoces por defeitos de fabricação &nbsp;|&nbsp;
+    <span class="fase-random">Vida Útil</span> — falhas aleatórias, taxa constante &nbsp;|&nbsp;
+    <span class="fase-wearout">Desgaste</span> — falhas por envelhecimento e degradação.
+    <br><span style="margin-top:6px;display:block;"><strong>MTTF</strong> = tempo médio até a primeira falha (Mean Time To Failure).</span>
   </div>
+
+  <div class="vu-card">
+    <div class="vu-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-hourglass-split text-primary me-1"></i>Modelos de Vida Útil e Degradação de Componentes</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterFase" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas as fases</option>
+          <option>Mortalidade Infantil</option><option>Vida Útil</option><option>Desgaste</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Componente</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="vu-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:140px;">Componente / Produto</th>
+            <th>Modelo Dist.</th>
+            <th>MTTF (h)</th>
+            <th>Fase</th>
+            <th>Fator Aceleração</th>
+            <th>N° Pontos</th>
+            <th>Última Atualização</th>
+            <th style="min-width:120px;">Observações</th>
+            <th class="no-print" style="width:36px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_vida_util";
+  const MODELOS = ["Exponencial","Weibull","Log-Normal","Normal","Gamma","Outro"];
+  const FASES = ["Mortalidade Infantil","Vida Útil","Desgaste"];
+  const FASE_CLS = {"Mortalidade Infantil":"fase-infant","Vida Útil":"fase-random","Desgaste":"fase-wearout"};
+  let rows = []; let nextId = 1;
+
+  function modelOpts(sel) { return MODELOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function faseOpts(sel)  { return FASES.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, comp:d.comp||"", modelo:d.modelo||"Weibull", mttf:d.mttf||"",
+      fase:d.fase||"Vida Útil", fator:d.fator||"1.0", pontos:d.pontos||"",
+      atualizacao:d.atualizacao||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const ff = document.getElementById("filterFase").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!ff||r.fase===ff).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.75rem;">#${r.id}</td>
+        <td><input type="text" value="${r.comp}" placeholder="Ex: Capacitor 100µF" onchange="onField(${r.id},'comp',this.value)"></td>
+        <td><select onchange="onField(${r.id},'modelo',this.value)">${modelOpts(r.modelo)}</select></td>
+        <td><input type="number" min="0" value="${r.mttf}" placeholder="h" onchange="onField(${r.id},'mttf',this.value)" style="max-width:90px;text-align:right;"></td>
+        <td>
+          <select onchange="onField(${r.id},'fase',this.value)">${faseOpts(r.fase)}</select>
+          <span class="${FASE_CLS[r.fase]||'fase-random'}" style="display:block;margin-top:3px;">${r.fase}</span>
+        </td>
+        <td><input type="number" step="0.1" min="1" value="${r.fator}" placeholder="1.0" onchange="onField(${r.id},'fator',this.value)" style="max-width:70px;text-align:right;"></td>
+        <td><input type="number" min="0" value="${r.pontos}" placeholder="n" onchange="onField(${r.id},'pontos',this.value)" style="max-width:70px;text-align:center;"></td>
+        <td><input type="date" value="${r.atualizacao}" onchange="onField(${r.id},'atualizacao',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const wearout = rows.filter(r=>r.fase==="Desgaste").length;
+    const mttfs = rows.filter(r=>r.mttf&&parseFloat(r.mttf)>0).map(r=>parseFloat(r.mttf));
+    const mttfMed = mttfs.length ? Math.round(mttfs.reduce((a,b)=>a+b,0)/mttfs.length) : 0;
+    const pontos = rows.reduce((a,r)=>a+(parseInt(r.pontos)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Componentes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${mttfMed.toLocaleString("pt-BR")} h</div><div class="kpi-chip-lbl">MTTF Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${wearout}</div><div class="kpi-chip-lbl">Em Desgaste</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val">${pontos}</div><div class="kpi-chip-lbl">Pontos de Dados</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({comp:"Capacitor Eletrolítico 100µF/16V",modelo:"Weibull",mttf:"25000",fase:"Vida Útil",fator:"1.5",pontos:"120",atualizacao:"2026-03-10",obs:"Envelhecimento acelerado a 85°C"});
+    addRow({comp:"Relé de Potência 10A",modelo:"Exponencial",mttf:"50000",fase:"Vida Útil",fator:"1.0",pontos:"85",atualizacao:"2026-02-20"});
+    addRow({comp:"Conector USB-C (ciclos)",modelo:"Weibull",mttf:"10000",fase:"Desgaste",fator:"2.0",pontos:"200",atualizacao:"2026-04-05",obs:"Ciclos de inserção/remoção"});
+    addRow({comp:"CI LDO 3.3V",modelo:"Exponencial",mttf:"100000",fase:"Mortalidade Infantil",fator:"3.0",pontos:"45",atualizacao:"2026-01-15",obs:"Burn-in 168h a 70°C"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
