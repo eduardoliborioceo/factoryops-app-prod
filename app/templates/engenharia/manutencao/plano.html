@@ -1,6 +1,39 @@
 {% extends "layouts/app.html" %}
 {% block title %}Plano de Manutenção — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.plan-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.plan-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.plan-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.plan-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.plan-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.plan-table td input,.plan-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.plan-table td input:focus,.plan-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.tp-pm   { background:rgba(13,110,253,0.12);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-pd   { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-lub  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-cal  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-ins  { background:rgba(13,202,240,0.12);color:#055160;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.mes-cell { font-size:0.7rem;font-weight:700;padding:2px;text-align:center;cursor:pointer;border-radius:4px; }
+.mes-ok   { background:rgba(25,135,84,0.15);color:#198754; }
+.mes-plan { background:rgba(13,110,253,0.10);color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .plan-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .plan-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .plan-table th:nth-child(n+10),.plan-table td:nth-child(n+10) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +53,166 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-journal-check" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Planejamento anual, frequências, responsáveis e peças sobressalentes.</p>
+
+  <div class="plan-card">
+    <div class="plan-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-journal-check text-primary me-1"></i>Planejamento Anual — Frequências · Responsáveis · Peças Sobressalentes · Orçamento</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>PM</option><option>PdM</option><option>Lubrificação</option><option>Calibração</option><option>Inspeção NR</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Plano</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="plan-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:120px;">Equipamento</th>
+            <th style="min-width:120px;">Atividade</th>
+            <th>Tipo</th>
+            <th>Frequência</th>
+            <th style="min-width:130px;">Peças Sobressalentes</th>
+            <th>Duração (h)</th>
+            <th>Custo Est. (R$)</th>
+            <th>J</th><th>F</th><th>M</th><th>A</th><th>M</th><th>J</th>
+            <th>J</th><th>A</th><th>S</th><th>O</th><th>N</th><th>D</th>
+            <th>Responsável</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_plano_manutencao";
+  const TIPOS = ["PM","PdM","Lubrificação","Calibração","Inspeção NR"];
+  const FREQS = ["Mensal","Bimestral","Trimestral","Semestral","Anual"];
+  const TP_CLS = {"PM":"tp-pm","PdM":"tp-pd","Lubrificação":"tp-lub","Calibração":"tp-cal","Inspeção NR":"tp-ins"};
+  const MESES = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function freqOpts(sel) { return FREQS.map(f=>`<option${f===sel?" selected":""}>${f}</option>`).join(""); }
+
+  function mesesPlanned(freq) {
+    const mp = {"Mensal":[1,1,1,1,1,1,1,1,1,1,1,1],"Bimestral":[1,0,1,0,1,0,1,0,1,0,1,0],
+      "Trimestral":[1,0,0,1,0,0,1,0,0,1,0,0],"Semestral":[1,0,0,0,0,0,1,0,0,0,0,0],"Anual":[1,0,0,0,0,0,0,0,0,0,0,0]};
+    return mp[freq]||Array(12).fill(0);
+  }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const freq = d.freq||"Trimestral";
+    rows.push({id, equip:d.equip||"", ativ:d.ativ||"", tipo:d.tipo||"PM",
+      freq, pecas:d.pecas||"", dur:d.dur||"", custo:d.custo||"",
+      meses:d.meses||mesesPlanned(freq),
+      resp:d.resp||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) {
+    const r = rows.find(r=>r.id===id);
+    if(!r) return;
+    r[field] = val;
+    if(field === "freq") r.meses = mesesPlanned(val);
+    renderTable(); updateKpis();
+  }
+  window.onField = onField;
+
+  function toggleMes(id, idx) {
+    const r = rows.find(r=>r.id===id);
+    if(!r) return;
+    r.meses[idx] = r.meses[idx] ? 0 : 1;
+    renderTable(); updateKpis();
+  }
+  window.toggleMes = toggleMes;
+
+  function renderTable() {
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!ft||r.tipo===ft).forEach(r=>{
+      const mesesHTML = r.meses.map((v,i)=>`<td style="padding:4px;text-align:center;">
+        <span class="mes-cell ${v?'mes-plan':''}" onclick="toggleMes(${r.id},${i})">${v?"✓":"·"}</span>
+      </td>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.equip}" placeholder="Compressor, Forno..." onchange="onField(${r.id},'equip',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.ativ}" placeholder="Troca de óleo, Termografia..." onchange="onField(${r.id},'ativ',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select>
+          <span class="${TP_CLS[r.tipo]||''}" style="display:block;margin-top:3px;">${r.tipo}</span>
+        </td>
+        <td><select onchange="onField(${r.id},'freq',this.value)">${freqOpts(r.freq)}</select></td>
+        <td><input type="text" value="${r.pecas}" placeholder="Filtros, rolamentos, óleo..." onchange="onField(${r.id},'pecas',this.value)"></td>
+        <td><input type="number" min="0" step="0.5" value="${r.dur}" placeholder="3" onchange="onField(${r.id},'dur',this.value)" style="max-width:55px;text-align:center;"></td>
+        <td><input type="number" min="0" value="${r.custo}" placeholder="450" onchange="onField(${r.id},'custo',this.value)" style="max-width:75px;text-align:right;"></td>
+        ${mesesHTML}
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const pm  = rows.filter(r=>r.tipo==="PM").length;
+    const pdm = rows.filter(r=>r.tipo==="PdM").length;
+    const totH = rows.reduce((a,r)=>a+(parseFloat(r.dur)||0)*r.meses.reduce((s,v)=>s+v,0),0);
+    const totC = rows.reduce((a,r)=>a+(parseFloat(r.custo)||0)*r.meses.reduce((s,v)=>s+v,0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Atividades</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${pm}</div><div class="kpi-chip-lbl">PM</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${pdm}</div><div class="kpi-chip-lbl">PdM</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${totH.toFixed(0)} h</div><div class="kpi-chip-lbl">Carga Anual</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">R$ ${totC.toLocaleString("pt-BR",{maximumFractionDigits:0})}</div><div class="kpi-chip-lbl">Custo Anual</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({equip:"Compressor GA22",ativ:"Troca óleo + filtros",tipo:"PM",freq:"Trimestral",pecas:"Óleo Rotofluid 46, filtro ar, filtro óleo",dur:"3",custo:"380",resp:"Carlos Mendes"});
+    addRow({equip:"Forno Reflow Heller",ativ:"Limpeza zonas térmicas",tipo:"PM",freq:"Mensal",pecas:"Filtros de malha, spray desmoldante",dur:"4",custo:"90",resp:"Ana Lima"});
+    addRow({equip:"Motor Bomba Hidráulica",ativ:"Análise de vibração",tipo:"PdM",freq:"Trimestral",pecas:"—",dur:"1",custo:"150",resp:"Carlos Mendes"});
+    addRow({equip:"Redutores gerais (8x)",ativ:"Lubrificação engrenagens",tipo:"Lubrificação",freq:"Semestral",pecas:"Graxa SKF LGEP 2, óleo Mobil SHC 630",dur:"8",custo:"480",resp:"Pedro Costa"});
+    addRow({equip:"Instrumentos de medição",ativ:"Calibração rastreada INMETRO",tipo:"Calibração",freq:"Anual",pecas:"—",dur:"24",custo:"2800",resp:"Maria Silva"});
+    addRow({equip:"Ponte Rolante 5t",ativ:"Inspeção obrigatória NR-18",tipo:"Inspeção NR",freq:"Mensal",pecas:"—",dur:"2",custo:"0",resp:"Pedro Costa"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

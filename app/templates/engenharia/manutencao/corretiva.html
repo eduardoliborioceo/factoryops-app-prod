@@ -1,6 +1,39 @@
 {% extends "layouts/app.html" %}
 {% block title %}Manutenção Corretiva — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.os-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.os-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.os-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.os-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.os-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.os-table td input,.os-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.os-table td input:focus,.os-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-ab  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-and { background:rgba(13,110,253,0.12);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-ag  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-enc { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.pr-urg { background:rgba(220,53,69,0.10);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.pr-alt { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.pr-nor { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.fw-mono { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .os-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .os-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .os-table th:nth-child(n+7),.os-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +53,166 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-wrench" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Ordens de serviço, peças substituídas e tempo de reparo.</p>
+
+  <div class="os-card">
+    <div class="os-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-wrench text-primary me-1"></i>Ordens de Serviço — Falhas · Peças Substituídas · Tempo de Reparo · Causa Raiz</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Aberta</option><option>Em Andamento</option><option>Aguardando Peça</option><option>Encerrada</option>
+        </select>
+        <select id="filterPrior" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas prior.</option>
+          <option>Urgente</option><option>Alta</option><option>Normal</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>OS</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="os-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:90px;">N° OS</th>
+            <th>Prior.</th>
+            <th style="min-width:110px;">Equipamento</th>
+            <th style="min-width:130px;">Descrição Falha</th>
+            <th>Modo de Falha</th>
+            <th style="min-width:110px;">Peças Substituídas</th>
+            <th>Tempo Rep. (h)</th>
+            <th>Status</th>
+            <th>Abertura</th>
+            <th>Encerramento</th>
+            <th>Técnico</th>
+            <th>Causa Raiz</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_corretiva";
+  const PRIORS = ["Urgente","Alta","Normal"];
+  const MODOS  = ["Elétrico","Mecânico","Eletrônico","Pneumático","Hidráulico","Software","Desgaste","Operação inadequada","Outro"];
+  const STATUS = ["Aberta","Em Andamento","Aguardando Peça","Encerrada"];
+  const ST_CLS = {"Aberta":"st-ab","Em Andamento":"st-and","Aguardando Peça":"st-ag","Encerrada":"st-enc"};
+  const PR_CLS = {"Urgente":"pr-urg","Alta":"pr-alt","Normal":"pr-nor"};
+  let rows = []; let nextId = 1;
+
+  function priorOpts(sel) { return PRIORS.map(p=>`<option${p===sel?" selected":""}>${p}</option>`).join(""); }
+  function modoOpts(sel)  { return MODOS.map(m=>`<option${m===sel?" selected":""}>${m}</option>`).join(""); }
+  function stOpts(sel)    { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const y = new Date().getFullYear();
+    rows.push({id, num:d.num||`OS-${y}-${String(id).padStart(4,"0")}`,
+      prior:d.prior||"Normal", equip:d.equip||"", falha:d.falha||"",
+      modo:d.modo||"Mecânico", pecas:d.pecas||"", tempo:d.tempo||"",
+      status:d.status||"Aberta", abertura:d.abertura||"", encerr:d.encerr||"",
+      tec:d.tec||"", causa:d.causa||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const fp = document.getElementById("filterPrior").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!fp||r.prior===fp)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.num}" onchange="onField(${r.id},'num',this.value)" class="fw-mono" style="max-width:120px;font-weight:700;"></td>
+        <td>
+          <select onchange="onField(${r.id},'prior',this.value)">${priorOpts(r.prior)}</select>
+          <span class="${PR_CLS[r.prior]||'pr-nor'}" style="display:block;margin-top:3px;">${r.prior}</span>
+        </td>
+        <td><input type="text" value="${r.equip}" placeholder="Injetora 01, Forno B" onchange="onField(${r.id},'equip',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.falha}" placeholder="Motor não liga, ruído anormal" onchange="onField(${r.id},'falha',this.value)"></td>
+        <td><select onchange="onField(${r.id},'modo',this.value)">${modoOpts(r.modo)}</select></td>
+        <td><input type="text" value="${r.pecas}" placeholder="Rolamento 6205, correias, fusível" onchange="onField(${r.id},'pecas',this.value)"></td>
+        <td>
+          <input type="number" min="0" step="0.5" value="${r.tempo}" placeholder="2.5" onchange="onField(${r.id},'tempo',this.value)" style="max-width:65px;text-align:center;font-weight:700;">
+        </td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-ab'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.abertura}" onchange="onField(${r.id},'abertura',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="date" value="${r.encerr}" onchange="onField(${r.id},'encerr',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.tec}" placeholder="Técnico" onchange="onField(${r.id},'tec',this.value)"></td>
+        <td><input type="text" value="${r.causa}" placeholder="Causa raiz identificada" onchange="onField(${r.id},'causa',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const abertas = rows.filter(r=>r.status==="Aberta").length;
+    const andando = rows.filter(r=>r.status==="Em Andamento").length;
+    const enc     = rows.filter(r=>r.status==="Encerrada").length;
+    const urg     = rows.filter(r=>r.prior==="Urgente"&&r.status!=="Encerrada").length;
+    const totH    = rows.filter(r=>r.status==="Encerrada").reduce((a,r)=>a+(parseFloat(r.tempo)||0),0);
+    const encCount = rows.filter(r=>r.status==="Encerrada"&&r.tempo).length;
+    const mttrMed = encCount ? (totH/encCount).toFixed(1) : "—";
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total OS</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${abertas}</div><div class="kpi-chip-lbl">Abertas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${andando}</div><div class="kpi-chip-lbl">Em Andamento</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${enc}</div><div class="kpi-chip-lbl">Encerradas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${urg}</div><div class="kpi-chip-lbl">Urgentes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${mttrMed} h</div><div class="kpi-chip-lbl">MTTR Médio</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({num:"OS-2026-0021",prior:"Urgente",equip:"Forno Reflow Heller 1800",falha:"Zona 5 sem aquecimento — produção parada",modo:"Elétrico",pecas:"Elemento de aquecimento 1200W, termópar K",tempo:"3.5",status:"Encerrada",abertura:"2026-05-28",encerr:"2026-05-28",tec:"Carlos Mendes",causa:"Elemento de aquecimento queimado por over-voltage"});
+    addRow({num:"OS-2026-0022",prior:"Alta",equip:"Compressor Atlas Copco GA22",falha:"Ruído metálico no compressor",modo:"Mecânico",pecas:"",tempo:"",status:"Em Andamento",abertura:"2026-06-03",tec:"Ana Lima",causa:"",obs:"Aguardando análise de vibração"});
+    addRow({num:"OS-2026-0023",prior:"Normal",equip:"Paletizadora Fanuc M-20",falha:"Falha de comunicação Profinet — eixo J4",modo:"Software",pecas:"",tempo:"",status:"Aguardando Peça",abertura:"2026-06-05",tec:"Pedro Costa",obs:"Aguardando chave de eixo J4 — pedido 4521"});
+    addRow({num:"OS-2026-0024",prior:"Normal",equip:"Serra Circular Automática",falha:"Freio demorando mais que o normal",modo:"Mecânico",pecas:"Pastilhas de freio 6205-BR",tempo:"1.5",status:"Encerrada",abertura:"2026-05-20",encerr:"2026-05-20",tec:"Pedro Costa",causa:"Desgaste prematuro por excesso de ciclos"});
+    addRow({num:"OS-2026-0025",prior:"Urgente",equip:"Injetora KraussMaffei 200t",falha:"Vazamento de óleo hidráulico — produção parada",modo:"Hidráulico",pecas:"",tempo:"",status:"Aberta",abertura:"2026-06-09",tec:"",obs:"Vazamento no cilindro de fechamento"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
