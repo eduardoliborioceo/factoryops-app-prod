@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Engenharia Hub</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" onclick="history.back()" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -103,19 +100,24 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="hub-nav">
-    <button class="hub-nav-btn active" id="navProcesso"  onclick="setTab('processo')">
-      <i class="bi bi-gear-wide me-1"></i>Processo
+  <div class="hub-nav-row">
+    <button class="btn-header-icon" onclick="history.back()" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
     </button>
-    <button class="hub-nav-btn" id="navTeste"     onclick="setTab('teste')">
-      <i class="bi bi-cpu me-1"></i>Teste
-    </button>
-    <button class="hub-nav-btn" id="navQualidade" onclick="setTab('qualidade')">
-      <i class="bi bi-shield-check me-1"></i>Qualidade
-    </button>
-    <button class="hub-nav-btn" id="navSuporte"   onclick="setTab('suporte')">
-      <i class="bi bi-tools me-1"></i>Suporte
-    </button>
+    <div class="hub-nav" id="hubNavTabs">
+      <button class="hub-nav-btn active" id="navProcesso"  onclick="setTab('processo')">
+        <i class="bi bi-gear-wide me-1"></i>Processo
+      </button>
+      <button class="hub-nav-btn" id="navTeste"     onclick="setTab('teste')">
+        <i class="bi bi-cpu me-1"></i>Teste
+      </button>
+      <button class="hub-nav-btn" id="navQualidade" onclick="setTab('qualidade')">
+        <i class="bi bi-shield-check me-1"></i>Qualidade
+      </button>
+      <button class="hub-nav-btn" id="navSuporte"   onclick="setTab('suporte')">
+        <i class="bi bi-tools me-1"></i>Suporte
+      </button>
+    </div>
   </div>
 
   <!-- ── ABA: PROCESSO ── -->
