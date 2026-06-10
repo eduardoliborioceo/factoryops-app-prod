@@ -1,6 +1,52 @@
 {% extends "layouts/app.html" %}
 {% block title %}Layout Fabril — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.lyt-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+}
+.lyt-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,0.03); font-size: 0.875rem; font-weight: 700;
+}
+.lyt-body { padding: 16px 18px; }
+.lyt-kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;
+}
+.lyt-kpi {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px; text-align: center;
+}
+.lyt-kpi-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+.lyt-kpi-lbl { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-muted); }
+.zones-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.zones-table th {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.4px; color: var(--text-muted);
+  padding: 8px 10px; border-bottom: 2px solid var(--border);
+  background: rgba(15,23,42,0.04); white-space: nowrap;
+}
+.zones-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.zones-table td input, .zones-table td select {
+  width: 100%; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--card); font-size: 0.8rem; color: var(--text); padding: 4px 7px;
+}
+.zones-table td input:focus, .zones-table td select:focus {
+  outline: none; border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.12);
+}
+.calc-col { background: rgba(13,110,253,0.04); font-weight: 700; }
+.sat-bar  { height: 8px; border-radius: 4px; background: rgba(15,23,42,0.08); overflow: hidden; }
+.sat-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.sat-ok { background: #198754; } .sat-warn { background: #fd7e14; } .sat-crit { background: #dc3545; }
+@media (max-width: 767px) { .lyt-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media print { .no-print { display: none !important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +54,6 @@
     <h1 class="page-header-name">Layout Fabril</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +63,202 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-grid" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Arranjo físico das linhas, setores e fluxo de materiais.</p>
+
+  <div class="lyt-card">
+    <div class="lyt-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-grid-1x2 text-primary me-1"></i>Resumo do Layout</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="lyt-body">
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Planta / Unidade</label>
+          <input id="hdrPlanta" type="text" class="form-control form-control-sm" placeholder="Ex: Unidade SMT — Bloco A">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Responsável</label>
+          <input id="hdrResp" type="text" class="form-control form-control-sm" placeholder="Engenheiro IE">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Revisão</label>
+          <input id="hdrRev" type="text" class="form-control form-control-sm" placeholder="Rev A">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Data</label>
+          <input id="hdrData" type="date" class="form-control form-control-sm">
+        </div>
+      </div>
+      <div id="saveMsg" style="font-size:0.8rem;" class="mb-2"></div>
+      <div class="lyt-kpi-grid" id="kpiGrid"></div>
+    </div>
   </div>
+
+  <div class="lyt-card">
+    <div class="lyt-hdr">
+      <span><i class="bi bi-layout-text-window-reverse me-2"></i>Zonas / Setores</span>
+      <button class="btn btn-success btn-sm no-print" onclick="addZone()">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar Zona
+      </button>
+    </div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="zones-table">
+          <thead>
+            <tr>
+              <th>Zona / Setor</th><th>Tipo</th><th>Comp. (m)</th><th>Larg. (m)</th>
+              <th class="calc-col">Área (m²)</th><th>Máquinas</th><th>Operadores</th>
+              <th class="calc-col">m²/Op</th><th class="calc-col">m²/Máq</th>
+              <th style="min-width:100px;">Ocupação</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="zonesBody"></tbody>
+          <tfoot>
+            <tr style="background:rgba(15,23,42,0.05);font-weight:700;font-size:0.82rem;">
+              <td colspan="4" style="padding:8px 10px;">TOTAL</td>
+              <td id="ftArea" style="padding:8px 10px;" class="calc-col"></td>
+              <td id="ftMaq"  style="padding:8px 10px;"></td>
+              <td id="ftOp"   style="padding:8px 10px;"></td>
+              <td id="ftM2Op" style="padding:8px 10px;" class="calc-col"></td>
+              <td id="ftM2Maq"style="padding:8px 10px;" class="calc-col"></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="lyt-card">
+    <div class="lyt-hdr"><span><i class="bi bi-file-text me-2"></i>Observações</span></div>
+    <div class="lyt-body">
+      <textarea id="obsGeral" class="form-control form-control-sm" rows="3"
+        style="border-radius:8px;font-size:0.83rem;resize:vertical;"
+        placeholder="Gargalos identificados, melhorias propostas, fluxos cruzados, riscos ergonômicos..."></textarea>
+    </div>
+  </div>
+
 </div>
+<script>
+(function () {
+  "use strict";
+  const STORAGE_KEY = "eng_layout";
+  const TYPES = ["Produção","Estoque","Escritório","Corredor/Circulação","Outros"];
+  const SAT_REF = {Produção:6,Estoque:4,Escritório:8,"Corredor/Circulação":2,Outros:5};
+
+  function typeOpts(sel) {
+    return TYPES.map(t => `<option${t===sel?" selected":""}>${t}</option>`).join("");
+  }
+
+  function addZone(d={}) {
+    const tbody = document.getElementById("zonesBody");
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="text" value="${d.nome||""}" placeholder="Ex: Linha SMD 01" oninput="recalcAll()"></td>
+      <td><select onchange="recalcAll()">${typeOpts(d.tipo||"Produção")}</select></td>
+      <td><input type="number" min="0" step="0.1" value="${d.comp||""}" placeholder="0" oninput="recalcAll()" style="text-align:right;"></td>
+      <td><input type="number" min="0" step="0.1" value="${d.larg||""}" placeholder="0" oninput="recalcAll()" style="text-align:right;"></td>
+      <td class="calc-col" style="padding:6px 10px;text-align:right;" data-area></td>
+      <td><input type="number" min="0" value="${d.maq||""}" placeholder="0" oninput="recalcAll()" style="text-align:right;"></td>
+      <td><input type="number" min="0" value="${d.op||""}"  placeholder="0" oninput="recalcAll()" style="text-align:right;"></td>
+      <td class="calc-col" style="padding:6px 10px;text-align:right;" data-m2op></td>
+      <td class="calc-col" style="padding:6px 10px;text-align:right;" data-m2maq></td>
+      <td style="padding:6px 10px;min-width:100px;" data-sat></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="this.closest('tr').remove();recalcAll()"
+          style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+
+  function recalcAll() {
+    let totArea=0, totMaq=0, totOp=0;
+    document.querySelectorAll("#zonesBody tr").forEach(tr => {
+      const ins = tr.querySelectorAll("input");
+      const tipo = tr.querySelector("select").value;
+      const comp = parseFloat(ins[1].value)||0;
+      const larg = parseFloat(ins[2].value)||0;
+      const maq  = parseInt(ins[3].value)||0;
+      const op   = parseInt(ins[4].value)||0;
+      const area = comp*larg;
+      totArea+=area; totMaq+=maq; totOp+=op;
+      tr.querySelector("[data-area]").textContent  = area>0 ? area.toFixed(1) : "—";
+      tr.querySelector("[data-m2op]").textContent  = (op>0&&area>0) ? (area/op).toFixed(1) : "—";
+      tr.querySelector("[data-m2maq]").textContent = (maq>0&&area>0) ? (area/maq).toFixed(1) : "—";
+      const satEl = tr.querySelector("[data-sat]");
+      const satRef = SAT_REF[tipo]||5;
+      if (op>0 && area>0) {
+        const opPer10 = op/(area/10);
+        const pct = Math.min(Math.round((opPer10/satRef)*100), 200);
+        const cls = pct>120?"sat-crit":pct>90?"sat-warn":"sat-ok";
+        satEl.innerHTML=`<div style="font-size:0.72rem;margin-bottom:2px;">${pct}%</div>
+          <div class="sat-bar"><div class="sat-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>`;
+      } else { satEl.textContent="—"; }
+    });
+    document.getElementById("ftArea").textContent  = totArea>0 ? totArea.toFixed(1)+" m²" : "—";
+    document.getElementById("ftMaq").textContent   = totMaq||"—";
+    document.getElementById("ftOp").textContent    = totOp||"—";
+    document.getElementById("ftM2Op").textContent  = (totOp>0&&totArea>0) ? (totArea/totOp).toFixed(1) : "—";
+    document.getElementById("ftM2Maq").textContent = (totMaq>0&&totArea>0) ? (totArea/totMaq).toFixed(1) : "—";
+    const z = document.querySelectorAll("#zonesBody tr").length;
+    document.getElementById("kpiGrid").innerHTML=`
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${z}</div><div class="lyt-kpi-lbl">Zonas</div></div>
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${totArea>0?totArea.toFixed(0):"—"}</div><div class="lyt-kpi-lbl">m² Total</div></div>
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${totMaq||"—"}</div><div class="lyt-kpi-lbl">Máquinas</div></div>
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${totOp||"—"}</div><div class="lyt-kpi-lbl">Operadores</div></div>
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${totOp>0&&totArea>0?(totArea/totOp).toFixed(1):"—"}</div><div class="lyt-kpi-lbl">m²/Operador</div></div>
+      <div class="lyt-kpi"><div class="lyt-kpi-val">${totMaq>0&&totArea>0?(totArea/totMaq).toFixed(1):"—"}</div><div class="lyt-kpi-lbl">m²/Máquina</div></div>
+    `;
+  }
+  window.addZone=addZone; window.recalcAll=recalcAll;
+
+  function collectZones() {
+    return Array.from(document.querySelectorAll("#zonesBody tr")).map(tr=>{
+      const ins=tr.querySelectorAll("input");
+      return {nome:ins[0].value,tipo:tr.querySelector("select").value,comp:ins[1].value,larg:ins[2].value,maq:ins[3].value,op:ins[4].value};
+    });
+  }
+
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      planta:document.getElementById("hdrPlanta").value,resp:document.getElementById("hdrResp").value,
+      rev:document.getElementById("hdrRev").value,data:document.getElementById("hdrData").value,
+      obs:document.getElementById("obsGeral").value,zones:collectZones()
+    }));
+    const msg=document.getElementById("saveMsg");
+    msg.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>msg.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+      document.getElementById("hdrPlanta").value=d.planta||"";
+      document.getElementById("hdrResp").value=d.resp||"";
+      document.getElementById("hdrRev").value=d.rev||"";
+      document.getElementById("hdrData").value=d.data||new Date().toISOString().slice(0,10);
+      document.getElementById("obsGeral").value=d.obs||"";
+      if(d.zones&&d.zones.length) d.zones.forEach(z=>addZone(z));
+      else ["Linha SMD 01","Linha SMD 02","Estoque Componentes","Corredor Central","Escritório IE"]
+        .forEach(n=>addZone({nome:n,tipo:n.includes("Estoque")?"Estoque":n.includes("Corredor")?"Corredor/Circulação":n.includes("Escritório")?"Escritório":"Produção"}));
+    } catch(e){}
+    recalcAll();
+  });
+})();
+</script>
 {% endblock %}

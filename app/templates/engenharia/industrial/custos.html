@@ -1,6 +1,32 @@
 {% extends "layouts/app.html" %}
 {% block title %}Custos Industriais — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.cst-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.cst-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.cst-body { padding:16px 18px; }
+.cost-kpi-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px; }
+.cost-kpi { background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center; }
+.cost-kpi-val { font-size:1.4rem;font-weight:800;color:var(--text); }
+.cost-kpi-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.cost-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.cost-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.cost-table td { padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.cost-table td input { width:100%;border:1px solid var(--border);border-radius:6px;
+  background:var(--card);font-size:0.8rem;color:var(--text);padding:4px 7px; }
+.cost-table td input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 2px rgba(13,110,253,0.12); }
+.calc-td { background:rgba(13,110,253,0.04);font-weight:700;padding:6px 10px;text-align:right; }
+.margin-pos { color:#198754; } .margin-neg { color:#dc3545; }
+.breakdown-bar { height:12px;border-radius:6px;display:flex;overflow:hidden;margin-top:6px; }
+.bb-seg { height:100%;transition:width 0.4s; }
+@media (max-width:767px) { .cost-kpi-grid { grid-template-columns:repeat(2,1fr); } }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -8,9 +34,6 @@
     <h1 class="page-header-name">Custos Industriais</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +43,218 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-currency-dollar" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Custeio por absorção, custo por peça e análise de desvios.</p>
+
+  <!-- Parâmetros gerais -->
+  <div class="cst-card">
+    <div class="cst-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-calculator text-primary me-1"></i>Parâmetros de Custo</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="saveData()">
+          <i class="bi bi-save me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+    <div class="cst-body">
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Taxa MOD (R$/hora)</label>
+          <input id="paramMOD" type="number" min="0" step="0.01" value="25" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Overhead variável (%)</label>
+          <input id="paramOHVar" type="number" min="0" max="200" step="0.1" value="35" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Overhead fixo (R$/pc referência)</label>
+          <input id="paramOHFix" type="number" min="0" step="0.01" value="0" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold" style="font-size:0.78rem;">Margem alvo (%)</label>
+          <input id="paramMargem" type="number" min="0" max="200" step="0.1" value="30" class="form-control form-control-sm" oninput="recalcAll()">
+        </div>
+      </div>
+      <div id="saveMsg" style="font-size:0.8rem;" class="mb-3"></div>
+      <div class="cost-kpi-grid" id="kpiGrid"></div>
+    </div>
   </div>
+
+  <!-- Tabela de produtos -->
+  <div class="cst-card">
+    <div class="cst-hdr">
+      <span><i class="bi bi-table me-2"></i>Custo por Produto / Referência</span>
+      <button class="btn btn-success btn-sm no-print" onclick="addProduct()">
+        <i class="bi bi-plus-lg me-1"></i>Produto
+      </button>
+    </div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="cost-table">
+          <thead>
+            <tr>
+              <th>Produto / Ref.</th>
+              <th>Material (R$/pc)</th>
+              <th>TC Ciclo (s)</th>
+              <th>HC</th>
+              <th class="calc-td" style="padding:8px 10px;">MOD (R$/pc)</th>
+              <th class="calc-td" style="padding:8px 10px;">OH Var.</th>
+              <th>OH Fixo (R$/pc)</th>
+              <th class="calc-td" style="padding:8px 10px;">Custo Total</th>
+              <th>Preço Venda</th>
+              <th class="calc-td" style="padding:8px 10px;">Margem</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="prodBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detalhamento de custo (gráfico por barras) -->
+  <div class="cst-card">
+    <div class="cst-hdr"><span><i class="bi bi-bar-chart-fill me-2"></i>Composição de Custo por Produto</span></div>
+    <div class="cst-body" id="breakdownArea">
+      <p style="color:var(--text-muted);font-size:0.8rem;">Adicione produtos para visualizar a composição de custo.</p>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_custos";
+
+  function addProduct(d={}) {
+    const tbody=document.getElementById("prodBody");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="text" value="${d.nome||""}" placeholder="Ex: PCBA Harman Rev.B"></td>
+      <td><input type="number" min="0" step="0.01" value="${d.mat||""}" placeholder="0.00" oninput="recalcAll()"></td>
+      <td><input type="number" min="0" step="0.1"  value="${d.tc||""}"  placeholder="0" oninput="recalcAll()"></td>
+      <td><input type="number" min="1"             value="${d.hc||1}"   oninput="recalcAll()"></td>
+      <td class="calc-td" data-mod></td>
+      <td class="calc-td" data-ohv></td>
+      <td><input type="number" min="0" step="0.01" value="${d.ohfix||""}" placeholder="0.00" oninput="recalcAll()"></td>
+      <td class="calc-td" data-total></td>
+      <td><input type="number" min="0" step="0.01" value="${d.preco||""}" placeholder="0.00" oninput="recalcAll()"></td>
+      <td class="calc-td" data-margem></td>
+      <td class="no-print" style="text-align:center;">
+        <button type="button" onclick="this.closest('tr').remove();recalcAll()"
+          style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+    recalcAll();
+  }
+  window.addProduct=addProduct;
+
+  function recalcAll() {
+    const modRate = parseFloat(document.getElementById("paramMOD").value)||25;
+    const ohVarPct= parseFloat(document.getElementById("paramOHVar").value)||35;
+    const ohFixPrm= parseFloat(document.getElementById("paramOHFix").value)||0;
+    const margemAlvo=parseFloat(document.getElementById("paramMargem").value)||30;
+    let totCusto=0, prodCount=0;
+    const breakItems=[];
+
+    document.querySelectorAll("#prodBody tr").forEach(tr=>{
+      const ins=tr.querySelectorAll("input");
+      const mat=parseFloat(ins[1].value)||0;
+      const tc=parseFloat(ins[2].value)||0;
+      const hc=parseFloat(ins[3].value)||1;
+      const ohFix=parseFloat(ins[5].value)||ohFixPrm;
+      const preco=parseFloat(ins[7].value)||0;
+      const mod = tc>0 ? (tc/3600)*hc*modRate : 0;
+      const ohv = (mod+mat)*(ohVarPct/100);
+      const total = mat+mod+ohv+ohFix;
+      const margemPct = preco>0 ? ((preco-total)/preco)*100 : null;
+      tr.querySelector("[data-mod]").textContent   = "R$ "+mod.toFixed(2);
+      tr.querySelector("[data-ohv]").textContent   = "R$ "+ohv.toFixed(2);
+      tr.querySelector("[data-total]").textContent = "R$ "+total.toFixed(2);
+      const mEl=tr.querySelector("[data-margem]");
+      if(margemPct!==null) {
+        mEl.textContent=(margemPct>=0?"+":"")+margemPct.toFixed(1)+"%";
+        mEl.className="calc-td "+(margemPct>=margemAlvo?"margin-pos":"margin-neg");
+      } else { mEl.textContent="—"; mEl.className="calc-td"; }
+      totCusto+=total; prodCount++;
+      if(total>0) breakItems.push({nome:ins[0].value||`Produto ${prodCount}`,mat,mod,ohv,ohFix,total});
+    });
+
+    document.getElementById("kpiGrid").innerHTML=`
+      <div class="cost-kpi"><div class="cost-kpi-val">${prodCount}</div><div class="cost-kpi-lbl">Produtos</div></div>
+      <div class="cost-kpi"><div class="cost-kpi-val">R$ ${(prodCount>0?totCusto/prodCount:0).toFixed(2)}</div><div class="cost-kpi-lbl">Custo Médio</div></div>
+      <div class="cost-kpi"><div class="cost-kpi-val" style="color:#fd7e14;">${ohVarPct}%</div><div class="cost-kpi-lbl">OH Variável</div></div>
+      <div class="cost-kpi"><div class="cost-kpi-val" style="color:#198754;">${margemAlvo}%</div><div class="cost-kpi-lbl">Margem Alvo</div></div>
+    `;
+
+    const bd=document.getElementById("breakdownArea");
+    if(breakItems.length===0) {
+      bd.innerHTML='<p style="color:var(--text-muted);font-size:0.8rem;">Adicione produtos para visualizar a composição de custo.</p>';
+      return;
+    }
+    bd.innerHTML = breakItems.map(it=>{
+      const pMat=(it.mat/it.total)*100; const pMod=(it.mod/it.total)*100;
+      const pOhv=(it.ohv/it.total)*100; const pOhf=(it.ohFix/it.total)*100;
+      return `<div class="mb-3">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:0.82rem;font-weight:600;">${it.nome}</span>
+          <span style="font-size:0.82rem;font-weight:700;">R$ ${it.total.toFixed(2)}</span>
+        </div>
+        <div class="breakdown-bar">
+          <div class="bb-seg" style="width:${pMat.toFixed(1)}%;background:#0d6efd;" title="Material ${pMat.toFixed(0)}%"></div>
+          <div class="bb-seg" style="width:${pMod.toFixed(1)}%;background:#198754;" title="MOD ${pMod.toFixed(0)}%"></div>
+          <div class="bb-seg" style="width:${pOhv.toFixed(1)}%;background:#fd7e14;" title="OH Var ${pOhv.toFixed(0)}%"></div>
+          <div class="bb-seg" style="width:${pOhf.toFixed(1)}%;background:#6f42c1;" title="OH Fix ${pOhf.toFixed(0)}%"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:4px;flex-wrap:wrap;">
+          <span style="font-size:0.7rem;"><span style="color:#0d6efd;">■</span> Material: ${pMat.toFixed(0)}% (R$ ${it.mat.toFixed(2)})</span>
+          <span style="font-size:0.7rem;"><span style="color:#198754;">■</span> MOD: ${pMod.toFixed(0)}% (R$ ${it.mod.toFixed(2)})</span>
+          <span style="font-size:0.7rem;"><span style="color:#fd7e14;">■</span> OH Var: ${pOhv.toFixed(0)}% (R$ ${it.ohv.toFixed(2)})</span>
+          <span style="font-size:0.7rem;"><span style="color:#6f42c1;">■</span> OH Fix: ${pOhf.toFixed(0)}% (R$ ${it.ohFix.toFixed(2)})</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  window.recalcAll=recalcAll;
+
+  function collectProducts() {
+    return Array.from(document.querySelectorAll("#prodBody tr")).map(tr=>{
+      const ins=tr.querySelectorAll("input");
+      return {nome:ins[0].value,mat:ins[1].value,tc:ins[2].value,hc:ins[3].value,ohfix:ins[5].value,preco:ins[7].value};
+    });
+  }
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({
+      mod:document.getElementById("paramMOD").value,ohvar:document.getElementById("paramOHVar").value,
+      ohfix:document.getElementById("paramOHFix").value,margem:document.getElementById("paramMargem").value,
+      products:collectProducts()
+    }));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.mod)    document.getElementById("paramMOD").value=d.mod;
+      if(d.ohvar)  document.getElementById("paramOHVar").value=d.ohvar;
+      if(d.ohfix)  document.getElementById("paramOHFix").value=d.ohfix;
+      if(d.margem) document.getElementById("paramMargem").value=d.margem;
+      if(d.products&&d.products.length) d.products.forEach(p=>addProduct(p));
+      else ["PCBA Harman A","PCBA Denso B","Módulo Sensor X"].forEach(n=>addProduct({nome:n}));
+    } catch(e) { addProduct(); }
+    recalcAll();
+  });
+})();
+</script>
 {% endblock %}

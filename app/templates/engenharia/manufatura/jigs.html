@@ -1,16 +1,39 @@
 {% extends "layouts/app.html" %}
 {% block title %}Jigs & Fixtures — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.jig-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.jig-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.jig-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.jig-table th { font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 10px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04); }
+.jig-table td { padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.jig-table td input { border:none;background:transparent;font-size:0.82rem;color:var(--text);width:100%;padding:2px 0; }
+.jig-table td input:focus { outline:none;border-bottom:1px solid #0d6efd; }
+.jig-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 6px;background:var(--card);color:var(--text); }
+.status-badge { font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-ativo { background:rgba(25,135,84,0.12);color:#0a3622; }
+.st-manut { background:rgba(253,126,20,0.15);color:#8a3d00; }
+.st-inativo { background:rgba(15,23,42,0.08);color:var(--text-muted); }
+.kpi-strip { display:flex;gap:10px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;text-align:center;min-width:80px; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+@media print { .no-print { display:none!important; } }
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">Engenharia · Manufatura</span>
-    <h1 class="page-header-name">Jigs & Fixtures</h1>
+    <h1 class="page-header-name">Jigs &amp; Fixtures</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,9 +43,134 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-wrench-adjustable" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro, controle e manutenção de gabaritos e dispositivos de produção.</p>
+
+  <div class="jig-card">
+    <div class="jig-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon no-print" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span><i class="bi bi-wrench-adjustable text-primary me-1"></i>Registro de Jigs &amp; Fixtures</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+          <i class="bi bi-printer"></i>
+        </button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option><option>Ativo</option><option>Em Manutenção</option><option>Inativo</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addJig()"><i class="bi bi-plus-lg me-1"></i>Jig</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div style="padding:0;">
+      <div class="table-responsive">
+        <table class="jig-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Nome / Descrição</th><th>Família de Produto</th><th>Processo / Etapa</th>
+              <th>Localização</th><th>Status</th><th>Últ. Manutenção</th>
+              <th>Próx. Manutenção</th><th>Responsável</th><th>Observações</th>
+              <th class="no-print" style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="jigsBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK="eng_jigs";
+  const STATUS=["Ativo","Em Manutenção","Inativo"];
+  const ST_CLS={"Ativo":"st-ativo","Em Manutenção":"st-manut","Inativo":"st-inativo"};
+  let jigs=[]; let nextId=1;
+
+  function statusOpts(sel) { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addJig(d={}) {
+    const id=d.id||("JIG-"+String(nextId++).padStart(3,"0"));
+    jigs.push({id,nome:d.nome||"",familia:d.familia||"",processo:d.processo||"",
+      local:d.local||"",status:d.status||"Ativo",ultManut:d.ultManut||"",
+      proxManut:d.proxManut||"",resp:d.resp||"",obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addJig=addJig;
+
+  function removeJig(id) { jigs=jigs.filter(j=>j.id!==id); renderTable(); updateKpis(); }
+  window.removeJig=removeJig;
+
+  function onField(id,field,val) { const j=jigs.find(j=>j.id===id); if(j){j[field]=val; updateKpis();} }
+  window.onField=onField;
+
+  function renderTable() {
+    const fs=document.getElementById("filterStatus").value;
+    const tbody=document.getElementById("jigsBody");
+    tbody.innerHTML="";
+    jigs.filter(j=>!fs||j.status===fs).forEach(j=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.78rem;white-space:nowrap;">${j.id}</td>
+        <td><input type="text" value="${j.nome}" placeholder="Nome do jig" onchange="onField('${j.id}','nome',this.value)"></td>
+        <td><input type="text" value="${j.familia}" placeholder="Ex: PCBA Harman" onchange="onField('${j.id}','familia',this.value)"></td>
+        <td><input type="text" value="${j.processo}" placeholder="Ex: Solda THT" onchange="onField('${j.id}','processo',this.value)"></td>
+        <td><input type="text" value="${j.local}" placeholder="Ex: Prateleira A3" onchange="onField('${j.id}','local',this.value)"></td>
+        <td>
+          <select onchange="onField('${j.id}','status',this.value)">${statusOpts(j.status)}</select>
+        </td>
+        <td><input type="date" value="${j.ultManut}" onchange="onField('${j.id}','ultManut',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="date" value="${j.proxManut}" onchange="onField('${j.id}','proxManut',this.value)" style="font-size:0.78rem;"></td>
+        <td><input type="text" value="${j.resp}" placeholder="Responsável" onchange="onField('${j.id}','resp',this.value)"></td>
+        <td><input type="text" value="${j.obs}" placeholder="Observação" onchange="onField('${j.id}','obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeJig('${j.id}')"
+            style="background:none;border:none;color:#dc3545;cursor:pointer;font-size:1rem;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ativo=jigs.filter(j=>j.status==="Ativo").length;
+    const manut=jigs.filter(j=>j.status==="Em Manutenção").length;
+    const inativo=jigs.filter(j=>j.status==="Inativo").length;
+    document.getElementById("kpiStrip").innerHTML=`
+      <div class="kpi-chip"><div class="kpi-chip-val">${jigs.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ativo}</div><div class="kpi-chip-lbl">Ativos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#fd7e14;">${manut}</div><div class="kpi-chip-lbl">Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${inativo}</div><div class="kpi-chip-lbl">Inativos</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK,JSON.stringify({jigs,nextId}));
+    const m=document.getElementById("saveMsg");
+    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="",3000);
+  }
+  window.saveData=saveData;
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    try {
+      const d=JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId=d.nextId;
+      if(d.jigs&&d.jigs.length){ jigs=d.jigs; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    [
+      {nome:"Jig de soldagem THT Harman",familia:"PCBA Harman",processo:"Solda THT",local:"Linha THT 01",status:"Ativo"},
+      {nome:"Fixture de teste funcional Gen3",familia:"PCBA Gen3",processo:"Teste Funcional",local:"Bancada Teste B2",status:"Ativo"},
+      {nome:"Gabarito de posicionamento SMD",familia:"Genérico",processo:"Colocação manual SMD",local:"SMD 02",status:"Em Manutenção"},
+      {nome:"Jig de inspeção dimensional",familia:"Chassis",processo:"Inspeção",local:"Controle Qualidade",status:"Ativo"},
+    ].forEach(j=>addJig(j));
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
