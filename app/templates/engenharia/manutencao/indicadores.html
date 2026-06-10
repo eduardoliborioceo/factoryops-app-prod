@@ -1,6 +1,40 @@
 {% extends "layouts/app.html" %}
 {% block title %}Indicadores de Manutenção — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.ind-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.ind-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.ind-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.ind-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ind-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ind-table td input,.ind-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.ind-table td input:focus,.ind-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.calc-val { font-family:monospace;font-weight:800;font-size:0.9rem; }
+.disp-hi  { color:#198754; }
+.disp-med { color:#856404; }
+.disp-low { color:#dc3545; }
+.info-box { background:rgba(13,110,253,0.05);border:1px solid rgba(13,110,253,0.15);border-radius:10px;padding:14px 18px;margin-bottom:16px; }
+.info-box h6 { font-size:0.78rem;font-weight:700;margin-bottom:10px;color:var(--text); }
+.info-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px; }
+.formula-item { font-size:0.75rem;color:var(--text-muted); }
+.formula-item strong { color:var(--text);font-family:monospace; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .ind-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .ind-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .ind-table th:nth-child(n+8),.ind-table td:nth-child(n+8) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +54,183 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-bar-chart-line" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>OEE, disponibilidade, MTBF, MTTR e custo de manutenção.</p>
+
+  <div class="info-box no-print">
+    <h6><i class="bi bi-info-circle me-1 text-primary"></i>Fórmulas dos Indicadores</h6>
+    <div class="info-grid">
+      <div class="formula-item"><strong>MTBF</strong> = Horas Operação / N° Falhas — Mean Time Between Failures</div>
+      <div class="formula-item"><strong>MTTR</strong> = Tempo Total Reparo / N° Falhas — Mean Time To Repair</div>
+      <div class="formula-item"><strong>Disponibilidade</strong> = (Horas Op. / Horas Planejadas) × 100%</div>
+      <div class="formula-item"><strong>OEE</strong> = Disponibilidade × Performance × Qualidade (Disponibilidade se Performance=Qualidade=100%)</div>
+    </div>
   </div>
+
+  <div class="ind-card">
+    <div class="ind-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-bar-chart-line text-primary me-1"></i>KPIs de Manutenção — MTBF · MTTR · Disponibilidade · OEE · Custo</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterPer" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos períodos</option>
+          <option>Jan/2026</option><option>Fev/2026</option><option>Mar/2026</option>
+          <option>Abr/2026</option><option>Mai/2026</option><option>Jun/2026</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Registro</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="ind-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Período</th>
+            <th style="min-width:110px;">Equipamento</th>
+            <th title="Horas Planejadas de Operação">Hs Planej.</th>
+            <th title="Horas Reais Operando">Hs Oper.</th>
+            <th title="Horas de Parada não planejada">Hs Parada</th>
+            <th title="Número de Falhas no Período">N° Falhas</th>
+            <th title="Horas Totais de Reparo">Hs Reparo</th>
+            <th title="Mean Time Between Failures (auto)">MTBF (h)</th>
+            <th title="Mean Time To Repair (auto)">MTTR (h)</th>
+            <th title="Disponibilidade % (auto)">Disp. %</th>
+            <th>Perf. %</th>
+            <th>Qual. %</th>
+            <th title="OEE calculado">OEE %</th>
+            <th>Custo Man. (R$)</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_ind_manutencao";
+  const PERIODOS = ["Jan/2026","Fev/2026","Mar/2026","Abr/2026","Mai/2026","Jun/2026",
+    "Jul/2026","Ago/2026","Set/2026","Out/2026","Nov/2026","Dez/2026"];
+  let rows = []; let nextId = 1;
+
+  function perOpts(sel) { return PERIODOS.map(p=>`<option${p===sel?" selected":""}>${p}</option>`).join(""); }
+
+  function calcRow(r) {
+    const hp = parseFloat(r.hsPlan)||0;
+    const ho = parseFloat(r.hsOper)||0;
+    const hpar= parseFloat(r.hsPar)||0;
+    const nf = parseFloat(r.nFalhas)||0;
+    const hr = parseFloat(r.hsRep)||0;
+    const perf = parseFloat(r.perf)||100;
+    const qual = parseFloat(r.qual)||100;
+    const mtbf = nf > 0 ? (ho / nf).toFixed(1) : "—";
+    const mttr = nf > 0 ? (hr / nf).toFixed(1) : "—";
+    const disp = hp > 0 ? Math.min(100, ((hp - hpar) / hp * 100)).toFixed(1) : "—";
+    const oee  = disp !== "—" ? (parseFloat(disp) * perf/100 * qual/100).toFixed(1) : "—";
+    return {mtbf, mttr, disp, oee};
+  }
+
+  function dispColor(d) {
+    if(d==="—") return "var(--text-muted)";
+    return parseFloat(d)>=90?"#198754":parseFloat(d)>=75?"#856404":"#dc3545";
+  }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, per:d.per||"Jun/2026", equip:d.equip||"",
+      hsPlan:d.hsPlan||"", hsOper:d.hsOper||"", hsPar:d.hsPar||"",
+      nFalhas:d.nFalhas||"", hsRep:d.hsRep||"",
+      perf:d.perf||"100", qual:d.qual||"100", custo:d.custo||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fp = document.getElementById("filterPer").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>!fp||r.per===fp).forEach(r=>{
+      const {mtbf, mttr, disp, oee} = calcRow(r);
+      const dc = dispColor(disp);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><select onchange="onField(${r.id},'per',this.value)">${perOpts(r.per)}</select></td>
+        <td><input type="text" value="${r.equip}" placeholder="Compressor, Forno A" onchange="onField(${r.id},'equip',this.value)" style="font-weight:600;"></td>
+        <td><input type="number" min="0" value="${r.hsPlan}" placeholder="720" onchange="onField(${r.id},'hsPlan',this.value)" style="max-width:65px;text-align:center;"></td>
+        <td><input type="number" min="0" value="${r.hsOper}" placeholder="698" onchange="onField(${r.id},'hsOper',this.value)" style="max-width:65px;text-align:center;"></td>
+        <td><input type="number" min="0" step="0.5" value="${r.hsPar}" placeholder="22" onchange="onField(${r.id},'hsPar',this.value)" style="max-width:65px;text-align:center;color:#dc3545;font-weight:700;"></td>
+        <td><input type="number" min="0" value="${r.nFalhas}" placeholder="3" onchange="onField(${r.id},'nFalhas',this.value)" style="max-width:55px;text-align:center;font-weight:700;"></td>
+        <td><input type="number" min="0" step="0.5" value="${r.hsRep}" placeholder="7.5" onchange="onField(${r.id},'hsRep',this.value)" style="max-width:65px;text-align:center;"></td>
+        <td><span class="calc-val" style="color:#0d6efd;">${mtbf}</span></td>
+        <td><span class="calc-val" style="color:#856404;">${mttr}</span></td>
+        <td><span class="calc-val" style="color:${dc};">${disp !== "—" ? disp+"%" : "—"}</span></td>
+        <td><input type="number" min="0" max="100" step="0.1" value="${r.perf}" onchange="onField(${r.id},'perf',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td><input type="number" min="0" max="100" step="0.1" value="${r.qual}" onchange="onField(${r.id},'qual',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td><span class="calc-val" style="color:${dispColor(oee)};">${oee !== "—" ? oee+"%" : "—"}</span></td>
+        <td><input type="number" min="0" value="${r.custo}" placeholder="1200" onchange="onField(${r.id},'custo',this.value)" style="max-width:90px;text-align:right;"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const calcs = rows.map(r=>calcRow(r));
+    const disps = calcs.map(c=>parseFloat(c.disp)).filter(d=>!isNaN(d));
+    const mtbfs = calcs.map(c=>parseFloat(c.mtbf)).filter(d=>!isNaN(d));
+    const mttrs = calcs.map(c=>parseFloat(c.mttr)).filter(d=>!isNaN(d));
+    const oees  = calcs.map(c=>parseFloat(c.oee)).filter(d=>!isNaN(d));
+    const totCusto = rows.reduce((a,r)=>a+(parseFloat(r.custo)||0),0);
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "—";
+    const dispMed = avg(disps);
+    const dispColor = dispMed === "—" ? "var(--text-muted)" : parseFloat(dispMed)>=90?"#198754":parseFloat(dispMed)>=75?"#856404":"#dc3545";
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Registros</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${avg(mtbfs)} h</div><div class="kpi-chip-lbl">MTBF Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${avg(mttrs)} h</div><div class="kpi-chip-lbl">MTTR Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:${dispColor};">${dispMed !== "—" ? dispMed+"%" : "—"}</div><div class="kpi-chip-lbl">Disp. Média</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${avg(oees) !== "—" ? avg(oees)+"%" : "—"}</div><div class="kpi-chip-lbl">OEE Médio</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">R$ ${totCusto.toLocaleString("pt-BR",{maximumFractionDigits:0})}</div><div class="kpi-chip-lbl">Custo Total</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({per:"Mai/2026",equip:"Compressor Atlas Copco GA22",hsPlan:"720",hsOper:"706",hsPar:"14",nFalhas:"2",hsRep:"5",perf:"98",qual:"100",custo:"850"});
+    addRow({per:"Mai/2026",equip:"Forno Reflow Heller 1800",hsPlan:"720",hsOper:"716",hsPar:"4",nFalhas:"1",hsRep:"3.5",perf:"99",qual:"100",custo:"320"});
+    addRow({per:"Mai/2026",equip:"Injetora KraussMaffei 200t",hsPlan:"720",hsOper:"680",hsPar:"40",nFalhas:"4",hsRep:"12",perf:"95",qual:"98",custo:"2100"});
+    addRow({per:"Abr/2026",equip:"Compressor Atlas Copco GA22",hsPlan:"720",hsOper:"718",hsPar:"2",nFalhas:"1",hsRep:"2",perf:"100",qual:"100",custo:"380"});
+    addRow({per:"Abr/2026",equip:"Injetora KraussMaffei 200t",hsPlan:"720",hsOper:"698",hsPar:"22",nFalhas:"3",hsRep:"7.5",perf:"96",qual:"99",custo:"1650"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

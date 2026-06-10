@@ -1,6 +1,40 @@
 {% extends "layouts/app.html" %}
 {% block title %}Manutenção Preditiva — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.pd-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.pd-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.pd-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.pd-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.pd-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.pd-table td input,.pd-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.pd-table td input:focus,.pd-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.td-normal { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.td-alert  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.td-crit   { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.td-sem    { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.tec-vib  { background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tec-term { background:rgba(220,53,69,0.10);color:#842029;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tec-ult  { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tec-oleo { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tec-corr { background:rgba(13,202,240,0.12);color:#055160;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .pd-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .pd-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .pd-table th:nth-child(n+7),.pd-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +54,169 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-activity" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Análise de vibração, termografia, ultrassom e trending de parâmetros.</p>
+
+  <div class="pd-card">
+    <div class="pd-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-activity text-primary me-1"></i>Monitoramento de Condição — Vibração · Termografia · Ultrassom · Análise de Óleo · Trending</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterTec" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas técnicas</option>
+          <option>Vibração</option><option>Termografia</option><option>Ultrassom</option>
+          <option>Análise de Óleo</option><option>Corrente Elétrica</option>
+        </select>
+        <select id="filterTend" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos trends</option>
+          <option>Normal</option><option>Alerta</option><option>Crítico</option><option>Sem Medição</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Ponto</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="pd-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:110px;">Equipamento</th>
+            <th style="min-width:90px;">Ponto de Med.</th>
+            <th>Técnica</th>
+            <th>Parâmetro</th>
+            <th>Valor Atual</th>
+            <th>Unidade</th>
+            <th>Limite Alerta</th>
+            <th>Limite Crítico</th>
+            <th>Trend</th>
+            <th>Última Medição</th>
+            <th>Próx. Medição</th>
+            <th>Recomendação</th>
+            <th>Responsável</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;font-size:0.72rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      ISO 10816 — Vibração Mecânica &nbsp;|&nbsp; ISO 13374 — Condition Monitoring &nbsp;|&nbsp; IEC 60068 — Termografia
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_preditiva";
+  const TECS   = ["Vibração","Termografia","Ultrassom","Análise de Óleo","Corrente Elétrica"];
+  const TRENDS = ["Normal","Alerta","Crítico","Sem Medição"];
+  const TD_CLS = {"Normal":"td-normal","Alerta":"td-alert","Crítico":"td-crit","Sem Medição":"td-sem"};
+  const TEC_CLS = {"Vibração":"tec-vib","Termografia":"tec-term","Ultrassom":"tec-ult","Análise de Óleo":"tec-oleo","Corrente Elétrica":"tec-corr"};
+  let rows = []; let nextId = 1;
+
+  function tecOpts(sel)   { return TECS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function trendOpts(sel) { return TRENDS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+
+  function trendAuto(val, alerta, crit) {
+    const v = parseFloat(val); const a = parseFloat(alerta); const c = parseFloat(crit);
+    if(!val) return "Sem Medição";
+    if(!isNaN(c) && v >= c) return "Crítico";
+    if(!isNaN(a) && v >= a) return "Alerta";
+    return "Normal";
+  }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, equip:d.equip||"", ponto:d.ponto||"", tec:d.tec||"Vibração",
+      param:d.param||"", valor:d.valor||"", unid:d.unid||"", limAl:d.limAl||"",
+      limCr:d.limCr||"", trend:d.trend||"Sem Medição",
+      ultMed:d.ultMed||"", proxMed:d.proxMed||"", rec:d.rec||"", resp:d.resp||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const ft = document.getElementById("filterTec").value;
+    const ftr= document.getElementById("filterTend").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!ft||r.tec===ft)&&(!ftr||trendAuto(r.valor,r.limAl,r.limCr)===ftr)).forEach(r=>{
+      const td = trendAuto(r.valor, r.limAl, r.limCr);
+      const valColor = td==="Crítico"?"#dc3545":td==="Alerta"?"#856404":"#198754";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.equip}" placeholder="Compressor A, Motor B" onchange="onField(${r.id},'equip',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.ponto}" placeholder="Mancal DE, Bobina" onchange="onField(${r.id},'ponto',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'tec',this.value)">${tecOpts(r.tec)}</select>
+          <span class="${TEC_CLS[r.tec]||''}" style="display:block;margin-top:3px;">${r.tec}</span>
+        </td>
+        <td><input type="text" value="${r.param}" placeholder="Aceleração RMS, Temperatura" onchange="onField(${r.id},'param',this.value)"></td>
+        <td>
+          <input type="text" value="${r.valor}" placeholder="2.8" onchange="onField(${r.id},'valor',this.value)" style="font-weight:700;color:${valColor};max-width:70px;text-align:center;">
+        </td>
+        <td><input type="text" value="${r.unid}" placeholder="mm/s, °C, dB" onchange="onField(${r.id},'unid',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td><input type="text" value="${r.limAl}" placeholder="4.5" onchange="onField(${r.id},'limAl',this.value)" style="max-width:60px;text-align:center;color:#856404;font-weight:700;"></td>
+        <td><input type="text" value="${r.limCr}" placeholder="7.1" onchange="onField(${r.id},'limCr',this.value)" style="max-width:60px;text-align:center;color:#dc3545;font-weight:700;"></td>
+        <td><span class="${TD_CLS[td]||'td-sem'}">${td}</span></td>
+        <td><input type="date" value="${r.ultMed}" onchange="onField(${r.id},'ultMed',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="date" value="${r.proxMed}" onchange="onField(${r.id},'proxMed',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.rec}" placeholder="Recomendação técnica" onchange="onField(${r.id},'rec',this.value)"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const norm  = rows.filter(r=>trendAuto(r.valor,r.limAl,r.limCr)==="Normal").length;
+    const aler  = rows.filter(r=>trendAuto(r.valor,r.limAl,r.limCr)==="Alerta").length;
+    const crit  = rows.filter(r=>trendAuto(r.valor,r.limAl,r.limCr)==="Crítico").length;
+    const sem   = rows.filter(r=>trendAuto(r.valor,r.limAl,r.limCr)==="Sem Medição").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Pontos PdM</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${norm}</div><div class="kpi-chip-lbl">Normal</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${aler}</div><div class="kpi-chip-lbl">Alerta</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${crit}</div><div class="kpi-chip-lbl">Crítico</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${sem}</div><div class="kpi-chip-lbl">Sem Medição</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({equip:"Compressor Atlas Copco GA22",ponto:"Mancal Drive End",tec:"Vibração",param:"Velocidade RMS",valor:"2.8",unid:"mm/s",limAl:"4.5",limCr:"7.1",ultMed:"2026-05-15",proxMed:"2026-08-15",rec:"Normal — continuar monitoramento",resp:"Carlos Mendes"});
+    addRow({equip:"Motor Bomba Hidráulica 22kW",ponto:"Mancal Non-Drive End",tec:"Vibração",param:"Aceleração RMS",valor:"6.2",unid:"mm/s",limAl:"4.5",limCr:"7.1",ultMed:"2026-06-01",proxMed:"2026-06-15",rec:"Programar alinhamento a laser",resp:"Carlos Mendes"});
+    addRow({equip:"Quadro Elétrico QF-03",ponto:"Disjuntor principal 400A",tec:"Termografia",param:"ΔT Temperatura",valor:"28",unid:"°C",limAl:"10",limCr:"25",ultMed:"2026-05-20",proxMed:"2026-07-20",rec:"Aperto de terminais urgente — risco de falha",resp:"Pedro Costa"});
+    addRow({equip:"Redutor SEW MC2 30kW",ponto:"Óleo de engrenagem",tec:"Análise de Óleo",param:"Partículas metálicas (Fe)",valor:"45",unid:"ppm",limAl:"50",limCr:"100",ultMed:"2026-04-01",proxMed:"2026-07-01",resp:"Ana Lima"});
+    addRow({equip:"Rolamento SKF 6205",ponto:"Eixo transmissão L1",tec:"Ultrassom",param:"dBSV nível ruído",valor:"35",unid:"dBSV",limAl:"40",limCr:"52",ultMed:"2026-05-28",proxMed:"2026-07-28",rec:"Normal — lubrificação em dia",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
