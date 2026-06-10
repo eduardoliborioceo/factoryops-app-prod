@@ -106,25 +106,19 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Voltar + Navegação de módulos -->
-  <div class="d-flex align-items-center gap-2 mb-5">
-    <a href="{{ url_for('pages.dashboard') }}" class="btn-header-icon flex-shrink-0" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div class="hub-nav flex-fill" style="margin-bottom:0;">
-      <button class="hub-nav-btn active" id="navProduto"   onclick="setTab('produto')">
-        <i class="bi bi-box-seam me-1"></i>Produto
-      </button>
-      <button class="hub-nav-btn" id="navCadastro"  onclick="setTab('cadastro')">
-        <i class="bi bi-clipboard-data me-1"></i>Cadastro
-      </button>
-      <button class="hub-nav-btn" id="navOperacao"  onclick="setTab('operacao')">
-        <i class="bi bi-play-circle me-1"></i>Operação
-      </button>
-      <button class="hub-nav-btn" id="navRelatorio" onclick="setTab('relatorio')">
-        <i class="bi bi-bar-chart-line me-1"></i>Relatório
-      </button>
-    </div>
+  <div class="hub-nav mb-5">
+    <button class="hub-nav-btn active" id="navProduto"   onclick="setTab('produto')">
+      <i class="bi bi-box-seam me-1"></i>Produto
+    </button>
+    <button class="hub-nav-btn" id="navCadastro"  onclick="setTab('cadastro')">
+      <i class="bi bi-clipboard-data me-1"></i>Cadastro
+    </button>
+    <button class="hub-nav-btn" id="navOperacao"  onclick="setTab('operacao')">
+      <i class="bi bi-play-circle me-1"></i>Operação
+    </button>
+    <button class="hub-nav-btn" id="navRelatorio" onclick="setTab('relatorio')">
+      <i class="bi bi-bar-chart-line me-1"></i>Relatório
+    </button>
   </div>
 
   <!-- ── ABA: PRODUTO ── -->
