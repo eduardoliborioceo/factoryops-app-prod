@@ -2846,6 +2846,62 @@ def funcionalidades_pci_hub_revisao_excluir(rel_id):
         return jsonify({"ok": False, "erro": "Erro ao excluir."}), 500
 
 
+# PCI Hub — Cadastro
+@bp.route("/funcionalidades/sistemas/pci-hub/cadastro/motivos")
+@login_required
+def funcionalidades_pci_hub_cadastro_motivos():
+    return render_template(
+        "funcionalidades/pci_hub_cadastro_motivos.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/cadastro/defeitos")
+@login_required
+def funcionalidades_pci_hub_cadastro_defeitos():
+    return render_template(
+        "funcionalidades/pci_hub_cadastro_defeitos.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/cadastro/linhas")
+@login_required
+def funcionalidades_pci_hub_cadastro_linhas():
+    return render_template(
+        "funcionalidades/pci_hub_cadastro_linhas.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+# PCI Hub — Relatório
+@bp.route("/funcionalidades/sistemas/pci-hub/relatorio/producao")
+@login_required
+def funcionalidades_pci_hub_relatorio_producao():
+    return render_template(
+        "funcionalidades/pci_hub_relatorio_producao.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/relatorio/qualidade")
+@login_required
+def funcionalidades_pci_hub_relatorio_qualidade():
+    return render_template(
+        "funcionalidades/pci_hub_relatorio_qualidade.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
+@bp.route("/funcionalidades/sistemas/pci-hub/relatorio/rastreabilidade")
+@login_required
+def funcionalidades_pci_hub_relatorio_rastreabilidade():
+    return render_template(
+        "funcionalidades/pci_hub_relatorio_rastreabilidade.html",
+        active_menu="funcionalidades_pci_hub",
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # RH OPS
 # ─────────────────────────────────────────────────────────────────────────────
