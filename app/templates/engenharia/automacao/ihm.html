@@ -1,6 +1,40 @@
 {% extends "layouts/app.html" %}
 {% block title %}IHM — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.ihm-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.ihm-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.ihm-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.ihm-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ihm-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ihm-table td input,.ihm-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.ihm-table td input:focus,.ihm-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-oper { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-man  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-par  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-dep  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.tp-painel { background:rgba(13,110,253,0.10);color:#084298;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-scada  { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-touch  { background:rgba(13,202,240,0.10);color:#055160;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.tp-sup    { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.fw-mono   { font-family:monospace;font-size:0.78rem;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .ihm-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .ihm-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .ihm-table th:nth-child(n+7),.ihm-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +54,155 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-display" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Interfaces homem-máquina: painéis, SCADA e supervisórios.</p>
+
+  <div class="ihm-card">
+    <div class="ihm-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-display text-primary me-1"></i>Interfaces Homem-Máquina — Painéis · SCADA · Supervisórios · Touchscreen</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Operacional</option><option>Em Manutenção</option><option>Parado</option><option>Depreciado</option>
+        </select>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>Painel</option><option>SCADA</option><option>Touchscreen</option><option>Supervisório</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>IHM</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="ihm-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:90px;">Tag / ID</th>
+            <th style="min-width:120px;">Modelo</th>
+            <th>Fabricante</th>
+            <th>Tipo</th>
+            <th>Linha / Célula</th>
+            <th>IP / Endereço</th>
+            <th>Versão SW</th>
+            <th>Status</th>
+            <th>Últ. Atualização</th>
+            <th>Responsável</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_ihm";
+  const FABS   = ["Siemens","Rockwell","Schneider","Weintek","Omron","Beijer","Inductive Automation","AVEVA","Outro"];
+  const TIPOS  = ["Painel","SCADA","Touchscreen","Supervisório"];
+  const STATUS = ["Operacional","Em Manutenção","Parado","Depreciado"];
+  const ST_CLS = {"Operacional":"st-oper","Em Manutenção":"st-man","Parado":"st-par","Depreciado":"st-dep"};
+  const TP_CLS = {"Painel":"tp-painel","SCADA":"tp-scada","Touchscreen":"tp-touch","Supervisório":"tp-sup"};
+  let rows = []; let nextId = 1;
+
+  function fabOpts(sel)  { return FABS.map(f=>`<option${f===sel?" selected":""}>${f}</option>`).join(""); }
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, tag:d.tag||"", modelo:d.modelo||"", fab:d.fab||"Siemens",
+      tipo:d.tipo||"Painel", linha:d.linha||"", ip:d.ip||"",
+      sw:d.sw||"", status:d.status||"Operacional",
+      ultAtu:d.ultAtu||"", resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!ft||r.tipo===ft)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.tag}" placeholder="IHM-SMT-01" onchange="onField(${r.id},'tag',this.value)" class="fw-mono"></td>
+        <td><input type="text" value="${r.modelo}" placeholder="KTP900, FactoryTalk..." onchange="onField(${r.id},'modelo',this.value)" style="font-weight:600;"></td>
+        <td><select onchange="onField(${r.id},'fab',this.value)">${fabOpts(r.fab)}</select></td>
+        <td>
+          <select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select>
+          <span class="${TP_CLS[r.tipo]||''}" style="display:block;margin-top:3px;">${r.tipo}</span>
+        </td>
+        <td><input type="text" value="${r.linha}" placeholder="Linha SMT, Célula A" onchange="onField(${r.id},'linha',this.value)"></td>
+        <td><input type="text" value="${r.ip}" placeholder="192.168.1.10" onchange="onField(${r.id},'ip',this.value)" style="font-family:monospace;font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.sw}" placeholder="v16.0.1" onchange="onField(${r.id},'sw',this.value)" style="font-family:monospace;font-size:0.75rem;max-width:80px;"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-oper'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.ultAtu}" onchange="onField(${r.id},'ultAtu',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const oper  = rows.filter(r=>r.status==="Operacional").length;
+    const man   = rows.filter(r=>r.status==="Em Manutenção").length;
+    const par   = rows.filter(r=>r.status==="Parado").length;
+    const scada = rows.filter(r=>r.tipo==="SCADA").length;
+    const paineis = rows.filter(r=>r.tipo==="Painel").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total IHMs</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${oper}</div><div class="kpi-chip-lbl">Operacionais</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${man}</div><div class="kpi-chip-lbl">Em Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${par}</div><div class="kpi-chip-lbl">Parados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${scada}</div><div class="kpi-chip-lbl">SCADA</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#084298;">${paineis}</div><div class="kpi-chip-lbl">Painéis</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({tag:"IHM-SMT-01",modelo:"KTP900 Basic",fab:"Siemens",tipo:"Touchscreen",linha:"Linha SMT 1",ip:"192.168.10.11",sw:"v16.0.1",status:"Operacional",ultAtu:"2026-03-20",resp:"Carlos Mendes"});
+    addRow({tag:"IHM-INJ-01",modelo:"PanelView Plus 7",fab:"Rockwell",tipo:"Painel",linha:"Injetora 01",ip:"192.168.10.25",sw:"v11.00",status:"Operacional",ultAtu:"2026-01-15",resp:"Ana Lima"});
+    addRow({tag:"SCADA-PROD",modelo:"Ignition 8.1",fab:"Inductive Automation",tipo:"SCADA",linha:"Planta Geral",ip:"192.168.1.10",sw:"v8.1.33",status:"Operacional",ultAtu:"2026-05-01",resp:"Pedro Costa",obs:"3 clientes ativos"});
+    addRow({tag:"IHM-MON-01",modelo:"TP177B",fab:"Siemens",tipo:"Painel",linha:"Montagem Manual",ip:"192.168.10.30",sw:"v6.2",status:"Depreciado",resp:"Maria Silva",obs:"Aguardando troca por KTP900"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,38 @@
 {% extends "layouts/app.html" %}
 {% block title %}CLPs & Programação — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.clp-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.clp-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.clp-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.clp-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.clp-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.clp-table td input,.clp-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.clp-table td input:focus,.clp-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.bk-ok   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.bk-pend { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.bk-sem  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-oper { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-man  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-par  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.fw-mono { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .clp-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .clp-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .clp-table th:nth-child(n+7),.clp-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +52,158 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-hdd-network" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Programação, versionamento e backup de CLPs industriais.</p>
+
+  <div class="clp-card">
+    <div class="clp-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-hdd-network text-primary me-1"></i>Inventário de CLPs — Versionamento · Backup · Programação IEC 61131-3</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Operacional</option><option>Em Manutenção</option><option>Parado</option>
+        </select>
+        <select id="filterBkp" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos backup</option>
+          <option>Backup OK</option><option>Backup Pendente</option><option>Sem Backup</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>CLP</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="clp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:90px;">Tag / ID</th>
+            <th style="min-width:120px;">Modelo</th>
+            <th>Fabricante</th>
+            <th>Linha / Equip.</th>
+            <th>Versão FW</th>
+            <th>Versão Prog.</th>
+            <th>Linguagem</th>
+            <th>Status</th>
+            <th>Backup</th>
+            <th>Último Backup</th>
+            <th>Responsável</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_clps";
+  const FABS   = ["Siemens","Rockwell","Schneider","Mitsubishi","Omron","Beckhoff","B&R","ABB","Outro"];
+  const LANGS  = ["LAD","FBD","SFC","STL","SCL","ST","IL","Múltiplas"];
+  const STATUS = ["Operacional","Em Manutenção","Parado"];
+  const BACKUP = ["Backup OK","Backup Pendente","Sem Backup"];
+  const ST_CLS = {"Operacional":"st-oper","Em Manutenção":"st-man","Parado":"st-par"};
+  const BK_CLS = {"Backup OK":"bk-ok","Backup Pendente":"bk-pend","Sem Backup":"bk-sem"};
+  let rows = []; let nextId = 1;
+
+  function fabOpts(sel)  { return FABS.map(f=>`<option${f===sel?" selected":""}>${f}</option>`).join(""); }
+  function langOpts(sel) { return LANGS.map(l=>`<option${l===sel?" selected":""}>${l}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+  function bkOpts(sel)   { return BACKUP.map(b=>`<option${b===sel?" selected":""}>${b}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, tag:d.tag||"", modelo:d.modelo||"", fab:d.fab||"Siemens",
+      linha:d.linha||"", fw:d.fw||"", prog:d.prog||"", lang:d.lang||"LAD",
+      status:d.status||"Operacional", backup:d.backup||"Sem Backup",
+      ultBkp:d.ultBkp||"", resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs  = document.getElementById("filterStatus").value;
+    const fbk = document.getElementById("filterBkp").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!fbk||r.backup===fbk)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.tag}" placeholder="PLC-SMT-01" onchange="onField(${r.id},'tag',this.value)" class="fw-mono"></td>
+        <td><input type="text" value="${r.modelo}" placeholder="S7-1515, CompactLogix..." onchange="onField(${r.id},'modelo',this.value)" style="font-weight:600;"></td>
+        <td><select onchange="onField(${r.id},'fab',this.value)">${fabOpts(r.fab)}</select></td>
+        <td><input type="text" value="${r.linha}" placeholder="Linha SMT, Prensa 01" onchange="onField(${r.id},'linha',this.value)"></td>
+        <td><input type="text" value="${r.fw}" placeholder="v2.9.3" onchange="onField(${r.id},'fw',this.value)" style="font-family:monospace;font-size:0.78rem;max-width:80px;"></td>
+        <td><input type="text" value="${r.prog}" placeholder="v4.2.1" onchange="onField(${r.id},'prog',this.value)" style="font-family:monospace;font-size:0.78rem;max-width:80px;"></td>
+        <td><select onchange="onField(${r.id},'lang',this.value)">${langOpts(r.lang)}</select></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-oper'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td>
+          <select onchange="onField(${r.id},'backup',this.value)">${bkOpts(r.backup)}</select>
+          <span class="${BK_CLS[r.backup]||'bk-sem'}" style="display:block;margin-top:3px;">${r.backup}</span>
+        </td>
+        <td><input type="date" value="${r.ultBkp}" onchange="onField(${r.id},'ultBkp',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const oper = rows.filter(r=>r.status==="Operacional").length;
+    const bkOk = rows.filter(r=>r.backup==="Backup OK").length;
+    const bkSem= rows.filter(r=>r.backup==="Sem Backup").length;
+    const par  = rows.filter(r=>r.status==="Parado").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total CLPs</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${oper}</div><div class="kpi-chip-lbl">Operacionais</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${par}</div><div class="kpi-chip-lbl">Parados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${bkOk}</div><div class="kpi-chip-lbl">Backup OK</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${bkSem}</div><div class="kpi-chip-lbl">Sem Backup</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({tag:"PLC-SMT-01",modelo:"S7-1515-2PN",fab:"Siemens",linha:"Linha SMT 1",fw:"v2.9.3",prog:"v4.2.1",lang:"LAD",status:"Operacional",backup:"Backup OK",ultBkp:"2026-06-01",resp:"Carlos Mendes"});
+    addRow({tag:"PLC-INJ-01",modelo:"CompactLogix 5380",fab:"Rockwell",linha:"Injetora 01",fw:"v32.11",prog:"v3.0.5",lang:"FBD",status:"Operacional",backup:"Backup Pendente",resp:"Ana Lima"});
+    addRow({tag:"PLC-MON-01",modelo:"S7-300 CPU 315",fab:"Siemens",linha:"Montagem",fw:"v3.3.17",prog:"v2.1.0",lang:"STL",status:"Em Manutenção",backup:"Backup OK",ultBkp:"2026-04-15",resp:"Pedro Costa",obs:"Atualização FW agendada"});
+    addRow({tag:"PLC-EMB-01",modelo:"M340 CPU BMX",fab:"Schneider",linha:"Embalagem",fw:"v3.1.8",prog:"v1.5.2",lang:"FBD",status:"Operacional",backup:"Backup OK",ultBkp:"2026-05-20",resp:"Maria Silva"});
+    addRow({tag:"PLC-CNC-01",modelo:"TwinCAT 3",fab:"Beckhoff",linha:"Fresadora CNC",fw:"v4024.48",prog:"v1.2.0",lang:"ST",status:"Operacional",backup:"Sem Backup",resp:"Carlos Mendes",obs:"Backup urgente pendente"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
