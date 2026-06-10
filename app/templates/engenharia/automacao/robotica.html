@@ -1,6 +1,36 @@
 {% extends "layouts/app.html" %}
 {% block title %}Robótica — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.rob-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.rob-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.rob-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.rob-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.rob-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.rob-table td input,.rob-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.rob-table td input:focus,.rob-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-oper { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-man  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-par  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-cal  { background:rgba(13,202,240,0.12);color:#055160;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.fw-mono { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .rob-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .rob-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .rob-table th:nth-child(n+7),.rob-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +50,153 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-robot" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Robôs industriais, programas de trajetória e integração de células.</p>
+
+  <div class="rob-card">
+    <div class="rob-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-robot text-primary me-1"></i>Inventário de Robôs — Programas de Trajetória · Integração de Células · Manutenção</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Operacional</option><option>Em Manutenção</option><option>Parado</option><option>Em Calibração</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Robô</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="rob-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:90px;">Tag / ID</th>
+            <th style="min-width:120px;">Modelo</th>
+            <th>Fabricante</th>
+            <th>Célula / Linha</th>
+            <th>Payload (kg)</th>
+            <th>Alcance (mm)</th>
+            <th>Versão SW</th>
+            <th>Prog. Ativo</th>
+            <th>Status</th>
+            <th>Últ. Calibração</th>
+            <th>Próx. Manutenção</th>
+            <th>Responsável</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_robotica";
+  const FABS   = ["KUKA","ABB","Fanuc","YASKAWA","Universal Robots","Stäubli","Kawasaki","Comau","Outro"];
+  const STATUS = ["Operacional","Em Manutenção","Parado","Em Calibração"];
+  const ST_CLS = {"Operacional":"st-oper","Em Manutenção":"st-man","Parado":"st-par","Em Calibração":"st-cal"};
+  let rows = []; let nextId = 1;
+
+  function fabOpts(sel) { return FABS.map(f=>`<option${f===sel?" selected":""}>${f}</option>`).join(""); }
+  function stOpts(sel)  { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, tag:d.tag||"", modelo:d.modelo||"", fab:d.fab||"KUKA",
+      celula:d.celula||"", payload:d.payload||"", alcance:d.alcance||"",
+      sw:d.sw||"", prog:d.prog||"", status:d.status||"Operacional",
+      cal:d.cal||"", proxMan:d.proxMan||"", resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    const today = new Date().toISOString().slice(0,10);
+    rows.filter(r=>!fs||r.status===fs).forEach(r=>{
+      const manAtras = r.proxMan && r.proxMan < today && r.status === "Operacional";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.tag}" placeholder="ROB-SMT-01" onchange="onField(${r.id},'tag',this.value)" class="fw-mono"></td>
+        <td><input type="text" value="${r.modelo}" placeholder="KR 10 R1100, IRB 1200..." onchange="onField(${r.id},'modelo',this.value)" style="font-weight:600;"></td>
+        <td><select onchange="onField(${r.id},'fab',this.value)">${fabOpts(r.fab)}</select></td>
+        <td><input type="text" value="${r.celula}" placeholder="Célula Soldagem, Pick&Place" onchange="onField(${r.id},'celula',this.value)"></td>
+        <td><input type="number" min="0" value="${r.payload}" placeholder="10" onchange="onField(${r.id},'payload',this.value)" style="max-width:65px;text-align:center;font-weight:700;"></td>
+        <td><input type="number" min="0" value="${r.alcance}" placeholder="1100" onchange="onField(${r.id},'alcance',this.value)" style="max-width:75px;text-align:center;"></td>
+        <td><input type="text" value="${r.sw}" placeholder="v8.5" onchange="onField(${r.id},'sw',this.value)" style="font-family:monospace;font-size:0.78rem;max-width:70px;"></td>
+        <td><input type="text" value="${r.prog}" placeholder="PROG_SOLDA_V3" onchange="onField(${r.id},'prog',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-oper'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.cal}" onchange="onField(${r.id},'cal',this.value)" style="font-size:0.75rem;"></td>
+        <td>
+          <input type="date" value="${r.proxMan}" onchange="onField(${r.id},'proxMan',this.value)" style="font-size:0.75rem;">
+          ${manAtras?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Vencida</span>':''}
+        </td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const oper = rows.filter(r=>r.status==="Operacional").length;
+    const man  = rows.filter(r=>r.status==="Em Manutenção").length;
+    const par  = rows.filter(r=>r.status==="Parado").length;
+    const cal  = rows.filter(r=>r.status==="Em Calibração").length;
+    const totP = rows.reduce((a,r)=>a+(parseFloat(r.payload)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total Robôs</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${oper}</div><div class="kpi-chip-lbl">Operacionais</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${man}</div><div class="kpi-chip-lbl">Em Manutenção</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${par}</div><div class="kpi-chip-lbl">Parados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0dcaf0;">${cal}</div><div class="kpi-chip-lbl">Calibração</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${totP.toFixed(0)} kg</div><div class="kpi-chip-lbl">Payload Total</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({tag:"ROB-SOL-01",modelo:"KR 10 R1100 sixx",fab:"KUKA",celula:"Célula Soldagem A",payload:"10",alcance:"1100",sw:"v8.5.3",prog:"PROG_SOLDA_V3",status:"Operacional",cal:"2026-03-10",proxMan:"2026-09-10",resp:"Carlos Mendes"});
+    addRow({tag:"ROB-PP-01",modelo:"IRB 1200-5/0.9",fab:"ABB",celula:"Pick & Place SMT",payload:"5",alcance:"901",sw:"v7.14",prog:"SMT_PP_MAIN",status:"Operacional",cal:"2026-02-15",proxMan:"2026-08-15",resp:"Ana Lima"});
+    addRow({tag:"ROB-COL-01",modelo:"UR10e",fab:"Universal Robots",celula:"Colagem de Etiquetas",payload:"10",alcance:"1300",sw:"v5.13",prog:"LABEL_V2",status:"Em Manutenção",cal:"2025-11-01",proxMan:"2026-05-01",resp:"Pedro Costa",obs:"Troca de cabo teach pendant"});
+    addRow({tag:"ROB-INS-01",modelo:"M-20iD/25",fab:"Fanuc",celula:"Inspeção Visual",payload:"25",alcance:"1831",sw:"v9.40",prog:"INSPECT_CAM",status:"Em Calibração",cal:"2026-06-05",proxMan:"2026-12-05",resp:"Maria Silva"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,42 @@
 {% extends "layouts/app.html" %}
 {% block title %}Redes Industriais — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.red-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.red-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.red-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.red-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.red-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.red-table td input,.red-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.red-table td input:focus,.red-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-ok    { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-aler  { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-falha { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.prot-badge { font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
+.prot-pn    { background:rgba(13,110,253,0.12);color:#084298; }
+.prot-pb    { background:rgba(111,66,193,0.12);color:#3d1a78; }
+.prot-ec    { background:rgba(13,202,240,0.12);color:#055160; }
+.prot-mb    { background:rgba(25,135,84,0.12);color:#0a3622; }
+.prot-ei    { background:rgba(255,193,7,0.18);color:#664d03; }
+.prot-other { background:rgba(15,23,42,0.08);color:var(--text-muted); }
+.fw-mono    { font-family:monospace;font-size:0.78rem;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .red-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .red-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .red-table th:nth-child(n+7),.red-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +56,166 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-ethernet" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Profibus, Profinet, EtherCAT, Modbus e topologias de chão de fábrica.</p>
+
+  <div class="red-card">
+    <div class="red-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-ethernet text-primary me-1"></i>Topologias de Chão de Fábrica — Profinet · Profibus · EtherCAT · Modbus · EtherNet/IP</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterProt" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos protocolos</option>
+          <option>Profinet</option><option>Profibus</option><option>EtherCAT</option>
+          <option>Modbus TCP</option><option>EtherNet/IP</option><option>DeviceNet</option><option>CANopen</option>
+        </select>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos status</option>
+          <option>OK</option><option>Alerta</option><option>Falha</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Rede</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="red-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:100px;">Nome / Segmento</th>
+            <th>Protocolo</th>
+            <th>Topologia</th>
+            <th>Master / Switch</th>
+            <th>Velocidade</th>
+            <th style="text-align:center;">Dispositivos</th>
+            <th>Endereço / VLAN</th>
+            <th>Status</th>
+            <th>Última Manutenção</th>
+            <th>Responsável</th>
+            <th style="min-width:110px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;font-size:0.72rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      IEC 61158 — Fieldbus Standard &nbsp;|&nbsp; IEC 61784 — Communication Profile &nbsp;|&nbsp; IEEE 802.3 — Ethernet Industrial
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_redes";
+  const PROTS = ["Profinet","Profibus","EtherCAT","Modbus TCP","EtherNet/IP","DeviceNet","CANopen","OPC-UA","Outro"];
+  const TOPS  = ["Estrela","Linear","Anel","Árvore","Mista"];
+  const STATUS = ["OK","Alerta","Falha"];
+  const ST_CLS = {"OK":"st-ok","Alerta":"st-aler","Falha":"st-falha"};
+  const PROT_CLS = {"Profinet":"prot-pn","Profibus":"prot-pb","EtherCAT":"prot-ec",
+    "Modbus TCP":"prot-mb","EtherNet/IP":"prot-ei"};
+  let rows = []; let nextId = 1;
+
+  function protOpts(sel) { return PROTS.map(p=>`<option${p===sel?" selected":""}>${p}</option>`).join(""); }
+  function topOpts(sel)  { return TOPS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, nome:d.nome||"", prot:d.prot||"Profinet", top:d.top||"Estrela",
+      master:d.master||"", vel:d.vel||"100 Mbit/s", disp:d.disp||"0",
+      end:d.end||"", status:d.status||"OK", ultMan:d.ultMan||"",
+      resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fp = document.getElementById("filterProt").value;
+    const fs = document.getElementById("filterStatus").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fp||r.prot===fp)&&(!fs||r.status===fs)).forEach(r=>{
+      const dispN = parseInt(r.disp)||0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.nome}" placeholder="PROFINET-SMT" onchange="onField(${r.id},'nome',this.value)" style="font-weight:700;" class="fw-mono"></td>
+        <td>
+          <select onchange="onField(${r.id},'prot',this.value)">${protOpts(r.prot)}</select>
+          <span class="prot-badge ${PROT_CLS[r.prot]||'prot-other'}" style="display:block;margin-top:3px;">${r.prot}</span>
+        </td>
+        <td><select onchange="onField(${r.id},'top',this.value)">${topOpts(r.top)}</select></td>
+        <td><input type="text" value="${r.master}" placeholder="S7-1515, Switch X208" onchange="onField(${r.id},'master',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'vel',this.value)">
+            ${["100 Mbit/s","1 Gbit/s","12 Mbit/s","1.5 Mbit/s","500 Kbit/s","100 Kbit/s"].map(v=>`<option${v===r.vel?" selected":""}>${v}</option>`).join("")}
+          </select>
+        </td>
+        <td style="text-align:center;">
+          <input type="number" min="0" value="${dispN}" onchange="onField(${r.id},'disp',this.value)" style="max-width:60px;text-align:center;font-weight:700;color:#0d6efd;">
+        </td>
+        <td><input type="text" value="${r.end}" placeholder="192.168.10.0/24, VLAN20" onchange="onField(${r.id},'end',this.value)" class="fw-mono"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-ok'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="date" value="${r.ultMan}" onchange="onField(${r.id},'ultMan',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ok    = rows.filter(r=>r.status==="OK").length;
+    const aler  = rows.filter(r=>r.status==="Alerta").length;
+    const falha = rows.filter(r=>r.status==="Falha").length;
+    const totalD = rows.reduce((a,r)=>a+(parseInt(r.disp)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Segmentos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${ok}</div><div class="kpi-chip-lbl">OK</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${aler}</div><div class="kpi-chip-lbl">Alerta</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${falha}</div><div class="kpi-chip-lbl">Falha</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${totalD}</div><div class="kpi-chip-lbl">Dispositivos</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({nome:"PROFINET-SMT",prot:"Profinet",top:"Estrela",master:"S7-1515-2PN / SCALANCE X208",vel:"100 Mbit/s",disp:"12",end:"192.168.10.0/24",status:"OK",ultMan:"2026-03-15",resp:"Carlos Mendes"});
+    addRow({nome:"PROFIBUS-INJ",prot:"Profibus",top:"Linear",master:"S7-300 CP342-5",vel:"1.5 Mbit/s",disp:"8",end:"DP Segmento 1",status:"Alerta",ultMan:"2025-12-01",resp:"Ana Lima",obs:"Terminador de barramento com ruído"});
+    addRow({nome:"ETHERCAT-MOT",prot:"EtherCAT",top:"Linear",master:"TwinCAT 3 / EK1100",vel:"100 Mbit/s",disp:"6",end:"—",status:"OK",ultMan:"2026-04-10",resp:"Pedro Costa",obs:"Servodrives Beckhoff AX5000"});
+    addRow({nome:"MODBUS-FIELD",prot:"Modbus TCP",top:"Estrela",master:"SCADA Ignition 8.1",vel:"100 Mbit/s",disp:"20",end:"192.168.20.0/24",status:"OK",ultMan:"2026-01-20",resp:"Maria Silva"});
+    addRow({nome:"DEVICENET-MON",prot:"DeviceNet",top:"Linear",master:"CompactLogix L36ERM",vel:"500 Kbit/s",disp:"5",end:"MacID 0-63",status:"Falha",resp:"Carlos Mendes",obs:"Falha de alimentação 24Vdc no tap"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

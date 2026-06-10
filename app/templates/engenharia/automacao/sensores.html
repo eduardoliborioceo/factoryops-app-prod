@@ -1,6 +1,36 @@
 {% extends "layouts/app.html" %}
 {% block title %}Sensores & Instrumentação — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.sen-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.sen-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.sen-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.sen-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.sen-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.sen-table td input,.sen-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.sen-table td input:focus,.sen-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.cal-ok   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cal-av   { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cal-venc { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cal-sem  { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.fw-mono { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .sen-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .sen-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .sen-table th:nth-child(n+7),.sen-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +50,159 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-reception-4" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Calibração, certificação e gestão de instrumentos de medição.</p>
+
+  <div class="sen-card">
+    <div class="sen-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-reception-4 text-primary me-1"></i>Gestão de Instrumentos — Calibração · Rastreabilidade INMETRO · ISO 9001 §7.1.5</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>Temperatura</option><option>Pressão</option><option>Vazão</option>
+          <option>Nível</option><option>Posição</option><option>Elétrico</option><option>Outro</option>
+        </select>
+        <select id="filterCal" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos status</option>
+          <option>Calibrado</option><option>A Vencer (30d)</option><option>Vencido</option><option>Sem Calibração</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Instrumento</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="sen-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:90px;">Tag</th>
+            <th style="min-width:130px;">Descrição</th>
+            <th>Tipo</th>
+            <th>Faixa</th>
+            <th>Unidade</th>
+            <th>N° Certificado</th>
+            <th>Laboratório</th>
+            <th>Últ. Calibração</th>
+            <th>Próx. Calibração</th>
+            <th>Status Cal.</th>
+            <th>Localização</th>
+            <th>Responsável</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_sensores";
+  const TIPOS = ["Temperatura","Pressão","Vazão","Nível","Posição","Elétrico","Outro"];
+  const CAL_CLS = {"Calibrado":"cal-ok","A Vencer (30d)":"cal-av","Vencido":"cal-venc","Sem Calibração":"cal-sem"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel) { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+
+  function calStatus(proxCal) {
+    if(!proxCal) return "Sem Calibração";
+    const hoje = new Date();
+    const prox = new Date(proxCal);
+    const diff = Math.floor((prox - hoje) / 86400000);
+    if(diff < 0)  return "Vencido";
+    if(diff <= 30) return "A Vencer (30d)";
+    return "Calibrado";
+  }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, tag:d.tag||"", desc:d.desc||"", tipo:d.tipo||"Temperatura",
+      faixa:d.faixa||"", unid:d.unid||"", cert:d.cert||"", lab:d.lab||"",
+      ultCal:d.ultCal||"", proxCal:d.proxCal||"", local:d.local||"",
+      resp:d.resp||"", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const ft  = document.getElementById("filterTipo").value;
+    const fc  = document.getElementById("filterCal").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!ft||r.tipo===ft)&&(!fc||calStatus(r.proxCal)===fc)).forEach(r=>{
+      const st = calStatus(r.proxCal);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.tag}" placeholder="TT-101" onchange="onField(${r.id},'tag',this.value)" class="fw-mono"></td>
+        <td><input type="text" value="${r.desc}" placeholder="Termômetro forno A" onchange="onField(${r.id},'desc',this.value)" style="font-weight:600;"></td>
+        <td><select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select></td>
+        <td><input type="text" value="${r.faixa}" placeholder="0 a 200" onchange="onField(${r.id},'faixa',this.value)" style="max-width:85px;text-align:center;"></td>
+        <td><input type="text" value="${r.unid}" placeholder="°C, bar, m³/h" onchange="onField(${r.id},'unid',this.value)" style="max-width:65px;text-align:center;"></td>
+        <td><input type="text" value="${r.cert}" placeholder="CAL-2026-001" onchange="onField(${r.id},'cert',this.value)" style="font-family:monospace;font-size:0.75rem;"></td>
+        <td><input type="text" value="${r.lab}" placeholder="RBLE, Inmetro..." onchange="onField(${r.id},'lab',this.value)"></td>
+        <td><input type="date" value="${r.ultCal}" onchange="onField(${r.id},'ultCal',this.value)" style="font-size:0.75rem;"></td>
+        <td><input type="date" value="${r.proxCal}" onchange="onField(${r.id},'proxCal',this.value)" style="font-size:0.75rem;"></td>
+        <td><span class="${CAL_CLS[st]||'cal-sem'}">${st}</span></td>
+        <td><input type="text" value="${r.local}" placeholder="Forno A, Linha SMT" onchange="onField(${r.id},'local',this.value)"></td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const cal   = rows.filter(r=>calStatus(r.proxCal)==="Calibrado").length;
+    const av    = rows.filter(r=>calStatus(r.proxCal)==="A Vencer (30d)").length;
+    const venc  = rows.filter(r=>calStatus(r.proxCal)==="Vencido").length;
+    const sem   = rows.filter(r=>calStatus(r.proxCal)==="Sem Calibração").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${cal}</div><div class="kpi-chip-lbl">Calibrados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${av}</div><div class="kpi-chip-lbl">A Vencer</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${venc}</div><div class="kpi-chip-lbl">Vencidos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${sem}</div><div class="kpi-chip-lbl">Sem Calibração</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({tag:"TT-101",desc:"Termopar forno reflow A",tipo:"Temperatura",faixa:"0 a 300",unid:"°C",cert:"CAL-2026-001",lab:"RBLE",ultCal:"2026-01-10",proxCal:"2027-01-10",local:"Forno Reflow 1",resp:"Carlos Mendes"});
+    addRow({tag:"PT-201",desc:"Transmissor pressão hidráulico",tipo:"Pressão",faixa:"0 a 10",unid:"bar",cert:"CAL-2026-002",lab:"INMETRO RJ",ultCal:"2026-02-20",proxCal:"2027-02-20",local:"Injetora 01",resp:"Ana Lima"});
+    addRow({tag:"FT-301",desc:"Medidor vazão ar comprimido",tipo:"Vazão",faixa:"0 a 100",unid:"Nm³/h",cert:"CAL-2025-088",lab:"RBLE",ultCal:"2025-06-15",proxCal:"2026-06-15",local:"Linha Montagem",resp:"Pedro Costa",obs:"Calibração a agendar"});
+    addRow({tag:"MT-401",desc:"Multímetro Fluke 87V",tipo:"Elétrico",faixa:"0 a 1000",unid:"V",cert:"CAL-2026-033",lab:"Fluke Cal.",ultCal:"2026-04-01",proxCal:"2027-04-01",local:"Bancada Teste",resp:"Maria Silva"});
+    addRow({tag:"LT-501",desc:"Sensor nível tanque resin",tipo:"Nível",faixa:"0 a 2",unid:"m",cert:"",lab:"",ultCal:"",proxCal:"",local:"Tanque Resina A",resp:"Carlos",obs:"Sem rastreabilidade metrológica"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
