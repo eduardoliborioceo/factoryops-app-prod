@@ -1,6 +1,39 @@
 {% extends "layouts/app.html" %}
 {% block title %}Não Conformidades — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.nc-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.nc-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.nc-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.nc-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.nc-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.nc-table td input,.nc-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.nc-table td input:focus,.nc-table td select:focus { outline:none;border-color:#dc3545; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-ab   { background:rgba(220,53,69,0.12);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-an   { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-bl   { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-enc  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.disp-ret { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:4px; }
+.disp-suc { background:rgba(220,53,69,0.12);color:#842029;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:4px; }
+.disp-uai { background:rgba(13,202,240,0.12);color:#055160;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:4px; }
+.disp-dev { background:rgba(108,117,125,0.12);color:#495057;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:4px; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .nc-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .nc-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .nc-table th:nth-child(n+6),.nc-table td:nth-child(n+6) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +53,173 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-x-octagon" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Registro, tratativa, bloqueio e disposição de produtos não conformes.</p>
+
+  <div class="nc-card">
+    <div class="nc-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-x-octagon text-danger me-1"></i>Registro · Contenção · Causa Raiz · Disposição (Metodologia 5D)</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Aberta</option><option>Em Análise</option><option>Bloqueada</option><option>Encerrada</option>
+        </select>
+        <select id="filterDisp" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas disposições</option>
+          <option>Retrabalho</option><option>Sucata</option><option>Uso Como Está</option><option>Devolução Forn.</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-danger btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>NC</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="nc-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>N° NC</th>
+            <th>Data</th>
+            <th>Origem</th>
+            <th style="min-width:110px;">Produto / Lote</th>
+            <th style="min-width:140px;">D1 — Problema</th>
+            <th style="min-width:130px;">D2 — Contenção</th>
+            <th style="min-width:130px;">D4 — Causa Raiz</th>
+            <th style="min-width:130px;">D5 — Ação Corretiva</th>
+            <th>Qtd. NC</th>
+            <th>Disposição</th>
+            <th>Status</th>
+            <th>Responsável</th>
+            <th>Prazo</th>
+            <th>Custo (R$)</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_nao_conformidades";
+  const ORIGENS = ["Processo Interno","Produto Final","Reclamação Cliente","Auditoria","Fornecedor","Recebimento","Outro"];
+  const DISPS = ["Retrabalho","Sucata","Uso Como Está","Devolução Forn.","A Definir"];
+  const STATUS = ["Aberta","Em Análise","Bloqueada","Encerrada"];
+  const ST_CLS = {"Aberta":"st-ab","Em Análise":"st-an","Bloqueada":"st-bl","Encerrada":"st-enc"};
+  const DISP_CLS = {"Retrabalho":"disp-ret","Sucata":"disp-suc","Uso Como Está":"disp-uai","Devolução Forn.":"disp-dev","A Definir":""};
+  let rows = []; let nextId = 1;
+
+  function origOpts(sel)  { return ORIGENS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function dispOpts(sel)  { return DISPS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function stOpts(sel)    { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    const today = new Date().toISOString().slice(0,10);
+    rows.push({id, num:d.num||`NC-${String(id).padStart(3,"0")}`,
+      data:d.data||today, origem:d.origem||"Processo Interno",
+      produto:d.produto||"", problema:d.problema||"",
+      contencao:d.contencao||"", causa:d.causa||"",
+      acao:d.acao||"", qtd:d.qtd||"1",
+      disp:d.disp||"A Definir", status:d.status||"Aberta",
+      resp:d.resp||"", prazo:d.prazo||"", custo:d.custo||"0"});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const fd = document.getElementById("filterDisp").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    const today = new Date().toISOString().slice(0,10);
+    rows.filter(r=>(!fs||r.status===fs)&&(!fd||r.disp===fd)).forEach(r=>{
+      const vencida = r.prazo && r.prazo < today && r.status!=="Encerrada";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.num}" onchange="onField(${r.id},'num',this.value)" style="max-width:90px;font-weight:700;"></td>
+        <td><input type="date" value="${r.data}" onchange="onField(${r.id},'data',this.value)" style="font-size:0.75rem;min-width:110px;"></td>
+        <td><select onchange="onField(${r.id},'origem',this.value)">${origOpts(r.origem)}</select></td>
+        <td><input type="text" value="${r.produto}" placeholder="Produto/Lote" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><input type="text" value="${r.problema}" placeholder="Descrição do problema" onchange="onField(${r.id},'problema',this.value)"></td>
+        <td><input type="text" value="${r.contencao}" placeholder="Ação de contenção imediata" onchange="onField(${r.id},'contencao',this.value)"></td>
+        <td><input type="text" value="${r.causa}" placeholder="Causa raiz identificada" onchange="onField(${r.id},'causa',this.value)"></td>
+        <td><input type="text" value="${r.acao}" placeholder="Ação corretiva efetiva" onchange="onField(${r.id},'acao',this.value)"></td>
+        <td style="text-align:center;"><input type="number" min="0" value="${r.qtd}" onchange="onField(${r.id},'qtd',this.value)" style="max-width:55px;text-align:center;"></td>
+        <td>
+          <select onchange="onField(${r.id},'disp',this.value)">${dispOpts(r.disp)}</select>
+          ${r.disp&&DISP_CLS[r.disp]?`<span class="${DISP_CLS[r.disp]}" style="display:block;margin-top:2px;">${r.disp}</span>`:''}
+        </td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-ab'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.resp}" placeholder="Responsável" onchange="onField(${r.id},'resp',this.value)"></td>
+        <td>
+          <input type="date" value="${r.prazo}" onchange="onField(${r.id},'prazo',this.value)" style="font-size:0.75rem;">
+          ${vencida?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Vencida</span>':''}
+        </td>
+        <td><input type="number" min="0" step="0.01" value="${r.custo}" onchange="onField(${r.id},'custo',this.value)" style="max-width:90px;text-align:right;"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const ab  = rows.filter(r=>r.status==="Aberta").length;
+    const an  = rows.filter(r=>r.status==="Em Análise").length;
+    const bl  = rows.filter(r=>r.status==="Bloqueada").length;
+    const enc = rows.filter(r=>r.status==="Encerrada").length;
+    const suc = rows.filter(r=>r.disp==="Sucata").reduce((a,r)=>a+(parseInt(r.qtd)||0),0);
+    const ret = rows.filter(r=>r.disp==="Retrabalho").reduce((a,r)=>a+(parseInt(r.qtd)||0),0);
+    const custo= rows.reduce((a,r)=>a+(parseFloat(r.custo)||0),0);
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total NC</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${ab}</div><div class="kpi-chip-lbl">Abertas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${an}</div><div class="kpi-chip-lbl">Em Análise</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${bl}</div><div class="kpi-chip-lbl">Bloqueadas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${enc}</div><div class="kpi-chip-lbl">Encerradas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${ret}</div><div class="kpi-chip-lbl">Retrabalhos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${suc}</div><div class="kpi-chip-lbl">Sucatas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">R$ ${custo.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="kpi-chip-lbl">Custo</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({num:"NC-001",data:"2026-04-10",origem:"Processo Interno",produto:"Placa Ctrl v2 / Lote 240410",problema:"Solda fria detectada no CI U3",contencao:"Segregação do lote e reinspeção 100%",causa:"Temperatura do forno abaixo do perfil",acao:"Ajuste do perfil de temperatura + validação",qtd:"14",disp:"Retrabalho",status:"Em Análise",resp:"Carlos",prazo:"2026-06-30",custo:"420.00"});
+    addRow({num:"NC-002",data:"2026-05-03",origem:"Reclamação Cliente",produto:"Módulo BT 5.0 / SN-220503",problema:"Falha intermitente no link BT após campo",contencao:"Recall das unidades e substituição",causa:"Em investigação — análise Weibull",acao:"",qtd:"3",disp:"A Definir",status:"Aberta",resp:"Ana",prazo:"2026-07-15",custo:"1200.00"});
+    addRow({num:"NC-003",data:"2026-03-15",origem:"Auditoria",produto:"Processo Geral",problema:"Procedimento de calibração desatualizado",contencao:"Suspensão de uso do instrumento",causa:"Falta de controle no plano de calibração",acao:"Atualização do plano e recalibração",qtd:"1",disp:"Uso Como Está",status:"Encerrada",resp:"Pedro",prazo:"2026-04-30",custo:"0"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

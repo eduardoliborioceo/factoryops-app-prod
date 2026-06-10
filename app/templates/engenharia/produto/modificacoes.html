@@ -1,6 +1,40 @@
 {% extends "layouts/app.html" %}
 {% block title %}Modificações de Projeto — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.mod-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.mod-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.mod-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.mod-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.mod-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.mod-table td input,.mod-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.mod-table td input:focus,.mod-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.st-prop  { background:rgba(13,110,253,0.10);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-rev   { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-aprov { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-impl  { background:rgba(13,202,240,0.12);color:#055160;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-fecha { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-canc  { background:rgba(220,53,69,0.10);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.imp-crit { font-weight:700;color:#dc3545;font-size:0.75rem; }
+.imp-high { font-weight:700;color:#856404;font-size:0.75rem; }
+.imp-low  { font-weight:700;color:#198754;font-size:0.75rem; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .mod-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .mod-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .mod-table th:nth-child(n+7),.mod-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +54,175 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-pencil-square" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>ECN/ECO — controle de engineering change notices e ordens de alteração.</p>
+
+  <div class="mod-card">
+    <div class="mod-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-arrow-repeat text-primary me-1"></i>Engineering Change Management — ECN / ECO · Impacto · Rastreabilidade</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos</option>
+          <option>Proposta</option><option>Em Revisão</option><option>Aprovado</option>
+          <option>Em Implementação</option><option>Fechado</option><option>Cancelado</option>
+        </select>
+        <select id="filterTipo" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos tipos</option>
+          <option>ECN</option><option>ECO</option><option>ECD</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Mudança</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="mod-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:110px;">N° Mudança</th>
+            <th>Tipo</th>
+            <th style="min-width:110px;">Produto(s) Afetado(s)</th>
+            <th style="min-width:130px;">Descrição da Mudança</th>
+            <th style="min-width:100px;">Justificativa</th>
+            <th>Impacto</th>
+            <th>Status</th>
+            <th>Solicitante</th>
+            <th>Aprovador</th>
+            <th>Data Solicitação</th>
+            <th>Data Implementação</th>
+            <th style="min-width:100px;">Documentos Afetados</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div style="padding:10px 18px;font-size:0.72rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      <strong>ECN</strong> Engineering Change Notice — solicitação de mudança &nbsp;|&nbsp;
+      <strong>ECO</strong> Engineering Change Order — ordem aprovada &nbsp;|&nbsp;
+      <strong>ECD</strong> Engineering Change Deviation — desvio temporário
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_modificacoes";
+  const TIPOS   = ["ECN","ECO","ECD"];
+  const IMPACTOS = ["Crítico","Alto","Médio","Baixo"];
+  const STATUS  = ["Proposta","Em Revisão","Aprovado","Em Implementação","Fechado","Cancelado"];
+  const ST_CLS  = {"Proposta":"st-prop","Em Revisão":"st-rev","Aprovado":"st-aprov",
+    "Em Implementação":"st-impl","Fechado":"st-fecha","Cancelado":"st-canc"};
+  const IMP_CLS = {"Crítico":"imp-crit","Alto":"imp-high","Médio":"","Baixo":"imp-low"};
+  let rows = []; let nextId = 1;
+
+  function tipoOpts(sel)   { return TIPOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
+  function impOpts(sel)    { return IMPACTOS.map(i=>`<option${i===sel?" selected":""}>${i}</option>`).join(""); }
+  function stOpts(sel)     { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, num:d.num||`ECN-${new Date().getFullYear()}-${String(id).padStart(3,"0")}`,
+      tipo:d.tipo||"ECN", produto:d.produto||"", descricao:d.descricao||"",
+      justif:d.justif||"", impacto:d.impacto||"Médio", status:d.status||"Proposta",
+      solic:d.solic||"", aprov:d.aprov||"",
+      dataSolic:d.dataSolic||"", dataImpl:d.dataImpl||"", docs:d.docs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fs = document.getElementById("filterStatus").value;
+    const ft = document.getElementById("filterTipo").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fs||r.status===fs)&&(!ft||r.tipo===ft)).forEach(r=>{
+      const today = new Date().toISOString().slice(0,10);
+      const atrasado = r.dataImpl && r.dataImpl < today &&
+        r.status !== "Fechado" && r.status !== "Cancelado";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.num}" onchange="onField(${r.id},'num',this.value)" style="font-weight:700;max-width:130px;"></td>
+        <td>
+          <select onchange="onField(${r.id},'tipo',this.value)">${tipoOpts(r.tipo)}</select>
+          <span style="font-size:0.68rem;font-weight:700;color:#0d6efd;display:block;margin-top:2px;">${r.tipo}</span>
+        </td>
+        <td><input type="text" value="${r.produto}" placeholder="Placa BT v2, Módulo GPS" onchange="onField(${r.id},'produto',this.value)"></td>
+        <td><input type="text" value="${r.descricao}" placeholder="Descrição breve da mudança" onchange="onField(${r.id},'descricao',this.value)"></td>
+        <td><input type="text" value="${r.justif}" placeholder="Motivo / causa raiz" onchange="onField(${r.id},'justif',this.value)"></td>
+        <td>
+          <select onchange="onField(${r.id},'impacto',this.value)">${impOpts(r.impacto)}</select>
+          <span class="${IMP_CLS[r.impacto]||''}" style="display:block;margin-top:2px;">${r.impacto}</span>
+        </td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-prop'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.solic}" placeholder="Solicitante" onchange="onField(${r.id},'solic',this.value)"></td>
+        <td><input type="text" value="${r.aprov}" placeholder="Aprovador" onchange="onField(${r.id},'aprov',this.value)"></td>
+        <td><input type="date" value="${r.dataSolic}" onchange="onField(${r.id},'dataSolic',this.value)" style="font-size:0.75rem;"></td>
+        <td>
+          <input type="date" value="${r.dataImpl}" onchange="onField(${r.id},'dataImpl',this.value)" style="font-size:0.75rem;">
+          ${atrasado?'<span style="font-size:0.65rem;color:#dc3545;font-weight:700;display:block;">Atrasado</span>':''}
+        </td>
+        <td><input type="text" value="${r.docs}" placeholder="BOM, Schematic, FMEA..." onchange="onField(${r.id},'docs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const abertas = rows.filter(r=>!["Fechado","Cancelado"].includes(r.status)).length;
+    const crit    = rows.filter(r=>r.impacto==="Crítico"&&!["Fechado","Cancelado"].includes(r.status)).length;
+    const impl    = rows.filter(r=>r.status==="Em Implementação").length;
+    const fecha   = rows.filter(r=>r.status==="Fechado").length;
+    const today   = new Date().toISOString().slice(0,10);
+    const atras   = rows.filter(r=>r.dataImpl&&r.dataImpl<today&&!["Fechado","Cancelado"].includes(r.status)).length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total EC</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${abertas}</div><div class="kpi-chip-lbl">Em Aberto</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${crit}</div><div class="kpi-chip-lbl">Críticos</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0dcaf0;">${impl}</div><div class="kpi-chip-lbl">Implementando</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${fecha}</div><div class="kpi-chip-lbl">Fechados</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#dc3545;">${atras}</div><div class="kpi-chip-lbl">Atrasados</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({num:"ECN-2026-001",tipo:"ECN",produto:"Placa Controladora v3",descricao:"Substituição capacitor C12 (47µF → 100µF)",justif:"Margem de ripple insuficiente em DVT",impacto:"Alto",status:"Aprovado",solic:"Carlos Mendes",aprov:"Eng. Maria Silva",dataSolic:"2026-05-02",dataImpl:"2026-06-15",docs:"Schematic rev.D, BOM rev.7"});
+    addRow({num:"ECO-2026-002",tipo:"ECO",produto:"Módulo GPS v2",descricao:"Mudança de footprint conector J3",justif:"EOL do componente original",impacto:"Crítico",status:"Em Implementação",solic:"Ana Lima",aprov:"Eng. Pedro Costa",dataSolic:"2026-05-20",dataImpl:"2026-07-01",docs:"PCB layout rev.B, Assembly drawing"});
+    addRow({num:"ECD-2026-003",tipo:"ECD",produto:"Placa Alimentação",descricao:"Uso de resistor 1% (desvio: até dez/2026)",justif:"Ruptura de supply chain",impacto:"Baixo",status:"Fechado",solic:"Maria Silva",aprov:"Eng. Carlos",dataSolic:"2026-04-10",dataImpl:"2026-04-15",docs:"ECD Form 003"});
+    addRow({num:"ECN-2026-004",tipo:"ECN",produto:"Placa BT 5.0",descricao:"Atualização firmware stack BT para v5.3",justif:"Correção de vulnerabilidade CVE-2025-XXXX",impacto:"Médio",status:"Em Revisão",solic:"Pedro Costa",aprov:"—",dataSolic:"2026-06-01",dataImpl:"2026-08-31",docs:"SW Change Log, FMEA rev"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}

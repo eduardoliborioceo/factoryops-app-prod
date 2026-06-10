@@ -1,6 +1,42 @@
 {% extends "layouts/app.html" %}
 {% block title %}Especificações Técnicas — Engenharia{% endblock %}
 
+{% block styles %}
+<style>
+.esp-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px; }
+.esp-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
+.esp-table { width:100%;border-collapse:collapse;font-size:0.82rem; }
+.esp-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 9px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.esp-table td { padding:7px 9px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.esp-table td input,.esp-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.78rem;
+  padding:3px 5px;background:var(--card);color:var(--text);width:100%; }
+.esp-table td input:focus,.esp-table td select:focus { outline:none;border-color:#0d6efd; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:14px 18px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
+.cat-elet { background:rgba(13,110,253,0.10);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cat-mec  { background:rgba(111,66,193,0.10);color:#3d1a78;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cat-func { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cat-amb  { background:rgba(13,202,240,0.10);color:#055160;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.cat-soft { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-vig  { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-obs  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-rev  { background:rgba(13,110,253,0.10);color:#084298;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.st-dep  { background:rgba(220,53,69,0.08);color:#842029;font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:6px; }
+.lim-val { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+.nom-val { font-family:monospace;font-size:0.8rem;font-weight:700;color:#198754; }
+@media print { .no-print { display:none!important; } }
+@media (max-width:767px) {
+  .esp-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
+  .esp-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .esp-table th:nth-child(n+7),.esp-table td:nth-child(n+7) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -20,9 +56,162 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="text-center py-5">
-    <i class="bi bi-file-earmark-ruled" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Datasheet, requisitos elétricos, mecânicos e funcionais por produto.</p>
+
+  <div class="esp-card">
+    <div class="esp-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <span><i class="bi bi-file-text text-primary me-1"></i>Datasheet · Requisitos Elétricos, Mecânicos e Funcionais por Produto</span>
+      </div>
+      <div class="d-flex gap-2 no-print">
+        <button class="btn-header-icon" onclick="window.print()" title="Imprimir"><i class="bi bi-printer"></i></button>
+        <select id="filterCat" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todas categorias</option>
+          <option>Elétrico</option><option>Mecânico</option><option>Funcional</option>
+          <option>Ambiental</option><option>Software</option>
+        </select>
+        <select id="filterSt" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+          <option value="">Todos status</option>
+          <option>Vigente</option><option>Em Revisão</option><option>Obsoleto</option><option>Depreciado</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
+        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Especificação</button>
+      </div>
+    </div>
+    <div class="kpi-strip" id="kpiStrip"></div>
+    <div id="saveMsg" style="font-size:0.8rem;padding:8px 18px;"></div>
+    <div class="table-responsive">
+      <table class="esp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:110px;">Produto</th>
+            <th style="min-width:120px;">Parâmetro</th>
+            <th>Categoria</th>
+            <th>Unidade</th>
+            <th title="Limite Inferior de Especificação">LSL (Min)</th>
+            <th>Nominal</th>
+            <th title="Limite Superior de Especificação">USL (Máx)</th>
+            <th>Tolerância</th>
+            <th>Método de Teste</th>
+            <th>Condições</th>
+            <th>Revisão</th>
+            <th>Status</th>
+            <th style="min-width:100px;">Observações</th>
+            <th class="no-print" style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
+<script>
+(function(){
+  "use strict";
+  const SK = "eng_especificacoes";
+  const CATS   = ["Elétrico","Mecânico","Funcional","Ambiental","Software"];
+  const STATUS = ["Vigente","Em Revisão","Obsoleto","Depreciado"];
+  const CAT_CLS = {"Elétrico":"cat-elet","Mecânico":"cat-mec","Funcional":"cat-func","Ambiental":"cat-amb","Software":"cat-soft"};
+  const ST_CLS  = {"Vigente":"st-vig","Em Revisão":"st-rev","Obsoleto":"st-obs","Depreciado":"st-dep"};
+  let rows = []; let nextId = 1;
+
+  function catOpts(sel) { return CATS.map(c=>`<option${c===sel?" selected":""}>${c}</option>`).join(""); }
+  function stOpts(sel)  { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
+
+  function addRow(d={}) {
+    const id = nextId++;
+    rows.push({id, produto:d.produto||"", param:d.param||"", cat:d.cat||"Elétrico",
+      unid:d.unid||"", lsl:d.lsl||"", nom:d.nom||"", usl:d.usl||"",
+      tol:d.tol||"", metodo:d.metodo||"", cond:d.cond||"",
+      rev:d.rev||"A", status:d.status||"Vigente", obs:d.obs||""});
+    renderTable(); updateKpis();
+  }
+  window.addRow = addRow;
+
+  function removeRow(id) { rows = rows.filter(r=>r.id!==id); renderTable(); updateKpis(); }
+  window.removeRow = removeRow;
+
+  function onField(id, field, val) { const r = rows.find(r=>r.id===id); if(r){ r[field]=val; renderTable(); updateKpis(); } }
+  window.onField = onField;
+
+  function renderTable() {
+    const fc = document.getElementById("filterCat").value;
+    const fs = document.getElementById("filterSt").value;
+    const tbody = document.getElementById("tBody");
+    tbody.innerHTML = "";
+    rows.filter(r=>(!fc||r.cat===fc)&&(!fs||r.status===fs)).forEach(r=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-weight:700;color:var(--text-muted);font-size:0.72rem;">#${r.id}</td>
+        <td><input type="text" value="${r.produto}" placeholder="Placa Ctrl v3" onchange="onField(${r.id},'produto',this.value)" style="font-weight:600;"></td>
+        <td><input type="text" value="${r.param}" placeholder="Tensão de alimentação" onchange="onField(${r.id},'param',this.value)" style="font-weight:600;"></td>
+        <td>
+          <select onchange="onField(${r.id},'cat',this.value)">${catOpts(r.cat)}</select>
+          <span class="${CAT_CLS[r.cat]||''}" style="display:block;margin-top:3px;">${r.cat}</span>
+        </td>
+        <td><input type="text" value="${r.unid}" placeholder="V, A, mm, °C" onchange="onField(${r.id},'unid',this.value)" style="max-width:60px;text-align:center;"></td>
+        <td><input type="text" value="${r.lsl}" placeholder="Min" onchange="onField(${r.id},'lsl',this.value)" class="lim-val" style="max-width:70px;text-align:right;"></td>
+        <td><input type="text" value="${r.nom}" placeholder="Nom" onchange="onField(${r.id},'nom',this.value)" class="nom-val" style="max-width:70px;text-align:center;"></td>
+        <td><input type="text" value="${r.usl}" placeholder="Max" onchange="onField(${r.id},'usl',this.value)" class="lim-val" style="max-width:70px;text-align:left;"></td>
+        <td><input type="text" value="${r.tol}" placeholder="±5%" onchange="onField(${r.id},'tol',this.value)" style="max-width:70px;text-align:center;"></td>
+        <td><input type="text" value="${r.metodo}" placeholder="IEC 61000, ASTM..." onchange="onField(${r.id},'metodo',this.value)"></td>
+        <td><input type="text" value="${r.cond}" placeholder="25°C, 85%UR" onchange="onField(${r.id},'cond',this.value)"></td>
+        <td><input type="text" value="${r.rev}" placeholder="A" onchange="onField(${r.id},'rev',this.value)" style="max-width:40px;text-align:center;font-weight:700;"></td>
+        <td>
+          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
+          <span class="${ST_CLS[r.status]||'st-vig'}" style="display:block;margin-top:3px;">${r.status}</span>
+        </td>
+        <td><input type="text" value="${r.obs}" placeholder="Observações" onchange="onField(${r.id},'obs',this.value)"></td>
+        <td class="no-print" style="text-align:center;">
+          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateKpis() {
+    const vig   = rows.filter(r=>r.status==="Vigente").length;
+    const rev   = rows.filter(r=>r.status==="Em Revisão").length;
+    const obso  = rows.filter(r=>r.status==="Obsoleto"||r.status==="Depreciado").length;
+    const elet  = rows.filter(r=>r.cat==="Elétrico").length;
+    const mec   = rows.filter(r=>r.cat==="Mecânico").length;
+    const func  = rows.filter(r=>r.cat==="Funcional").length;
+    document.getElementById("kpiStrip").innerHTML = `
+      <div class="kpi-chip"><div class="kpi-chip-val">${rows.length}</div><div class="kpi-chip-lbl">Total Specs</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${vig}</div><div class="kpi-chip-lbl">Vigentes</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#856404;">${rev}</div><div class="kpi-chip-lbl">Em Revisão</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:var(--text-muted);">${obso}</div><div class="kpi-chip-lbl">Obsoletas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#0d6efd;">${elet}</div><div class="kpi-chip-lbl">Elétricas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#6f42c1;">${mec}</div><div class="kpi-chip-lbl">Mecânicas</div></div>
+      <div class="kpi-chip"><div class="kpi-chip-val" style="color:#198754;">${func}</div><div class="kpi-chip-lbl">Funcionais</div></div>
+    `;
+  }
+
+  function saveData() {
+    localStorage.setItem(SK, JSON.stringify({rows, nextId}));
+    const m = document.getElementById("saveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveData = saveData;
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK)||"{}");
+      if(d.nextId) nextId = d.nextId;
+      if(d.rows&&d.rows.length){ rows=d.rows; renderTable(); updateKpis(); return; }
+    } catch(e){}
+    addRow({produto:"Placa Controladora v3",param:"Tensão de alimentação",cat:"Elétrico",unid:"V",lsl:"4.75",nom:"5.0",usl:"5.25",tol:"±5%",metodo:"IEC 60068-2-1",cond:"25°C, 50%UR",rev:"C",status:"Vigente"});
+    addRow({produto:"Placa Controladora v3",param:"Corrente máxima",cat:"Elétrico",unid:"mA",lsl:"",nom:"350",usl:"500",tol:"",metodo:"Medição direta",cond:"Carga nominal",rev:"C",status:"Vigente"});
+    addRow({produto:"Placa Controladora v3",param:"Temperatura de operação",cat:"Ambiental",unid:"°C",lsl:"-20",nom:"25",usl:"70",tol:"",metodo:"IEC 60068-2-14",cond:"Ciclo térmico",rev:"B",status:"Vigente"});
+    addRow({produto:"Módulo GPS v2",param:"Sensibilidade de rastreamento",cat:"Funcional",unid:"dBm",lsl:"-165",nom:"",usl:"",tol:"",metodo:"Protocolo NMEA 0183",cond:"Céu aberto",rev:"A",status:"Vigente"});
+    addRow({produto:"Módulo GPS v2",param:"Dimensões PCB",cat:"Mecânico",unid:"mm",lsl:"",nom:"40×30",usl:"",tol:"±0.1",metodo:"Paquímetro digital",cond:"—",rev:"A",status:"Em Revisão"});
+    addRow({produto:"Placa BT 5.0",param:"Alcance RF",cat:"Funcional",unid:"m",lsl:"10",nom:"",usl:"",tol:"",metodo:"Teste campo aberto",cond:"LOS, 0 dBm",rev:"B",status:"Vigente"});
+    updateKpis();
+  });
+})();
+</script>
 {% endblock %}
