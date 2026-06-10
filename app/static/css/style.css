@@ -640,13 +640,27 @@ body.fullscreen-mode .content {
 }
 
 /* =========================
+   HUB NAV ROW — back button inline with tabs
+========================= */
+.hub-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.hub-nav-row .hub-nav {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* =========================
    PAGE ACTION BAR — content-level actions
 ========================= */
 .page-action-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 18px;
+  margin-bottom: 4px;
 }
 
 .page-action-bar .btn-header-icon {

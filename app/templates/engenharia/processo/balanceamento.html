@@ -109,12 +109,6 @@
     <h1 class="page-header-name">Balanceamento de Linha</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
-      <i class="bi bi-printer"></i>
-    </button>
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -127,11 +121,17 @@
 
   <!-- Seleção de Estudo -->
   <div class="bal-card mb-3 no-print">
-    <div class="bal-header">
-      <div>
+    <div class="bal-header" style="display:flex;align-items:center;gap:12px;">
+      <button class="btn-header-icon" onclick="history.back()" title="Voltar">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <div style="flex:1;">
         <div class="bal-header-title">Carregar Estudo de Tempo</div>
         <div class="bal-header-sub">Selecione um estudo existente para calcular o balanceamento</div>
       </div>
+      <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+        <i class="bi bi-printer"></i>
+      </button>
     </div>
     <div class="bal-body">
       <div class="select-area">

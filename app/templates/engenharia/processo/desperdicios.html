@@ -92,12 +92,6 @@
     <h1 class="page-header-name">Redução de Desperdícios</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir avaliação">
-      <i class="bi bi-printer"></i>
-    </button>
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -110,6 +104,19 @@
 
   <!-- Cabeçalho da avaliação -->
   <div class="card border-0 mb-3 no-print" style="background:rgba(13,110,253,0.05);border-radius:12px;padding:14px 18px;">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn-header-icon" onclick="history.back()" title="Voltar">
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <span style="font-size:0.875rem;font-weight:600;color:var(--text);">
+          <i class="bi bi-speedometer2 me-1 text-primary"></i>Identificação da Avaliação
+        </span>
+      </div>
+      <button class="btn-header-icon" onclick="window.print()" title="Imprimir">
+        <i class="bi bi-printer"></i>
+      </button>
+    </div>
     <div class="row g-2 align-items-end">
       <div class="col-12 col-md-4">
         <label class="form-label fw-bold" style="font-size:0.8rem;">Linha / Processo</label>
