@@ -3542,6 +3542,119 @@ def rh_transporte_alocacao():
                            filtro_busca=busca or "")
 
 
+@bp.route("/rh-ops/transporte/distribuidor", methods=["GET"])
+@login_required
+def rh_transporte_distribuidor():
+    from app.repositories import rh_transporte_repository as repo
+    rotas = repo.listar_rotas(ativo=True)
+    departamentos = repo.listar_departamentos_employees()
+    return render_template("rh_ops/transporte/distribuidor.html",
+                           active_menu="rh_transporte_distribuidor",
+                           rotas=rotas,
+                           departamentos=departamentos)
+
+
+@bp.route("/rh-ops/api/transporte/distribuidor/employees", methods=["GET"])
+@login_required
+def rh_api_distribuidor_employees():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    dept = request.args.get("departamento", "").strip() or None
+    apenas_sem_rota = request.args.get("apenas_sem_rota", "").lower() in ("1", "true")
+    employees = repo.listar_employees_para_distribuidor(departamento=dept, apenas_sem_rota=apenas_sem_rota)
+    return jsonify([dict(e) for e in employees])
+
+
+@bp.route("/rh-ops/api/transporte/distribuidor/preview", methods=["POST"])
+@login_required
+def rh_api_distribuidor_preview():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    from app.services import rh_transporte_service as svc
+    d = request.get_json(force=True) or {}
+
+    try:
+        employee_ids = set(int(x) for x in (d.get("employee_ids") or []))
+        rota_ids = set(int(x) for x in (d.get("rota_ids") or []))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Parâmetros inválidos."}), 400
+
+    criterio = (d.get("criterio") or "equilibrado").strip()
+
+    if not employee_ids or not rota_ids:
+        return jsonify({"error": "Selecione pelo menos um colaborador e uma rota."}), 400
+
+    employees = [dict(e) for e in repo.listar_employees_para_distribuidor()
+                 if e['id'] in employee_ids]
+    rotas = [dict(r) for r in repo.listar_rotas()
+             if r['id'] in rota_ids]
+
+    distribuicao = svc.calcular_distribuicao(employees, rotas, criterio)
+
+    resultado = []
+    for rota in rotas:
+        emps = distribuicao.get(rota['id'], [])
+        resultado.append({
+            'rota_id': rota['id'],
+            'codigo': rota['codigo'],
+            'nome': rota['nome'],
+            'turno': rota['turno'],
+            'cor': rota['cor'],
+            'colaboradores': [
+                {
+                    'id': e['id'],
+                    'full_name': e['full_name'],
+                    'department': e['department'],
+                    'employee_code': e['employee_code'],
+                    'geocodificado': bool(e.get('geocodificado')),
+                }
+                for e in emps
+            ],
+            'total': len(emps),
+        })
+
+    return jsonify({'ok': True, 'rotas': resultado, 'total_colaboradores': len(employee_ids)})
+
+
+@bp.route("/rh-ops/api/transporte/distribuidor/aplicar", methods=["POST"])
+@login_required
+def rh_api_distribuidor_aplicar():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+
+    distribuicao = d.get("distribuicao") or []
+    limpar_anterior = bool(d.get("limpar_anterior", False))
+
+    rota_ids_afetados = [int(item['rota_id']) for item in distribuicao if item.get('rota_id')]
+
+    if limpar_anterior and rota_ids_afetados:
+        repo.limpar_colaboradores_rotas(rota_ids_afetados)
+
+    employee_map = {e['id']: e for e in repo.listar_employees_para_distribuidor()}
+
+    alocacoes = []
+    for item in distribuicao:
+        rota_id = int(item['rota_id'])
+        for emp_id in (item.get('employee_ids') or []):
+            emp = employee_map.get(int(emp_id))
+            if not emp:
+                continue
+            alocacoes.append({
+                'rota_id': rota_id,
+                'employee_id': emp['id'],
+                'nome': emp['full_name'],
+                'endereco_rua': emp.get('endereco_rua'),
+                'endereco_numero': emp.get('endereco_numero'),
+                'endereco_bairro': emp.get('endereco_bairro'),
+                'endereco_cidade': emp.get('endereco_cidade') or 'Manaus',
+                'endereco_estado': emp.get('endereco_estado') or 'AM',
+            })
+
+    count = repo.distribuicao_em_massa(alocacoes)
+    return jsonify({'ok': True, 'alocados': count})
+
+
 @bp.route("/rh-ops/transporte/otimizador", methods=["GET"])
 @login_required
 def rh_transporte_otimizador():
