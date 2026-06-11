@@ -3101,7 +3101,194 @@ def rh_transporte_dashboard():
 @bp.route("/rh-ops/transporte/rotas", methods=["GET"])
 @login_required
 def rh_transporte_rotas():
-    return render_template("rh_ops/transporte/rotas.html", active_menu="rh_transporte_rotas")
+    from app.repositories import rh_transporte_repository as repo
+    rotas = repo.listar_rotas()
+    return render_template("rh_ops/transporte/rotas.html",
+                           active_menu="rh_transporte_rotas", rotas=rotas)
+
+
+@bp.route("/rh-ops/transporte/rotas/<int:rota_id>", methods=["GET"])
+@login_required
+def rh_transporte_rota_detalhe(rota_id):
+    import os
+    from flask import abort
+    from app.repositories import rh_transporte_repository as repo
+    rota = repo.buscar_rota(rota_id)
+    if not rota:
+        abort(404)
+    colaboradores = repo.listar_colaboradores_rota(rota_id)
+    ors_disponivel = bool(os.environ.get("ORS_API_KEY"))
+    return render_template("rh_ops/transporte/rota_detalhe.html",
+                           active_menu="rh_transporte_rotas",
+                           rota=rota,
+                           colaboradores=colaboradores,
+                           ors_disponivel=ors_disponivel)
+
+
+# ── Transporte API ──
+
+@bp.route("/rh-ops/api/transporte/rotas", methods=["POST"])
+@login_required
+def rh_api_criar_rota():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    try:
+        rota = repo.criar_rota(
+            codigo=d.get("codigo", "").strip(),
+            nome=d.get("nome", "").strip(),
+            filial=d.get("filial", ""),
+            turno=d.get("turno", "1"),
+            sentido=d.get("sentido", "ambos"),
+            regra_descida=d.get("regra_descida", "agrupado"),
+            veiculo=d.get("veiculo", ""),
+            motorista=d.get("motorista", ""),
+            cor=d.get("cor", "#0d6efd"),
+            partida_nome=d.get("partida_nome", "Venttos — Polo Industrial de Manaus"),
+            partida_lat=d.get("partida_lat"),
+            partida_lng=d.get("partida_lng"),
+        )
+        return jsonify({"ok": True, "rota": dict(rota)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>", methods=["PUT"])
+@login_required
+def rh_api_atualizar_rota(rota_id):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    rota = repo.atualizar_rota(rota_id, **d)
+    if rota is None:
+        return jsonify({"ok": False, "erro": "Rota não encontrada ou sem campos válidos"}), 404
+    return jsonify({"ok": True, "rota": dict(rota)})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>", methods=["DELETE"])
+@login_required
+def rh_api_deletar_rota(rota_id):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    ok = repo.deletar_rota(rota_id)
+    return jsonify({"ok": ok})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/colaboradores", methods=["GET"])
+@login_required
+def rh_api_listar_colaboradores(rota_id):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    colabs = repo.listar_colaboradores_rota(rota_id)
+    return jsonify([dict(c) for c in colabs])
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/colaboradores", methods=["POST"])
+@login_required
+def rh_api_adicionar_colaborador(rota_id):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    try:
+        colab = repo.adicionar_colaborador(
+            rota_id=rota_id,
+            employee_id=d.get("employee_id"),
+            nome=d.get("nome", "").strip(),
+            rua=d.get("endereco_rua", ""),
+            numero=d.get("endereco_numero", ""),
+            bairro=d.get("endereco_bairro", ""),
+            cidade=d.get("endereco_cidade", "Manaus"),
+            estado=d.get("endereco_estado", "AM"),
+            tipo_parada=d.get("tipo_parada", "embarque_descida"),
+            observacao=d.get("observacao", ""),
+        )
+        return jsonify({"ok": True, "colaborador": dict(colab)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@bp.route("/rh-ops/api/transporte/colaboradores/<int:colab_id>", methods=["PUT"])
+@login_required
+def rh_api_atualizar_colaborador(colab_id):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    colab = repo.atualizar_colaborador(colab_id, **d)
+    if colab is None:
+        return jsonify({"ok": False, "erro": "Colaborador não encontrado"}), 404
+    return jsonify({"ok": True, "colaborador": dict(colab)})
+
+
+@bp.route("/rh-ops/api/transporte/colaboradores/<int:colab_id>", methods=["DELETE"])
+@login_required
+def rh_api_remover_colaborador(colab_id):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    ok = repo.remover_colaborador(colab_id)
+    return jsonify({"ok": ok})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/ordem", methods=["POST"])
+@login_required
+def rh_api_atualizar_ordem(rota_id):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    ids = d.get("ordem", [])
+    if not isinstance(ids, list):
+        return jsonify({"ok": False, "erro": "Formato inválido"}), 400
+    repo.atualizar_ordem(rota_id, ids)
+    return jsonify({"ok": True})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/otimizar", methods=["POST"])
+@login_required
+def rh_api_otimizar_rota(rota_id):
+    from flask import jsonify
+    from app.services import rh_transporte_service as svc
+    ordem = svc.otimizar_rota(rota_id)
+    if ordem is None:
+        return jsonify({"ok": False, "erro": "Otimização indisponível. Verifique ORS_API_KEY e geocodificação."}), 400
+    return jsonify({"ok": True, "ordem": ordem})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/trajeto", methods=["POST"])
+@login_required
+def rh_api_calcular_trajeto(rota_id):
+    from flask import jsonify
+    from app.services import rh_transporte_service as svc
+    geojson = svc.calcular_trajeto(rota_id)
+    if geojson is None:
+        return jsonify({"ok": False, "erro": "Trajeto indisponível. Verifique ORS_API_KEY e geocodificação."}), 400
+    return jsonify({"ok": True, "geojson": geojson})
+
+
+@bp.route("/rh-ops/api/transporte/geocode", methods=["GET"])
+@login_required
+def rh_api_geocode():
+    from flask import request, jsonify
+    from app.services import rh_transporte_service as svc
+    q = request.args.get("q", "").strip()
+    cidade = request.args.get("cidade", "Manaus")
+    estado = request.args.get("estado", "AM")
+    if not q:
+        return jsonify({"ok": False, "erro": "Endereço vazio"}), 400
+    result = svc.geocodificar(q, cidade, estado)
+    if result:
+        return jsonify({"ok": True, **result})
+    return jsonify({"ok": False, "erro": "Endereço não encontrado"}), 404
+
+
+@bp.route("/rh-ops/api/transporte/employees/buscar", methods=["GET"])
+@login_required
+def rh_api_buscar_employees():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    q = request.args.get("q", "").strip()
+    if len(q) < 2:
+        return jsonify([])
+    employees = repo.buscar_employees(q)
+    return jsonify([dict(e) for e in employees])
 
 
 @bp.route("/rh-ops/transporte/veiculos", methods=["GET"])

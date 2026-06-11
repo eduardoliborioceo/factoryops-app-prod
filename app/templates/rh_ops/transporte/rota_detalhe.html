@@ -1,0 +1,758 @@
+{% extends "layouts/app.html" %}
+{% block title %}{{ rota.nome }} — Rotas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+.rota-layout {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - var(--header-height) - 130px);
+}
+.rota-panel-left {
+  width: 360px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.rota-panel-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+#map { flex: 1; border-radius: 12px; border: 1px solid var(--border); min-height: 300px; }
+
+.panel-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.panel-card-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+  background: rgba(15,23,42,0.02);
+}
+.panel-card-body { overflow-y: auto; flex: 1; }
+
+/* Collaborator list */
+.colab-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  cursor: grab; background: var(--card); transition: background 0.1s;
+}
+.colab-item:last-child { border-bottom: none; }
+.colab-item:hover { background: rgba(15,23,42,0.025); }
+.colab-item.sortable-ghost { opacity: 0.4; }
+.colab-item.sortable-chosen { background: rgba(13,110,253,0.06); }
+.colab-num {
+  width: 24px; height: 24px; border-radius: 50%; background: var(--primary);
+  color: #fff; font-size: 0.7rem; font-weight: 800; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.colab-num.no-geo { background: #adb5bd; }
+.colab-body { flex: 1; min-width: 0; }
+.colab-nome { font-size: 0.875rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.colab-addr { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.colab-geo-warn { font-size: 0.65rem; color: #fd7e14; font-weight: 700; }
+.colab-del {
+  background: none; border: none; color: #adb5bd; cursor: pointer;
+  padding: 4px 6px; border-radius: 6px; flex-shrink: 0; line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+.colab-del:hover { color: #dc3545; background: rgba(220,53,69,0.08); }
+
+/* Add form */
+.add-form-wrap {
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.add-form-toggle {
+  width: 100%; background: none; border: none; padding: 10px 14px;
+  font-size: 0.8rem; font-weight: 700; color: var(--primary);
+  text-align: left; cursor: pointer; display: flex; align-items: center; gap-6px;
+}
+.add-form-toggle:hover { background: rgba(13,110,253,0.04); }
+.add-form-body { padding: 12px 14px; display: none; background: rgba(15,23,42,0.015); }
+.add-form-body.open { display: block; }
+
+/* Search dropdown */
+.search-wrap { position: relative; }
+.search-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 1000;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.12); max-height: 200px; overflow-y: auto;
+  margin-top: 2px;
+}
+.search-item {
+  padding: 8px 12px; cursor: pointer; font-size: 0.82rem; border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background: rgba(13,110,253,0.06); }
+
+/* Map action bar */
+.map-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0;
+}
+
+/* Status strip */
+.geo-status {
+  font-size: 0.75rem; color: var(--text-muted); padding: 4px 14px 8px;
+  flex-shrink: 0;
+}
+
+/* Custom map pins */
+.rota-pin {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800; color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.rota-pin-depot {
+  width: 34px; height: 34px; background: #0f172a; font-size: 0.9rem;
+}
+
+/* Mobile layout */
+@media (max-width: 767px) {
+  .rota-layout { flex-direction: column; height: auto; }
+  .rota-panel-left { width: 100%; height: auto; max-height: 60vh; }
+  .rota-panel-right { min-height: 350px; }
+  #map { min-height: 350px; flex: none; height: 350px; }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">RH Hub · Transporte · Rotas</span>
+    <h1 class="page-header-name">{{ rota.nome }}</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div id="rotaCtx"
+     data-rota-id="{{ rota.id }}"
+     data-turno="{{ rota.turno }}"
+     data-regra="{{ rota.regra_descida }}"
+     data-cor="{{ rota.cor }}"
+     data-partida-lat="{{ rota.partida_lat or '' }}"
+     data-partida-lng="{{ rota.partida_lng or '' }}"
+     data-partida-nome="{{ rota.partida_nome or '' }}"
+     data-ors="{{ 'true' if ors_disponivel else 'false' }}"
+     data-colabs='{{ colaboradores | tojson }}'
+     style="display:none;">
+</div>
+
+<div class="container-fluid" style="padding-bottom:16px;">
+
+  <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+    <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar às Rotas
+    </a>
+    <span class="badge turno-badge turno-{{ rota.turno }}" style="font-size:0.72rem;padding:4px 10px;">
+      Turno {{ rota.turno }}
+    </span>
+    <span style="font-size:0.8rem;color:var(--text-muted);">
+      {{ rota.regra_descida|replace('_',' ')|title }}
+      {% if rota.veiculo %}&nbsp;·&nbsp;<i class="bi bi-truck-front me-1"></i>{{ rota.veiculo }}{% endif %}
+      {% if rota.motorista %}&nbsp;·&nbsp;<i class="bi bi-person-badge me-1"></i>{{ rota.motorista }}{% endif %}
+    </span>
+    <button class="btn btn-sm btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#modalEditRota">
+      <i class="bi bi-sliders me-1"></i>Configurações
+    </button>
+  </div>
+
+  <div class="rota-layout">
+
+    <!-- Left: collaborator list -->
+    <div class="rota-panel-left">
+      <div class="panel-card">
+        <div class="panel-card-hdr">
+          <span><i class="bi bi-people me-1"></i>Colaboradores <span id="colabCount" class="text-muted fw-normal"></span></span>
+          <button class="btn btn-xs btn-primary" style="font-size:0.75rem;padding:3px 10px;border-radius:6px;"
+                  onclick="toggleAddForm()">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar
+          </button>
+        </div>
+        <div class="geo-status" id="geoStatus"></div>
+        <div class="panel-card-body">
+          <div id="colabList"></div>
+        </div>
+        <div class="add-form-wrap">
+          <div class="add-form-body" id="addFormBody">
+            <div class="row g-2">
+              <!-- Employee search -->
+              <div class="col-12">
+                <label style="font-size:0.78rem;font-weight:600;">Colaborador (buscar da base)</label>
+                <div class="search-wrap">
+                  <input type="text" id="busca" class="form-control form-control-sm" style="border-radius:8px;"
+                         placeholder="Nome ou matrícula…" autocomplete="off"
+                         oninput="onBusca(this.value)">
+                  <div id="buscaDrop" class="search-dropdown" style="display:none;"></div>
+                </div>
+                <input type="hidden" id="selEmployeeId">
+              </div>
+              <div class="col-12">
+                <label style="font-size:0.78rem;font-weight:600;">Nome completo *</label>
+                <input type="text" id="fNome" class="form-control form-control-sm" style="border-radius:8px;"
+                       placeholder="Nome do colaborador">
+              </div>
+              <div class="col-8">
+                <label style="font-size:0.78rem;font-weight:600;">Rua / Av.</label>
+                <input type="text" id="fRua" class="form-control form-control-sm" style="border-radius:8px;"
+                       placeholder="Rua Boa Esperança">
+              </div>
+              <div class="col-4">
+                <label style="font-size:0.78rem;font-weight:600;">Nº</label>
+                <input type="text" id="fNum" class="form-control form-control-sm" style="border-radius:8px;"
+                       placeholder="123">
+              </div>
+              <div class="col-12">
+                <label style="font-size:0.78rem;font-weight:600;">Bairro</label>
+                <input type="text" id="fBairro" class="form-control form-control-sm" style="border-radius:8px;"
+                       placeholder="Compensa">
+              </div>
+              <div class="col-8">
+                <label style="font-size:0.78rem;font-weight:600;">Cidade</label>
+                <input type="text" id="fCidade" class="form-control form-control-sm" style="border-radius:8px;"
+                       value="Manaus">
+              </div>
+              <div class="col-4">
+                <label style="font-size:0.78rem;font-weight:600;">UF</label>
+                <input type="text" id="fEstado" class="form-control form-control-sm" style="border-radius:8px;"
+                       value="AM" maxlength="2" oninput="this.value=this.value.toUpperCase()">
+              </div>
+              <div class="col-12">
+                <label style="font-size:0.78rem;font-weight:600;">Tipo de parada</label>
+                <select id="fTipoParada" class="form-select form-select-sm" style="border-radius:8px;">
+                  <option value="embarque_descida">Embarque e Descida</option>
+                  <option value="embarque">Somente Embarque</option>
+                  <option value="descida">Somente Descida</option>
+                </select>
+              </div>
+              <div class="col-12" id="addErro" style="color:#dc3545;font-size:0.78rem;display:none;"></div>
+              <div class="col-12 d-flex gap-2">
+                <button class="btn btn-sm btn-primary flex-fill" onclick="addColab()">
+                  <i class="bi bi-plus-lg me-1"></i>Adicionar
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleAddForm()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Geocoding action -->
+      <div class="d-flex gap-2 mt-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary flex-fill" onclick="geocodificarTodos()" id="btnGeo">
+          <i class="bi bi-geo-alt me-1"></i>Geocodificar endereços
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="loadColabs()" title="Recarregar">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: map -->
+    <div class="rota-panel-right">
+      <div class="map-actions">
+        <button class="btn btn-sm btn-outline-primary" onclick="calcularTrajeto()" id="btnTrajeto">
+          <i class="bi bi-map me-1"></i>Calcular Trajeto
+        </button>
+        <button class="btn btn-sm btn-outline-success" onclick="otimizarRota()" id="btnOtimizar"
+                {% if not ors_disponivel %}disabled title="Configure ORS_API_KEY para habilitar otimização automática"{% endif %}>
+          <i class="bi bi-magic me-1"></i>Otimizar Rota
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="limparTrajeto()">
+          <i class="bi bi-eraser me-1"></i>Limpar
+        </button>
+        <span id="mapStatus" class="ms-auto" style="font-size:0.78rem;color:var(--text-muted);align-self:center;"></span>
+      </div>
+      <div id="map"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Configurações da Rota -->
+<div class="modal fade" id="modalEditRota" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-bold">Configurações da Rota</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          <div class="col-4">
+            <label style="font-size:0.8rem;font-weight:600;">Código</label>
+            <input type="text" class="form-control form-control-sm" id="cfCodigo"
+                   value="{{ rota.codigo }}" style="border-radius:8px;">
+          </div>
+          <div class="col-8">
+            <label style="font-size:0.8rem;font-weight:600;">Nome</label>
+            <input type="text" class="form-control form-control-sm" id="cfNome"
+                   value="{{ rota.nome }}" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Turno</label>
+            <select class="form-select form-select-sm" id="cfTurno" style="border-radius:8px;">
+              <option value="1" {{ 'selected' if rota.turno == '1' }}>Turno 1</option>
+              <option value="2" {{ 'selected' if rota.turno == '2' }}>Turno 2</option>
+              <option value="3" {{ 'selected' if rota.turno == '3' }}>Turno 3</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Regra de descida</label>
+            <select class="form-select form-select-sm" id="cfRegra" style="border-radius:8px;">
+              <option value="agrupado" {{ 'selected' if rota.regra_descida == 'agrupado' }}>Agrupado</option>
+              <option value="porta_a_porta" {{ 'selected' if rota.regra_descida == 'porta_a_porta' }}>Porta a porta</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Veículo</label>
+            <input type="text" class="form-control form-control-sm" id="cfVeiculo"
+                   value="{{ rota.veiculo or '' }}" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Motorista</label>
+            <input type="text" class="form-control form-control-sm" id="cfMotorista"
+                   value="{{ rota.motorista or '' }}" style="border-radius:8px;">
+          </div>
+          <div class="col-12">
+            <label style="font-size:0.8rem;font-weight:600;">Ponto de partida (nome)</label>
+            <input type="text" class="form-control form-control-sm" id="cfPartidaNome"
+                   value="{{ rota.partida_nome or '' }}" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Lat. partida</label>
+            <input type="text" class="form-control form-control-sm" id="cfPartidaLat"
+                   value="{{ rota.partida_lat or '' }}" style="border-radius:8px;"
+                   placeholder="-3.0965">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Lng. partida</label>
+            <input type="text" class="form-control form-control-sm" id="cfPartidaLng"
+                   value="{{ rota.partida_lng or '' }}" style="border-radius:8px;"
+                   placeholder="-60.0208">
+          </div>
+        </div>
+        <div id="cfErro" style="color:#dc3545;font-size:0.8rem;margin-top:8px;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="salvarConfig()">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+.turno-badge { font-size:0.68rem;font-weight:800;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px; }
+.turno-1 { background:rgba(13,110,253,0.12);color:#0a4085; }
+.turno-2 { background:rgba(25,135,84,0.12);color:#0a3622; }
+.turno-3 { background:rgba(111,66,193,0.12);color:#4a2680; }
+</style>
+<script>
+(function () {
+  "use strict";
+
+  const ctx = document.getElementById("rotaCtx").dataset;
+  const ROTA_ID = parseInt(ctx.rotaId);
+  const ROTA_COR = ctx.cor || "#0d6efd";
+  const ORS = ctx.ors === "true";
+
+  let COLABS = JSON.parse(ctx.colabs || "[]");
+  let DEPOT = {
+    lat: parseFloat(ctx.partidaLat) || -3.0965,
+    lng: parseFloat(ctx.partidaLng) || -60.0208,
+    nome: ctx.partidaNome || "Ponto de partida",
+  };
+  let sortable = null;
+  let polylineLayer = null;
+
+  // ── Map ──
+  const MAP = L.map("map").setView([-3.1019, -60.0250], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(MAP);
+
+  let mapMarkers = [];
+  let depotMarker = null;
+
+  function makePin(num, color) {
+    return L.divIcon({
+      className: "",
+      html: `<div class="rota-pin" style="background:${color}">${num}</div>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 28],
+      popupAnchor: [0, -30],
+    });
+  }
+
+  function makeDepotPin() {
+    return L.divIcon({
+      className: "",
+      html: `<div class="rota-pin rota-pin-depot"><i class="bi bi-building" style="font-size:0.85rem;"></i></div>`,
+      iconSize: [34, 34],
+      iconAnchor: [17, 34],
+      popupAnchor: [0, -36],
+    });
+  }
+
+  function rebuildMap() {
+    mapMarkers.forEach(m => m.remove());
+    mapMarkers = [];
+    if (depotMarker) { depotMarker.remove(); depotMarker = null; }
+
+    if (DEPOT.lat && DEPOT.lng) {
+      depotMarker = L.marker([DEPOT.lat, DEPOT.lng], { icon: makeDepotPin() })
+        .bindPopup(`<strong>Ponto de partida</strong><br><small>${DEPOT.nome}</small>`)
+        .addTo(MAP);
+    }
+
+    const bounds = [];
+    if (DEPOT.lat && DEPOT.lng) bounds.push([DEPOT.lat, DEPOT.lng]);
+
+    COLABS.forEach((c, i) => {
+      if (!c.lat || !c.lng) return;
+      const color = c.geocodificado ? ROTA_COR : "#adb5bd";
+      const popup = `<strong>${escHtml(c.nome)}</strong><br>
+        <small>${escHtml(c.endereco_bairro || "")}${c.endereco_cidade ? ", " + escHtml(c.endereco_cidade) : ""}</small><br>
+        <small style="color:#64748b;">${tipoParadaLabel(c.tipo_parada)}</small>`;
+      const m = L.marker([c.lat, c.lng], { icon: makePin(i + 1, color) })
+        .bindPopup(popup)
+        .addTo(MAP);
+      mapMarkers.push(m);
+      bounds.push([c.lat, c.lng]);
+    });
+
+    if (bounds.length > 1) MAP.fitBounds(bounds, { padding: [32, 32] });
+    else if (bounds.length === 1) MAP.setView(bounds[0], 14);
+  }
+
+  function drawPolyline(geojson) {
+    if (polylineLayer) { polylineLayer.remove(); polylineLayer = null; }
+    polylineLayer = L.geoJSON(geojson, {
+      style: { color: ROTA_COR, weight: 4, opacity: 0.75, dashArray: null },
+    }).addTo(MAP);
+    MAP.fitBounds(polylineLayer.getBounds(), { padding: [32, 32] });
+  }
+
+  // ── Collaborator list ──
+  function renderColabs() {
+    const list = document.getElementById("colabList");
+    const countEl = document.getElementById("colabCount");
+    countEl.textContent = `(${COLABS.length})`;
+
+    if (!COLABS.length) {
+      list.innerHTML = `<div class="text-center py-4" style="color:var(--text-muted);font-size:0.82rem;">
+        Nenhum colaborador nesta rota.<br>Clique em Adicionar para começar.</div>`;
+      updateGeoStatus();
+      return;
+    }
+
+    list.innerHTML = COLABS.map((c, i) => `
+      <div class="colab-item" data-id="${c.id}">
+        <div class="colab-num ${c.geocodificado ? "" : "no-geo"}">${i + 1}</div>
+        <div class="colab-body">
+          <div class="colab-nome">${escHtml(c.nome)}</div>
+          <div class="colab-addr">${escHtml([c.endereco_bairro, c.endereco_cidade].filter(Boolean).join(", ") || "Sem endereço")}</div>
+          ${!c.geocodificado ? '<div class="colab-geo-warn"><i class="bi bi-exclamation-triangle me-1"></i>Sem localização</div>' : ""}
+        </div>
+        <button class="colab-del" onclick="removeColab(${c.id})" title="Remover">
+          <i class="bi bi-trash3" style="font-size:0.85rem;"></i>
+        </button>
+      </div>`).join("");
+
+    if (sortable) sortable.destroy();
+    sortable = Sortable.create(list, {
+      animation: 150,
+      handle: ".colab-item",
+      ghostClass: "sortable-ghost",
+      chosenClass: "sortable-chosen",
+      onEnd: saveOrder,
+    });
+
+    updateGeoStatus();
+    rebuildMap();
+  }
+
+  function updateGeoStatus() {
+    const total = COLABS.length;
+    const geo = COLABS.filter(c => c.geocodificado).length;
+    const el = document.getElementById("geoStatus");
+    if (!total) { el.textContent = ""; return; }
+    el.innerHTML = geo === total
+      ? `<i class="bi bi-check-circle text-success me-1"></i>Todos os ${total} endereços geocodificados.`
+      : `<i class="bi bi-geo-alt-fill text-warning me-1"></i>${geo} de ${total} geocodificados.`;
+  }
+
+  async function loadColabs() {
+    const r = await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/colaboradores`);
+    COLABS = await r.json();
+    renderColabs();
+  }
+  window.loadColabs = loadColabs;
+
+  async function saveOrder() {
+    const ids = [...document.getElementById("colabList").querySelectorAll(".colab-item")]
+      .map(el => parseInt(el.dataset.id));
+    await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/ordem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ordem: ids }),
+    });
+    await loadColabs();
+  }
+
+  async function removeColab(id) {
+    if (!confirm("Remover este colaborador da rota?")) return;
+    await fetch(`/rh-ops/api/transporte/colaboradores/${id}`, { method: "DELETE" });
+    await loadColabs();
+  }
+  window.removeColab = removeColab;
+
+  // ── Add form ──
+  function toggleAddForm() {
+    const body = document.getElementById("addFormBody");
+    body.classList.toggle("open");
+    if (body.classList.contains("open")) body.querySelector("input").focus();
+  }
+  window.toggleAddForm = toggleAddForm;
+
+  let buscaTimer = null;
+  function onBusca(val) {
+    clearTimeout(buscaTimer);
+    const drop = document.getElementById("buscaDrop");
+    if (val.length < 2) { drop.style.display = "none"; return; }
+    buscaTimer = setTimeout(async () => {
+      const r = await fetch(`/rh-ops/api/transporte/employees/buscar?q=${encodeURIComponent(val)}`);
+      const employees = await r.json();
+      if (!employees.length) { drop.style.display = "none"; return; }
+      drop.innerHTML = employees.map(e => `
+        <div class="search-item" onclick="selecionarEmployee(${e.id}, ${JSON.stringify(e.full_name)})">
+          <strong>${escHtml(e.full_name)}</strong>
+          <span style="color:var(--text-muted);font-size:0.75rem;"> — ${escHtml(e.employee_code)} · ${escHtml(e.department || "")}</span>
+        </div>`).join("");
+      drop.style.display = "block";
+    }, 280);
+  }
+  window.onBusca = onBusca;
+
+  function selecionarEmployee(id, nome) {
+    document.getElementById("selEmployeeId").value = id;
+    document.getElementById("busca").value = nome;
+    document.getElementById("fNome").value = nome;
+    document.getElementById("buscaDrop").style.display = "none";
+  }
+  window.selecionarEmployee = selecionarEmployee;
+
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".search-wrap")) {
+      document.getElementById("buscaDrop").style.display = "none";
+    }
+  });
+
+  async function addColab() {
+    const nome = document.getElementById("fNome").value.trim();
+    const erroEl = document.getElementById("addErro");
+    erroEl.style.display = "none";
+    if (!nome) {
+      erroEl.textContent = "Nome é obrigatório.";
+      erroEl.style.display = "block";
+      return;
+    }
+    const payload = {
+      employee_id: parseInt(document.getElementById("selEmployeeId").value) || null,
+      nome,
+      endereco_rua: document.getElementById("fRua").value.trim(),
+      endereco_numero: document.getElementById("fNum").value.trim(),
+      endereco_bairro: document.getElementById("fBairro").value.trim(),
+      endereco_cidade: document.getElementById("fCidade").value.trim() || "Manaus",
+      endereco_estado: document.getElementById("fEstado").value.trim() || "AM",
+      tipo_parada: document.getElementById("fTipoParada").value,
+    };
+    try {
+      const r = await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/colaboradores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro || "Erro ao adicionar.");
+      ["busca","fNome","fRua","fNum","fBairro"].forEach(id => { document.getElementById(id).value = ""; });
+      document.getElementById("selEmployeeId").value = "";
+      await loadColabs();
+      toggleAddForm();
+    } catch (e) {
+      erroEl.textContent = e.message;
+      erroEl.style.display = "block";
+    }
+  }
+  window.addColab = addColab;
+
+  // ── Geocoding ──
+  async function geocodificarTodos() {
+    const pendentes = COLABS.filter(c => !c.geocodificado && (c.endereco_rua || c.endereco_bairro));
+    if (!pendentes.length) {
+      setMapStatus("Nenhum endereço pendente de geocodificação.");
+      return;
+    }
+    const btn = document.getElementById("btnGeo");
+    btn.disabled = true;
+    let ok = 0;
+    for (const c of pendentes) {
+      const partes = [c.endereco_rua, c.endereco_numero, c.endereco_bairro].filter(Boolean).join(", ");
+      setMapStatus(`Geocodificando ${escHtml(c.nome)}…`);
+      try {
+        const r = await fetch(
+          `/rh-ops/api/transporte/geocode?q=${encodeURIComponent(partes)}&cidade=${encodeURIComponent(c.endereco_cidade || "Manaus")}&estado=${encodeURIComponent(c.endereco_estado || "AM")}`
+        );
+        const data = await r.json();
+        if (data.ok) {
+          await fetch(`/rh-ops/api/transporte/colaboradores/${c.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lat: data.lat, lng: data.lng, geocodificado: true }),
+          });
+          ok++;
+        }
+      } catch (_) {}
+      await delay(1100);
+    }
+    await loadColabs();
+    setMapStatus(`Geocodificados ${ok} de ${pendentes.length} endereços.`);
+    btn.disabled = false;
+  }
+  window.geocodificarTodos = geocodificarTodos;
+
+  // ── Route optimization ──
+  async function otimizarRota() {
+    const btn = document.getElementById("btnOtimizar");
+    btn.disabled = true;
+    setMapStatus("Otimizando rota…");
+    try {
+      const r = await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/otimizar`, { method: "POST" });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro);
+      const ordem = data.ordem;
+      await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/ordem`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ordem }),
+      });
+      await loadColabs();
+      setMapStatus("Rota otimizada com sucesso.");
+    } catch (e) {
+      setMapStatus(`Erro: ${e.message}`);
+    } finally {
+      btn.disabled = !ORS;
+    }
+  }
+  window.otimizarRota = otimizarRota;
+
+  // ── Trajectory ──
+  async function calcularTrajeto() {
+    const btn = document.getElementById("btnTrajeto");
+    btn.disabled = true;
+    setMapStatus("Calculando trajeto…");
+    try {
+      const r = await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}/trajeto`, { method: "POST" });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro);
+      drawPolyline(data.geojson);
+      setMapStatus("Trajeto calculado.");
+    } catch (e) {
+      setMapStatus(`Erro: ${e.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  window.calcularTrajeto = calcularTrajeto;
+
+  function limparTrajeto() {
+    if (polylineLayer) { polylineLayer.remove(); polylineLayer = null; }
+    setMapStatus("");
+  }
+  window.limparTrajeto = limparTrajeto;
+
+  // ── Config save ──
+  async function salvarConfig() {
+    const erroEl = document.getElementById("cfErro");
+    erroEl.style.display = "none";
+    const payload = {
+      codigo: document.getElementById("cfCodigo").value.trim(),
+      nome: document.getElementById("cfNome").value.trim(),
+      turno: document.getElementById("cfTurno").value,
+      regra_descida: document.getElementById("cfRegra").value,
+      veiculo: document.getElementById("cfVeiculo").value.trim(),
+      motorista: document.getElementById("cfMotorista").value.trim(),
+      partida_nome: document.getElementById("cfPartidaNome").value.trim(),
+      partida_lat: parseFloat(document.getElementById("cfPartidaLat").value) || null,
+      partida_lng: parseFloat(document.getElementById("cfPartidaLng").value) || null,
+    };
+    try {
+      const r = await fetch(`/rh-ops/api/transporte/rotas/${ROTA_ID}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro || "Erro ao salvar.");
+      location.reload();
+    } catch (e) {
+      erroEl.textContent = e.message;
+      erroEl.style.display = "block";
+    }
+  }
+  window.salvarConfig = salvarConfig;
+
+  // ── Helpers ──
+  function setMapStatus(msg) {
+    document.getElementById("mapStatus").textContent = msg;
+  }
+
+  function delay(ms) {
+    return new Promise(res => setTimeout(res, ms));
+  }
+
+  function escHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function tipoParadaLabel(tipo) {
+    const m = { embarque_descida: "Embarque e Descida", embarque: "Embarque", descida: "Descida" };
+    return m[tipo] || tipo;
+  }
+
+  // ── Init ──
+  document.addEventListener("DOMContentLoaded", () => {
+    renderColabs();
+  });
+})();
+</script>
+{% endblock %}
