@@ -3306,7 +3306,14 @@ def rh_transporte_alocacao():
 @bp.route("/rh-ops/transporte/otimizador", methods=["GET"])
 @login_required
 def rh_transporte_otimizador():
-    return render_template("rh_ops/transporte/otimizador.html", active_menu="rh_transporte_otimizador")
+    import os
+    from app.repositories import rh_transporte_repository as repo
+    rotas = repo.listar_rotas(ativo=True)
+    ors_disponivel = bool(os.environ.get("ORS_API_KEY"))
+    return render_template("rh_ops/transporte/otimizador.html",
+                           active_menu="rh_transporte_otimizador",
+                           rotas=rotas,
+                           ors_disponivel=ors_disponivel)
 
 
 @bp.route("/rh-ops/transporte/configuracoes", methods=["GET"])

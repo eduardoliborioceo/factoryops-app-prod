@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Otimizador de Rotas</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -16,16 +19,512 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid ot-wrap" data-ors="{{ 'true' if ors_disponivel else 'false' }}">
 
-  <div class="mb-3">
-    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
-    </a>
+  {% if not ors_disponivel %}
+  <div class="alert alert-warning d-flex align-items-center gap-2 mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+    <div>
+      <strong>ORS_API_KEY não configurada.</strong>
+      Otimização e cálculo de trajeto estarão desabilitados.
+      Configure a variável de ambiente <code>ORS_API_KEY</code> para ativar.
+      Crie uma conta gratuita em <strong>openrouteservice.org</strong> (2 000 req/dia gratuitos).
+    </div>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-map" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Geração de trajeto otimizado via OpenRouteService com aplicação das regras por turno.</p>
+  {% endif %}
+
+  {% if not rotas %}
+  <div class="ot-empty">
+    <i class="bi bi-signpost-split"></i>
+    <p>Nenhuma rota ativa encontrada.<br>
+      <a href="{{ url_for('pages.rh_transporte_rotas') }}">Criar uma rota</a> para usar o otimizador.
+    </p>
   </div>
+  {% else %}
+
+  <div class="ot-layout">
+
+    <!-- Painel Esquerdo: Seletor + Colaboradores -->
+    <div class="ot-panel">
+      <div class="ot-section">
+        <label class="ot-section-title">Selecionar Rota</label>
+        <select id="rotaSelect" class="form-select form-select-sm">
+          <option value="">— Escolha uma rota —</option>
+          {% for t in ['1','2','3'] %}
+          {% set turno_rotas = rotas | selectattr('turno', 'equalto', t) | list %}
+          {% if turno_rotas %}
+          <optgroup label="Turno {{ t }}">
+            {% for r in turno_rotas %}
+            <option value="{{ r.id }}"
+                    data-nome="{{ r.nome }}"
+                    data-turno="{{ r.turno }}"
+                    data-cor="{{ r.cor or '#6c757d' }}"
+                    data-lat="{{ r.partida_lat or '' }}"
+                    data-lng="{{ r.partida_lng or '' }}">
+              {{ r.codigo }} — {{ r.nome }} ({{ r.total_colaboradores }} colab.)
+            </option>
+            {% endfor %}
+          </optgroup>
+          {% endif %}
+          {% endfor %}
+          {% set sem_turno = rotas | selectattr('turno', 'none') | list %}
+          {% for r in rotas %}{% if r.turno not in ['1','2','3'] %}
+          <option value="{{ r.id }}"
+                  data-nome="{{ r.nome }}"
+                  data-turno="{{ r.turno }}"
+                  data-cor="{{ r.cor or '#6c757d' }}"
+                  data-lat="{{ r.partida_lat or '' }}"
+                  data-lng="{{ r.partida_lng or '' }}">
+            {{ r.codigo }} — {{ r.nome }} ({{ r.total_colaboradores }} colab.)
+          </option>
+          {% endif %}{% endfor %}
+        </select>
+      </div>
+
+      <div id="rotaInfo" class="ot-rota-info d-none">
+        <div class="ot-rota-badge">
+          <span id="rotaBadgeTurno" class="ot-turno-pip"></span>
+          <div>
+            <span id="rotaNome" class="ot-rota-nome"></span>
+            <span id="rotaStats" class="ot-rota-stats"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="ot-actions" id="otActions" style="display:none">
+        <button class="btn btn-sm btn-outline-secondary" id="btnCarregarTrajeto"
+                {% if not ors_disponivel %}disabled title="ORS_API_KEY não configurada"{% endif %}>
+          <i class="bi bi-map me-1"></i>Ver Trajeto Atual
+        </button>
+        <button class="btn btn-sm btn-primary" id="btnOtimizar"
+                {% if not ors_disponivel %}disabled title="ORS_API_KEY não configurada"{% endif %}>
+          <i class="bi bi-magic me-1"></i>Otimizar Rota
+          <span id="otimizarSpin" class="spinner-border spinner-border-sm ms-1 d-none"></span>
+        </button>
+      </div>
+
+      <!-- Lista de Colaboradores -->
+      <div id="colabSection" class="ot-colab-section" style="display:none">
+        <div class="ot-section-hd">
+          <span class="ot-section-title">Colaboradores</span>
+          <span id="colabCount" class="ot-section-badge"></span>
+        </div>
+        <div id="colabList" class="ot-colab-list"></div>
+      </div>
+
+      <!-- Preview Ordem Otimizada -->
+      <div id="previewSection" class="ot-preview-section" style="display:none">
+        <div class="ot-section-hd">
+          <span class="ot-section-title ot-title-success">
+            <i class="bi bi-check2-circle me-1"></i>Ordem Otimizada
+          </span>
+        </div>
+        <p class="ot-preview-hint">A ordem abaixo foi calculada pelo algoritmo VRP do OpenRouteService.</p>
+        <div id="previewList" class="ot-colab-list"></div>
+        <div class="ot-preview-actions">
+          <button class="btn btn-sm btn-outline-secondary" id="btnDescartar">
+            <i class="bi bi-x-lg me-1"></i>Descartar
+          </button>
+          <button class="btn btn-sm btn-success" id="btnAplicar">
+            <i class="bi bi-save me-1"></i>Aplicar e Salvar
+            <span id="aplicarSpin" class="spinner-border spinner-border-sm ms-1 d-none"></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="ot-msg" class="ot-msg d-none"></div>
+
+    </div>
+
+    <!-- Mapa -->
+    <div class="ot-map-wrap">
+      <div id="otMap" class="ot-map"></div>
+      <div class="ot-map-legend" id="mapLegend" style="display:none">
+        <span class="ot-legend-item"><span class="ot-legend-dot" style="background:#0d6efd"></span>Partida</span>
+        <span class="ot-legend-item"><span class="ot-legend-dot" style="background:#198754"></span>Parada</span>
+        <span class="ot-legend-item"><span class="ot-legend-dot" style="background:#6f42c1"></span>Otimizado</span>
+      </div>
+    </div>
+
+  </div>
+
+  {% endif %}
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+.ot-wrap { padding-bottom: 2rem; }
+.ot-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-muted);
+}
+.ot-empty i { display: block; font-size: 2.5rem; opacity: .2; margin-bottom: 12px; }
+.ot-empty p { font-size: .875rem; margin: 0; }
+
+.ot-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  min-height: 600px;
+}
+@media (max-width: 767px) {
+  .ot-layout { grid-template-columns: 1fr; }
+}
+
+/* Painel */
+.ot-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+.ot-section-title {
+  display: block;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.ot-title-success { color: #198754 !important; }
+
+.ot-rota-info {
+  background: rgba(15,23,42,.03);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ot-rota-badge { display: flex; align-items: center; gap: 10px; }
+.ot-turno-pip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px;
+  font-size: .72rem; font-weight: 800; flex-shrink: 0;
+}
+.ot-turno-pip-1 { background: rgba(13,110,253,.12); color: #0d6efd; }
+.ot-turno-pip-2 { background: rgba(25,135,84,.12);  color: #198754; }
+.ot-turno-pip-3 { background: rgba(111,66,193,.12); color: #6f42c1; }
+.ot-rota-nome { display: block; font-size: .875rem; font-weight: 700; color: var(--text); }
+.ot-rota-stats { display: block; font-size: .72rem; color: var(--text-muted); }
+
+.ot-actions {
+  display: flex;
+  gap: 8px;
+}
+.ot-actions .btn { flex: 1; }
+
+.ot-section-hd { display: flex; align-items: center; justify-content: space-between; }
+.ot-section-badge {
+  font-size: .68rem; font-weight: 700;
+  background: rgba(13,110,253,.1); color: #0d6efd;
+  padding: 2px 8px; border-radius: 10px;
+}
+
+.ot-colab-list { display: flex; flex-direction: column; gap: 6px; }
+.ot-colab-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.ot-colab-row--otimizado { background: rgba(25,135,84,.04); border-color: rgba(25,135,84,.2); }
+.ot-colab-num {
+  min-width: 22px; height: 22px;
+  background: rgba(15,23,42,.08); border-radius: 50%;
+  font-size: .68rem; font-weight: 800; color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ot-colab-num--otimizado { background: rgba(25,135,84,.15); color: #198754; }
+.ot-colab-info { flex: 1; min-width: 0; }
+.ot-colab-nome { display: block; font-size: .78rem; font-weight: 600; color: var(--text); }
+.ot-colab-addr { display: block; font-size: .68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ot-geo-ok   { font-size: .68rem; color: #198754; }
+.ot-geo-warn { font-size: .68rem; color: #b58c00; }
+
+.ot-preview-hint { font-size: .75rem; color: var(--text-muted); margin: 0 0 8px; }
+.ot-preview-actions { display: flex; gap: 8px; margin-top: 10px; }
+.ot-preview-actions .btn { flex: 1; }
+
+.ot-msg {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.ot-msg-ok    { background: rgba(25,135,84,.1); color: #198754; }
+.ot-msg-err   { background: rgba(220,53,69,.08); color: #dc3545; }
+.ot-msg-info  { background: rgba(13,110,253,.08); color: #0d6efd; }
+
+/* Map */
+.ot-map-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ot-map { width: 100%; height: 100%; min-height: 500px; }
+@media (max-width: 767px) { .ot-map { min-height: 340px; } }
+
+.ot-map-legend {
+  position: absolute;
+  bottom: 20px; right: 12px;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 5px;
+  z-index: 1000;
+}
+.ot-legend-item { font-size: .72rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.ot-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+
+<script>
+const ORS_DISPONIVEL = document.querySelector('.ot-wrap').dataset.ors === 'true';
+
+const map = L.map('otMap').setView([-3.1019, -60.025], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18,
+}).addTo(map);
+
+let currentRotaId = null;
+let currentColabs = [];
+let optimizedOrder = [];
+let markers = [];
+let trajLayer = null;
+
+const rotaSelect  = document.getElementById('rotaSelect');
+const rotaInfo    = document.getElementById('rotaInfo');
+const otActions   = document.getElementById('otActions');
+const colabSection = document.getElementById('colabSection');
+const previewSection = document.getElementById('previewSection');
+
+rotaSelect.addEventListener('change', async function () {
+  const id = parseInt(this.value);
+  if (!id) {
+    clearAll();
+    return;
+  }
+  const opt = this.options[this.selectedIndex];
+  currentRotaId = id;
+  optimizedOrder = [];
+
+  const turno = opt.dataset.turno;
+  const pipEl = document.getElementById('rotaBadgeTurno');
+  pipEl.textContent = `T${turno}`;
+  pipEl.className = `ot-turno-pip ot-turno-pip-${turno}`;
+  document.getElementById('rotaNome').textContent = opt.dataset.nome;
+  rotaInfo.classList.remove('d-none');
+
+  clearMarkers();
+  if (trajLayer) { map.removeLayer(trajLayer); trajLayer = null; }
+  previewSection.style.display = 'none';
+  hideMsg();
+
+  await carregarColaboradores(id);
+  otActions.style.display = 'flex';
+});
+
+async function carregarColaboradores(rotaId) {
+  try {
+    const res = await fetch(`/rh-ops/api/transporte/rotas/${rotaId}/colaboradores`);
+    const data = await res.json();
+    currentColabs = data;
+    renderColabs(data, false);
+    document.getElementById('colabCount').textContent = `${data.length}`;
+    colabSection.style.display = '';
+    document.getElementById('rotaStats').textContent = `${data.length} colaborador${data.length !== 1 ? 'es' : ''} · ${data.filter(c => c.geocodificado).length} geocodificados`;
+    plotMarkers(data, false);
+    document.getElementById('mapLegend').style.display = '';
+  } catch (e) {
+    showMsg('Erro ao carregar colaboradores.', 'err');
+  }
+}
+
+function renderColabs(colabs, isOtimizado) {
+  const container = isOtimizado ? document.getElementById('previewList') : document.getElementById('colabList');
+  container.innerHTML = colabs.map((c, i) => `
+    <div class="ot-colab-row ${isOtimizado ? 'ot-colab-row--otimizado' : ''}">
+      <span class="ot-colab-num ${isOtimizado ? 'ot-colab-num--otimizado' : ''}">${i + 1}</span>
+      <div class="ot-colab-info">
+        <span class="ot-colab-nome">${escHtml(c.nome)}</span>
+        <span class="ot-colab-addr">${escHtml(c.endereco_bairro || c.endereco_rua || '—')}</span>
+      </div>
+      ${c.geocodificado
+        ? '<span class="ot-geo-ok"><i class="bi bi-geo-alt-fill"></i></span>'
+        : '<span class="ot-geo-warn" title="Sem geocodificação"><i class="bi bi-geo-alt"></i></span>'}
+    </div>
+  `).join('');
+}
+
+function plotMarkers(colabs, isOtimizado) {
+  clearMarkers();
+  const opt = rotaSelect.options[rotaSelect.selectedIndex];
+  const depotLat = parseFloat(opt.dataset.lat);
+  const depotLng = parseFloat(opt.dataset.lng);
+  const cor = opt.dataset.cor || '#0d6efd';
+
+  if (depotLat && depotLng) {
+    const m = L.circleMarker([depotLat, depotLng], {
+      radius: 10, color: '#0d6efd', fillColor: '#0d6efd', fillOpacity: .9, weight: 2
+    }).addTo(map).bindPopup('<b>Ponto de Partida</b>');
+    markers.push(m);
+  }
+
+  const geocoded = colabs.filter(c => c.lat && c.lng);
+  geocoded.forEach((c, i) => {
+    const fillColor = isOtimizado ? '#6f42c1' : '#198754';
+    const m = L.circleMarker([c.lat, c.lng], {
+      radius: 8, color: fillColor, fillColor, fillOpacity: .85, weight: 2
+    }).addTo(map).bindPopup(`<b>${i + 1}. ${c.nome}</b><br>${c.endereco_bairro || ''}`);
+    markers.push(m);
+  });
+
+  if (geocoded.length > 0) {
+    const all = geocoded.map(c => [c.lat, c.lng]);
+    if (depotLat && depotLng) all.unshift([depotLat, depotLng]);
+    map.fitBounds(L.latLngBounds(all).pad(0.15));
+  }
+}
+
+function clearMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+}
+
+document.getElementById('btnOtimizar').addEventListener('click', async () => {
+  if (!currentRotaId) return;
+  const notGeocoded = currentColabs.filter(c => !c.geocodificado).length;
+  if (notGeocoded > 0) {
+    showMsg(`${notGeocoded} colaborador(es) sem geocodificação. Geocodifique-os na página da rota antes de otimizar.`, 'err');
+    return;
+  }
+  setBusy('otimizar', true);
+  hideMsg();
+  try {
+    const res = await fetch(`/rh-ops/api/transporte/rotas/${currentRotaId}/otimizar`, { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) { showMsg(data.erro || 'Erro ao otimizar.', 'err'); return; }
+
+    const idMap = {};
+    currentColabs.forEach(c => { idMap[c.id] = c; });
+    optimizedOrder = data.ordem.map(id => idMap[id]).filter(Boolean);
+
+    renderColabs(optimizedOrder, true);
+    plotMarkers(optimizedOrder, true);
+    previewSection.style.display = '';
+    showMsg('Otimização concluída! Revise a ordem abaixo e salve se estiver correto.', 'ok');
+
+    if (ORS_DISPONIVEL) loadTrajeto();
+  } catch (e) {
+    showMsg('Erro de comunicação.', 'err');
+  } finally {
+    setBusy('otimizar', false);
+  }
+});
+
+document.getElementById('btnCarregarTrajeto').addEventListener('click', async () => {
+  if (!currentRotaId) return;
+  await loadTrajeto();
+});
+
+async function loadTrajeto() {
+  try {
+    const res = await fetch(`/rh-ops/api/transporte/rotas/${currentRotaId}/trajeto`, { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) { showMsg(data.erro, 'err'); return; }
+    if (trajLayer) map.removeLayer(trajLayer);
+    trajLayer = L.geoJSON(data.geojson, {
+      style: { color: '#0d6efd', weight: 3.5, opacity: .75 }
+    }).addTo(map);
+  } catch (e) {
+    showMsg('Erro ao carregar trajeto.', 'err');
+  }
+}
+
+document.getElementById('btnAplicar').addEventListener('click', async () => {
+  if (!currentRotaId || optimizedOrder.length === 0) return;
+  setBusy('aplicar', true);
+  try {
+    const res = await fetch(`/rh-ops/api/transporte/rotas/${currentRotaId}/ordem`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ordem: optimizedOrder.map(c => c.id) })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showMsg('Ordem aplicada com sucesso!', 'ok');
+      currentColabs = [...optimizedOrder];
+      renderColabs(currentColabs, false);
+      previewSection.style.display = 'none';
+      optimizedOrder = [];
+    } else {
+      showMsg('Erro ao salvar ordem.', 'err');
+    }
+  } catch (e) {
+    showMsg('Erro de comunicação.', 'err');
+  } finally {
+    setBusy('aplicar', false);
+  }
+});
+
+document.getElementById('btnDescartar').addEventListener('click', () => {
+  previewSection.style.display = 'none';
+  optimizedOrder = [];
+  plotMarkers(currentColabs, false);
+  hideMsg();
+});
+
+function clearAll() {
+  currentRotaId = null;
+  currentColabs = [];
+  optimizedOrder = [];
+  clearMarkers();
+  if (trajLayer) { map.removeLayer(trajLayer); trajLayer = null; }
+  rotaInfo.classList.add('d-none');
+  otActions.style.display = 'none';
+  colabSection.style.display = 'none';
+  previewSection.style.display = 'none';
+  document.getElementById('mapLegend').style.display = 'none';
+  hideMsg();
+}
+
+function showMsg(txt, type) {
+  const el = document.getElementById('ot-msg');
+  el.textContent = txt;
+  el.className = `ot-msg ot-msg-${type}`;
+  el.classList.remove('d-none');
+}
+function hideMsg() { document.getElementById('ot-msg').classList.add('d-none'); }
+
+function setBusy(which, on) {
+  if (which === 'otimizar') {
+    document.getElementById('btnOtimizar').disabled = on;
+    document.getElementById('otimizarSpin').classList.toggle('d-none', !on);
+  } else {
+    document.getElementById('btnAplicar').disabled = on;
+    document.getElementById('aplicarSpin').classList.toggle('d-none', !on);
+  }
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
 {% endblock %}
