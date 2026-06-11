@@ -40,6 +40,9 @@
     <h1 class="page-header-name">Rotas de Transporte</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -51,9 +54,6 @@
 <div class="container-fluid">
 
   <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
-    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
-    </a>
     <button class="btn btn-sm btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#modalRota"
             onclick="abrirCriar()">
       <i class="bi bi-plus-lg me-1"></i>Nova Rota
