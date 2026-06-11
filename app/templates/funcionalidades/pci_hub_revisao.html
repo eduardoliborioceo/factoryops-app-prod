@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Posto de Revisão</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar" id="btnVoltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" id="btnImprimir" onclick="imprimirRelatorio()" title="Imprimir" style="display:none;">
       <i class="bi bi-printer"></i>
     </button>
@@ -283,6 +280,11 @@
 
   <!-- ── LISTA de relatórios ── -->
   <div id="listaPanel">
+    <div id="btnVoltar" class="mb-3">
+      <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+      </a>
+    </div>
     <div class="d-flex align-items-center justify-content-between mb-3 gap-3 flex-wrap">
       <div class="d-flex gap-2 flex-wrap" style="flex:1;">
         <div class="position-relative" style="max-width:220px;">

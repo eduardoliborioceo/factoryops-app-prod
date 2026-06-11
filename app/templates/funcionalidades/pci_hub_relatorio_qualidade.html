@@ -31,14 +31,9 @@
 
 {% block page_title %}
 <div class="page-header">
-  <div class="d-flex align-items-center gap-2">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#relatorio" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div class="page-header-title">
-      <span class="page-header-section">PCI Hub · Relatório</span>
-      <h1 class="page-header-name">Análise de Qualidade</h1>
-    </div>
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Relatório</span>
+    <h1 class="page-header-name">Análise de Qualidade</h1>
   </div>
   <div class="page-header-actions">
     <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
@@ -53,6 +48,12 @@
 
 {% block content %}
 <div class="container-fluid">
+
+  <div class="mb-3 no-print">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#relatorio" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+    </a>
+  </div>
 
   <div class="rel-card">
     <div class="rel-hdr">

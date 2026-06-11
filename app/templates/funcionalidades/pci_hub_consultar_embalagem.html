@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Consultar Embalagem</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -58,6 +55,12 @@
 
 {% block content %}
 <div class="container-fluid">
+
+  <div class="mb-3">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+    </a>
+  </div>
 
   <!-- Filtros -->
   <div class="card mb-3" style="border-radius:12px;border:1px solid var(--border);">
