@@ -259,10 +259,10 @@ def adicionar_colaborador(rota_id: int, employee_id: Optional[int], nome: str,
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                "SELECT COALESCE(MAX(ordem), 0) + 1 FROM rh_rota_colaborador WHERE rota_id = %s",
+                "SELECT COALESCE(MAX(ordem), 0) + 1 AS next_ordem FROM rh_rota_colaborador WHERE rota_id = %s",
                 (rota_id,)
             )
-            ordem = cur.fetchone()[0]
+            ordem = cur.fetchone()['next_ordem']
             cur.execute("""
                 INSERT INTO rh_rota_colaborador
                     (rota_id, employee_id, nome, endereco_rua, endereco_numero,
@@ -330,11 +330,20 @@ def buscar_employees(termo: str, limit: int = 10) -> list:
         with conn.cursor(row_factory=dict_row) as cur:
             like = f"%{termo}%"
             cur.execute("""
-                SELECT id, employee_code, full_name, job_title, department, branch_name
-                FROM employees
-                WHERE status = 'ACTIVE'
-                  AND (LOWER(full_name) LIKE LOWER(%s) OR employee_code LIKE %s)
-                ORDER BY full_name
+                SELECT e.id, e.employee_code, e.full_name, e.job_title, e.department, e.branch_name,
+                       p.street   AS endereco_rua,
+                       p.number   AS endereco_numero,
+                       p.neighborhood AS endereco_bairro,
+                       p.city     AS endereco_cidade,
+                       p.state    AS endereco_estado
+                FROM employees e
+                LEFT JOIN users u
+                  ON (u.employee_id = e.id
+                      OR ltrim(u.matricula, '0') = ltrim(e.employee_code, '0'))
+                LEFT JOIN user_profiles p ON p.user_id = u.id
+                WHERE e.status = 'ACTIVE'
+                  AND (LOWER(e.full_name) LIKE LOWER(%s) OR e.employee_code LIKE %s)
+                ORDER BY e.full_name
                 LIMIT %s
             """, (like, like, limit))
             return cur.fetchall()
