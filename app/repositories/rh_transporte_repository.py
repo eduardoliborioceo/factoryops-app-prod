@@ -4,6 +4,75 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
+def get_alocacao_view(turno: Optional[str] = None, busca: Optional[str] = None) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            params: list = []
+            filtro_turno = ""
+            if turno:
+                filtro_turno = "AND r.turno = %s"
+                params.append(turno)
+
+            filtro_busca = ""
+            if busca:
+                filtro_busca = "AND LOWER(c.nome) LIKE LOWER(%s)"
+                params.append(f"%{busca}%")
+
+            cur.execute(f"""
+                SELECT
+                    r.id        AS rota_id,
+                    r.codigo,
+                    r.nome      AS rota_nome,
+                    r.turno,
+                    r.cor,
+                    r.veiculo,
+                    r.motorista,
+                    r.regra_descida,
+                    COUNT(c.id) AS total_colab
+                FROM rh_rota r
+                LEFT JOIN rh_rota_colaborador c ON c.rota_id = r.id {filtro_busca}
+                WHERE r.ativo {filtro_turno}
+                GROUP BY r.id
+                ORDER BY r.turno, r.codigo
+            """, params)
+            rotas = cur.fetchall()
+
+            if not rotas:
+                return []
+
+            rota_ids = [row['rota_id'] for row in rotas]
+            placeholders = ','.join(['%s'] * len(rota_ids))
+
+            busca_colab_filtro = ""
+            busca_params: list = list(rota_ids)
+            if busca:
+                busca_colab_filtro = "AND LOWER(c.nome) LIKE LOWER(%s)"
+                busca_params.append(f"%{busca}%")
+
+            cur.execute(f"""
+                SELECT c.id, c.rota_id, c.nome, c.endereco_bairro,
+                       c.geocodificado, c.tipo_parada,
+                       e.employee_code, e.department
+                FROM rh_rota_colaborador c
+                LEFT JOIN employees e ON e.id = c.employee_id
+                WHERE c.rota_id IN ({placeholders}) {busca_colab_filtro}
+                ORDER BY c.rota_id, c.ordem, c.id
+            """, busca_params)
+            colabs = cur.fetchall()
+
+        colab_map: dict = {}
+        for col in colabs:
+            colab_map.setdefault(col['rota_id'], []).append(col)
+
+        result = []
+        for rota in rotas:
+            result.append({
+                **dict(rota),
+                'colaboradores': colab_map.get(rota['rota_id'], [])
+            })
+        return result
+
+
 def listar_rotas(ativo: bool = True) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

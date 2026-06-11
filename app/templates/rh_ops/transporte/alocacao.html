@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Alocação de Colaboradores</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -16,16 +19,337 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid al-wrap">
 
-  <div class="mb-3">
-    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
+  <!-- Toolbar de Filtros -->
+  <form method="get" class="al-toolbar" id="filtroForm">
+    <div class="al-turno-tabs">
+      <a href="{{ url_for('pages.rh_transporte_alocacao') }}{% if filtro_busca %}?busca={{ filtro_busca }}{% endif %}"
+         class="al-turno-btn {% if not filtro_turno %}al-turno-btn--ativo{% endif %}">Todos</a>
+      {% for t in ['1','2','3'] %}
+      <a href="?turno={{ t }}{% if filtro_busca %}&busca={{ filtro_busca }}{% endif %}"
+         class="al-turno-btn al-turno-btn--{{ t }} {% if filtro_turno == t %}al-turno-btn--ativo{% endif %}">
+        Turno {{ t }}
+      </a>
+      {% endfor %}
+    </div>
+    <div class="al-search-wrap">
+      <i class="bi bi-search al-search-icon"></i>
+      <input type="text" name="busca" class="al-search" placeholder="Buscar colaborador…"
+             value="{{ filtro_busca }}"
+             {% if filtro_turno %}data-turno="{{ filtro_turno }}"{% endif %}>
+      {% if filtro_turno %}<input type="hidden" name="turno" value="{{ filtro_turno }}">{% endif %}
+    </div>
+    <div class="al-summary">
+      <span class="al-summary-num">{{ rotas | length }}</span>
+      <span class="al-summary-lbl">rota{{ 's' if (rotas|length) != 1 }}</span>
+      <span class="al-summary-sep">·</span>
+      <span class="al-summary-num">{{ total_colabs }}</span>
+      <span class="al-summary-lbl">colaborador{{ 'es' if total_colabs != 1 }}</span>
+    </div>
+  </form>
+
+  {% if not rotas %}
+  <div class="al-empty">
+    <i class="bi bi-diagram-3"></i>
+    <p>Nenhuma rota encontrada com os filtros aplicados.</p>
+    {% if filtro_turno or filtro_busca %}
+    <a href="{{ url_for('pages.rh_transporte_alocacao') }}" class="btn btn-sm btn-outline-secondary mt-2">
+      Limpar filtros
     </a>
+    {% else %}
+    <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="btn btn-sm btn-outline-primary mt-2">
+      Criar primeira rota
+    </a>
+    {% endif %}
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-person-walking" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Visualizar e editar quais colaboradores estão alocados em cada rota.</p>
+  {% else %}
+
+  <div class="al-grid">
+    {% for rota in rotas %}
+    <div class="al-card" data-rota-id="{{ rota.rota_id }}">
+      <div class="al-card-head" style="border-left: 4px solid {{ rota.cor or '#6c757d' }}">
+        <div class="al-card-title-wrap">
+          <span class="al-turno-pip al-turno-pip-{{ rota.turno }}">T{{ rota.turno }}</span>
+          <div>
+            <span class="al-rota-codigo">{{ rota.codigo }}</span>
+            <span class="al-rota-nome">{{ rota.rota_nome }}</span>
+          </div>
+        </div>
+        <div class="al-card-actions">
+          <span class="al-colab-count" title="{{ rota.total_colab }} alocados">
+            <i class="bi bi-people"></i> {{ rota.total_colab }}
+          </span>
+          <a href="{{ url_for('pages.rh_transporte_rota_detalhe', rota_id=rota.rota_id) }}"
+             class="btn btn-xs btn-outline-primary" title="Gerenciar rota">
+            <i class="bi bi-pencil-square"></i>
+          </a>
+        </div>
+      </div>
+
+      {% if rota.veiculo or rota.motorista %}
+      <div class="al-card-meta">
+        {% if rota.veiculo %}
+        <span class="al-meta-item">
+          <i class="bi bi-truck-front"></i> {{ rota.veiculo }}
+        </span>
+        {% endif %}
+        {% if rota.motorista %}
+        <span class="al-meta-item">
+          <i class="bi bi-person-badge"></i> {{ rota.motorista }}
+        </span>
+        {% endif %}
+        <span class="al-meta-item">
+          <i class="bi bi-signpost-2"></i>
+          {{ 'Porta a Porta' if rota.regra_descida == 'porta_a_porta' else 'Agrupado' }}
+        </span>
+      </div>
+      {% endif %}
+
+      {% if rota.colaboradores %}
+      <div class="al-colab-list">
+        {% for c in rota.colaboradores %}
+        <div class="al-colab-row">
+          <div class="al-colab-avatar">
+            {{ c.nome[:1].upper() if c.nome else '?' }}
+          </div>
+          <div class="al-colab-info">
+            <span class="al-colab-nome">{{ c.nome }}</span>
+            <span class="al-colab-sub">
+              {% if c.employee_code %}<span class="al-colab-code">{{ c.employee_code }}</span>{% endif %}
+              {% if c.endereco_bairro %}· {{ c.endereco_bairro }}{% endif %}
+              {% if c.department %}· {{ c.department }}{% endif %}
+            </span>
+          </div>
+          <div class="al-colab-badges">
+            {% if c.geocodificado %}
+            <span class="al-badge al-badge-ok" title="Endereço geocodificado">
+              <i class="bi bi-geo-alt-fill"></i>
+            </span>
+            {% else %}
+            <span class="al-badge al-badge-warn" title="Endereço sem geocodificação">
+              <i class="bi bi-geo-alt"></i>
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="al-colab-empty">
+        <i class="bi bi-person-plus"></i>
+        <span>Sem colaboradores alocados</span>
+        <a href="{{ url_for('pages.rh_transporte_rota_detalhe', rota_id=rota.rota_id) }}"
+           class="al-colab-add-link">Adicionar</a>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
   </div>
+
+  {% endif %}
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.al-wrap { padding-bottom: 2rem; }
+
+/* Toolbar */
+.al-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.al-turno-tabs { display: flex; gap: 6px; flex-shrink: 0; }
+.al-turno-btn {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(15,23,42,.05);
+  text-decoration: none;
+  transition: background .12s ease, color .12s ease;
+}
+.al-turno-btn:hover { background: rgba(15,23,42,.09); color: var(--text); }
+.al-turno-btn--ativo { background: var(--primary) !important; color: #fff !important; }
+.al-turno-btn--1.al-turno-btn--ativo { background: #0d6efd !important; }
+.al-turno-btn--2.al-turno-btn--ativo { background: #198754 !important; }
+.al-turno-btn--3.al-turno-btn--ativo { background: #6f42c1 !important; }
+
+.al-search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 280px; }
+.al-search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: .8rem; color: var(--text-muted); pointer-events: none;
+}
+.al-search {
+  width: 100%;
+  padding: 6px 10px 6px 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .82rem;
+  background: var(--bg);
+  color: var(--text);
+}
+.al-search:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13,110,253,.1);
+}
+
+.al-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .78rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.al-summary-num { font-weight: 700; color: var(--text); }
+.al-summary-sep { opacity: .4; }
+
+/* Empty */
+.al-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-muted);
+}
+.al-empty i { display: block; font-size: 2.5rem; opacity: .2; margin-bottom: 12px; }
+.al-empty p { font-size: .875rem; margin: 0; }
+
+/* Grid */
+.al-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 575px) { .al-grid { grid-template-columns: 1fr; } }
+
+/* Card */
+.al-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s ease;
+}
+.al-card:hover { box-shadow: 0 4px 18px rgba(15,23,42,.07); }
+
+.al-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,.02);
+}
+.al-card-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.al-turno-pip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 8px;
+  font-size: 0.68rem; font-weight: 800;
+  flex-shrink: 0;
+}
+.al-turno-pip-1 { background: rgba(13,110,253,.12); color: #0d6efd; }
+.al-turno-pip-2 { background: rgba(25,135,84,.12);  color: #198754; }
+.al-turno-pip-3 { background: rgba(111,66,193,.12); color: #6f42c1; }
+
+.al-rota-codigo {
+  display: block; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted);
+}
+.al-rota-nome { display: block; font-size: .82rem; font-weight: 700; color: var(--text); }
+
+.al-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.al-colab-count {
+  font-size: .72rem; font-weight: 700;
+  color: var(--primary);
+  display: flex; align-items: center; gap: 4px;
+}
+.btn-xs { padding: 3px 8px; font-size: .72rem; border-radius: 6px; }
+
+.al-card-meta {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,.015);
+}
+.al-meta-item {
+  font-size: .72rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* Colab list */
+.al-colab-list { padding: 4px 0; max-height: 280px; overflow-y: auto; }
+.al-colab-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(15,23,42,.04);
+  transition: background .1s ease;
+}
+.al-colab-row:last-child { border-bottom: none; }
+.al-colab-row:hover { background: rgba(13,110,253,.03); }
+
+.al-colab-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: rgba(13,110,253,.1);
+  color: #0d6efd;
+  font-size: .72rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.al-colab-info { flex: 1; min-width: 0; }
+.al-colab-nome { display: block; font-size: .8rem; font-weight: 600; color: var(--text); }
+.al-colab-sub { display: block; font-size: .68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-colab-code { font-weight: 700; color: var(--text-muted); }
+
+.al-colab-badges { display: flex; gap: 4px; flex-shrink: 0; }
+.al-badge { font-size: .72rem; padding: 2px 6px; border-radius: 6px; }
+.al-badge-ok   { background: rgba(25,135,84,.1); color: #198754; }
+.al-badge-warn { background: rgba(255,193,7,.12); color: #b58c00; }
+
+.al-colab-empty {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px;
+  font-size: .78rem; color: var(--text-muted);
+  font-style: italic;
+}
+.al-colab-empty i { font-size: .9rem; opacity: .4; }
+.al-colab-add-link { margin-left: auto; font-size: .72rem; font-weight: 600; color: var(--primary); text-decoration: none; }
+.al-colab-add-link:hover { text-decoration: underline; }
+
+@media (max-width: 575px) {
+  .al-toolbar { gap: 10px; }
+  .al-turno-tabs { flex-wrap: wrap; }
+  .al-search-wrap { max-width: 100%; }
+  .al-summary { margin-left: 0; }
+}
+</style>
+
+<script>
+/* Submit form on busca with debounce */
+let searchTimer;
+document.querySelector('.al-search').addEventListener('input', function () {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    this.closest('form').submit();
+  }, 450);
+});
+</script>
 {% endblock %}
