@@ -3312,7 +3312,54 @@ def rh_transporte_otimizador():
 @bp.route("/rh-ops/transporte/configuracoes", methods=["GET"])
 @login_required
 def rh_transporte_config_turno():
-    return render_template("rh_ops/transporte/config_turno.html", active_menu="rh_transporte_config_turno")
+    from app.repositories import rh_transporte_repository as repo
+    configs = repo.listar_turno_configs()
+    return render_template("rh_ops/transporte/config_turno.html",
+                           active_menu="rh_transporte_config_turno", configs=configs)
+
+
+# ── Config Turno API ──
+
+@bp.route("/rh-ops/api/transporte/config-turno", methods=["POST"])
+@login_required
+def rh_api_criar_turno_config():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    try:
+        c = repo.criar_turno_config(
+            turno=d.get("turno", "").strip(),
+            filial=d.get("filial", "VTT").strip(),
+            tipo_descida=d.get("tipo_descida", "agrupado"),
+            raio_embarque_m=int(d.get("raio_embarque_m") or 500),
+            tolerancia_min=int(d.get("tolerancia_min") or 10),
+            horario_saida=d.get("horario_saida") or None,
+            observacao=d.get("observacao", ""),
+        )
+        return jsonify({"ok": True, "config": dict(c)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@bp.route("/rh-ops/api/transporte/config-turno/<int:config_id>", methods=["PUT"])
+@login_required
+def rh_api_atualizar_turno_config(config_id):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    c = repo.atualizar_turno_config(config_id, **d)
+    if c is None:
+        return jsonify({"ok": False, "erro": "Configuração não encontrada"}), 404
+    return jsonify({"ok": True, "config": dict(c)})
+
+
+@bp.route("/rh-ops/api/transporte/config-turno/<int:config_id>", methods=["DELETE"])
+@login_required
+def rh_api_deletar_turno_config(config_id):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    ok = repo.deletar_turno_config(config_id)
+    return jsonify({"ok": ok})
 
 
 # ── Relatórios & Indicadores ──

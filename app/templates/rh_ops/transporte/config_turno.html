@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Configurações por Turno</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -16,16 +19,503 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid ct-wrap">
 
-  <div class="mb-3">
-    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
-    </a>
+  <div class="ct-toolbar">
+    <p class="ct-subtitle">
+      Defina regras de descida, raio de embarque e tolerâncias de horário para cada turno.
+    </p>
+    <button class="btn btn-primary btn-sm" onclick="abrirModalNovo()">
+      <i class="bi bi-plus-lg me-1"></i>Nova Configuração
+    </button>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-gear" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Tipo de descida (geral vs porta a porta), raio de embarque e tolerâncias por turno.</p>
+
+  {% if not configs %}
+  <div class="ct-empty">
+    <i class="bi bi-gear-wide-connected"></i>
+    <p>Nenhuma configuração encontrada.<br>Clique em <strong>Nova Configuração</strong> para começar.</p>
+  </div>
+  {% else %}
+
+  <div class="ct-grid">
+    {% for c in configs %}
+    {% set turno_label = "Turno " ~ c.turno %}
+    {% set desc_label = "Porta a Porta" if c.tipo_descida == "porta_a_porta" else "Agrupado" %}
+    {% set desc_icon  = "bi-house-door-fill" if c.tipo_descida == "porta_a_porta" else "bi-people-fill" %}
+    {% set status_cls = "ct-status-ok" if c.ativo else "ct-status-off" %}
+    <div class="ct-card {% if not c.ativo %}ct-card--inativo{% endif %}">
+      <div class="ct-card-head">
+        <div class="ct-turno-badge ct-turno-{{ c.turno }}">
+          <i class="bi bi-clock-fill"></i>
+          {{ turno_label }}
+        </div>
+        <div class="ct-card-meta">
+          <span class="ct-filial">{{ c.filial }}</span>
+          <span class="ct-dot {{ status_cls }}"></span>
+          <span class="ct-status-text">{{ "Ativo" if c.ativo else "Inativo" }}</span>
+        </div>
+      </div>
+
+      <div class="ct-card-body">
+        <div class="ct-rule-row">
+          <div class="ct-rule-item">
+            <i class="bi {{ desc_icon }} ct-rule-icon"></i>
+            <div>
+              <span class="ct-rule-label">Tipo de Descida</span>
+              <span class="ct-rule-value">{{ desc_label }}</span>
+            </div>
+          </div>
+          <div class="ct-rule-item">
+            <i class="bi bi-geo-alt-fill ct-rule-icon"></i>
+            <div>
+              <span class="ct-rule-label">Raio de Embarque</span>
+              <span class="ct-rule-value">{{ c.raio_embarque_m }} m</span>
+            </div>
+          </div>
+          <div class="ct-rule-item">
+            <i class="bi bi-hourglass-split ct-rule-icon"></i>
+            <div>
+              <span class="ct-rule-label">Tolerância</span>
+              <span class="ct-rule-value">{{ c.tolerancia_min }} min</span>
+            </div>
+          </div>
+          {% if c.horario_saida %}
+          <div class="ct-rule-item">
+            <i class="bi bi-alarm-fill ct-rule-icon"></i>
+            <div>
+              <span class="ct-rule-label">Horário de Saída</span>
+              <span class="ct-rule-value">{{ c.horario_saida.strftime('%H:%M') if c.horario_saida }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if c.observacao %}
+        <p class="ct-obs">{{ c.observacao }}</p>
+        {% endif %}
+      </div>
+
+      <div class="ct-card-foot">
+        <button class="btn btn-sm btn-outline-primary" onclick='abrirModalEditar({{ c | tojson }})'>
+          <i class="bi bi-pencil me-1"></i>Editar
+        </button>
+        <button class="btn btn-sm btn-outline-danger" onclick="confirmarExcluir({{ c.id }}, '{{ turno_label }} — {{ c.filial }}')">
+          <i class="bi bi-trash me-1"></i>Excluir
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="ct-glossario">
+    <h6 class="ct-glossario-title"><i class="bi bi-info-circle me-1"></i>Referência de Configurações</h6>
+    <div class="ct-glossario-grid">
+      <div class="ct-gitem">
+        <strong>Tipo de Descida — Agrupado</strong>
+        <p>O ônibus para em pontos fixos de embarque/desembarque. Os colaboradores se deslocam até o ponto mais próximo. Mais eficiente em tempo de rota.</p>
+      </div>
+      <div class="ct-gitem">
+        <strong>Tipo de Descida — Porta a Porta</strong>
+        <p>O ônibus realiza parada individual em cada endereço de colaborador. Maior conforto, menor eficiência de tempo. Indicado para turnos noturnos.</p>
+      </div>
+      <div class="ct-gitem">
+        <strong>Raio de Embarque</strong>
+        <p>Distância máxima (em metros) aceita entre o endereço do colaborador e o ponto de embarque mais próximo. Usado na otimização de rota.</p>
+      </div>
+      <div class="ct-gitem">
+        <strong>Tolerância</strong>
+        <p>Janela de tempo (em minutos) antes e após o horário previsto de parada em que o colaborador deve estar disponível para embarque.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal Config Turno -->
+<div class="modal fade" id="modalConfig" tabindex="-1" aria-labelledby="modalConfigLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfigLabel">Configuração de Turno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="cfgId">
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Turno *</label>
+            <input type="text" id="cfgTurno" class="form-control" placeholder="Ex: 1, 2, 3">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Filial *</label>
+            <input type="text" id="cfgFilial" class="form-control" placeholder="Ex: VTT">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Tipo de Descida *</label>
+            <select id="cfgTipoDescida" class="form-select">
+              <option value="agrupado">Agrupado — pontos fixos</option>
+              <option value="porta_a_porta">Porta a Porta — endereço individual</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Raio de Embarque (m)</label>
+            <input type="number" id="cfgRaio" class="form-control" min="100" max="5000" step="50" placeholder="500">
+            <div class="form-text">Distância máxima ao ponto de embarque.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Tolerância (min)</label>
+            <input type="number" id="cfgTolerancia" class="form-control" min="0" max="60" step="5" placeholder="10">
+            <div class="form-text">Janela de espera no ponto.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Horário de Saída</label>
+            <input type="time" id="cfgHorario" class="form-control">
+          </div>
+          <div class="col-6 d-flex align-items-end">
+            <div class="form-check ms-1">
+              <input class="form-check-input" type="checkbox" id="cfgAtivo" checked>
+              <label class="form-check-label" for="cfgAtivo">Configuração ativa</label>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Observação</label>
+            <textarea id="cfgObs" class="form-control" rows="2" placeholder="Informação adicional sobre este turno…"></textarea>
+          </div>
+        </div>
+        <div id="cfgErro" class="alert alert-danger mt-3 d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSalvarConfig" onclick="salvarConfig()">
+          <span id="btnSalvarTxt">Salvar</span>
+          <span id="btnSalvarSpin" class="spinner-border spinner-border-sm ms-1 d-none"></span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Excluir</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Excluir configuração <strong id="excluirNome"></strong>?</p>
+        <p class="text-muted" style="font-size:0.8rem;margin-top:6px;">Essa ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-danger" id="btnConfExcluir">Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.ct-wrap { padding-bottom: 2rem; }
+.ct-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.ct-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  max-width: 480px;
+}
+.ct-empty {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-muted);
+}
+.ct-empty i {
+  display: block;
+  font-size: 2.5rem;
+  opacity: 0.22;
+  margin-bottom: 14px;
+}
+.ct-empty p { font-size: 0.875rem; margin: 0; }
+
+.ct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.ct-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s ease;
+}
+.ct-card:hover { box-shadow: 0 4px 18px rgba(15,23,42,.07); }
+.ct-card--inativo { opacity: .6; }
+
+.ct-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,.025);
+}
+.ct-turno-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.ct-turno-1 { background: rgba(13,110,253,.12); color: #0d6efd; }
+.ct-turno-2 { background: rgba(25,135,84,.12); color: #198754; }
+.ct-turno-3 { background: rgba(111,66,193,.12); color: #6f42c1; }
+.ct-turno-badge i { font-size: .72rem; }
+
+.ct-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.ct-filial { font-weight: 600; color: var(--text); }
+.ct-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.ct-status-ok  { background: #198754; }
+.ct-status-off { background: #adb5bd; }
+.ct-status-text { font-size: 0.72rem; }
+
+.ct-card-body { padding: 14px 16px; flex: 1; }
+.ct-rule-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ct-rule-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ct-rule-icon {
+  font-size: 1rem;
+  color: var(--primary);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.ct-rule-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+}
+.ct-rule-value {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.ct-obs {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: rgba(15,23,42,.03);
+  border-left: 3px solid var(--border);
+  border-radius: 0 6px 6px 0;
+}
+
+.ct-card-foot {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.ct-card-foot .btn { flex: 1; }
+
+.ct-glossario {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 20px 16px;
+}
+.ct-glossario-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.ct-glossario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.ct-gitem strong {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.ct-gitem p {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Modal */
+.modal-content { border-radius: 14px; border: 1px solid var(--border); }
+.modal-header { border-bottom: 1px solid var(--border); }
+.modal-footer { border-top: 1px solid var(--border); }
+.form-label { font-size: .8rem; font-weight: 600; color: var(--text); }
+.form-control, .form-select {
+  border-radius: 8px;
+  font-size: .875rem;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+}
+
+/* Mobile */
+@media (max-width: 575px) {
+  .ct-toolbar { flex-direction: column; align-items: stretch; }
+  .ct-toolbar .btn { width: 100%; }
+  .ct-grid { grid-template-columns: 1fr; }
+  .ct-rule-row { grid-template-columns: 1fr; }
+  .ct-glossario-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+const modal    = new bootstrap.Modal(document.getElementById('modalConfig'));
+const modalDel = new bootstrap.Modal(document.getElementById('modalExcluir'));
+
+function abrirModalNovo() {
+  document.getElementById('modalConfigLabel').textContent = 'Nova Configuração';
+  document.getElementById('cfgId').value        = '';
+  document.getElementById('cfgTurno').value     = '';
+  document.getElementById('cfgFilial').value    = 'VTT';
+  document.getElementById('cfgTipoDescida').value = 'agrupado';
+  document.getElementById('cfgRaio').value      = '500';
+  document.getElementById('cfgTolerancia').value = '10';
+  document.getElementById('cfgHorario').value   = '';
+  document.getElementById('cfgAtivo').checked   = true;
+  document.getElementById('cfgObs').value       = '';
+  document.getElementById('cfgErro').classList.add('d-none');
+  modal.show();
+}
+
+function abrirModalEditar(c) {
+  document.getElementById('modalConfigLabel').textContent = `Editar — Turno ${c.turno} (${c.filial})`;
+  document.getElementById('cfgId').value          = c.id;
+  document.getElementById('cfgTurno').value       = c.turno;
+  document.getElementById('cfgFilial').value      = c.filial;
+  document.getElementById('cfgTipoDescida').value = c.tipo_descida;
+  document.getElementById('cfgRaio').value        = c.raio_embarque_m;
+  document.getElementById('cfgTolerancia').value  = c.tolerancia_min;
+  document.getElementById('cfgHorario').value     = c.horario_saida
+    ? (typeof c.horario_saida === 'string' ? c.horario_saida.slice(0,5) : '')
+    : '';
+  document.getElementById('cfgAtivo').checked = c.ativo;
+  document.getElementById('cfgObs').value = c.observacao || '';
+  document.getElementById('cfgErro').classList.add('d-none');
+  modal.show();
+}
+
+async function salvarConfig() {
+  const id    = document.getElementById('cfgId').value;
+  const turno = document.getElementById('cfgTurno').value.trim();
+  const filial = document.getElementById('cfgFilial').value.trim();
+  const tipo  = document.getElementById('cfgTipoDescida').value;
+  const raio  = parseInt(document.getElementById('cfgRaio').value) || 500;
+  const tol   = parseInt(document.getElementById('cfgTolerancia').value) || 10;
+  const hora  = document.getElementById('cfgHorario').value || null;
+  const ativo = document.getElementById('cfgAtivo').checked;
+  const obs   = document.getElementById('cfgObs').value.trim();
+
+  if (!turno || !filial) {
+    mostrarErro('Turno e Filial são obrigatórios.');
+    return;
+  }
+
+  setBusy(true);
+  const url    = id ? `/rh-ops/api/transporte/config-turno/${id}` : '/rh-ops/api/transporte/config-turno';
+  const method = id ? 'PUT' : 'POST';
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        turno, filial,
+        tipo_descida: tipo,
+        raio_embarque_m: raio,
+        tolerancia_min: tol,
+        horario_saida: hora,
+        ativo,
+        observacao: obs || null,
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) { mostrarErro(data.erro || 'Erro ao salvar.'); return; }
+    modal.hide();
+    location.reload();
+  } catch (e) {
+    mostrarErro('Erro de comunicação com o servidor.');
+  } finally {
+    setBusy(false);
+  }
+}
+
+function confirmarExcluir(id, label) {
+  document.getElementById('excluirNome').textContent = label;
+  document.getElementById('btnConfExcluir').onclick = () => executarExcluir(id);
+  modalDel.show();
+}
+
+async function executarExcluir(id) {
+  try {
+    const res = await fetch(`/rh-ops/api/transporte/config-turno/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) { modalDel.hide(); location.reload(); }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function mostrarErro(msg) {
+  const el = document.getElementById('cfgErro');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+
+function setBusy(on) {
+  document.getElementById('btnSalvarConfig').disabled = on;
+  document.getElementById('btnSalvarSpin').classList.toggle('d-none', !on);
+}
+</script>
 {% endblock %}
