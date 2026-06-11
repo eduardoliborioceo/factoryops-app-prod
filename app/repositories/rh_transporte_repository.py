@@ -335,3 +335,119 @@ def deletar_turno_config(config_id: int) -> bool:
             cur.execute("DELETE FROM rh_turno_config WHERE id = %s", (config_id,))
             conn.commit()
             return cur.rowcount > 0
+
+
+# ── Frota ──
+
+def listar_veiculos() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT v.*, (
+                    SELECT COUNT(*) FROM rh_rota r
+                    WHERE r.veiculo = v.placa AND r.ativo
+                ) AS rotas_ativas
+                FROM rh_veiculo v
+                ORDER BY v.status, v.placa
+            """)
+            return cur.fetchall()
+
+
+def buscar_veiculo(vid: int) -> Optional[dict]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT * FROM rh_veiculo WHERE id = %s", (vid,))
+            return cur.fetchone()
+
+
+def criar_veiculo(placa: str, modelo: str, ano: Optional[int], capacidade: int,
+                  filial: str, status: str, observacao: str) -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                INSERT INTO rh_veiculo (placa, modelo, ano, capacidade, filial, status, observacao)
+                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *
+            """, (placa, modelo or None, ano or None, capacidade, filial or None, status, observacao or None))
+            conn.commit()
+            return cur.fetchone()
+
+
+def atualizar_veiculo(vid: int, **kwargs) -> Optional[dict]:
+    allowed = {'placa', 'modelo', 'ano', 'capacidade', 'filial', 'status', 'observacao'}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return None
+    set_clause = ', '.join(f"{k} = %s" for k in fields)
+    values = list(fields.values()) + [vid]
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(f"UPDATE rh_veiculo SET {set_clause} WHERE id = %s RETURNING *", values)
+            conn.commit()
+            return cur.fetchone()
+
+
+def deletar_veiculo(vid: int) -> bool:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM rh_veiculo WHERE id = %s", (vid,))
+            conn.commit()
+            return cur.rowcount > 0
+
+
+# ── Motoristas ──
+
+def listar_motoristas() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT m.*, (
+                    SELECT COUNT(*) FROM rh_rota r
+                    WHERE r.motorista = m.nome AND r.ativo
+                ) AS rotas_ativas
+                FROM rh_motorista m
+                ORDER BY m.status, m.nome
+            """)
+            return cur.fetchall()
+
+
+def buscar_motorista(mid: int) -> Optional[dict]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT * FROM rh_motorista WHERE id = %s", (mid,))
+            return cur.fetchone()
+
+
+def criar_motorista(nome: str, cnh: str, categoria_cnh: str, validade_cnh: Optional[str],
+                    telefone: str, filial: str, status: str, observacao: str) -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                INSERT INTO rh_motorista
+                    (nome, cnh, categoria_cnh, validade_cnh, telefone, filial, status, observacao)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *
+            """, (nome, cnh or None, categoria_cnh or None, validade_cnh or None,
+                  telefone or None, filial or None, status, observacao or None))
+            conn.commit()
+            return cur.fetchone()
+
+
+def atualizar_motorista(mid: int, **kwargs) -> Optional[dict]:
+    allowed = {'nome', 'cnh', 'categoria_cnh', 'validade_cnh', 'telefone', 'filial', 'status', 'observacao'}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return None
+    set_clause = ', '.join(f"{k} = %s" for k in fields)
+    values = list(fields.values()) + [mid]
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(f"UPDATE rh_motorista SET {set_clause} WHERE id = %s RETURNING *", values)
+            conn.commit()
+            return cur.fetchone()
+
+
+def deletar_motorista(mid: int) -> bool:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM rh_motorista WHERE id = %s", (mid,))
+            conn.commit()
+            return cur.rowcount > 0

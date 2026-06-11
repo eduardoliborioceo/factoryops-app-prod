@@ -3294,7 +3294,117 @@ def rh_api_buscar_employees():
 @bp.route("/rh-ops/transporte/veiculos", methods=["GET"])
 @login_required
 def rh_transporte_veiculos():
-    return render_template("rh_ops/transporte/veiculos.html", active_menu="rh_transporte_veiculos")
+    from app.repositories import rh_transporte_repository as repo
+    veiculos = repo.listar_veiculos()
+    motoristas = repo.listar_motoristas()
+    return render_template("rh_ops/transporte/veiculos.html",
+                           active_menu="rh_transporte_veiculos",
+                           veiculos=veiculos, motoristas=motoristas)
+
+
+# ── Frota API ──
+
+@bp.route("/rh-ops/api/transporte/veiculos", methods=["GET"])
+@login_required
+def rh_api_listar_veiculos():
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    return jsonify([dict(v) for v in repo.listar_veiculos()])
+
+
+@bp.route("/rh-ops/api/transporte/veiculos", methods=["POST"])
+@login_required
+def rh_api_criar_veiculo():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    try:
+        v = repo.criar_veiculo(
+            placa=d.get("placa", "").strip().upper(),
+            modelo=d.get("modelo", ""),
+            ano=d.get("ano"),
+            capacidade=int(d.get("capacidade") or 40),
+            filial=d.get("filial", ""),
+            status=d.get("status", "ativo"),
+            observacao=d.get("observacao", ""),
+        )
+        return jsonify({"ok": True, "veiculo": dict(v)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@bp.route("/rh-ops/api/transporte/veiculos/<int:vid>", methods=["PUT"])
+@login_required
+def rh_api_atualizar_veiculo(vid):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    if "placa" in d:
+        d["placa"] = d["placa"].strip().upper()
+    v = repo.atualizar_veiculo(vid, **d)
+    if v is None:
+        return jsonify({"ok": False, "erro": "Veículo não encontrado"}), 404
+    return jsonify({"ok": True, "veiculo": dict(v)})
+
+
+@bp.route("/rh-ops/api/transporte/veiculos/<int:vid>", methods=["DELETE"])
+@login_required
+def rh_api_deletar_veiculo(vid):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    ok = repo.deletar_veiculo(vid)
+    return jsonify({"ok": ok})
+
+
+@bp.route("/rh-ops/api/transporte/motoristas", methods=["GET"])
+@login_required
+def rh_api_listar_motoristas():
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    return jsonify([dict(m) for m in repo.listar_motoristas()])
+
+
+@bp.route("/rh-ops/api/transporte/motoristas", methods=["POST"])
+@login_required
+def rh_api_criar_motorista():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    try:
+        m = repo.criar_motorista(
+            nome=d.get("nome", "").strip(),
+            cnh=d.get("cnh", ""),
+            categoria_cnh=d.get("categoria_cnh", ""),
+            validade_cnh=d.get("validade_cnh") or None,
+            telefone=d.get("telefone", ""),
+            filial=d.get("filial", ""),
+            status=d.get("status", "ativo"),
+            observacao=d.get("observacao", ""),
+        )
+        return jsonify({"ok": True, "motorista": dict(m)})
+    except Exception as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+
+
+@bp.route("/rh-ops/api/transporte/motoristas/<int:mid>", methods=["PUT"])
+@login_required
+def rh_api_atualizar_motorista(mid):
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    m = repo.atualizar_motorista(mid, **d)
+    if m is None:
+        return jsonify({"ok": False, "erro": "Motorista não encontrado"}), 404
+    return jsonify({"ok": True, "motorista": dict(m)})
+
+
+@bp.route("/rh-ops/api/transporte/motoristas/<int:mid>", methods=["DELETE"])
+@login_required
+def rh_api_deletar_motorista(mid):
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    ok = repo.deletar_motorista(mid)
+    return jsonify({"ok": ok})
 
 
 @bp.route("/rh-ops/transporte/alocacao", methods=["GET"])
