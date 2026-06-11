@@ -3096,9 +3096,19 @@ def rh_saude_cipa():
 @login_required
 def rh_transporte_dashboard():
     from app.repositories import rh_transporte_repository as repo
+    from app.services import rh_transporte_service as svc
     stats = repo.get_dashboard_stats()
-    return render_template("rh_ops/transporte/dashboard.html",
-                           active_menu="rh_transporte_dashboard", stats=stats)
+    custos_rotas = svc.calcular_custos_rotas()
+    precos = repo.listar_precos_combustivel()
+    custo_total_dia = round(sum(c['custo_est'] for c in custos_rotas), 2)
+    return render_template(
+        "rh_ops/transporte/dashboard.html",
+        active_menu="rh_transporte_dashboard",
+        stats=stats,
+        custos_rotas=custos_rotas,
+        precos=precos,
+        custo_total_dia=custo_total_dia,
+    )
 
 
 @bp.route("/rh-ops/transporte/rotas", methods=["GET"])
@@ -3116,16 +3126,24 @@ def rh_transporte_rota_detalhe(rota_id):
     import os
     from flask import abort
     from app.repositories import rh_transporte_repository as repo
+    from app.services import rh_transporte_service as svc
     rota = repo.buscar_rota(rota_id)
     if not rota:
         abort(404)
     colaboradores = repo.listar_colaboradores_rota(rota_id)
     ors_disponivel = bool(os.environ.get("ORS_API_KEY"))
-    return render_template("rh_ops/transporte/rota_detalhe.html",
-                           active_menu="rh_transporte_rotas",
-                           rota=rota,
-                           colaboradores=colaboradores,
-                           ors_disponivel=ors_disponivel)
+    custos = svc.calcular_custos_rotas()
+    custo_rota = next((c for c in custos if c['id'] == rota_id), None)
+    precos = repo.listar_precos_combustivel()
+    return render_template(
+        "rh_ops/transporte/rota_detalhe.html",
+        active_menu="rh_transporte_rotas",
+        rota=rota,
+        colaboradores=colaboradores,
+        ors_disponivel=ors_disponivel,
+        custo_rota=custo_rota,
+        precos=precos,
+    )
 
 
 # ── Transporte API ──
@@ -3300,9 +3318,11 @@ def rh_transporte_veiculos():
     from app.repositories import rh_transporte_repository as repo
     veiculos = repo.listar_veiculos()
     motoristas = repo.listar_motoristas()
+    precos = repo.listar_precos_combustivel()
     return render_template("rh_ops/transporte/veiculos.html",
                            active_menu="rh_transporte_veiculos",
-                           veiculos=veiculos, motoristas=motoristas)
+                           veiculos=veiculos, motoristas=motoristas,
+                           precos=precos)
 
 
 # ── Frota API ──
@@ -3330,6 +3350,8 @@ def rh_api_criar_veiculo():
             filial=d.get("filial", ""),
             status=d.get("status", "ativo"),
             observacao=d.get("observacao", ""),
+            consumo_km_l=float(d["consumo_km_l"]) if d.get("consumo_km_l") else None,
+            tipo_combustivel=d.get("tipo_combustivel", "diesel"),
         )
         return jsonify({"ok": True, "veiculo": dict(v)})
     except Exception as e:
@@ -3408,6 +3430,57 @@ def rh_api_deletar_motorista(mid):
     from app.repositories import rh_transporte_repository as repo
     ok = repo.deletar_motorista(mid)
     return jsonify({"ok": ok})
+
+
+# ── Combustível API ──
+
+@bp.route("/rh-ops/api/transporte/combustivel/precos", methods=["GET"])
+@login_required
+def rh_api_listar_precos_combustivel():
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    return jsonify({"ok": True, "precos": [dict(p) for p in repo.listar_precos_combustivel()]})
+
+
+@bp.route("/rh-ops/api/transporte/combustivel/precos", methods=["POST"])
+@login_required
+def rh_api_upsert_preco_combustivel():
+    from flask import request, jsonify
+    from app.repositories import rh_transporte_repository as repo
+    d = request.get_json(force=True) or {}
+    tipo = (d.get("tipo") or "").strip().lower()
+    preco_raw = d.get("preco_litro")
+    if not tipo or preco_raw is None:
+        return jsonify({"ok": False, "erro": "tipo e preco_litro são obrigatórios"}), 400
+    try:
+        preco = float(preco_raw)
+        if preco <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"ok": False, "erro": "preco_litro inválido"}), 400
+    config = repo.upsert_preco_combustivel(tipo=tipo, preco_litro=preco, fonte="manual")
+    return jsonify({"ok": True, "config": dict(config)})
+
+
+@bp.route("/rh-ops/api/transporte/combustivel/buscar-cotacao", methods=["GET"])
+@login_required
+def rh_api_buscar_cotacao_combustivel():
+    from flask import jsonify
+    from app.services import rh_transporte_service as svc
+    resultado = svc.buscar_preco_externo()
+    if resultado:
+        return jsonify({"ok": True, "precos": resultado})
+    return jsonify({"ok": False, "erro": "Fonte externa indisponível. Configure FUEL_PRICE_URL."}), 404
+
+
+@bp.route("/rh-ops/api/transporte/combustivel/custos", methods=["GET"])
+@login_required
+def rh_api_custos_combustivel():
+    from flask import jsonify
+    from app.services import rh_transporte_service as svc
+    custos = svc.calcular_custos_rotas()
+    total = round(sum(c['custo_est'] for c in custos), 2)
+    return jsonify({"ok": True, "custos": custos, "custo_total": total})
 
 
 @bp.route("/rh-ops/transporte/alocacao", methods=["GET"])

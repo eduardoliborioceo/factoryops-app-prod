@@ -70,6 +70,16 @@
     <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
+    {% if precos %}
+    <div class="d-flex align-items-center gap-2 ms-2 flex-wrap">
+      {% for p in precos %}
+      <span style="font-size:0.78rem;font-weight:700;color:#92400e;background:rgba(251,191,36,.1);
+                   border:1px solid rgba(234,88,12,.2);padding:3px 10px;border-radius:20px;">
+        <i class="bi bi-fuel-pump-fill me-1"></i>{{ p.tipo|replace('_',' ')|title }}: R$ {{ '%.3f'|format(p.preco_litro) }}/L
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
     <button class="btn btn-sm btn-primary ms-auto" id="btnNovo" onclick="abrirNovo()">
       <i class="bi bi-plus-lg me-1"></i><span id="btnNovoLabel">Novo Veículo</span>
     </button>
@@ -137,6 +147,8 @@
             <th>Modelo</th>
             <th class="hide-mobile">Ano</th>
             <th>Lotação</th>
+            <th class="hide-mobile">Combustível</th>
+            <th class="hide-mobile">Consumo</th>
             <th class="hide-mobile">Filial</th>
             <th>Status</th>
             <th class="hide-mobile">Rotas</th>
@@ -150,6 +162,8 @@
             <td style="font-weight:600;">{{ v.modelo or '—' }}</td>
             <td class="hide-mobile" style="color:var(--text-muted);">{{ v.ano or '—' }}</td>
             <td><strong>{{ v.capacidade }}</strong> <span style="font-size:0.75rem;color:var(--text-muted);">lugares</span></td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ (v.tipo_combustivel or 'diesel') | replace('_',' ') | title }}</td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ v.consumo_km_l or '7.5' }} km/L</td>
             <td class="hide-mobile" style="color:var(--text-muted);">{{ v.filial or '—' }}</td>
             <td>
               <span class="status-pill status-{{ v.status|replace(' ','') }}">
@@ -310,6 +324,21 @@
               <option value="inativo">Inativo</option>
             </select>
           </div>
+          <div class="col-5">
+            <label style="font-size:0.8rem;font-weight:600;">Tipo de Combustível</label>
+            <select id="vTipoComb" class="form-select form-select-sm" style="border-radius:8px;">
+              <option value="diesel">Diesel</option>
+              <option value="diesel_s10">Diesel S-10</option>
+              <option value="gasolina">Gasolina</option>
+              <option value="etanol">Etanol</option>
+            </select>
+          </div>
+          <div class="col-7">
+            <label style="font-size:0.8rem;font-weight:600;">Consumo (km/L)</label>
+            <input type="number" id="vConsumo" class="form-control form-control-sm" style="border-radius:8px;"
+                   step="0.1" min="1" max="30" placeholder="7.5">
+            <div class="form-text" style="font-size:0.7rem;">Média do veículo. Usado no cálculo de custo.</div>
+          </div>
           <div class="col-12">
             <label style="font-size:0.8rem;font-weight:600;">Filial</label>
             <input type="text" id="vFilial" class="form-control form-control-sm" style="border-radius:8px;"
@@ -430,6 +459,8 @@
       document.getElementById("vAno").value = "";
       document.getElementById("vCapacidade").value = "40";
       document.getElementById("vStatus").value = "ativo";
+      document.getElementById("vTipoComb").value = "diesel";
+      document.getElementById("vConsumo").value = "7.5";
       document.getElementById("vErro").style.display = "none";
       new bootstrap.Modal(document.getElementById("modalVeiculo")).show();
     } else {
@@ -452,6 +483,8 @@
     document.getElementById("vAno").value = v.ano || "";
     document.getElementById("vCapacidade").value = v.capacidade || 40;
     document.getElementById("vStatus").value = v.status || "ativo";
+    document.getElementById("vTipoComb").value = v.tipo_combustivel || "diesel";
+    document.getElementById("vConsumo").value = v.consumo_km_l || "7.5";
     document.getElementById("vFilial").value = v.filial || "";
     document.getElementById("vObs").value = v.observacao || "";
     document.getElementById("vErro").style.display = "none";
@@ -488,6 +521,8 @@
       ano: parseInt(document.getElementById("vAno").value) || null,
       capacidade: parseInt(document.getElementById("vCapacidade").value) || 40,
       status: document.getElementById("vStatus").value,
+      tipo_combustivel: document.getElementById("vTipoComb").value,
+      consumo_km_l: parseFloat(document.getElementById("vConsumo").value) || 7.5,
       filial: document.getElementById("vFilial").value.trim(),
       observacao: document.getElementById("vObs").value.trim(),
     };

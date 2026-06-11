@@ -427,10 +427,12 @@ def listar_veiculos() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                SELECT v.*, (
-                    SELECT COUNT(*) FROM rh_rota r
-                    WHERE r.veiculo = v.placa AND r.ativo
-                ) AS rotas_ativas
+                SELECT v.id, v.placa, v.modelo, v.ano, v.capacidade, v.filial,
+                       v.status, v.observacao, v.criado_em,
+                       COALESCE(v.consumo_km_l, 7.5)::FLOAT8 AS consumo_km_l,
+                       COALESCE(v.tipo_combustivel, 'diesel') AS tipo_combustivel,
+                       (SELECT COUNT(*) FROM rh_rota r
+                        WHERE r.veiculo = v.placa AND r.ativo) AS rotas_ativas
                 FROM rh_veiculo v
                 ORDER BY v.status, v.placa
             """)
@@ -445,19 +447,28 @@ def buscar_veiculo(vid: int) -> Optional[dict]:
 
 
 def criar_veiculo(placa: str, modelo: str, ano: Optional[int], capacidade: int,
-                  filial: str, status: str, observacao: str) -> dict:
+                  filial: str, status: str, observacao: str,
+                  consumo_km_l: Optional[float] = None,
+                  tipo_combustivel: str = 'diesel') -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
-                INSERT INTO rh_veiculo (placa, modelo, ano, capacidade, filial, status, observacao)
-                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *
-            """, (placa, modelo or None, ano or None, capacidade, filial or None, status, observacao or None))
+                INSERT INTO rh_veiculo
+                    (placa, modelo, ano, capacidade, filial, status, observacao,
+                     consumo_km_l, tipo_combustivel)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING id, placa, modelo, ano, capacidade, filial, status, observacao,
+                          COALESCE(consumo_km_l,7.5)::FLOAT8 AS consumo_km_l,
+                          COALESCE(tipo_combustivel,'diesel') AS tipo_combustivel, criado_em
+            """, (placa, modelo or None, ano or None, capacidade, filial or None, status,
+                  observacao or None, consumo_km_l or 7.5, tipo_combustivel or 'diesel'))
             conn.commit()
             return cur.fetchone()
 
 
 def atualizar_veiculo(vid: int, **kwargs) -> Optional[dict]:
-    allowed = {'placa', 'modelo', 'ano', 'capacidade', 'filial', 'status', 'observacao'}
+    allowed = {'placa', 'modelo', 'ano', 'capacidade', 'filial', 'status', 'observacao',
+               'consumo_km_l', 'tipo_combustivel'}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
     if not fields:
         return None
@@ -535,3 +546,74 @@ def deletar_motorista(mid: int) -> bool:
             cur.execute("DELETE FROM rh_motorista WHERE id = %s", (mid,))
             conn.commit()
             return cur.rowcount > 0
+
+
+# ── Combustível ──
+
+def listar_precos_combustivel() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT id, tipo, preco_litro::FLOAT8, cidade, estado, fonte,
+                       data_referencia::TEXT AS data_referencia, atualizado_em
+                FROM rh_combustivel_config
+                ORDER BY tipo
+            """)
+            return cur.fetchall()
+
+
+def upsert_preco_combustivel(tipo: str, preco_litro: float, fonte: str = 'manual') -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                INSERT INTO rh_combustivel_config (tipo, preco_litro, fonte, data_referencia)
+                VALUES (%s, %s, %s, CURRENT_DATE)
+                ON CONFLICT (tipo, cidade) DO UPDATE SET
+                    preco_litro     = EXCLUDED.preco_litro,
+                    fonte           = EXCLUDED.fonte,
+                    data_referencia = EXCLUDED.data_referencia,
+                    atualizado_em   = NOW()
+                RETURNING id, tipo, preco_litro::FLOAT8, cidade, estado, fonte,
+                          data_referencia::TEXT AS data_referencia, atualizado_em
+            """, (tipo, preco_litro, fonte))
+            conn.commit()
+            return cur.fetchone()
+
+
+def listar_rotas_para_custo() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT r.id, r.codigo, r.nome, r.turno, r.cor, r.veiculo,
+                       r.partida_lat::FLOAT8 AS partida_lat,
+                       r.partida_lng::FLOAT8 AS partida_lng,
+                       COALESCE(v.consumo_km_l, 7.5)::FLOAT8  AS consumo_km_l,
+                       COALESCE(v.tipo_combustivel, 'diesel')  AS tipo_combustivel,
+                       COUNT(c.id)                             AS total_colabs,
+                       COUNT(c.id) FILTER (WHERE c.geocodificado) AS colab_geocoded
+                FROM rh_rota r
+                LEFT JOIN rh_veiculo v ON v.placa = r.veiculo
+                LEFT JOIN rh_rota_colaborador c ON c.rota_id = r.id
+                WHERE r.ativo
+                GROUP BY r.id, v.consumo_km_l, v.tipo_combustivel
+                ORDER BY r.turno, r.codigo
+            """)
+            rotas = cur.fetchall()
+            if not rotas:
+                return []
+
+            rota_ids = [r['id'] for r in rotas]
+            placeholders = ','.join(['%s'] * len(rota_ids))
+            cur.execute(f"""
+                SELECT rota_id, lat::FLOAT8 AS lat, lng::FLOAT8 AS lng
+                FROM rh_rota_colaborador
+                WHERE rota_id IN ({placeholders}) AND geocodificado = TRUE
+                ORDER BY rota_id, ordem, id
+            """, rota_ids)
+            coords_raw = cur.fetchall()
+
+        coords_map: dict = {}
+        for c in coords_raw:
+            coords_map.setdefault(c['rota_id'], []).append((c['lat'], c['lng']))
+
+        return [{**dict(r), 'coords': coords_map.get(r['id'], [])} for r in rotas]
