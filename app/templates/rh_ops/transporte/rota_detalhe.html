@@ -542,17 +542,34 @@
   }
   window.toggleAddForm = toggleAddForm;
 
+  const drop = document.getElementById("buscaDrop");
+
+  drop.addEventListener("mousedown", e => {
+    const item = e.target.closest(".search-item");
+    if (!item) return;
+    e.preventDefault();
+    const id = parseInt(item.dataset.id);
+    const nome = item.dataset.nome;
+    document.getElementById("selEmployeeId").value = id;
+    document.getElementById("busca").value = nome;
+    document.getElementById("fNome").value = nome;
+    drop.style.display = "none";
+  });
+
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".search-wrap")) drop.style.display = "none";
+  });
+
   let buscaTimer = null;
   function onBusca(val) {
     clearTimeout(buscaTimer);
-    const drop = document.getElementById("buscaDrop");
     if (val.length < 2) { drop.style.display = "none"; return; }
     buscaTimer = setTimeout(async () => {
       const r = await fetch(`/rh-ops/api/transporte/employees/buscar?q=${encodeURIComponent(val)}`);
       const employees = await r.json();
       if (!employees.length) { drop.style.display = "none"; return; }
       drop.innerHTML = employees.map(e => `
-        <div class="search-item" onclick="selecionarEmployee(${e.id}, ${JSON.stringify(e.full_name)})">
+        <div class="search-item" data-id="${e.id}" data-nome="${escHtml(e.full_name)}">
           <strong>${escHtml(e.full_name)}</strong>
           <span style="color:var(--text-muted);font-size:0.75rem;"> — ${escHtml(e.employee_code)} · ${escHtml(e.department || "")}</span>
         </div>`).join("");
@@ -560,20 +577,6 @@
     }, 280);
   }
   window.onBusca = onBusca;
-
-  function selecionarEmployee(id, nome) {
-    document.getElementById("selEmployeeId").value = id;
-    document.getElementById("busca").value = nome;
-    document.getElementById("fNome").value = nome;
-    document.getElementById("buscaDrop").style.display = "none";
-  }
-  window.selecionarEmployee = selecionarEmployee;
-
-  document.addEventListener("click", e => {
-    if (!e.target.closest(".search-wrap")) {
-      document.getElementById("buscaDrop").style.display = "none";
-    }
-  });
 
   async function addColab() {
     const nome = document.getElementById("fNome").value.trim();
