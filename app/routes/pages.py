@@ -4040,6 +4040,208 @@ def eng_aut_redes():
     return render_template("engenharia/automacao/redes.html", active_menu="eng_hub")
 
 
+# PCI Studio
+
+@bp.route("/engenharia/pci-studio", methods=["GET"])
+@login_required
+def eng_pci_studio_hub():
+    from app.repositories import pci_studio_repository as repo
+    projetos = repo.listar_projetos()
+    stats = repo.stats_biblioteca()
+    return render_template(
+        "engenharia/pci_studio/hub.html",
+        active_menu="eng_pci_studio_hub",
+        projetos=projetos,
+        stats=stats,
+    )
+
+
+@bp.route("/engenharia/pci-studio/projetos/<int:projeto_id>", methods=["GET"])
+@login_required
+def eng_pci_studio_detalhe(projeto_id):
+    from flask import abort
+    from app.repositories import pci_studio_repository as repo
+    projeto = repo.buscar_projeto_com_bom(projeto_id)
+    if not projeto:
+        abort(404)
+    return render_template(
+        "engenharia/pci_studio/projeto_detalhe.html",
+        active_menu="eng_pci_studio_hub",
+        projeto=projeto,
+    )
+
+
+@bp.route("/engenharia/pci-studio/componentes", methods=["GET"])
+@login_required
+def eng_pci_studio_componentes():
+    from app.repositories import pci_studio_repository as repo
+    componentes = repo.listar_componentes()
+    stats = repo.stats_biblioteca()
+    return render_template(
+        "engenharia/pci_studio/componentes.html",
+        active_menu="eng_pci_studio_componentes",
+        componentes=componentes,
+        stats=stats,
+    )
+
+
+@bp.route("/engenharia/api/pci-studio/projetos", methods=["POST"])
+@login_required
+def eng_api_pci_criar_projeto():
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    data = request.get_json(force=True) or {}
+    try:
+        projeto = repo.criar_projeto(
+            nome=data.get("nome", "").strip(),
+            codigo=data.get("codigo", "").strip(),
+            descricao=data.get("descricao", "").strip(),
+            comp_mm=float(data.get("comp_mm", 100)),
+            larg_mm=float(data.get("larg_mm", 80)),
+            esp_mm=float(data.get("esp_mm", 1.6)),
+            cor_placa=data.get("cor_placa", "#1d4f2a"),
+            criado_por=current_user.id,
+        )
+        return jsonify({"ok": True, "projeto": dict(projeto)}), 201
+    except Exception as exc:
+        return jsonify({"ok": False, "erro": str(exc)}), 400
+
+
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>", methods=["PUT"])
+@login_required
+def eng_api_pci_atualizar_projeto(projeto_id):
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    data = request.get_json(force=True) or {}
+    result = repo.atualizar_projeto(projeto_id, **data)
+    if not result:
+        return jsonify({"ok": False, "erro": "Projeto não encontrado"}), 404
+    return jsonify({"ok": True, "projeto": dict(result)})
+
+
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>", methods=["DELETE"])
+@login_required
+def eng_api_pci_deletar_projeto(projeto_id):
+    from flask import jsonify
+    from app.repositories import pci_studio_repository as repo
+    ok = repo.deletar_projeto(projeto_id)
+    return jsonify({"ok": ok})
+
+
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>/bom/detectar-colunas", methods=["POST"])
+@login_required
+def eng_api_pci_detectar_colunas(projeto_id):
+    from flask import request, jsonify
+    from app.services import pci_studio_service as svc
+    f = request.files.get("arquivo")
+    if not f:
+        return jsonify({"ok": False, "erro": "Arquivo não enviado"}), 400
+    conteudo = f.read().decode("utf-8-sig", errors="replace")
+    import csv, io
+    reader = csv.reader(io.StringIO(conteudo))
+    try:
+        header = next(reader)
+    except StopIteration:
+        return jsonify({"ok": False, "erro": "CSV vazio"}), 400
+    mapa = svc.detectar_colunas(header)
+    return jsonify({"ok": True, "header": header, "mapa": mapa})
+
+
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>/bom/importar", methods=["POST"])
+@login_required
+def eng_api_pci_importar_bom(projeto_id):
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    from app.services import pci_studio_service as svc
+    import json as _json
+    f = request.files.get("arquivo")
+    mapa_raw = request.form.get("mapa", "{}")
+    if not f:
+        return jsonify({"ok": False, "erro": "Arquivo não enviado"}), 400
+    try:
+        mapa = _json.loads(mapa_raw)
+    except ValueError:
+        mapa = {}
+    conteudo = f.read().decode("utf-8-sig", errors="replace")
+    projeto = repo.buscar_projeto(projeto_id)
+    if not projeto:
+        return jsonify({"ok": False, "erro": "Projeto não encontrado"}), 404
+    items = svc.parse_bom_csv(conteudo, mapa)
+    items, matched = svc.auto_match_componentes(items)
+    items = svc.gerar_posicoes_automaticas(items, projeto["comp_mm"], projeto["larg_mm"])
+    if request.form.get("substituir") == "1":
+        repo.deletar_bom_items_projeto(projeto_id)
+    count = repo.inserir_bom_items(projeto_id, items)
+    return jsonify({"ok": True, "inseridos": count, "matched": matched})
+
+
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>/bom", methods=["GET"])
+@login_required
+def eng_api_pci_bom_json(projeto_id):
+    from flask import jsonify, abort
+    from app.repositories import pci_studio_repository as repo
+    projeto = repo.buscar_projeto_com_bom(projeto_id)
+    if not projeto:
+        abort(404)
+    return jsonify(projeto)
+
+
+@bp.route("/engenharia/api/pci-studio/bom/<int:item_id>", methods=["PATCH"])
+@login_required
+def eng_api_pci_atualizar_bom_item(item_id):
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    data = request.get_json(force=True) or {}
+    result = repo.atualizar_bom_item(item_id, **data)
+    if not result:
+        return jsonify({"ok": False, "erro": "Item não encontrado"}), 404
+    return jsonify({"ok": True, "item": dict(result)})
+
+
+@bp.route("/engenharia/api/pci-studio/componentes", methods=["GET"])
+@login_required
+def eng_api_pci_listar_componentes():
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    tipo = request.args.get("tipo")
+    componentes = repo.listar_componentes(tipo)
+    return jsonify([dict(c) for c in componentes])
+
+
+@bp.route("/engenharia/api/pci-studio/componentes", methods=["POST"])
+@login_required
+def eng_api_pci_criar_componente():
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    data = request.get_json(force=True) or {}
+    try:
+        comp = repo.criar_componente(**data)
+        return jsonify({"ok": True, "componente": dict(comp)}), 201
+    except Exception as exc:
+        return jsonify({"ok": False, "erro": str(exc)}), 400
+
+
+@bp.route("/engenharia/api/pci-studio/componentes/<int:comp_id>", methods=["PUT"])
+@login_required
+def eng_api_pci_atualizar_componente(comp_id):
+    from flask import request, jsonify
+    from app.repositories import pci_studio_repository as repo
+    data = request.get_json(force=True) or {}
+    result = repo.atualizar_componente(comp_id, **data)
+    if not result:
+        return jsonify({"ok": False, "erro": "Componente não encontrado"}), 404
+    return jsonify({"ok": True, "componente": dict(result)})
+
+
+@bp.route("/engenharia/api/pci-studio/componentes/<int:comp_id>", methods=["DELETE"])
+@login_required
+def eng_api_pci_deletar_componente(comp_id):
+    from flask import jsonify
+    from app.repositories import pci_studio_repository as repo
+    ok = repo.deletar_componente(comp_id)
+    return jsonify({"ok": ok})
+
+
 # Engenharia de Manutenção
 
 @bp.route("/engenharia/manutencao/preventiva", methods=["GET"])

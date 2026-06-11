@@ -1,0 +1,580 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Studio</span>
+    <h1 class="page-header-name">{{ projeto.nome }}</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" id="btnImportarBOM" title="Importar BOM">
+      <i class="bi bi-upload"></i>
+    </button>
+    <button class="btn-header-icon" id="btnToggleLado" title="Alternar Top/Bottom">
+      <i class="bi bi-layers"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.studio-layout { display:flex; gap:16px; height:calc(100vh - 160px); min-height:480px; }
+
+/* Painel lateral */
+.studio-sidebar { width:280px; flex-shrink:0; display:flex; flex-direction:column; gap:12px;
+                  overflow-y:auto; }
+.studio-panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; }
+.studio-panel-title { font-size:0.72rem; font-weight:700; text-transform:uppercase;
+                      letter-spacing:0.5px; color:var(--text-muted); margin-bottom:10px; }
+
+/* Viewer */
+.studio-viewer-wrap { flex:1; min-width:0; background:var(--card); border:1px solid var(--border);
+                      border-radius:12px; position:relative; overflow:hidden; }
+#threeCanvas { width:100%; height:100%; display:block; }
+.viewer-overlay { position:absolute; top:10px; left:10px; display:flex; flex-direction:column; gap:6px; }
+.viewer-btn { background:rgba(255,255,255,0.9); border:1px solid var(--border); border-radius:8px;
+              padding:6px 10px; font-size:0.78rem; font-weight:600; color:var(--text); cursor:pointer;
+              transition:all 0.12s; backdrop-filter:blur(4px); }
+.viewer-btn:hover { background:#fff; box-shadow:0 2px 8px rgba(15,23,42,0.1); }
+.viewer-btn.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
+
+.viewer-stats { position:absolute; bottom:10px; left:10px; background:rgba(15,23,42,0.7);
+                border-radius:8px; padding:6px 12px; color:rgba(255,255,255,0.85);
+                font-size:0.72rem; font-weight:600; backdrop-filter:blur(4px); }
+
+/* Tooltip 3D */
+.comp-tooltip { position:absolute; background:rgba(15,23,42,0.92); color:#fff;
+                border-radius:8px; padding:8px 12px; font-size:0.78rem; pointer-events:none;
+                display:none; z-index:10; max-width:200px; }
+.comp-tooltip strong { display:block; font-size:0.82rem; margin-bottom:2px; }
+
+/* BOM list */
+.bom-search { width:100%; border:1px solid var(--border); border-radius:8px; padding:6px 10px;
+              font-size:0.8rem; color:var(--text); background:var(--bg); outline:none; }
+.bom-search:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
+.bom-list { flex:1; overflow-y:auto; margin-top:8px; display:flex; flex-direction:column; gap:2px; }
+.bom-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px;
+            cursor:pointer; transition:background 0.1s; }
+.bom-item:hover { background:var(--bg); }
+.bom-item.hidden-comp { opacity:0.35; }
+.bom-item.selected-comp { background:rgba(99,102,241,0.1); }
+.bom-dot  { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.bom-des  { font-size:0.8rem; font-weight:600; color:var(--text); min-width:40px; }
+.bom-pkg  { font-size:0.72rem; color:var(--text-muted); flex:1; white-space:nowrap;
+            overflow:hidden; text-overflow:ellipsis; }
+.bom-eye  { font-size:0.78rem; color:var(--text-muted); cursor:pointer; padding:2px; }
+.bom-eye:hover { color:var(--text); }
+
+/* Filtros */
+.filter-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { font-size:0.72rem; font-weight:600; padding:3px 10px; border-radius:20px; cursor:pointer;
+        border:1px solid var(--border); background:transparent; color:var(--text-muted);
+        transition:all 0.12s; }
+.chip.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
+
+/* Resumo info */
+.info-row { display:flex; justify-content:space-between; align-items:center;
+            padding:5px 0; border-bottom:1px solid var(--border); font-size:0.8rem; }
+.info-row:last-child { border-bottom:none; }
+.info-key { color:var(--text-muted); font-weight:500; }
+.info-val { color:var(--text); font-weight:600; }
+
+/* Mobile: stack layout */
+@media (max-width:767px) {
+  .studio-layout { flex-direction:column; height:auto; }
+  .studio-sidebar { width:100%; order:2; }
+  .studio-viewer-wrap { height:55vw; min-height:260px; order:1; }
+}
+
+/* Import BOM modal */
+.step-indicator { display:flex; gap:0; margin-bottom:20px; }
+.step-dot { flex:1; text-align:center; font-size:0.72rem; font-weight:700; padding:6px 0;
+            color:var(--text-muted); border-bottom:2px solid var(--border); }
+.step-dot.active { color:#6366f1; border-color:#6366f1; }
+.step-dot.done   { color:#198754; border-color:#198754; }
+
+.col-map-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.col-map-lbl { width:90px; font-size:0.78rem; font-weight:600; color:var(--text); flex-shrink:0; }
+.col-map-sel { flex:1; font-size:0.8rem; }
+</style>
+
+<div class="studio-layout">
+
+  <!-- ── Painel Esquerdo ── -->
+  <div class="studio-sidebar">
+
+    <!-- Info da placa -->
+    <div class="studio-panel">
+      <div class="studio-panel-title">Placa</div>
+      <div class="info-row"><span class="info-key">Comp.</span><span class="info-val">{{ projeto.comp_mm }} mm</span></div>
+      <div class="info-row"><span class="info-key">Larg.</span><span class="info-val">{{ projeto.larg_mm }} mm</span></div>
+      <div class="info-row"><span class="info-key">Esp.</span><span class="info-val">{{ projeto.esp_mm }} mm</span></div>
+      <div class="info-row"><span class="info-key">Itens</span><span class="info-val" id="infoTotal">{{ projeto.itens|length }}</span></div>
+      <div class="info-row"><span class="info-key">Visíveis</span><span class="info-val" id="infoVisiveis">{{ projeto.itens|length }}</span></div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="studio-panel">
+      <div class="studio-panel-title">Filtros</div>
+      <div class="filter-chips">
+        <button class="chip active" data-filter="all"  onclick="setFiltro('all',this)">Todos</button>
+        <button class="chip"        data-filter="smd"  onclick="setFiltro('smd',this)">SMD</button>
+        <button class="chip"        data-filter="pth"  onclick="setFiltro('pth',this)">PTH</button>
+        <button class="chip"        data-filter="conector" onclick="setFiltro('conector',this)">Conector</button>
+        <button class="chip"        data-filter="top"    onclick="setFiltro('top',this)">Top</button>
+        <button class="chip"        data-filter="bottom" onclick="setFiltro('bottom',this)">Bottom</button>
+      </div>
+    </div>
+
+    <!-- Lista BOM -->
+    <div class="studio-panel" style="flex:1;display:flex;flex-direction:column;min-height:200px;">
+      <div class="studio-panel-title">Componentes BOM</div>
+      <input class="bom-search" id="bomSearch" placeholder="Buscar designator..." oninput="filtrarBomLista()">
+      <div class="bom-list" id="bomList"></div>
+    </div>
+
+  </div>
+
+  <!-- ── Viewer 3D ── -->
+  <div class="studio-viewer-wrap">
+    <canvas id="threeCanvas"></canvas>
+
+    <div class="viewer-overlay">
+      <button class="viewer-btn active" id="btnTop" onclick="definirLado('top')">Top</button>
+      <button class="viewer-btn"        id="btnBot" onclick="definirLado('bottom')">Bottom</button>
+      <button class="viewer-btn"        onclick="resetCamera()"><i class="bi bi-fullscreen-exit"></i> Reset</button>
+      <button class="viewer-btn"        onclick="toggleWireframe()">Wire</button>
+    </div>
+
+    <div class="viewer-stats" id="viewerStats">0 componentes</div>
+    <div class="comp-tooltip" id="compTooltip"></div>
+  </div>
+
+</div>
+
+<!-- Modal Importar BOM -->
+<div class="modal fade" id="modalBOM" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700">Importar BOM (CSV)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="step-indicator">
+          <div class="step-dot active" id="step1dot">1. Arquivo</div>
+          <div class="step-dot"        id="step2dot">2. Colunas</div>
+          <div class="step-dot"        id="step3dot">3. Confirmar</div>
+        </div>
+
+        <!-- Step 1 -->
+        <div id="stepArquivo">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Arquivo CSV</label>
+          <input type="file" class="form-control form-control-sm" id="bomFile" accept=".csv,.txt">
+          <div class="mt-3">
+            <label class="form-check">
+              <input type="checkbox" class="form-check-input" id="chkSubstituir" checked>
+              <span class="form-check-label" style="font-size:0.82rem;">Substituir BOM atual</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="stepColunas" style="display:none;">
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">
+            Mapeie as colunas do seu CSV para os campos do sistema.
+          </p>
+          <div id="colMapContainer"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="stepConfirmar" style="display:none;">
+          <div id="importResumo" style="font-size:0.88rem;"></div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnBomBack" style="display:none;" onclick="bomStepBack()">Voltar</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm text-white fw-600" id="btnBomNext"
+                style="background:#6366f1;border-color:#6366f1;border-radius:8px;"
+                onclick="bomStepNext()">Próximo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.155.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const PROJETO_ID = {{ projeto.id }};
+const BOARD_W    = {{ projeto.comp_mm }};
+const BOARD_H    = {{ projeto.larg_mm }};
+const BOARD_ESP  = {{ projeto.esp_mm }};
+const BOARD_COR  = '{{ projeto.cor_placa }}';
+
+let allItems  = {{ projeto.itens | tojson }};
+let meshMap   = {};
+let hiddenSet = new Set();
+let ladoAtual = 'top';
+let filtroAtual = 'all';
+let wireframe = false;
+let selectedMesh = null;
+
+// ── Three.js setup ──
+const canvas  = document.getElementById('threeCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0xf1f5f9);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
+resetCameraPos();
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+// Luzes
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+dir.position.set(BOARD_W, BOARD_W * 1.5, BOARD_H);
+dir.castShadow = true;
+scene.add(dir);
+scene.add(new THREE.DirectionalLight(0xc8d8f0, 0.4).position.set(-BOARD_W, BOARD_H, -BOARD_W) && dir);
+
+// Placa
+const boardGeo = new THREE.BoxGeometry(BOARD_W, BOARD_ESP, BOARD_H);
+const boardMat = new THREE.MeshPhongMaterial({ color: new THREE.Color(BOARD_COR) });
+const boardMesh = new THREE.Mesh(boardGeo, boardMat);
+boardMesh.receiveShadow = true;
+boardMesh.userData.isBoard = true;
+scene.add(boardMesh);
+
+// Grid lines on board top
+const gridHelper = new THREE.GridHelper(Math.max(BOARD_W, BOARD_H), 10, 0x2d6a4f, 0x2d6a4f);
+gridHelper.material.opacity = 0.15;
+gridHelper.material.transparent = true;
+gridHelper.position.y = BOARD_ESP / 2 + 0.01;
+scene.add(gridHelper);
+
+function hexColor(hex) {
+  return new THREE.Color(hex || '#64748b');
+}
+
+function buildComponents(items) {
+  Object.values(meshMap).forEach(m => scene.remove(m));
+  meshMap = {};
+
+  items.forEach(item => {
+    if (!item.ativo) return;
+    const w   = item.comp_mm || 2;
+    const d   = item.larg_mm || 2;
+    const h   = item.alt_mm  || 1;
+    const isBottom = item.lado === 'bottom';
+    const ySign = isBottom ? -1 : 1;
+    const yBase = isBottom
+      ? -(BOARD_ESP / 2 + h / 2)
+      :  (BOARD_ESP / 2 + h / 2);
+
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mat = new THREE.MeshPhongMaterial({
+      color: hexColor(item.cor_hex),
+      shininess: 60,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+
+    const px = (item.pos_x || 0) - BOARD_W / 2;
+    const pz = -((item.pos_y || 0) - BOARD_H / 2);
+    mesh.position.set(px, yBase, pz);
+
+    if (item.angulo) {
+      mesh.rotation.y = THREE.MathUtils.degToRad(-item.angulo);
+    }
+
+    mesh.userData = { item };
+    meshMap[item.id] = mesh;
+    scene.add(mesh);
+  });
+
+  atualizarVisibilidade();
+  atualizarStats();
+}
+
+function atualizarVisibilidade() {
+  let vis = 0;
+  Object.entries(meshMap).forEach(([id, mesh]) => {
+    const item = mesh.userData.item;
+    const oculto = hiddenSet.has(Number(id));
+    const ladoOk = filtroAtual === 'all' || filtroAtual === item.lado ||
+                   filtroAtual === item.tipo;
+    mesh.visible = !oculto && ladoOk;
+    if (mesh.visible) vis++;
+  });
+  document.getElementById('infoVisiveis').textContent = vis;
+  atualizarStats();
+}
+
+function atualizarStats() {
+  const vis = Object.values(meshMap).filter(m => m.visible).length;
+  document.getElementById('viewerStats').textContent =
+    `${vis} / ${allItems.filter(i=>i.ativo).length} componentes`;
+}
+
+function resetCameraPos() {
+  const d = Math.max(BOARD_W, BOARD_H) * 1.8;
+  camera.position.set(0, d, d * 0.6);
+  camera.lookAt(0, 0, 0);
+}
+
+window.resetCamera = resetCameraPos;
+
+window.definirLado = function(lado) {
+  ladoAtual = lado;
+  const fator = lado === 'bottom' ? -1 : 1;
+  const d = Math.max(BOARD_W, BOARD_H) * 1.8;
+  camera.position.set(0, d * fator, d * 0.5 * fator);
+  camera.lookAt(0, 0, 0);
+  document.getElementById('btnTop').classList.toggle('active', lado === 'top');
+  document.getElementById('btnBot').classList.toggle('active', lado === 'bottom');
+};
+
+window.toggleWireframe = function() {
+  wireframe = !wireframe;
+  Object.values(meshMap).forEach(m => { m.material.wireframe = wireframe; });
+};
+
+// Raycaster / tooltip
+const raycaster = new THREE.Raycaster();
+const mouse     = new THREE.Vector2();
+const tooltip   = document.getElementById('compTooltip');
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(Object.values(meshMap).filter(m => m.visible));
+  if (hits.length) {
+    const item = hits[0].object.userData.item;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
+    tooltip.style.top  = (e.clientY - rect.top  - 10) + 'px';
+    tooltip.innerHTML  = `<strong>${item.designator}</strong>
+      ${item.valor ? item.valor + '<br>' : ''}
+      ${item.package || ''}<br>
+      <span style="opacity:.7">${item.tipo.toUpperCase()} · ${item.lado}</span>`;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(Object.values(meshMap).filter(m => m.visible));
+  const item = hits.length ? hits[0].object.userData.item : null;
+  selecionarItem(item ? item.id : null);
+});
+
+function selecionarItem(id) {
+  if (selectedMesh) {
+    selectedMesh.material.emissive.setHex(0x000000);
+    selectedMesh = null;
+  }
+  document.querySelectorAll('.bom-item').forEach(el => el.classList.remove('selected-comp'));
+  if (id && meshMap[id]) {
+    selectedMesh = meshMap[id];
+    selectedMesh.material.emissive.setHex(0x6366f1);
+    const el = document.querySelector(`.bom-item[data-id="${id}"]`);
+    if (el) { el.classList.add('selected-comp'); el.scrollIntoView({block:'nearest'}); }
+  }
+}
+
+// Resize
+function onResize() {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(onResize).observe(canvas);
+onResize();
+
+// Render loop
+(function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+// BOM list render
+function renderBomLista(items) {
+  const list = document.getElementById('bomList');
+  const q = document.getElementById('bomSearch').value.trim().toLowerCase();
+  const filtered = items.filter(i =>
+    i.ativo && (!q || i.designator.toLowerCase().includes(q) ||
+    (i.package||'').toLowerCase().includes(q) || (i.valor||'').toLowerCase().includes(q))
+  );
+  list.innerHTML = filtered.map(item => `
+    <div class="bom-item ${hiddenSet.has(item.id)?'hidden-comp':''}"
+         data-id="${item.id}" onclick="window._selectItem(${item.id})">
+      <div class="bom-dot" style="background:${item.cor_hex||'#64748b'};"></div>
+      <span class="bom-des">${item.designator}</span>
+      <span class="bom-pkg">${item.package||item.valor||''}</span>
+      <span class="bom-eye bi ${hiddenSet.has(item.id)?'bi-eye-slash':'bi-eye'}"
+            onclick="event.stopPropagation(); window._toggleHide(${item.id})"></span>
+    </div>
+  `).join('');
+}
+
+window._selectItem = id => selecionarItem(id);
+window._toggleHide = id => {
+  if (hiddenSet.has(id)) hiddenSet.delete(id);
+  else hiddenSet.add(id);
+  atualizarVisibilidade();
+  renderBomLista(allItems);
+};
+
+window.filtrarBomLista = () => renderBomLista(allItems);
+
+window.setFiltro = (f, btn) => {
+  filtroAtual = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  atualizarVisibilidade();
+};
+
+// Init
+buildComponents(allItems);
+renderBomLista(allItems);
+document.getElementById('infoTotal').textContent = allItems.filter(i=>i.ativo).length;
+
+// ── BOM Import ──
+let bomStep = 1;
+let bomHeader = [];
+let bomMapa   = {};
+
+document.getElementById('btnImportarBOM').addEventListener('click', () => {
+  bomStep = 1;
+  atualizarBomStepUI();
+  new bootstrap.Modal(document.getElementById('modalBOM')).show();
+});
+
+document.getElementById('btnToggleLado').addEventListener('click', () => {
+  window.definirLado(ladoAtual === 'top' ? 'bottom' : 'top');
+});
+
+function atualizarBomStepUI() {
+  document.getElementById('stepArquivo').style.display  = bomStep===1?'':'none';
+  document.getElementById('stepColunas').style.display  = bomStep===2?'':'none';
+  document.getElementById('stepConfirmar').style.display= bomStep===3?'':'none';
+  ['step1dot','step2dot','step3dot'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'step-dot' + (i+1 < bomStep ? ' done' : i+1 === bomStep ? ' active' : '');
+  });
+  document.getElementById('btnBomBack').style.display = bomStep>1 ? '' : 'none';
+  document.getElementById('btnBomNext').textContent   = bomStep===3 ? 'Importar' : 'Próximo';
+}
+
+window.bomStepBack = () => { bomStep--; atualizarBomStepUI(); };
+
+window.bomStepNext = async () => {
+  if (bomStep === 1) {
+    const f = document.getElementById('bomFile').files[0];
+    if (!f) { alert('Selecione um arquivo CSV'); return; }
+    const fd = new FormData();
+    fd.append('arquivo', f);
+    const res = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/detectar-colunas`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (!data.ok) { alert(data.erro||'Erro ao ler arquivo'); return; }
+    bomHeader = data.header;
+    bomMapa   = data.mapa;
+    renderColMap();
+    bomStep = 2;
+  } else if (bomStep === 2) {
+    const campos = ['designator','valor','package','descricao','part_number','tipo','pos_x','pos_y','angulo','lado'];
+    campos.forEach(c => {
+      const sel = document.getElementById(`map_${c}`);
+      if (sel && sel.value) bomMapa[c] = sel.value; else delete bomMapa[c];
+    });
+    const total = allItems.filter(i=>i.ativo).length;
+    document.getElementById('importResumo').innerHTML =
+      `<p>Mapeamento configurado. ${Object.keys(bomMapa).length} campos mapeados.</p>
+       <p style="color:var(--text-muted);font-size:0.82rem;">
+         ${document.getElementById('chkSubstituir').checked
+           ? `⚠️ Os ${total} itens atuais serão substituídos.`
+           : 'Os novos itens serão adicionados à BOM existente.'}
+       </p>`;
+    bomStep = 3;
+  } else {
+    const f = document.getElementById('bomFile').files[0];
+    const fd = new FormData();
+    fd.append('arquivo', f);
+    fd.append('mapa', JSON.stringify(bomMapa));
+    fd.append('substituir', document.getElementById('chkSubstituir').checked ? '1' : '0');
+    const res = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/importar`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.ok) {
+      bootstrap.Modal.getInstance(document.getElementById('modalBOM')).hide();
+      window.location.reload();
+    } else {
+      alert(data.erro || 'Erro ao importar');
+    }
+  }
+  atualizarBomStepUI();
+};
+
+function renderColMap() {
+  const campos = [
+    {key:'designator', label:'Designator *'},
+    {key:'valor',      label:'Valor'},
+    {key:'package',    label:'Package'},
+    {key:'descricao',  label:'Descrição'},
+    {key:'part_number',label:'Part Number'},
+    {key:'tipo',       label:'Tipo'},
+    {key:'pos_x',      label:'Pos X'},
+    {key:'pos_y',      label:'Pos Y'},
+    {key:'angulo',     label:'Ângulo'},
+    {key:'lado',       label:'Lado'},
+  ];
+  const opts = ['<option value="">-- não mapear --</option>',
+    ...bomHeader.map(h => `<option value="${h}">${h}</option>`)].join('');
+  document.getElementById('colMapContainer').innerHTML = campos.map(c => `
+    <div class="col-map-row">
+      <span class="col-map-lbl">${c.label}</span>
+      <select id="map_${c.key}" class="form-select form-select-sm col-map-sel">
+        ${opts}
+      </select>
+    </div>
+  `).join('');
+  campos.forEach(c => {
+    if (bomMapa[c.key]) {
+      const sel = document.getElementById(`map_${c.key}`);
+      if (sel) sel.value = bomMapa[c.key];
+    }
+  });
+}
+</script>
+{% endblock %}

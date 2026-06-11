@@ -1,0 +1,294 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">Engenharia</span>
+    <h1 class="page-header-name">PCI Studio</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_hub') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <a href="{{ url_for('pages.eng_pci_studio_componentes') }}" class="btn-header-icon" title="Acervo de Componentes">
+      <i class="bi bi-collection"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.studio-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+.studio-stat  { background:var(--card); border:1px solid var(--border); border-radius:12px;
+                padding:14px 20px; display:flex; align-items:center; gap:12px; min-width:140px; }
+.studio-stat-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center;
+                    justify-content:center; font-size:1.1rem; flex-shrink:0; }
+.studio-stat-val  { font-size:1.25rem; font-weight:700; color:var(--text); line-height:1; }
+.studio-stat-lbl  { font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;
+                    letter-spacing:0.4px; }
+
+.project-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+.project-card { background:var(--card); border:1px solid var(--border); border-radius:12px;
+                padding:20px; cursor:pointer; transition:box-shadow 0.15s, border-color 0.15s;
+                text-decoration:none; color:inherit; display:block; }
+.project-card:hover { box-shadow:0 4px 16px rgba(15,23,42,0.08); border-color:rgba(99,102,241,0.3); }
+.project-card-top    { display:flex; align-items:flex-start; gap:14px; margin-bottom:12px; }
+.project-board-thumb { width:48px; height:32px; border-radius:6px; flex-shrink:0; border:1px solid var(--border); }
+.project-name  { font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:2px; }
+.project-code  { font-size:0.78rem; color:var(--text-muted); font-weight:500; }
+.project-meta  { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.project-badge { font-size:0.72rem; font-weight:600; padding:2px 8px; border-radius:20px; }
+.badge-smd     { background:rgba(100,116,139,0.12); color:#475569; }
+.badge-items   { background:rgba(99,102,241,0.12); color:#6366f1; }
+.badge-dim     { background:rgba(25,135,84,0.10); color:#198754; }
+
+.project-actions { display:flex; gap:6px; margin-top:12px; padding-top:12px;
+                   border-top:1px solid var(--border); }
+.project-action-btn { font-size:0.78rem; padding:5px 10px; border-radius:6px; border:1px solid var(--border);
+                      background:transparent; color:var(--text-muted); cursor:pointer;
+                      transition:all 0.12s; display:flex; align-items:center; gap:4px; }
+.project-action-btn:hover { background:var(--bg); color:var(--text); }
+.project-action-btn.danger:hover { background:rgba(220,53,69,0.08); color:#dc3545; border-color:rgba(220,53,69,0.2); }
+
+.empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.empty-state i { font-size:3rem; margin-bottom:16px; display:block; opacity:0.4; }
+.empty-state p { font-size:0.9rem; margin-bottom:20px; }
+
+/* Modal */
+.form-label-sm { font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+.color-row { display:flex; gap:8px; flex-wrap:wrap; }
+.color-opt { width:28px; height:28px; border-radius:6px; cursor:pointer; border:2px solid transparent;
+             transition:border-color 0.12s; }
+.color-opt.active, .color-opt:hover { border-color:var(--text); }
+</style>
+
+<div class="studio-stats">
+  <div class="studio-stat">
+    <div class="studio-stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1;">
+      <i class="bi bi-diagram-3"></i>
+    </div>
+    <div>
+      <div class="studio-stat-val">{{ projetos|length }}</div>
+      <div class="studio-stat-lbl">Projetos</div>
+    </div>
+  </div>
+  <div class="studio-stat">
+    <div class="studio-stat-icon" style="background:rgba(100,116,139,0.12);color:#475569;">
+      <i class="bi bi-cpu"></i>
+    </div>
+    <div>
+      <div class="studio-stat-val">{{ stats.smd or 0 }}</div>
+      <div class="studio-stat-lbl">SMD na lib.</div>
+    </div>
+  </div>
+  <div class="studio-stat">
+    <div class="studio-stat-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;">
+      <i class="bi bi-plug"></i>
+    </div>
+    <div>
+      <div class="studio-stat-val">{{ stats.pth or 0 }}</div>
+      <div class="studio-stat-lbl">PTH na lib.</div>
+    </div>
+  </div>
+  <div class="studio-stat">
+    <div class="studio-stat-icon" style="background:rgba(100,116,139,0.12);color:#475569;">
+      <i class="bi bi-usb-plug"></i>
+    </div>
+    <div>
+      <div class="studio-stat-val">{{ stats.conector or 0 }}</div>
+      <div class="studio-stat-lbl">Conectores lib.</div>
+    </div>
+  </div>
+  <button class="btn btn-sm ms-auto" style="background:rgba(99,102,241,0.1);color:#6366f1;border:1px solid rgba(99,102,241,0.25);border-radius:8px;font-weight:600;align-self:center;"
+          onclick="abrirModalNovoProjeto()">
+    <i class="bi bi-plus-lg me-1"></i>Novo Projeto
+  </button>
+</div>
+
+{% if projetos %}
+<div class="project-grid" id="projectGrid">
+  {% for p in projetos %}
+  <a href="{{ url_for('pages.eng_pci_studio_detalhe', projeto_id=p.id) }}" class="project-card">
+    <div class="project-card-top">
+      <div class="project-board-thumb" style="background:{{ p.cor_placa }};"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="project-name">{{ p.nome }}</div>
+        {% if p.codigo %}<div class="project-code">{{ p.codigo }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="project-meta">
+      <span class="project-badge badge-items"><i class="bi bi-layers me-1"></i>{{ p.itens_ativos or 0 }} itens</span>
+      <span class="project-badge badge-dim">{{ p.comp_mm }}×{{ p.larg_mm }} mm</span>
+      <span class="project-badge badge-smd">{{ p.esp_mm }} mm esp.</span>
+    </div>
+    <div class="project-actions" onclick="event.preventDefault();">
+      <button class="project-action-btn"
+              onclick="event.stopPropagation(); window.location='{{ url_for('pages.eng_pci_studio_detalhe', projeto_id=p.id) }}'">
+        <i class="bi bi-eye"></i> Abrir
+      </button>
+      <button class="project-action-btn"
+              onclick="event.stopPropagation(); editarProjeto({{ p.id }}, {{ p|tojson }})">
+        <i class="bi bi-pencil"></i> Editar
+      </button>
+      <button class="project-action-btn danger"
+              onclick="event.stopPropagation(); deletarProjeto({{ p.id }}, '{{ p.nome|e }}')">
+        <i class="bi bi-trash3"></i>
+      </button>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <i class="bi bi-cpu-fill"></i>
+  <p>Nenhum projeto PCI cadastrado ainda.</p>
+  <button class="btn btn-sm" style="background:#6366f1;color:#fff;border-radius:8px;font-weight:600;padding:8px 20px;"
+          onclick="abrirModalNovoProjeto()">
+    <i class="bi bi-plus-lg me-1"></i>Criar Primeiro Projeto
+  </button>
+</div>
+{% endif %}
+
+<!-- Modal Projeto -->
+<div class="modal fade" id="modalProjeto" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700" id="modalProjetoTitulo">Novo Projeto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="projetoId">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label-sm">Nome *</label>
+            <input type="text" class="form-control form-control-sm" id="pNome" placeholder="Ex: Placa Principal v2.1">
+          </div>
+          <div class="col-6">
+            <label class="form-label-sm">Código</label>
+            <input type="text" class="form-control form-control-sm" id="pCodigo" placeholder="Ex: PCB-001">
+          </div>
+          <div class="col-6">
+            <label class="form-label-sm">Espessura (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="pEsp" value="1.6" step="0.1" min="0.1">
+          </div>
+          <div class="col-6">
+            <label class="form-label-sm">Comprimento (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="pComp" value="100" step="1" min="1">
+          </div>
+          <div class="col-6">
+            <label class="form-label-sm">Largura (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="pLarg" value="80" step="1" min="1">
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">Descrição</label>
+            <textarea class="form-control form-control-sm" id="pDesc" rows="2" placeholder="Opcional"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">Cor da Placa</label>
+            <div class="color-row mt-1" id="colorRow"></div>
+            <input type="hidden" id="pCor" value="#1d4f2a">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm text-white fw-600" id="btnSalvarProjeto"
+                style="background:#6366f1;border-color:#6366f1;border-radius:8px;"
+                onclick="salvarProjeto()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BOARD_COLORS = ['#1d4f2a','#0c2340','#2d1b00','#1a1a2e','#4b0082','#8b1a1a','#2c2c2c','#0f172a'];
+
+function buildColorRow(selected) {
+  const row = document.getElementById('colorRow');
+  row.innerHTML = BOARD_COLORS.map(c =>
+    `<div class="color-opt${c===selected?' active':''}" style="background:${c};" data-color="${c}"
+          onclick="selectColor('${c}')"></div>`
+  ).join('');
+}
+
+function selectColor(c) {
+  document.getElementById('pCor').value = c;
+  document.querySelectorAll('.color-opt').forEach(el => el.classList.toggle('active', el.dataset.color===c));
+}
+
+function abrirModalNovoProjeto() {
+  document.getElementById('projetoId').value = '';
+  document.getElementById('modalProjetoTitulo').textContent = 'Novo Projeto';
+  document.getElementById('pNome').value = '';
+  document.getElementById('pCodigo').value = '';
+  document.getElementById('pComp').value = 100;
+  document.getElementById('pLarg').value = 80;
+  document.getElementById('pEsp').value = 1.6;
+  document.getElementById('pDesc').value = '';
+  document.getElementById('pCor').value = '#1d4f2a';
+  buildColorRow('#1d4f2a');
+  new bootstrap.Modal(document.getElementById('modalProjeto')).show();
+}
+
+function editarProjeto(id, dados) {
+  document.getElementById('projetoId').value = id;
+  document.getElementById('modalProjetoTitulo').textContent = 'Editar Projeto';
+  document.getElementById('pNome').value = dados.nome || '';
+  document.getElementById('pCodigo').value = dados.codigo || '';
+  document.getElementById('pComp').value = dados.comp_mm || 100;
+  document.getElementById('pLarg').value = dados.larg_mm || 80;
+  document.getElementById('pEsp').value = dados.esp_mm || 1.6;
+  document.getElementById('pDesc').value = dados.descricao || '';
+  const cor = dados.cor_placa || '#1d4f2a';
+  document.getElementById('pCor').value = cor;
+  buildColorRow(cor);
+  new bootstrap.Modal(document.getElementById('modalProjeto')).show();
+}
+
+async function salvarProjeto() {
+  const id = document.getElementById('projetoId').value;
+  const body = {
+    nome: document.getElementById('pNome').value.trim(),
+    codigo: document.getElementById('pCodigo').value.trim(),
+    descricao: document.getElementById('pDesc').value.trim(),
+    comp_mm: parseFloat(document.getElementById('pComp').value) || 100,
+    larg_mm: parseFloat(document.getElementById('pLarg').value) || 80,
+    esp_mm: parseFloat(document.getElementById('pEsp').value) || 1.6,
+    cor_placa: document.getElementById('pCor').value,
+  };
+  if (!body.nome) { alert('Nome é obrigatório'); return; }
+
+  const url = id
+    ? `/engenharia/api/pci-studio/projetos/${id}`
+    : '/engenharia/api/pci-studio/projetos';
+  const method = id ? 'PUT' : 'POST';
+
+  const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (data.ok) {
+    if (!id) {
+      window.location = `/engenharia/pci-studio/projetos/${data.projeto.id}`;
+    } else {
+      window.location.reload();
+    }
+  } else {
+    alert('Erro: ' + (data.erro || 'desconhecido'));
+  }
+}
+
+async function deletarProjeto(id, nome) {
+  if (!confirm(`Deletar projeto "${nome}" e todos os seus itens de BOM?`)) return;
+  const res = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.ok) window.location.reload();
+  else alert('Erro ao deletar');
+}
+
+document.addEventListener('DOMContentLoaded', () => buildColorRow('#1d4f2a'));
+</script>
+{% endblock %}
