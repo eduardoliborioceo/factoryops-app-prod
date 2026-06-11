@@ -36,9 +36,6 @@
     <h1 class="page-header-name">Análise de Qualidade</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon no-print" onclick="window.print()" title="Imprimir">
-      <i class="bi bi-printer"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -49,10 +46,13 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3 no-print">
+  <div class="mb-3 no-print d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#relatorio" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
     </a>
+    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()" title="Imprimir">
+      <i class="bi bi-printer me-1"></i>Imprimir
+    </button>
   </div>
 
   <div class="rel-card">
