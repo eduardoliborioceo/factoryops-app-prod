@@ -1,0 +1,340 @@
+{% extends "layouts/app.html" %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Studio</span>
+    <h1 class="page-header-name">Acervo de Componentes</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="abrirModalNovoComp()" title="Novo Componente">
+      <i class="bi bi-plus-lg"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+.lib-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+.lib-stat  { background:var(--card); border:1px solid var(--border); border-radius:12px;
+             padding:12px 18px; display:flex; align-items:center; gap:10px; }
+.lib-stat-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center;
+                 justify-content:center; font-size:1rem; flex-shrink:0; }
+.lib-stat-val  { font-size:1.15rem; font-weight:700; color:var(--text); line-height:1; }
+.lib-stat-lbl  { font-size:0.72rem; color:var(--text-muted); font-weight:600;
+                 text-transform:uppercase; letter-spacing:0.4px; }
+
+.lib-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.lib-search  { flex:1; min-width:180px; border:1px solid var(--border); border-radius:8px;
+               padding:7px 12px; font-size:0.85rem; color:var(--text); background:var(--bg); outline:none; }
+.lib-search:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
+.tipo-chip { font-size:0.72rem; font-weight:600; padding:4px 12px; border-radius:20px; cursor:pointer;
+             border:1px solid var(--border); background:transparent; color:var(--text-muted);
+             transition:all 0.12s; }
+.tipo-chip.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
+
+/* Tabela */
+.comp-table-wrap { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.comp-table { width:100%; border-collapse:collapse; }
+.comp-table thead th { font-size:0.72rem; font-weight:700; text-transform:uppercase;
+                       letter-spacing:0.5px; color:var(--text-muted); padding:10px 14px;
+                       background:rgba(15,23,42,0.03); border-bottom:1px solid var(--border); white-space:nowrap; }
+.comp-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+.comp-table tbody tr:last-child { border-bottom:none; }
+.comp-table tbody tr:hover { background:var(--bg); }
+.comp-table td { font-size:0.82rem; color:var(--text); padding:9px 14px; vertical-align:middle; }
+.comp-table td.muted { color:var(--text-muted); }
+
+.tipo-badge { font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
+.tipo-smd       { background:rgba(100,116,139,0.12); color:#475569; }
+.tipo-pth       { background:rgba(220,53,69,0.10);   color:#dc3545; }
+.tipo-conector  { background:rgba(15,23,42,0.08);    color:#334155; }
+.tipo-outro     { background:rgba(107,114,128,0.10); color:#6b7280; }
+
+.color-dot { width:16px; height:16px; border-radius:4px; display:inline-block;
+             border:1px solid rgba(0,0,0,0.1); vertical-align:middle; }
+
+.tbl-actions { display:flex; gap:4px; }
+.tbl-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:transparent;
+           font-size:0.75rem; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
+.tbl-btn:hover { background:var(--bg); color:var(--text); }
+.tbl-btn.danger:hover { background:rgba(220,53,69,0.08); color:#dc3545; border-color:rgba(220,53,69,0.2); }
+
+.empty-state { text-align:center; padding:48px 20px; color:var(--text-muted); }
+
+/* Mobile: hide less important cols */
+@media (max-width:767px) {
+  .col-fab, .col-dim, .col-ds { display:none; }
+}
+
+/* Modal */
+.form-label-sm { font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:4px; }
+.color-row { display:flex; gap:8px; flex-wrap:wrap; }
+.color-opt { width:26px; height:26px; border-radius:5px; cursor:pointer;
+             border:2px solid transparent; transition:border-color 0.12s; }
+.color-opt.active, .color-opt:hover { border-color:var(--text); }
+</style>
+
+<div class="lib-stats">
+  <div class="lib-stat">
+    <div class="lib-stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1;"><i class="bi bi-collection"></i></div>
+    <div><div class="lib-stat-val">{{ stats.total or 0 }}</div><div class="lib-stat-lbl">Total</div></div>
+  </div>
+  <div class="lib-stat">
+    <div class="lib-stat-icon" style="background:rgba(100,116,139,0.12);color:#475569;"><i class="bi bi-cpu"></i></div>
+    <div><div class="lib-stat-val">{{ stats.smd or 0 }}</div><div class="lib-stat-lbl">SMD</div></div>
+  </div>
+  <div class="lib-stat">
+    <div class="lib-stat-icon" style="background:rgba(220,53,69,0.10);color:#dc3545;"><i class="bi bi-plug"></i></div>
+    <div><div class="lib-stat-val">{{ stats.pth or 0 }}</div><div class="lib-stat-lbl">PTH</div></div>
+  </div>
+  <div class="lib-stat">
+    <div class="lib-stat-icon" style="background:rgba(15,23,42,0.08);color:#334155;"><i class="bi bi-usb-plug"></i></div>
+    <div><div class="lib-stat-val">{{ stats.conector or 0 }}</div><div class="lib-stat-lbl">Conector</div></div>
+  </div>
+</div>
+
+<div class="lib-toolbar">
+  <input class="lib-search" id="compSearch" placeholder="Buscar part number, package..." oninput="filtrarTabela()">
+  <button class="tipo-chip active" data-tipo="all"      onclick="setTipo('all',this)">Todos</button>
+  <button class="tipo-chip"        data-tipo="smd"      onclick="setTipo('smd',this)">SMD</button>
+  <button class="tipo-chip"        data-tipo="pth"      onclick="setTipo('pth',this)">PTH</button>
+  <button class="tipo-chip"        data-tipo="conector" onclick="setTipo('conector',this)">Conector</button>
+  <button class="tipo-chip"        data-tipo="outro"    onclick="setTipo('outro',this)">Outro</button>
+</div>
+
+<div class="comp-table-wrap">
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th style="width:16px;"></th>
+        <th>Part Number</th>
+        <th>Package</th>
+        <th>Tipo</th>
+        <th class="col-fab">Fabricante</th>
+        <th class="col-dim">Dim. (mm)</th>
+        <th class="col-dim">Alt. (mm)</th>
+        <th class="col-ds">Datasheet</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="compTbody">
+      {% for c in componentes %}
+      <tr data-tipo="{{ c.tipo }}"
+          data-pn="{{ c.part_number|lower }}"
+          data-pkg="{{ (c.package or '')|lower }}"
+          data-desc="{{ (c.descricao or '')|lower }}">
+        <td><span class="color-dot" style="background:{{ c.cor_hex }};"></span></td>
+        <td>
+          <div style="font-weight:600;">{{ c.part_number }}</div>
+          {% if c.descricao %}<div style="font-size:0.75rem;color:var(--text-muted);">{{ c.descricao }}</div>{% endif %}
+        </td>
+        <td class="muted">{{ c.package }}</td>
+        <td><span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span></td>
+        <td class="muted col-fab">{{ c.fabricante or '—' }}</td>
+        <td class="muted col-dim">
+          {% if c.comp_mm %}{{ c.comp_mm }}×{{ c.larg_mm }}{% else %}—{% endif %}
+        </td>
+        <td class="muted col-dim">{{ c.alt_mm or '—' }}</td>
+        <td class="col-ds">
+          {% if c.datasheet_url %}
+          <a href="{{ c.datasheet_url }}" target="_blank" class="tbl-btn" style="text-decoration:none;">
+            <i class="bi bi-box-arrow-up-right"></i>
+          </a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <div class="tbl-actions">
+            <button class="tbl-btn" onclick="editarComp({{ c|tojson }})"><i class="bi bi-pencil"></i></button>
+            <button class="tbl-btn danger" onclick="deletarComp({{ c.id }}, '{{ c.part_number|e }}')">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9"><div class="empty-state"><i class="bi bi-collection" style="font-size:2rem;opacity:.3;"></i><p>Nenhum componente cadastrado.</p></div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Componente -->
+<div class="modal fade" id="modalComp" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700" id="modalCompTitulo">Novo Componente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="compId">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label-sm">Part Number *</label>
+            <input type="text" class="form-control form-control-sm" id="cPN" placeholder="Ex: RES-0402">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label-sm">Package *</label>
+            <input type="text" class="form-control form-control-sm" id="cPkg" placeholder="Ex: 0402, SOIC-8">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label-sm">Tipo *</label>
+            <select class="form-select form-select-sm" id="cTipo">
+              <option value="smd">SMD</option>
+              <option value="pth">PTH</option>
+              <option value="conector">Conector</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label-sm">Fabricante</label>
+            <input type="text" class="form-control form-control-sm" id="cFab" placeholder="Ex: Vishay, Murata">
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">Descrição</label>
+            <input type="text" class="form-control form-control-sm" id="cDesc" placeholder="Ex: Resistor SMD 0402">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-sm">Comprimento (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="cCompMm" step="0.001" min="0" placeholder="1.0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-sm">Largura (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="cLargMm" step="0.001" min="0" placeholder="0.5">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-sm">Altura (mm)</label>
+            <input type="number" class="form-control form-control-sm" id="cAltMm" step="0.001" min="0" placeholder="0.35">
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">URL Datasheet</label>
+            <input type="url" class="form-control form-control-sm" id="cDS" placeholder="https://...">
+          </div>
+          <div class="col-12">
+            <label class="form-label-sm">Cor no Viewer 3D</label>
+            <div class="color-row mt-1" id="compColorRow"></div>
+            <input type="hidden" id="cCor" value="#64748b">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm text-white fw-600" id="btnSalvarComp"
+                style="background:#6366f1;border-color:#6366f1;border-radius:8px;"
+                onclick="salvarComp()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COMP_COLORS = ['#f97316','#3b82f6','#a855f7','#22c55e','#0ea5e9','#6366f1',
+                     '#dc2626','#854d0e','#64748b','#374151','#0f172a','#9ca3af'];
+
+let tipoFiltro = 'all';
+
+function setTipo(t, btn) {
+  tipoFiltro = t;
+  document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  filtrarTabela();
+}
+
+function filtrarTabela() {
+  const q = document.getElementById('compSearch').value.trim().toLowerCase();
+  document.querySelectorAll('#compTbody tr[data-tipo]').forEach(tr => {
+    const tipo  = tr.dataset.tipo;
+    const texto = (tr.dataset.pn + ' ' + tr.dataset.pkg + ' ' + tr.dataset.desc);
+    const ok = (tipoFiltro === 'all' || tipo === tipoFiltro) && (!q || texto.includes(q));
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+
+function buildCompColorRow(selected) {
+  const row = document.getElementById('compColorRow');
+  row.innerHTML = COMP_COLORS.map(c =>
+    `<div class="color-opt${c===selected?' active':''}" style="background:${c};" data-color="${c}"
+          onclick="selectCompColor('${c}')"></div>`
+  ).join('');
+}
+
+function selectCompColor(c) {
+  document.getElementById('cCor').value = c;
+  document.querySelectorAll('#compColorRow .color-opt').forEach(el =>
+    el.classList.toggle('active', el.dataset.color === c));
+}
+
+function abrirModalNovoComp() {
+  document.getElementById('compId').value = '';
+  document.getElementById('modalCompTitulo').textContent = 'Novo Componente';
+  ['cPN','cPkg','cFab','cDesc','cDS','cCompMm','cLargMm','cAltMm'].forEach(id =>
+    document.getElementById(id).value = '');
+  document.getElementById('cTipo').value = 'smd';
+  document.getElementById('cCor').value = '#64748b';
+  buildCompColorRow('#64748b');
+  new bootstrap.Modal(document.getElementById('modalComp')).show();
+}
+
+function editarComp(c) {
+  document.getElementById('compId').value = c.id;
+  document.getElementById('modalCompTitulo').textContent = 'Editar Componente';
+  document.getElementById('cPN').value    = c.part_number || '';
+  document.getElementById('cPkg').value   = c.package     || '';
+  document.getElementById('cTipo').value  = c.tipo        || 'smd';
+  document.getElementById('cFab').value   = c.fabricante  || '';
+  document.getElementById('cDesc').value  = c.descricao   || '';
+  document.getElementById('cCompMm').value= c.comp_mm != null ? c.comp_mm : '';
+  document.getElementById('cLargMm').value= c.larg_mm != null ? c.larg_mm : '';
+  document.getElementById('cAltMm').value = c.alt_mm  != null ? c.alt_mm  : '';
+  document.getElementById('cDS').value    = c.datasheet_url || '';
+  const cor = c.cor_hex || '#64748b';
+  document.getElementById('cCor').value = cor;
+  buildCompColorRow(cor);
+  new bootstrap.Modal(document.getElementById('modalComp')).show();
+}
+
+async function salvarComp() {
+  const id = document.getElementById('compId').value;
+  const toNum = v => v === '' ? null : parseFloat(v);
+  const body = {
+    part_number:   document.getElementById('cPN').value.trim(),
+    package:       document.getElementById('cPkg').value.trim(),
+    tipo:          document.getElementById('cTipo').value,
+    fabricante:    document.getElementById('cFab').value.trim() || null,
+    descricao:     document.getElementById('cDesc').value.trim() || null,
+    comp_mm:       toNum(document.getElementById('cCompMm').value),
+    larg_mm:       toNum(document.getElementById('cLargMm').value),
+    alt_mm:        toNum(document.getElementById('cAltMm').value),
+    datasheet_url: document.getElementById('cDS').value.trim() || null,
+    cor_hex:       document.getElementById('cCor').value,
+  };
+  if (!body.part_number || !body.package) {
+    alert('Part Number e Package são obrigatórios'); return;
+  }
+  const url    = id ? `/engenharia/api/pci-studio/componentes/${id}` : '/engenharia/api/pci-studio/componentes';
+  const method = id ? 'PUT' : 'POST';
+  const res  = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data = await res.json();
+  if (data.ok) window.location.reload();
+  else alert('Erro: ' + (data.erro || 'desconhecido'));
+}
+
+async function deletarComp(id, nome) {
+  if (!confirm(`Deletar componente "${nome}"?`)) return;
+  const res = await fetch(`/engenharia/api/pci-studio/componentes/${id}`, { method:'DELETE' });
+  const data = await res.json();
+  if (data.ok) window.location.reload();
+  else alert('Erro ao deletar');
+}
+
+document.addEventListener('DOMContentLoaded', () => buildCompColorRow('#64748b'));
+</script>
+{% endblock %}
