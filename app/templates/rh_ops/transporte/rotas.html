@@ -1,11 +1,43 @@
 {% extends "layouts/app.html" %}
-{% block title %}Rotas — RH Hub{% endblock %}
+{% block title %}Rotas de Transporte — RH Hub{% endblock %}
+
+{% block styles %}
+<style>
+.rota-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow 0.15s, transform 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.rota-card:hover { box-shadow: 0 4px 18px rgba(15,23,42,0.09); transform: translateY(-1px); color: inherit; }
+.rota-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.rota-codigo { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); font-family: monospace; letter-spacing: 0.5px; }
+.rota-nome { font-size: 1rem; font-weight: 700; color: var(--text); line-height: 1.3; }
+.rota-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.8rem; color: var(--text-muted); align-items: center; }
+.rota-meta i { font-size: 0.9rem; }
+.rota-actions { display: flex; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+.turno-badge { font-size: 0.68rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+.turno-1 { background: rgba(13,110,253,0.12); color: #0a4085; }
+.turno-2 { background: rgba(25,135,84,0.12); color: #0a3622; }
+.turno-3 { background: rgba(111,66,193,0.12); color: #4a2680; }
+.regra-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(15,23,42,0.06); color: var(--text-muted); }
+.rota-cor-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.cor-opt { transition: transform 0.12s; }
+</style>
+{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">RH Hub · Transporte</span>
-    <h1 class="page-header-name">Rotas</h1>
+    <h1 class="page-header-name">Rotas de Transporte</h1>
   </div>
   <div class="page-header-actions">
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
@@ -18,14 +50,330 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
     <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
+    <button class="btn btn-sm btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#modalRota"
+            onclick="abrirCriar()">
+      <i class="bi bi-plus-lg me-1"></i>Nova Rota
+    </button>
   </div>
+
+  {% if rotas %}
+  <div class="d-flex gap-3 mb-4 flex-wrap">
+    <div class="stat-card" style="flex:1;min-width:120px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-blue"><i class="bi bi-signpost-split"></i></div>
+        <div>
+          <div class="stat-value">{{ rotas|length }}</div>
+          <div class="stat-label">Rotas ativas</div>
+        </div>
+      </div>
+    </div>
+    {% set t1 = rotas | selectattr('turno','equalto','1') | list | length %}
+    {% set t2 = rotas | selectattr('turno','equalto','2') | list | length %}
+    {% set t3 = rotas | selectattr('turno','equalto','3') | list | length %}
+    {% if t1 %}
+    <div class="stat-card" style="flex:1;min-width:120px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-blue"><i class="bi bi-clock"></i></div>
+        <div><div class="stat-value">{{ t1 }}</div><div class="stat-label">Turno 1</div></div>
+      </div>
+    </div>
+    {% endif %}
+    {% if t2 %}
+    <div class="stat-card" style="flex:1;min-width:120px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-green"><i class="bi bi-clock"></i></div>
+        <div><div class="stat-value">{{ t2 }}</div><div class="stat-label">Turno 2</div></div>
+      </div>
+    </div>
+    {% endif %}
+    {% if t3 %}
+    <div class="stat-card" style="flex:1;min-width:120px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-slate"><i class="bi bi-clock"></i></div>
+        <div><div class="stat-value">{{ t3 }}</div><div class="stat-label">Turno 3</div></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="row g-3">
+    {% for r in rotas %}
+    <div class="col-12 col-md-6 col-xl-4">
+      <a href="{{ url_for('pages.rh_transporte_rota_detalhe', rota_id=r.id) }}" class="rota-card d-block">
+        <div class="rota-card-top">
+          <div>
+            <div class="rota-codigo">{{ r.codigo }}</div>
+            <div class="rota-nome">{{ r.nome }}</div>
+          </div>
+          <span class="turno-badge turno-{{ r.turno }}">Turno {{ r.turno }}</span>
+        </div>
+
+        <div class="rota-meta">
+          <span class="rota-cor-dot" style="background:{{ r.cor }};"></span>
+          {% if r.veiculo %}<span><i class="bi bi-truck-front"></i> {{ r.veiculo }}</span>{% endif %}
+          {% if r.motorista %}<span><i class="bi bi-person-badge"></i> {{ r.motorista }}</span>{% endif %}
+          <span><i class="bi bi-people"></i> {{ r.total_colaboradores }} colaborador{{ 'es' if r.total_colaboradores != 1 }}</span>
+          {% if r.filial %}<span><i class="bi bi-building"></i> {{ r.filial }}</span>{% endif %}
+          <span class="regra-badge">{{ r.regra_descida|replace('_',' ')|title }}</span>
+        </div>
+
+        <div class="rota-actions" onclick="event.preventDefault()">
+          <a href="{{ url_for('pages.rh_transporte_rota_detalhe', rota_id=r.id) }}"
+             class="btn btn-sm btn-primary" style="flex:1;text-align:center;">
+            <i class="bi bi-map me-1"></i>Abrir
+          </a>
+          <button class="btn btn-sm btn-outline-secondary"
+                  onclick="abrirEditar({{ r|tojson }}, event)" title="Editar">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger"
+                  onclick="confirmarDeletar({{ r.id }}, '{{ r.nome|e }}', event)" title="Excluir">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </div>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
   <div class="text-center py-5">
-    <i class="bi bi-signpost-split" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro de rotas: código, nome, filial, veículo, motorista e turno associado.</p>
+    <i class="bi bi-signpost-split" style="font-size:2.5rem;opacity:0.2;display:block;margin-bottom:14px;"></i>
+    <p style="color:var(--text-muted);font-size:0.9rem;margin:0 0 16px;">Nenhuma rota cadastrada ainda.</p>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalRota" onclick="abrirCriar()">
+      <i class="bi bi-plus-lg me-1"></i>Criar primeira rota
+    </button>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal Criar / Editar Rota -->
+<div class="modal fade" id="modalRota" tabindex="-1" aria-labelledby="modalRotaTitulo" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-bold" id="modalRotaTitulo">Nova Rota</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <div class="row g-2">
+          <div class="col-4">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Código *</label>
+            <input type="text" class="form-control form-control-sm" id="fCodigo"
+                   placeholder="RT-001" style="border-radius:8px;text-transform:uppercase;"
+                   oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div class="col-8">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Nome da rota *</label>
+            <input type="text" class="form-control form-control-sm" id="fNome"
+                   placeholder="Rota Sul — Novo Aleixo" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Turno</label>
+            <select class="form-select form-select-sm" id="fTurno" style="border-radius:8px;"
+                    onchange="onTurnoChange()">
+              <option value="1">Turno 1</option>
+              <option value="2">Turno 2</option>
+              <option value="3">Turno 3</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Sentido</label>
+            <select class="form-select form-select-sm" id="fSentido" style="border-radius:8px;">
+              <option value="ambos">Ida e volta</option>
+              <option value="ida">Somente ida</option>
+              <option value="volta">Somente volta</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Regra de descida</label>
+            <select class="form-select form-select-sm" id="fRegra" style="border-radius:8px;">
+              <option value="agrupado">Agrupado (parada única)</option>
+              <option value="porta_a_porta">Porta a porta</option>
+            </select>
+            <div id="regraHint" style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;"></div>
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Filial</label>
+            <input type="text" class="form-control form-control-sm" id="fFilial"
+                   placeholder="VTT" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Cor da rota</label>
+            <div class="d-flex gap-1 flex-wrap mt-1" id="corPicker">
+              {% for cor in ['#0d6efd','#198754','#6f42c1','#fd7e14','#dc3545','#0dcaf0','#ffc107','#6c757d'] %}
+              <div class="cor-opt" data-cor="{{ cor }}"
+                   style="width:26px;height:26px;border-radius:6px;background:{{ cor }};cursor:pointer;border:2px solid transparent;"
+                   onclick="selecionarCor('{{ cor }}')"></div>
+              {% endfor %}
+            </div>
+            <input type="hidden" id="fCor" value="#0d6efd">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Veículo</label>
+            <input type="text" class="form-control form-control-sm" id="fVeiculo"
+                   placeholder="Ônibus 001" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Motorista</label>
+            <input type="text" class="form-control form-control-sm" id="fMotorista"
+                   placeholder="Nome do motorista" style="border-radius:8px;">
+          </div>
+          <div class="col-12">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Ponto de partida</label>
+            <input type="text" class="form-control form-control-sm" id="fPartidaNome"
+                   placeholder="Venttos — Polo Industrial de Manaus" style="border-radius:8px;">
+          </div>
+        </div>
+        <div id="modalErro" class="mt-2 text-danger" style="font-size:0.82rem;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="salvarRota()" id="btnSalvar">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  function abrirCriar() {
+    document.getElementById("modalRotaTitulo").textContent = "Nova Rota";
+    document.getElementById("editId").value = "";
+    ["fCodigo","fNome","fFilial","fVeiculo","fMotorista","fPartidaNome"].forEach(
+      id => { document.getElementById(id).value = ""; }
+    );
+    document.getElementById("fTurno").value = "1";
+    document.getElementById("fSentido").value = "ambos";
+    document.getElementById("fRegra").value = "agrupado";
+    selecionarCor("#0d6efd");
+    document.getElementById("modalErro").style.display = "none";
+    onTurnoChange();
+  }
+  window.abrirCriar = abrirCriar;
+
+  function abrirEditar(rota, evt) {
+    evt.preventDefault(); evt.stopPropagation();
+    document.getElementById("modalRotaTitulo").textContent = "Editar Rota";
+    document.getElementById("editId").value = rota.id;
+    document.getElementById("fCodigo").value = rota.codigo || "";
+    document.getElementById("fNome").value = rota.nome || "";
+    document.getElementById("fTurno").value = rota.turno || "1";
+    document.getElementById("fSentido").value = rota.sentido || "ambos";
+    document.getElementById("fRegra").value = rota.regra_descida || "agrupado";
+    document.getElementById("fFilial").value = rota.filial || "";
+    document.getElementById("fVeiculo").value = rota.veiculo || "";
+    document.getElementById("fMotorista").value = rota.motorista || "";
+    document.getElementById("fPartidaNome").value = rota.partida_nome || "";
+    selecionarCor(rota.cor || "#0d6efd");
+    document.getElementById("modalErro").style.display = "none";
+    onTurnoChange();
+    new bootstrap.Modal(document.getElementById("modalRota")).show();
+  }
+  window.abrirEditar = abrirEditar;
+
+  function selecionarCor(cor) {
+    document.getElementById("fCor").value = cor;
+    document.querySelectorAll(".cor-opt").forEach(el => {
+      const sel = el.dataset.cor === cor;
+      el.style.borderColor = sel ? "#0f172a" : "transparent";
+      el.style.transform = sel ? "scale(1.2)" : "scale(1)";
+    });
+  }
+  window.selecionarCor = selecionarCor;
+
+  function onTurnoChange() {
+    const t = document.getElementById("fTurno").value;
+    const hint = document.getElementById("regraHint");
+    if (t === "1") {
+      document.getElementById("fRegra").value = "agrupado";
+      hint.textContent = "Turno 1: padrão agrupado — todos desembarcam no mesmo ponto.";
+    } else {
+      document.getElementById("fRegra").value = "porta_a_porta";
+      hint.textContent = "Turnos 2 e 3: padrão porta a porta — cada colaborador no endereço.";
+    }
+  }
+  window.onTurnoChange = onTurnoChange;
+
+  async function salvarRota() {
+    const btn = document.getElementById("btnSalvar");
+    const erroEl = document.getElementById("modalErro");
+    erroEl.style.display = "none";
+
+    const codigo = document.getElementById("fCodigo").value.trim();
+    const nome = document.getElementById("fNome").value.trim();
+    if (!codigo || !nome) {
+      erroEl.textContent = "Código e nome são obrigatórios.";
+      erroEl.style.display = "block";
+      return;
+    }
+
+    const editId = document.getElementById("editId").value;
+    const payload = {
+      codigo,
+      nome,
+      filial: document.getElementById("fFilial").value.trim(),
+      turno: document.getElementById("fTurno").value,
+      sentido: document.getElementById("fSentido").value,
+      regra_descida: document.getElementById("fRegra").value,
+      veiculo: document.getElementById("fVeiculo").value.trim(),
+      motorista: document.getElementById("fMotorista").value.trim(),
+      cor: document.getElementById("fCor").value,
+      partida_nome: document.getElementById("fPartidaNome").value.trim(),
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando…';
+
+    try {
+      const url = editId ? `/rh-ops/api/transporte/rotas/${editId}` : "/rh-ops/api/transporte/rotas";
+      const r = await fetch(url, {
+        method: editId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro || "Erro ao salvar.");
+      location.reload();
+    } catch (e) {
+      erroEl.textContent = e.message;
+      erroEl.style.display = "block";
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Salvar';
+    }
+  }
+  window.salvarRota = salvarRota;
+
+  async function confirmarDeletar(id, nome, evt) {
+    evt.preventDefault(); evt.stopPropagation();
+    if (!confirm(`Excluir a rota "${nome}" e todos os seus colaboradores? Esta ação não pode ser desfeita.`)) return;
+    try {
+      const r = await fetch(`/rh-ops/api/transporte/rotas/${id}`, { method: "DELETE" });
+      const data = await r.json();
+      if (data.ok) location.reload();
+    } catch (e) {
+      alert("Erro ao excluir.");
+    }
+  }
+  window.confirmarDeletar = confirmarDeletar;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    selecionarCor("#0d6efd");
+    onTurnoChange();
+  });
+})();
+</script>
 {% endblock %}
