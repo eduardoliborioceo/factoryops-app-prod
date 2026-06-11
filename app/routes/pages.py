@@ -3300,7 +3300,18 @@ def rh_transporte_veiculos():
 @bp.route("/rh-ops/transporte/alocacao", methods=["GET"])
 @login_required
 def rh_transporte_alocacao():
-    return render_template("rh_ops/transporte/alocacao.html", active_menu="rh_transporte_alocacao")
+    from flask import request
+    from app.repositories import rh_transporte_repository as repo
+    turno = request.args.get("turno", "").strip() or None
+    busca = request.args.get("busca", "").strip() or None
+    rotas = repo.get_alocacao_view(turno=turno, busca=busca)
+    total_colabs = sum(len(r['colaboradores']) for r in rotas)
+    return render_template("rh_ops/transporte/alocacao.html",
+                           active_menu="rh_transporte_alocacao",
+                           rotas=rotas,
+                           total_colabs=total_colabs,
+                           filtro_turno=turno or "",
+                           filtro_busca=busca or "")
 
 
 @bp.route("/rh-ops/transporte/otimizador", methods=["GET"])
