@@ -34,6 +34,9 @@
     <h1 class="page-header-name">Logística Interna</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -47,9 +50,6 @@
   <div class="log-card">
     <div class="log-hdr">
       <div class="d-flex align-items-center gap-2">
-        <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon no-print" title="Voltar">
-          <i class="bi bi-arrow-left"></i>
-        </a>
         <span><i class="bi bi-truck text-primary me-1"></i>Ferramentas de Logística Interna</span>
       </div>
       <div class="d-flex gap-2 no-print">

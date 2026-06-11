@@ -40,6 +40,9 @@
     <h1 class="page-header-name">Lean Manufacturing</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -53,9 +56,6 @@
   <div class="lean-card">
     <div class="lean-hdr">
       <div class="d-flex align-items-center gap-2">
-        <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon no-print" title="Voltar">
-          <i class="bi bi-arrow-left"></i>
-        </a>
         <span><i class="bi bi-check2-all text-primary me-1"></i>Auditoria 5S</span>
       </div>
       <div class="d-flex gap-2 no-print">
