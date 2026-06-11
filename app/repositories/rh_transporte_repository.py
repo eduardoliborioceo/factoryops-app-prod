@@ -351,17 +351,27 @@ def buscar_employees(termo: str, limit: int = 10) -> list:
 
 # ── Turno Config ──
 
+_TURNO_COLS = """
+    id, turno, filial, tipo_descida, raio_embarque_m, tolerancia_min,
+    TO_CHAR(horario_saida, 'HH24:MI') AS horario_saida,
+    observacao, ativo, criado_em, atualizado_em
+"""
+
+
 def listar_turno_configs() -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT * FROM rh_turno_config ORDER BY filial, turno")
+            cur.execute(f"SELECT {_TURNO_COLS} FROM rh_turno_config ORDER BY filial, turno")
             return cur.fetchall()
 
 
 def buscar_turno_config(config_id: int) -> Optional[dict]:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("SELECT * FROM rh_turno_config WHERE id = %s", (config_id,))
+            cur.execute(
+                f"SELECT {_TURNO_COLS} FROM rh_turno_config WHERE id = %s",
+                (config_id,)
+            )
             return cur.fetchone()
 
 
@@ -370,11 +380,12 @@ def criar_turno_config(turno: str, filial: str, tipo_descida: str,
                        horario_saida: Optional[str], observacao: str) -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute("""
+            cur.execute(f"""
                 INSERT INTO rh_turno_config
                     (turno, filial, tipo_descida, raio_embarque_m, tolerancia_min,
                      horario_saida, observacao)
-                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                RETURNING {_TURNO_COLS}
             """, (turno, filial, tipo_descida, raio_embarque_m, tolerancia_min,
                   horario_saida or None, observacao or None))
             conn.commit()
@@ -394,7 +405,8 @@ def atualizar_turno_config(config_id: int, **kwargs) -> Optional[dict]:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
-                f"UPDATE rh_turno_config SET {set_clause}, atualizado_em = NOW() WHERE id = %s RETURNING *",
+                f"UPDATE rh_turno_config SET {set_clause}, atualizado_em = NOW()"
+                f" WHERE id = %s RETURNING {_TURNO_COLS}",
                 values
             )
             conn.commit()
