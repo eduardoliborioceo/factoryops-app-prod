@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Posto de Embalagem</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn-header-icon" title="Voltar" id="btnVoltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -23,8 +20,8 @@
 /* ─── Setup ─────────────────────────────────────────────────── */
 .setup-wrap {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   min-height: calc(100vh - 160px);
   padding: 24px 0;
   position: relative;
@@ -309,6 +306,12 @@
        FASE 1 — Setup
   ════════════════════════════════════════════ -->
   <div id="faseSetup" class="setup-wrap">
+
+    <div id="btnVoltar" style="width:100%;max-width:520px;margin-bottom:10px;position:relative;z-index:1;">
+      <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+      </a>
+    </div>
 
     <div class="setup-bg" aria-hidden="true">
       <i class="bi bi-cpu-fill"       style="top:6%;left:3%;font-size:88px;transform:rotate(-12deg);"></i>
