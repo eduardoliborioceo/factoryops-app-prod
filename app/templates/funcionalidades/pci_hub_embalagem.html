@@ -27,6 +27,12 @@
   justify-content: center;
   min-height: calc(100vh - 160px);
   padding: 24px 0;
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(15,23,42,0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,23,42,0.032) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 .setup-card {
   width: 100%;
@@ -35,6 +41,21 @@
   border-radius: 16px;
   background: var(--card);
   padding: 36px 32px 28px;
+  position: relative;
+  z-index: 1;
+}
+.setup-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+}
+.setup-bg i {
+  position: absolute;
+  color: var(--text);
+  opacity: 0.048;
+  line-height: 1;
 }
 .setup-logo {
   width: 44px; height: 44px;
@@ -247,8 +268,9 @@
 /* ─── Mobile ──────────────────────────────────── */
 @media (max-width: 767px) {
   .setup-card { padding: 24px 18px; }
-  .setup-wrap { padding: 12px 0; min-height: auto; }
+  .setup-wrap { padding: 12px 0; min-height: auto; background-size: 28px 28px; }
   .scan-input { font-size: 1rem; padding: 16px; }
+  .setup-bg i { opacity: 0.03; }
 }
 
 /* ─── Autocomplete dropdown ───────────────────── */
@@ -287,6 +309,22 @@
        FASE 1 — Setup
   ════════════════════════════════════════════ -->
   <div id="faseSetup" class="setup-wrap">
+
+    <div class="setup-bg" aria-hidden="true">
+      <i class="bi bi-cpu-fill"       style="top:6%;left:3%;font-size:88px;transform:rotate(-12deg);"></i>
+      <i class="bi bi-qr-code-scan"   style="top:4%;left:74%;font-size:66px;transform:rotate(8deg);"></i>
+      <i class="bi bi-upc-scan"       style="top:50%;left:88%;font-size:58px;transform:rotate(-6deg);"></i>
+      <i class="bi bi-diagram-3-fill" style="top:34%;left:4%;font-size:62px;transform:rotate(10deg);"></i>
+      <i class="bi bi-printer-fill"   style="top:78%;left:80%;font-size:56px;transform:rotate(-10deg);"></i>
+      <i class="bi bi-box-seam"       style="top:72%;left:6%;font-size:60px;transform:rotate(7deg);"></i>
+      <i class="bi bi-bar-chart-fill" style="top:18%;left:52%;font-size:46px;transform:rotate(-8deg);opacity:0.038;"></i>
+      <i class="bi bi-hdd-fill"       style="top:14%;left:26%;font-size:44px;transform:rotate(14deg);opacity:0.038;"></i>
+      <i class="bi bi-check2-all"     style="top:86%;left:43%;font-size:52px;transform:rotate(-5deg);opacity:0.04;"></i>
+      <i class="bi bi-broadcast-pin"  style="top:62%;left:62%;font-size:50px;transform:rotate(9deg);opacity:0.04;"></i>
+      <i class="bi bi-sliders"        style="top:90%;left:18%;font-size:44px;transform:rotate(-13deg);opacity:0.038;"></i>
+      <i class="bi bi-grid-3x3"       style="top:42%;left:76%;font-size:40px;transform:rotate(6deg);opacity:0.035;"></i>
+    </div>
+
     <div class="setup-card">
       <div class="setup-logo"><i class="bi bi-upc-scan"></i></div>
       <div class="setup-title">Iniciar Sessão de Embalagem</div>
