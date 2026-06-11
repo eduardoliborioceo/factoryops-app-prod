@@ -1,6 +1,54 @@
 {% extends "layouts/app.html" %}
 {% block title %}Veículos & Motoristas — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.frota-table { width:100%;border-collapse:collapse;font-size:0.855rem; }
+.frota-table th {
+  font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:9px 14px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.03);white-space:nowrap;
+}
+.frota-table td { padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.frota-table tbody tr:hover { background:rgba(15,23,42,0.02); }
+.frota-table tbody tr:last-child td { border-bottom:none; }
+.placa-tag {
+  font-family:monospace;font-size:0.82rem;font-weight:800;letter-spacing:1px;
+  background:rgba(15,23,42,0.06);padding:3px 9px;border-radius:6px;color:var(--text);
+}
+.status-pill {
+  font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:0.3px;
+}
+.status-ativo    { background:rgba(25,135,84,0.12);color:#0a3622; }
+.status-manutencao { background:rgba(255,193,7,0.15);color:#664d03; }
+.status-inativo  { background:rgba(100,116,139,0.12);color:#475569; }
+.status-afastado { background:rgba(253,126,20,0.12);color:#7c3a0a; }
+.cnh-tag {
+  font-size:0.72rem;font-weight:700;background:rgba(13,110,253,0.10);
+  color:#084298;padding:2px 8px;border-radius:5px;font-family:monospace;
+}
+.cnh-exp { font-size:0.72rem;color:#dc3545;font-weight:600; }
+.rotas-badge {
+  font-size:0.72rem;background:rgba(13,110,253,0.10);color:#084298;
+  padding:2px 8px;border-radius:10px;font-weight:600;
+}
+.tab-frota { border-bottom:2px solid var(--border);display:flex;gap:0;margin-bottom:0; }
+.tab-frota-btn {
+  background:none;border:none;padding:10px 20px;font-size:0.875rem;font-weight:600;
+  color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-2px;transition:color 0.12s,border-color 0.12s;
+}
+.tab-frota-btn.active { color:var(--primary);border-bottom-color:var(--primary); }
+.tab-frota-btn:hover { color:var(--text); }
+.frota-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+@media (max-width:767px) {
+  .hide-mobile { display:none!important; }
+  .frota-table td,.frota-table th { padding:8px 10px; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +66,510 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
     <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
+    <button class="btn btn-sm btn-primary ms-auto" id="btnNovo" onclick="abrirNovo()">
+      <i class="bi bi-plus-lg me-1"></i><span id="btnNovoLabel">Novo Veículo</span>
+    </button>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-truck-front" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro de frota (placa, capacidade) e motoristas responsáveis por rota.</p>
+
+  <!-- Stats -->
+  <div class="d-flex gap-3 mb-4 flex-wrap">
+    <div class="stat-card" style="flex:1;min-width:110px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-blue"><i class="bi bi-truck-front"></i></div>
+        <div><div class="stat-value">{{ veiculos|length }}</div><div class="stat-label">Veículos</div></div>
+      </div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:110px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-green"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-value">{{ veiculos|selectattr('status','equalto','ativo')|list|length }}</div>
+          <div class="stat-label">Ativos</div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:110px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-blue"><i class="bi bi-person-badge"></i></div>
+        <div><div class="stat-value">{{ motoristas|length }}</div><div class="stat-label">Motoristas</div></div>
+      </div>
+    </div>
+    <div class="stat-card" style="flex:1;min-width:110px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-green"><i class="bi bi-person-check"></i></div>
+        <div>
+          <div class="stat-value">{{ motoristas|selectattr('status','equalto','ativo')|list|length }}</div>
+          <div class="stat-label">Disponíveis</div>
+        </div>
+      </div>
+    </div>
+    {% set cap_total = veiculos|selectattr('status','equalto','ativo')|sum(attribute='capacidade') %}
+    <div class="stat-card" style="flex:1;min-width:110px;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon-slate"><i class="bi bi-people"></i></div>
+        <div><div class="stat-value">{{ cap_total }}</div><div class="stat-label">Capacidade total</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-frota" id="tabBar">
+    <button class="tab-frota-btn active" onclick="trocarTab('veiculos')" id="tabVeiculos">
+      <i class="bi bi-truck-front me-1"></i>Veículos
+    </button>
+    <button class="tab-frota-btn" onclick="trocarTab('motoristas')" id="tabMotoristas">
+      <i class="bi bi-person-badge me-1"></i>Motoristas
+    </button>
+  </div>
+
+  <!-- Veículos table -->
+  <div id="painelVeiculos" class="frota-card" style="border-top-left-radius:0;border-top:none;">
+    {% if veiculos %}
+    <div class="table-responsive">
+      <table class="frota-table">
+        <thead>
+          <tr>
+            <th>Placa</th>
+            <th>Modelo</th>
+            <th class="hide-mobile">Ano</th>
+            <th>Lotação</th>
+            <th class="hide-mobile">Filial</th>
+            <th>Status</th>
+            <th class="hide-mobile">Rotas</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in veiculos %}
+          <tr>
+            <td><span class="placa-tag">{{ v.placa }}</span></td>
+            <td style="font-weight:600;">{{ v.modelo or '—' }}</td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ v.ano or '—' }}</td>
+            <td><strong>{{ v.capacidade }}</strong> <span style="font-size:0.75rem;color:var(--text-muted);">lugares</span></td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ v.filial or '—' }}</td>
+            <td>
+              <span class="status-pill status-{{ v.status|replace(' ','') }}">
+                {{ v.status|replace('_',' ')|title }}
+              </span>
+            </td>
+            <td class="hide-mobile">
+              {% if v.rotas_ativas %}
+              <span class="rotas-badge">{{ v.rotas_ativas }} rota{{ 's' if v.rotas_ativas != 1 }}</span>
+              {% else %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">Sem rota</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <button class="btn btn-xs btn-outline-secondary" style="padding:3px 7px;border-radius:6px;"
+                        onclick="editarVeiculo({{ v|tojson }})" title="Editar">
+                  <i class="bi bi-pencil" style="font-size:0.75rem;"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-danger" style="padding:3px 7px;border-radius:6px;"
+                        onclick="deletarVeiculo({{ v.id }}, '{{ v.placa|e }}')" title="Excluir">
+                  <i class="bi bi-trash3" style="font-size:0.75rem;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-truck-front" style="font-size:2rem;opacity:0.18;display:block;margin-bottom:12px;"></i>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin:0 0 14px;">Nenhum veículo cadastrado.</p>
+      <button class="btn btn-sm btn-primary" onclick="abrirNovo()">
+        <i class="bi bi-plus-lg me-1"></i>Cadastrar veículo
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Motoristas table -->
+  <div id="painelMotoristas" class="frota-card" style="display:none;border-top-left-radius:0;border-top:none;">
+    {% if motoristas %}
+    <div class="table-responsive">
+      <table class="frota-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>CNH</th>
+            <th class="hide-mobile">Validade</th>
+            <th class="hide-mobile">Telefone</th>
+            <th class="hide-mobile">Filial</th>
+            <th>Status</th>
+            <th class="hide-mobile">Rotas</th>
+            <th style="width:80px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in motoristas %}
+          {% set cnh_exp = m.validade_cnh and m.validade_cnh.isoformat() < '2026-06-10' %}
+          <tr>
+            <td style="font-weight:600;">{{ m.nome }}</td>
+            <td>
+              {% if m.cnh %}
+              <span class="cnh-tag">{{ m.cnh }}</span>
+              {% if m.categoria_cnh %}
+              <span style="font-size:0.7rem;color:var(--text-muted);margin-left:4px;">Cat. {{ m.categoria_cnh }}</span>
+              {% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td class="hide-mobile">
+              {% if m.validade_cnh %}
+              <span class="{{ 'cnh-exp' if cnh_exp else '' }}">
+                {{ m.validade_cnh.strftime('%d/%m/%Y') }}
+                {% if cnh_exp %}<i class="bi bi-exclamation-triangle ms-1"></i>{% endif %}
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ m.telefone or '—' }}</td>
+            <td class="hide-mobile" style="color:var(--text-muted);">{{ m.filial or '—' }}</td>
+            <td>
+              <span class="status-pill status-{{ m.status }}">{{ m.status|title }}</span>
+            </td>
+            <td class="hide-mobile">
+              {% if m.rotas_ativas %}
+              <span class="rotas-badge">{{ m.rotas_ativas }} rota{{ 's' if m.rotas_ativas != 1 }}</span>
+              {% else %}
+              <span style="font-size:0.75rem;color:var(--text-muted);">Sem rota</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <button class="btn btn-xs btn-outline-secondary" style="padding:3px 7px;border-radius:6px;"
+                        onclick="editarMotorista({{ m|tojson }})" title="Editar">
+                  <i class="bi bi-pencil" style="font-size:0.75rem;"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-danger" style="padding:3px 7px;border-radius:6px;"
+                        onclick="deletarMotorista({{ m.id }}, '{{ m.nome|e }}')" title="Excluir">
+                  <i class="bi bi-trash3" style="font-size:0.75rem;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="bi bi-person-badge" style="font-size:2rem;opacity:0.18;display:block;margin-bottom:12px;"></i>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin:0 0 14px;">Nenhum motorista cadastrado.</p>
+      <button class="btn btn-sm btn-primary" onclick="trocarTab('motoristas');abrirNovo()">
+        <i class="bi bi-plus-lg me-1"></i>Cadastrar motorista
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal Veículo -->
+<div class="modal fade" id="modalVeiculo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-bold" id="tituloModalVeiculo">Novo Veículo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="vId">
+        <div class="row g-2">
+          <div class="col-5">
+            <label style="font-size:0.8rem;font-weight:600;">Placa *</label>
+            <input type="text" id="vPlaca" class="form-control form-control-sm" style="border-radius:8px;text-transform:uppercase;font-family:monospace;font-weight:700;"
+                   placeholder="ABC-1234" oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div class="col-7">
+            <label style="font-size:0.8rem;font-weight:600;">Modelo</label>
+            <input type="text" id="vModelo" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="Mercedes Benz OF-1721">
+          </div>
+          <div class="col-4">
+            <label style="font-size:0.8rem;font-weight:600;">Ano</label>
+            <input type="number" id="vAno" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="2020" min="1990" max="2030">
+          </div>
+          <div class="col-4">
+            <label style="font-size:0.8rem;font-weight:600;">Lotação *</label>
+            <input type="number" id="vCapacidade" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="40" min="1" max="200" value="40">
+          </div>
+          <div class="col-4">
+            <label style="font-size:0.8rem;font-weight:600;">Status</label>
+            <select id="vStatus" class="form-select form-select-sm" style="border-radius:8px;">
+              <option value="ativo">Ativo</option>
+              <option value="manutencao">Manutenção</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label style="font-size:0.8rem;font-weight:600;">Filial</label>
+            <input type="text" id="vFilial" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="VTT">
+          </div>
+          <div class="col-12">
+            <label style="font-size:0.8rem;font-weight:600;">Observação</label>
+            <input type="text" id="vObs" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="Informações adicionais">
+          </div>
+        </div>
+        <div id="vErro" class="mt-2 text-danger" style="font-size:0.82rem;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="salvarVeiculo()" id="vBtnSalvar">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Modal Motorista -->
+<div class="modal fade" id="modalMotorista" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-bold" id="tituloModalMotorista">Novo Motorista</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="mId">
+        <div class="row g-2">
+          <div class="col-12">
+            <label style="font-size:0.8rem;font-weight:600;">Nome completo *</label>
+            <input type="text" id="mNome" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="Nome do motorista">
+          </div>
+          <div class="col-5">
+            <label style="font-size:0.8rem;font-weight:600;">CNH</label>
+            <input type="text" id="mCnh" class="form-control form-control-sm" style="border-radius:8px;font-family:monospace;"
+                   placeholder="12345678901">
+          </div>
+          <div class="col-3">
+            <label style="font-size:0.8rem;font-weight:600;">Categoria</label>
+            <select id="mCategoria" class="form-select form-select-sm" style="border-radius:8px;">
+              <option value="">—</option>
+              <option value="B">B</option>
+              <option value="C">C</option>
+              <option value="D">D</option>
+              <option value="E">E</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label style="font-size:0.8rem;font-weight:600;">Validade CNH</label>
+            <input type="date" id="mValidadeCnh" class="form-control form-control-sm" style="border-radius:8px;">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Telefone</label>
+            <input type="text" id="mTelefone" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="(92) 9 9999-9999">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Filial</label>
+            <input type="text" id="mFilial" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="VTT">
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Status</label>
+            <select id="mStatus" class="form-select form-select-sm" style="border-radius:8px;">
+              <option value="ativo">Ativo</option>
+              <option value="afastado">Afastado</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label style="font-size:0.8rem;font-weight:600;">Observação</label>
+            <input type="text" id="mObs" class="form-control form-control-sm" style="border-radius:8px;"
+                   placeholder="Informações">
+          </div>
+        </div>
+        <div id="mErro" class="mt-2 text-danger" style="font-size:0.82rem;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm btn-primary" onclick="salvarMotorista()" id="mBtnSalvar">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  let abaAtiva = "veiculos";
+
+  function trocarTab(aba) {
+    abaAtiva = aba;
+    document.getElementById("painelVeiculos").style.display = aba === "veiculos" ? "" : "none";
+    document.getElementById("painelMotoristas").style.display = aba === "motoristas" ? "" : "none";
+    document.getElementById("tabVeiculos").classList.toggle("active", aba === "veiculos");
+    document.getElementById("tabMotoristas").classList.toggle("active", aba === "motoristas");
+    document.getElementById("btnNovoLabel").textContent = aba === "veiculos" ? "Novo Veículo" : "Novo Motorista";
+  }
+  window.trocarTab = trocarTab;
+
+  function abrirNovo() {
+    if (abaAtiva === "veiculos") {
+      document.getElementById("tituloModalVeiculo").textContent = "Novo Veículo";
+      document.getElementById("vId").value = "";
+      ["vPlaca","vModelo","vFilial","vObs"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("vAno").value = "";
+      document.getElementById("vCapacidade").value = "40";
+      document.getElementById("vStatus").value = "ativo";
+      document.getElementById("vErro").style.display = "none";
+      new bootstrap.Modal(document.getElementById("modalVeiculo")).show();
+    } else {
+      document.getElementById("tituloModalMotorista").textContent = "Novo Motorista";
+      document.getElementById("mId").value = "";
+      ["mNome","mCnh","mTelefone","mFilial","mObs","mValidadeCnh"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("mCategoria").value = "";
+      document.getElementById("mStatus").value = "ativo";
+      document.getElementById("mErro").style.display = "none";
+      new bootstrap.Modal(document.getElementById("modalMotorista")).show();
+    }
+  }
+  window.abrirNovo = abrirNovo;
+
+  function editarVeiculo(v) {
+    document.getElementById("tituloModalVeiculo").textContent = "Editar Veículo";
+    document.getElementById("vId").value = v.id;
+    document.getElementById("vPlaca").value = v.placa || "";
+    document.getElementById("vModelo").value = v.modelo || "";
+    document.getElementById("vAno").value = v.ano || "";
+    document.getElementById("vCapacidade").value = v.capacidade || 40;
+    document.getElementById("vStatus").value = v.status || "ativo";
+    document.getElementById("vFilial").value = v.filial || "";
+    document.getElementById("vObs").value = v.observacao || "";
+    document.getElementById("vErro").style.display = "none";
+    new bootstrap.Modal(document.getElementById("modalVeiculo")).show();
+  }
+  window.editarVeiculo = editarVeiculo;
+
+  function editarMotorista(m) {
+    document.getElementById("tituloModalMotorista").textContent = "Editar Motorista";
+    document.getElementById("mId").value = m.id;
+    document.getElementById("mNome").value = m.nome || "";
+    document.getElementById("mCnh").value = m.cnh || "";
+    document.getElementById("mCategoria").value = m.categoria_cnh || "";
+    document.getElementById("mValidadeCnh").value = m.validade_cnh || "";
+    document.getElementById("mTelefone").value = m.telefone || "";
+    document.getElementById("mFilial").value = m.filial || "";
+    document.getElementById("mStatus").value = m.status || "ativo";
+    document.getElementById("mObs").value = m.observacao || "";
+    document.getElementById("mErro").style.display = "none";
+    new bootstrap.Modal(document.getElementById("modalMotorista")).show();
+  }
+  window.editarMotorista = editarMotorista;
+
+  async function salvarVeiculo() {
+    const btn = document.getElementById("vBtnSalvar");
+    const erroEl = document.getElementById("vErro");
+    erroEl.style.display = "none";
+    const placa = document.getElementById("vPlaca").value.trim();
+    if (!placa) { erroEl.textContent = "Placa é obrigatória."; erroEl.style.display = "block"; return; }
+    const editId = document.getElementById("vId").value;
+    const payload = {
+      placa,
+      modelo: document.getElementById("vModelo").value.trim(),
+      ano: parseInt(document.getElementById("vAno").value) || null,
+      capacidade: parseInt(document.getElementById("vCapacidade").value) || 40,
+      status: document.getElementById("vStatus").value,
+      filial: document.getElementById("vFilial").value.trim(),
+      observacao: document.getElementById("vObs").value.trim(),
+    };
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando…';
+    try {
+      const url = editId ? `/rh-ops/api/transporte/veiculos/${editId}` : "/rh-ops/api/transporte/veiculos";
+      const r = await fetch(url, {
+        method: editId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro || "Erro ao salvar.");
+      location.reload();
+    } catch (e) {
+      erroEl.textContent = e.message;
+      erroEl.style.display = "block";
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Salvar';
+    }
+  }
+  window.salvarVeiculo = salvarVeiculo;
+
+  async function salvarMotorista() {
+    const btn = document.getElementById("mBtnSalvar");
+    const erroEl = document.getElementById("mErro");
+    erroEl.style.display = "none";
+    const nome = document.getElementById("mNome").value.trim();
+    if (!nome) { erroEl.textContent = "Nome é obrigatório."; erroEl.style.display = "block"; return; }
+    const editId = document.getElementById("mId").value;
+    const payload = {
+      nome,
+      cnh: document.getElementById("mCnh").value.trim(),
+      categoria_cnh: document.getElementById("mCategoria").value,
+      validade_cnh: document.getElementById("mValidadeCnh").value || null,
+      telefone: document.getElementById("mTelefone").value.trim(),
+      filial: document.getElementById("mFilial").value.trim(),
+      status: document.getElementById("mStatus").value,
+      observacao: document.getElementById("mObs").value.trim(),
+    };
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando…';
+    try {
+      const url = editId ? `/rh-ops/api/transporte/motoristas/${editId}` : "/rh-ops/api/transporte/motoristas";
+      const r = await fetch(url, {
+        method: editId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.erro || "Erro ao salvar.");
+      location.reload();
+    } catch (e) {
+      erroEl.textContent = e.message;
+      erroEl.style.display = "block";
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Salvar';
+    }
+  }
+  window.salvarMotorista = salvarMotorista;
+
+  async function deletarVeiculo(id, placa) {
+    if (!confirm(`Excluir o veículo ${placa}?`)) return;
+    const r = await fetch(`/rh-ops/api/transporte/veiculos/${id}`, { method: "DELETE" });
+    const data = await r.json();
+    if (data.ok) location.reload();
+    else alert("Erro ao excluir.");
+  }
+  window.deletarVeiculo = deletarVeiculo;
+
+  async function deletarMotorista(id, nome) {
+    if (!confirm(`Excluir o motorista "${nome}"?`)) return;
+    const r = await fetch(`/rh-ops/api/transporte/motoristas/${id}`, { method: "DELETE" });
+    const data = await r.json();
+    if (data.ok) location.reload();
+    else alert("Erro ao excluir.");
+  }
+  window.deletarMotorista = deletarMotorista;
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("aba") === "motoristas") trocarTab("motoristas");
+})();
+</script>
 {% endblock %}
