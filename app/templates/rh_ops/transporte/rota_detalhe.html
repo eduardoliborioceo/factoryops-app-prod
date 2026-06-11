@@ -334,20 +334,30 @@
           </div>
           <div class="col-12">
             <label style="font-size:0.8rem;font-weight:600;">Ponto de partida (nome)</label>
-            <input type="text" class="form-control form-control-sm" id="cfPartidaNome"
-                   value="{{ rota.partida_nome or '' }}" style="border-radius:8px;">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" id="cfPartidaNome"
+                     value="{{ rota.partida_nome or '' }}" style="border-radius:8px 0 0 8px;">
+              <button class="btn btn-outline-secondary" type="button" id="btnGeoPartida"
+                      onclick="geocodificarPartida()" title="Geocodificar endereço"
+                      style="border-radius:0 8px 8px 0;">
+                <i class="bi bi-geo-alt" id="icoGeoPartida"></i>
+              </button>
+            </div>
+            <div class="form-text" style="font-size:0.72rem;">
+              Digite o endereço e clique <i class="bi bi-geo-alt"></i> para preencher lat/lng automaticamente.
+            </div>
           </div>
           <div class="col-6">
             <label style="font-size:0.8rem;font-weight:600;">Lat. partida</label>
             <input type="text" class="form-control form-control-sm" id="cfPartidaLat"
                    value="{{ rota.partida_lat or '' }}" style="border-radius:8px;"
-                   placeholder="-3.0965">
+                   placeholder="-3.0832">
           </div>
           <div class="col-6">
             <label style="font-size:0.8rem;font-weight:600;">Lng. partida</label>
             <input type="text" class="form-control form-control-sm" id="cfPartidaLng"
                    value="{{ rota.partida_lng or '' }}" style="border-radius:8px;"
-                   placeholder="-60.0208">
+                   placeholder="-59.9969">
           </div>
         </div>
         <div id="cfErro" style="color:#dc3545;font-size:0.8rem;margin-top:8px;display:none;"></div>
@@ -723,6 +733,37 @@
     setMapStatus("");
   }
   window.limparTrajeto = limparTrajeto;
+
+  // ── Geocodificar ponto de partida ──
+  async function geocodificarPartida() {
+    const nome = document.getElementById("cfPartidaNome").value.trim();
+    if (!nome) return;
+    const btn = document.getElementById("btnGeoPartida");
+    const ico = document.getElementById("icoGeoPartida");
+    btn.disabled = true;
+    ico.className = "spinner-border spinner-border-sm";
+    try {
+      const r = await fetch(
+        `/rh-ops/api/transporte/geocode?q=${encodeURIComponent(nome)}&cidade=Manaus&estado=AM`
+      );
+      const data = await r.json();
+      if (data.ok) {
+        document.getElementById("cfPartidaLat").value = data.lat.toFixed(6);
+        document.getElementById("cfPartidaLng").value = data.lng.toFixed(6);
+        ico.className = "bi bi-check-circle text-success";
+        setTimeout(() => { ico.className = "bi bi-geo-alt"; }, 2500);
+      } else {
+        ico.className = "bi bi-x-circle text-danger";
+        setTimeout(() => { ico.className = "bi bi-geo-alt"; }, 2500);
+      }
+    } catch (_) {
+      ico.className = "bi bi-x-circle text-danger";
+      setTimeout(() => { ico.className = "bi bi-geo-alt"; }, 2500);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  window.geocodificarPartida = geocodificarPartida;
 
   // ── Config save ──
   async function salvarConfig() {
