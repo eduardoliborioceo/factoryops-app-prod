@@ -3135,6 +3135,11 @@ def rh_transporte_rota_detalhe(rota_id):
     custos = svc.calcular_custos_rotas()
     custo_rota = next((c for c in custos if c['id'] == rota_id), None)
     precos = repo.listar_precos_combustivel()
+    turno_configs = repo.listar_turno_configs()
+    hora_saida_default = next(
+        (t['horario_saida'] for t in turno_configs if t['turno'] == rota['turno']),
+        '06:00'
+    )
     return render_template(
         "rh_ops/transporte/rota_detalhe.html",
         active_menu="rh_transporte_rotas",
@@ -3143,6 +3148,7 @@ def rh_transporte_rota_detalhe(rota_id):
         ors_disponivel=ors_disponivel,
         custo_rota=custo_rota,
         precos=precos,
+        hora_saida_default=hora_saida_default,
     )
 
 
@@ -3481,6 +3487,21 @@ def rh_api_custos_combustivel():
     custos = svc.calcular_custos_rotas()
     total = round(sum(c['custo_est'] for c in custos), 2)
     return jsonify({"ok": True, "custos": custos, "custo_total": total})
+
+
+@bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/tempo", methods=["POST"])
+@login_required
+def rh_api_tempo_rota(rota_id):
+    from flask import request, jsonify
+    from app.services import rh_transporte_service as svc
+    d = request.get_json(force=True) or {}
+    hora_saida = (d.get("hora_saida") or "").strip()
+    if not hora_saida:
+        return jsonify({"ok": False, "erro": "hora_saida obrigatório (HH:MM)"}), 400
+    resultado = svc.calcular_tempo_rota(rota_id, hora_saida)
+    if resultado is None:
+        return jsonify({"ok": False, "erro": "Rota não encontrada ou hora inválida"}), 404
+    return jsonify({"ok": True, **resultado})
 
 
 @bp.route("/rh-ops/transporte/alocacao", methods=["GET"])

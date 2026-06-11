@@ -151,6 +151,91 @@ def calcular_custos_rotas() -> list:
     return resultado
 
 
+_VELOCIDADE_URBANA_KMH = 28.0
+_TEMPO_PARADA_MIN = 2.5
+_FATOR_TRANSITO = 1.20
+
+
+def _minutos_para_hora(minutos: float) -> str:
+    m = int(minutos) % (24 * 60)
+    return f"{m // 60:02d}:{m % 60:02d}"
+
+
+def _formatar_duracao(minutos: int) -> str:
+    if minutos >= 60:
+        return f"{minutos // 60}h {minutos % 60:02d}min"
+    return f"{minutos}min"
+
+
+def calcular_tempo_rota(rota_id: int, hora_saida: str) -> Optional[dict]:
+    """
+    Estimates arrival time at each stop.
+    Uses haversine + average urban speed (28 km/h) with 20% traffic factor.
+    hora_saida: "HH:MM"
+    """
+    rota = repo.buscar_rota(rota_id)
+    if not rota:
+        return None
+    try:
+        h, m = map(int, hora_saida.strip().split(':'))
+        minutos_inicio = float(h * 60 + m)
+    except (ValueError, AttributeError):
+        return None
+
+    colabs = repo.listar_colaboradores_rota(rota_id)
+
+    depot_lat = float(rota['partida_lat'] or -3.0832)
+    depot_lng = float(rota['partida_lng'] or -59.9969)
+
+    paradas = []
+    tempo_atual = minutos_inicio
+    dist_acumulada = 0.0
+    prev_lat, prev_lng = depot_lat, depot_lng
+
+    for c in colabs:
+        lat = c.get('lat')
+        lng = c.get('lng')
+        if lat and lng:
+            lat, lng = float(lat), float(lng)
+            dist = _haversine_km(prev_lat, prev_lng, lat, lng)
+            tempo_viagem = (dist / _VELOCIDADE_URBANA_KMH) * 60 * _FATOR_TRANSITO
+            tempo_atual += tempo_viagem + _TEMPO_PARADA_MIN
+            dist_acumulada += dist
+            prev_lat, prev_lng = lat, lng
+            hora_chegada = _minutos_para_hora(tempo_atual)
+        else:
+            hora_chegada = None
+
+        paradas.append({
+            'id':                c['id'],
+            'nome':              c['nome'],
+            'bairro':            c.get('endereco_bairro') or '',
+            'hora_chegada':      hora_chegada,
+            'dist_acumulada_km': round(dist_acumulada, 1),
+            'geocodificado':     bool(c.get('geocodificado')),
+        })
+
+    if (prev_lat != depot_lat or prev_lng != depot_lng):
+        dist_retorno = _haversine_km(prev_lat, prev_lng, depot_lat, depot_lng)
+        tempo_atual += (dist_retorno / _VELOCIDADE_URBANA_KMH) * 60 * _FATOR_TRANSITO
+        dist_acumulada += dist_retorno
+
+    duracao = round(tempo_atual - minutos_inicio)
+    sem_geo = sum(1 for p in paradas if not p['geocodificado'])
+
+    return {
+        'hora_saida':        hora_saida,
+        'hora_chegada_final': _minutos_para_hora(tempo_atual),
+        'duracao_min':       duracao,
+        'duracao_fmt':       _formatar_duracao(duracao),
+        'dist_total_km':     round(dist_acumulada, 1),
+        'paradas':           paradas,
+        'total_paradas':     len(paradas),
+        'sem_geo':           sem_geo,
+        'velocidade_kmh':    _VELOCIDADE_URBANA_KMH,
+    }
+
+
 def buscar_preco_externo() -> Optional[dict]:
     """
     Tenta buscar preços de combustível de uma fonte externa.
