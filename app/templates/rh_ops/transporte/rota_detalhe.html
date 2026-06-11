@@ -548,12 +548,18 @@
     const item = e.target.closest(".search-item");
     if (!item) return;
     e.preventDefault();
-    const id = parseInt(item.dataset.id);
-    const nome = item.dataset.nome;
-    document.getElementById("selEmployeeId").value = id;
-    document.getElementById("busca").value = nome;
-    document.getElementById("fNome").value = nome;
+    document.getElementById("selEmployeeId").value = parseInt(item.dataset.id);
+    document.getElementById("busca").value = item.dataset.nome;
+    document.getElementById("fNome").value = item.dataset.nome;
+    document.getElementById("fRua").value    = item.dataset.rua    || "";
+    document.getElementById("fNum").value    = item.dataset.num    || "";
+    document.getElementById("fBairro").value = item.dataset.bairro || "";
+    const cidade = item.dataset.cidade;
+    if (cidade) document.getElementById("fCidade").value = cidade;
+    const estado = item.dataset.estado;
+    if (estado) document.getElementById("fEstado").value = estado;
     drop.style.display = "none";
+    document.getElementById("addErro").style.display = "none";
   });
 
   document.addEventListener("click", e => {
@@ -568,11 +574,28 @@
       const r = await fetch(`/rh-ops/api/transporte/employees/buscar?q=${encodeURIComponent(val)}`);
       const employees = await r.json();
       if (!employees.length) { drop.style.display = "none"; return; }
-      drop.innerHTML = employees.map(e => `
-        <div class="search-item" data-id="${e.id}" data-nome="${escHtml(e.full_name)}">
-          <strong>${escHtml(e.full_name)}</strong>
-          <span style="color:var(--text-muted);font-size:0.75rem;"> — ${escHtml(e.employee_code)} · ${escHtml(e.department || "")}</span>
-        </div>`).join("");
+      drop.innerHTML = employees.map(e => {
+        const temEndereco = e.endereco_rua || e.endereco_bairro;
+        const enderecoLabel = temEndereco
+          ? [e.endereco_bairro, e.endereco_cidade].filter(Boolean).join(", ")
+          : '<span style="color:#fd7e14;font-size:0.7rem;"><i class="bi bi-exclamation-triangle"></i> Sem endereço cadastrado</span>';
+        return `<div class="search-item"
+                  data-id="${e.id}"
+                  data-nome="${escHtml(e.full_name)}"
+                  data-rua="${escHtml(e.endereco_rua || '')}"
+                  data-num="${escHtml(e.endereco_numero || '')}"
+                  data-bairro="${escHtml(e.endereco_bairro || '')}"
+                  data-cidade="${escHtml(e.endereco_cidade || '')}"
+                  data-estado="${escHtml(e.endereco_estado || '')}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <strong style="font-size:0.82rem;">${escHtml(e.full_name)}</strong>
+            <span style="color:var(--text-muted);font-size:0.72rem;flex-shrink:0;">${escHtml(e.employee_code)}</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">
+            ${escHtml(e.department || "")}${e.department ? " · " : ""}${enderecoLabel}
+          </div>
+        </div>`;
+      }).join("");
       drop.style.display = "block";
     }, 280);
   }
