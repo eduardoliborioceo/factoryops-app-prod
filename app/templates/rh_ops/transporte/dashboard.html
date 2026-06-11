@@ -217,9 +217,16 @@
   <div class="db-card db-card--combustivel">
     <div class="db-card-hd">
       <span class="db-card-title"><i class="bi bi-fuel-pump me-2"></i>Preços de Combustível — Manaus</span>
-      <button class="btn btn-xs btn-outline-secondary" onclick="abrirModalPrecos()" style="border-radius:6px;padding:3px 10px;font-size:0.75rem;">
-        <i class="bi bi-pencil me-1"></i>Atualizar
-      </button>
+      <div class="d-flex gap-1 flex-wrap">
+        <button class="btn btn-xs btn-outline-primary" id="btnAnpSync" onclick="sincronizarANP()"
+                style="border-radius:6px;padding:3px 10px;font-size:0.75rem;" title="Busca preços automaticamente do SICOM/ANP">
+          <i class="bi bi-cloud-download me-1" id="icoAnpSync"></i>Sincronizar ANP
+        </button>
+        <button class="btn btn-xs btn-outline-secondary" onclick="abrirModalPrecos()"
+                style="border-radius:6px;padding:3px 10px;font-size:0.75rem;">
+          <i class="bi bi-pencil me-1"></i>Manual
+        </button>
+      </div>
     </div>
     <div class="db-card-body">
       <div class="db-comb-grid">
@@ -227,12 +234,18 @@
         <div class="db-comb-item">
           <span class="db-comb-label">{{ p.tipo | replace('_', ' ') | title }}</span>
           <span class="db-comb-valor">R$ {{ "%.3f"|format(p.preco_litro) }}/L</span>
-          <span class="db-comb-data">{{ p.data_referencia }}</span>
+          <span class="db-comb-data">
+            {{ p.data_referencia }}
+            {% if p.fonte and p.fonte.startswith('anp') %}
+            <span style="background:rgba(13,110,253,0.1);color:#0a4085;font-size:0.6rem;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:3px;">ANP</span>
+            {% endif %}
+          </span>
         </div>
         {% else %}
         <span style="font-size:0.82rem;color:var(--text-muted);">Nenhum preço configurado.</span>
         {% endfor %}
       </div>
+      <div id="anpSyncStatus" style="margin-top:8px;font-size:0.72rem;color:var(--text-muted);display:none;"></div>
     </div>
   </div>
 
@@ -615,6 +628,31 @@
 
 <script>
 const modalPrecos = new bootstrap.Modal(document.getElementById('modalPrecos'));
+
+async function sincronizarANP() {
+  const btn = document.getElementById('btnAnpSync');
+  const ico = document.getElementById('icoAnpSync');
+  const status = document.getElementById('anpSyncStatus');
+  btn.disabled = true;
+  ico.className = 'spinner-border spinner-border-sm me-1';
+  status.textContent = 'Baixando dados do SICOM/ANP — isso pode levar até 2 minutos…';
+  status.style.display = 'block';
+  status.style.color = 'var(--text-muted)';
+  try {
+    const r = await fetch('/rh-ops/api/transporte/combustivel/sincronizar-anp', { method: 'POST' });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.erro);
+    const semana = data.semana_referencia ? ` (semana ${data.semana_referencia})` : '';
+    status.innerHTML = `<i class="bi bi-check-circle text-success me-1"></i>${data.precos_atualizados} tipo(s) atualizados via ANP${semana}. Recarregando…`;
+    status.style.color = '';
+    setTimeout(() => location.reload(), 1500);
+  } catch (e) {
+    status.innerHTML = `<i class="bi bi-exclamation-triangle text-danger me-1"></i>Erro: ${e.message}`;
+    status.style.color = '#dc3545';
+    ico.className = 'bi bi-cloud-download me-1';
+    btn.disabled = false;
+  }
+}
 
 function abrirModalPrecos() {
   document.getElementById('precosErro').classList.add('d-none');
