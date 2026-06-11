@@ -3095,7 +3095,10 @@ def rh_saude_cipa():
 @bp.route("/rh-ops/transporte/dashboard", methods=["GET"])
 @login_required
 def rh_transporte_dashboard():
-    return render_template("rh_ops/transporte/dashboard.html", active_menu="rh_transporte_dashboard")
+    from app.repositories import rh_transporte_repository as repo
+    stats = repo.get_dashboard_stats()
+    return render_template("rh_ops/transporte/dashboard.html",
+                           active_menu="rh_transporte_dashboard", stats=stats)
 
 
 @bp.route("/rh-ops/transporte/rotas", methods=["GET"])

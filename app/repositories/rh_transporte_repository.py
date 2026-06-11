@@ -4,6 +4,69 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
+def get_dashboard_stats() -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) FILTER (WHERE r.ativo)                        AS rotas_ativas,
+                    COUNT(*) FILTER (WHERE NOT r.ativo)                    AS rotas_inativas,
+                    COALESCE(SUM(CASE WHEN r.ativo THEN cnt ELSE 0 END), 0) AS colaboradores_alocados,
+                    COUNT(DISTINCT r.veiculo) FILTER (WHERE r.ativo AND r.veiculo IS NOT NULL) AS veiculos_em_uso
+                FROM rh_rota r
+                LEFT JOIN (
+                    SELECT rota_id, COUNT(*) AS cnt FROM rh_rota_colaborador GROUP BY rota_id
+                ) c ON c.rota_id = r.id
+            """)
+            totais = cur.fetchone()
+
+            cur.execute("""
+                SELECT r.turno,
+                       COUNT(DISTINCT r.id)  AS rotas,
+                       COALESCE(SUM(c.cnt), 0) AS colaboradores
+                FROM rh_rota r
+                LEFT JOIN (
+                    SELECT rota_id, COUNT(*) AS cnt FROM rh_rota_colaborador GROUP BY rota_id
+                ) c ON c.rota_id = r.id
+                WHERE r.ativo
+                GROUP BY r.turno
+                ORDER BY r.turno
+            """)
+            por_turno = cur.fetchall()
+
+            cur.execute("""
+                SELECT r.id, r.codigo, r.nome, r.turno, r.cor,
+                       r.veiculo, r.motorista,
+                       COALESCE(c.cnt, 0) AS total_colaboradores,
+                       r.atualizado_em
+                FROM rh_rota r
+                LEFT JOIN (
+                    SELECT rota_id, COUNT(*) AS cnt FROM rh_rota_colaborador GROUP BY rota_id
+                ) c ON c.rota_id = r.id
+                WHERE r.ativo
+                ORDER BY r.atualizado_em DESC NULLS LAST
+                LIMIT 8
+            """)
+            rotas_recentes = cur.fetchall()
+
+            cur.execute("SELECT COUNT(*) AS total FROM rh_veiculo WHERE status = 'ativo'")
+            veiculos_ativos = (cur.fetchone() or {}).get('total', 0)
+
+            cur.execute("SELECT COUNT(*) AS total FROM rh_motorista WHERE status = 'ativo'")
+            motoristas_ativos = (cur.fetchone() or {}).get('total', 0)
+
+    return {
+        'rotas_ativas':        totais['rotas_ativas'] if totais else 0,
+        'rotas_inativas':      totais['rotas_inativas'] if totais else 0,
+        'colaboradores_alocados': int(totais['colaboradores_alocados']) if totais else 0,
+        'veiculos_em_uso':     totais['veiculos_em_uso'] if totais else 0,
+        'veiculos_ativos':     veiculos_ativos,
+        'motoristas_ativos':   motoristas_ativos,
+        'por_turno':           list(por_turno),
+        'rotas_recentes':      list(rotas_recentes),
+    }
+
+
 def get_alocacao_view(turno: Optional[str] = None, busca: Optional[str] = None) -> list:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:

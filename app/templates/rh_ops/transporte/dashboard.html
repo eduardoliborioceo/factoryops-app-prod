@@ -8,6 +8,9 @@
     <h1 class="page-header-name">Dashboard de Rotas</h1>
   </div>
   <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -16,16 +19,449 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid db-wrap">
 
-  <div class="mb-3">
-    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
+  <!-- KPI Strip -->
+  <div class="db-kpi-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-blue"><i class="bi bi-signpost-split-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.rotas_ativas }}</div>
+        <div class="stat-label">Rotas Ativas</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-green"><i class="bi bi-people-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.colaboradores_alocados }}</div>
+        <div class="stat-label">Colaboradores Alocados</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-slate"><i class="bi bi-truck-front-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.veiculos_ativos }}</div>
+        <div class="stat-label">Veículos Ativos</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-slate"><i class="bi bi-person-badge-fill"></i></div>
+      <div>
+        <div class="stat-value">{{ stats.motoristas_ativos }}</div>
+        <div class="stat-label">Motoristas Ativos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Turno Breakdown + Rotas Recentes -->
+  <div class="db-main-row">
+
+    <!-- Turnos -->
+    <div class="db-card db-card--turnos">
+      <div class="db-card-hd">
+        <span class="db-card-title"><i class="bi bi-clock me-2"></i>Distribuição por Turno</span>
+      </div>
+      <div class="db-card-body">
+        {% if stats.por_turno %}
+          {% for t in stats.por_turno %}
+          {% set max_colabs = stats.colaboradores_alocados if stats.colaboradores_alocados > 0 else 1 %}
+          {% set pct = ((t.colaboradores / max_colabs) * 100) | int %}
+          <div class="db-turno-item">
+            <div class="db-turno-head">
+              <span class="db-turno-badge db-turno-{{ t.turno }}">
+                <i class="bi bi-clock-fill"></i> Turno {{ t.turno }}
+              </span>
+              <div class="db-turno-nums">
+                <span class="db-num-rotas">{{ t.rotas }} rota{{ 's' if t.rotas != 1 }}</span>
+                <span class="db-num-dot">·</span>
+                <span class="db-num-colabs">{{ t.colaboradores }} colaborador{{ 'es' if t.colaboradores != 1 }}</span>
+              </div>
+            </div>
+            <div class="db-bar-track">
+              <div class="db-bar-fill db-bar-{{ t.turno }}" style="width: {{ pct }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="db-empty-sub">
+            <i class="bi bi-inbox"></i>
+            <p>Nenhuma rota ativa encontrada.</p>
+          </div>
+        {% endif %}
+
+        <div class="db-turno-total">
+          <span>Total</span>
+          <span>{{ stats.rotas_ativas }} rotas · {{ stats.colaboradores_alocados }} colaboradores</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Frota em Uso -->
+    <div class="db-card db-card--frota">
+      <div class="db-card-hd">
+        <span class="db-card-title"><i class="bi bi-truck-front me-2"></i>Frota & Motoristas</span>
+      </div>
+      <div class="db-card-body">
+        <div class="db-frota-row">
+          <div class="db-frota-item">
+            <div class="db-frota-num">{{ stats.veiculos_em_uso }}</div>
+            <div class="db-frota-label">Veículos em Uso</div>
+            <div class="db-frota-sub">em rotas ativas</div>
+          </div>
+          <div class="db-frota-sep"></div>
+          <div class="db-frota-item">
+            <div class="db-frota-num">{{ stats.veiculos_ativos }}</div>
+            <div class="db-frota-label">Veículos Disponíveis</div>
+            <div class="db-frota-sub">cadastrados e ativos</div>
+          </div>
+          <div class="db-frota-sep"></div>
+          <div class="db-frota-item">
+            <div class="db-frota-num">{{ stats.motoristas_ativos }}</div>
+            <div class="db-frota-label">Motoristas</div>
+            <div class="db-frota-sub">cadastrados e ativos</div>
+          </div>
+        </div>
+        <div class="db-frota-actions">
+          <a href="{{ url_for('pages.rh_transporte_veiculos') }}" class="btn btn-sm btn-outline-secondary w-100">
+            <i class="bi bi-truck me-1"></i>Gerenciar Frota
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Rotas Recentes -->
+  <div class="db-card db-card--rotas">
+    <div class="db-card-hd">
+      <span class="db-card-title"><i class="bi bi-signpost-split me-2"></i>Rotas Ativas</span>
+      <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="db-card-link">
+        Ver todas <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+    <div class="db-card-body p-0">
+      {% if stats.rotas_recentes %}
+      <div class="db-rotas-table-wrap">
+        <table class="db-rotas-table">
+          <thead>
+            <tr>
+              <th>Rota</th>
+              <th>Turno</th>
+              <th>Veículo</th>
+              <th>Motorista</th>
+              <th class="text-end">Colaboradores</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in stats.rotas_recentes %}
+            <tr>
+              <td>
+                <div class="db-rota-name">
+                  <span class="db-rota-dot" style="background: {{ r.cor or '#6c757d' }}"></span>
+                  <div>
+                    <span class="db-rota-codigo">{{ r.codigo }}</span>
+                    <span class="db-rota-nome">{{ r.nome }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="db-badge-turno db-turno-{{ r.turno }}">T{{ r.turno }}</span>
+              </td>
+              <td class="db-text-sm">{{ r.veiculo or '—' }}</td>
+              <td class="db-text-sm">{{ r.motorista or '—' }}</td>
+              <td class="text-end">
+                <span class="db-colabs-badge">{{ r.total_colaboradores }}</span>
+              </td>
+              <td class="text-end">
+                <a href="{{ url_for('pages.rh_transporte_rota_detalhe', rota_id=r.id) }}"
+                   class="btn btn-xs btn-outline-primary">
+                  <i class="bi bi-map"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="db-empty-sub" style="padding: 40px 24px;">
+        <i class="bi bi-signpost"></i>
+        <p>Nenhuma rota ativa.<br>
+          <a href="{{ url_for('pages.rh_transporte_rotas') }}">Criar primeira rota</a>
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Atalhos -->
+  <div class="db-atalhos">
+    <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="db-atalho">
+      <i class="bi bi-signpost-split-fill db-atalho-icon"></i>
+      <span>Gerenciar Rotas</span>
+    </a>
+    <a href="{{ url_for('pages.rh_transporte_veiculos') }}" class="db-atalho">
+      <i class="bi bi-truck-front-fill db-atalho-icon"></i>
+      <span>Veículos & Motoristas</span>
+    </a>
+    <a href="{{ url_for('pages.rh_transporte_alocacao') }}" class="db-atalho">
+      <i class="bi bi-diagram-3-fill db-atalho-icon"></i>
+      <span>Alocação</span>
+    </a>
+    <a href="{{ url_for('pages.rh_transporte_otimizador') }}" class="db-atalho">
+      <i class="bi bi-magic db-atalho-icon"></i>
+      <span>Otimizador</span>
+    </a>
+    <a href="{{ url_for('pages.rh_transporte_config_turno') }}" class="db-atalho">
+      <i class="bi bi-gear-fill db-atalho-icon"></i>
+      <span>Config. Turno</span>
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-speedometer2" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Visão geral: rotas ativas, colaboradores alocados, veículos em operação por turno.</p>
-  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.db-wrap { padding-bottom: 2rem; }
+
+/* KPI Strip */
+.db-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+@media (max-width: 767px) { .db-kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 400px) { .db-kpi-grid { grid-template-columns: 1fr; } }
+
+/* Main row */
+.db-main-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+@media (max-width: 767px) { .db-main-row { grid-template-columns: 1fr; } }
+
+/* Cards */
+.db-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.db-card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,.02);
+}
+.db-card-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+}
+.db-card-link {
+  font-size: 0.78rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.db-card-link:hover { text-decoration: underline; }
+.db-card-body { padding: 16px 18px; }
+
+/* Turnos */
+.db-turno-item { margin-bottom: 16px; }
+.db-turno-item:last-of-type { margin-bottom: 0; }
+.db-turno-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.db-turno-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.db-turno-1 { background: rgba(13,110,253,.12); color: #0d6efd; }
+.db-turno-2 { background: rgba(25,135,84,.12);  color: #198754; }
+.db-turno-3 { background: rgba(111,66,193,.12); color: #6f42c1; }
+.db-turno-nums { font-size: 0.78rem; color: var(--text-muted); }
+.db-num-rotas { font-weight: 600; color: var(--text); }
+.db-num-dot { margin: 0 4px; }
+.db-bar-track {
+  height: 8px;
+  background: rgba(15,23,42,.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.db-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+.db-bar-1 { background: #0d6efd; }
+.db-bar-2 { background: #198754; }
+.db-bar-3 { background: #6f42c1; }
+.db-turno-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.db-turno-total span:last-child { font-weight: 600; color: var(--text); }
+
+/* Frota */
+.db-frota-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 16px;
+}
+.db-frota-item {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px;
+}
+.db-frota-sep {
+  width: 1px;
+  height: 48px;
+  background: var(--border);
+}
+.db-frota-num {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.db-frota-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.db-frota-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+/* Rotas table */
+.db-rotas-table-wrap { overflow-x: auto; }
+.db-rotas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.db-rotas-table thead th {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: rgba(15,23,42,.025);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.db-rotas-table tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.db-rotas-table tbody tr:last-child td { border-bottom: none; }
+.db-rotas-table tbody tr:hover td { background: rgba(13,110,253,.03); }
+
+.db-rota-name { display: flex; align-items: center; gap: 10px; }
+.db-rota-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.db-rota-codigo {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.db-rota-nome {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.db-badge-turno {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.db-text-sm { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+.db-colabs-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(13,110,253,.1);
+  color: #0d6efd;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+.btn-xs {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  border-radius: 6px;
+}
+
+/* Empty sub */
+.db-empty-sub {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+.db-empty-sub i { font-size: 2rem; opacity: .25; display: block; margin-bottom: 10px; }
+.db-empty-sub p { font-size: 0.82rem; margin: 0; }
+
+/* Atalhos */
+.db-atalhos {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+@media (max-width: 767px) { .db-atalhos { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 400px) { .db-atalhos { grid-template-columns: repeat(2, 1fr); } }
+
+.db-atalho {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: box-shadow .15s ease, border-color .15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.db-atalho:hover {
+  color: var(--primary);
+  border-color: rgba(13,110,253,.3);
+  box-shadow: 0 4px 14px rgba(13,110,253,.08);
+}
+.db-atalho-icon { font-size: 1.4rem; }
+</style>
 {% endblock %}
