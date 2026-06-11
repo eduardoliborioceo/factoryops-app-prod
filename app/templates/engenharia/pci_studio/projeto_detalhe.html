@@ -229,90 +229,185 @@ const BOARD_H    = {{ projeto.larg_mm }};
 const BOARD_ESP  = {{ projeto.esp_mm }};
 const BOARD_COR  = '{{ projeto.cor_placa }}';
 
-let allItems  = {{ projeto.itens | tojson }};
-let meshMap   = {};
-let hiddenSet = new Set();
-let ladoAtual = 'top';
-let filtroAtual = 'all';
-let wireframe = false;
-let selectedMesh = null;
+let allItems      = {{ projeto.itens | tojson }};
+let meshMap       = {};   // id → THREE.Group
+let hiddenSet     = new Set();
+let ladoAtual     = 'top';
+let filtroAtual   = 'all';
+let wireframe     = false;
+let selectedGroup = null;
 
-// ── Three.js setup ──
-const canvas  = document.getElementById('threeCanvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.shadowMap.enabled = true;
-renderer.setClearColor(0xf1f5f9);
+// ── Renderer ──
+const canvas   = document.getElementById('threeCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled    = true;
+renderer.shadowMap.type       = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace     = THREE.SRGBColorSpace;
+renderer.toneMapping          = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure  = 1.1;
+renderer.setClearColor(0xeceff4);
 
+// ── Scene & Camera ──
 const scene  = new THREE.Scene();
+scene.fog    = new THREE.Fog(0xeceff4, 800, 2000);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 5000);
-resetCameraPos();
 
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
+controls.minDistance   = 5;
+controls.maxDistance   = 1500;
 
-// Luzes
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-dir.position.set(BOARD_W, BOARD_W * 1.5, BOARD_H);
-dir.castShadow = true;
-scene.add(dir);
-scene.add(new THREE.DirectionalLight(0xc8d8f0, 0.4).position.set(-BOARD_W, BOARD_H, -BOARD_W) && dir);
+// ── Lights (3 luzes independentes) ──
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
-// Placa
-const boardGeo = new THREE.BoxGeometry(BOARD_W, BOARD_ESP, BOARD_H);
-const boardMat = new THREE.MeshPhongMaterial({ color: new THREE.Color(BOARD_COR) });
+const hemi = new THREE.HemisphereLight(0xddeeff, 0x223322, 0.38);
+scene.add(hemi);
+
+const dir1 = new THREE.DirectionalLight(0xffffff, 0.9);
+dir1.position.set(BOARD_W * 0.6, BOARD_W * 1.5, BOARD_H * 0.8);
+dir1.castShadow = true;
+dir1.shadow.mapSize.set(1024, 1024);
+scene.add(dir1);
+
+const dir2 = new THREE.DirectionalLight(0xdde8ff, 0.38);
+dir2.position.set(-BOARD_W, BOARD_H * 0.7, -BOARD_H);
+scene.add(dir2);
+
+// ── PCB Board ──
+const boardGeo  = new THREE.BoxGeometry(BOARD_W, BOARD_ESP, BOARD_H);
+const boardMat  = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(BOARD_COR), roughness: 0.78, metalness: 0.04,
+});
 const boardMesh = new THREE.Mesh(boardGeo, boardMat);
 boardMesh.receiveShadow = true;
-boardMesh.userData.isBoard = true;
 scene.add(boardMesh);
 
-// Grid lines on board top
-const gridHelper = new THREE.GridHelper(Math.max(BOARD_W, BOARD_H), 10, 0x2d6a4f, 0x2d6a4f);
-gridHelper.material.opacity = 0.15;
-gridHelper.material.transparent = true;
-gridHelper.position.y = BOARD_ESP / 2 + 0.01;
-scene.add(gridHelper);
+// Board edge lines
+const boardEdgeGeo = new THREE.EdgesGeometry(boardGeo);
+const boardEdgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
+scene.add(new THREE.LineSegments(boardEdgeGeo, boardEdgeMat));
 
-function hexColor(hex) {
-  return new THREE.Color(hex || '#64748b');
+// Silkscreen plane on top face
+const silkGeo = new THREE.PlaneGeometry(BOARD_W - 1, BOARD_H - 1);
+const silkCol = new THREE.Color(BOARD_COR).clone().multiplyScalar(1.3);
+const silkMat = new THREE.MeshStandardMaterial({ color: silkCol, roughness: 0.9, transparent: true, opacity: 0.38 });
+const silkMesh = new THREE.Mesh(silkGeo, silkMat);
+silkMesh.rotation.x = -Math.PI / 2;
+silkMesh.position.y  = BOARD_ESP / 2 + 0.015;
+scene.add(silkMesh);
+
+// Copper border trace
+const borderShape = new THREE.Shape();
+const bx = BOARD_W / 2 - 2, bz = BOARD_H / 2 - 2;
+borderShape.moveTo(-bx, -bz);
+borderShape.lineTo( bx, -bz);
+borderShape.lineTo( bx,  bz);
+borderShape.lineTo(-bx,  bz);
+borderShape.closePath();
+const hole = new THREE.Path();
+const hx = bx - 1, hz = bz - 1;
+hole.moveTo(-hx, -hz);
+hole.lineTo( hx, -hz);
+hole.lineTo( hx,  hz);
+hole.lineTo(-hx,  hz);
+hole.closePath();
+borderShape.holes.push(hole);
+const traceGeo = new THREE.ShapeGeometry(borderShape);
+const traceMat = new THREE.MeshStandardMaterial({ color: 0xd4a942, roughness: 0.4, metalness: 0.6, transparent: true, opacity: 0.55 });
+const traceMesh = new THREE.Mesh(traceGeo, traceMat);
+traceMesh.rotation.x = -Math.PI / 2;
+traceMesh.position.y  = BOARD_ESP / 2 + 0.03;
+scene.add(traceMesh);
+
+// ── Helpers ──
+function hexColor(hex) { return new THREE.Color(hex || '#64748b'); }
+
+function makeLabel(text, color) {
+  const c2d = document.createElement('canvas');
+  c2d.width = 128; c2d.height = 64;
+  const ctx = c2d.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, 128, 64);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text.substring(0, 6), 64, 32);
+  const tex = new THREE.CanvasTexture(c2d);
+  return tex;
 }
 
+// ── Component builder ──
 function buildComponents(items) {
-  Object.values(meshMap).forEach(m => scene.remove(m));
+  Object.values(meshMap).forEach(g => scene.remove(g));
   meshMap = {};
 
   items.forEach(item => {
     if (!item.ativo) return;
-    const w   = item.comp_mm || 2;
-    const d   = item.larg_mm || 2;
-    const h   = item.alt_mm  || 1;
+
+    const w = item.comp_mm || 2;
+    const d = item.larg_mm || 2;
+    const h = item.alt_mm  || 1;
+
     const isBottom = item.lado === 'bottom';
-    const ySign = isBottom ? -1 : 1;
-    const yBase = isBottom
+    const yBase    = isBottom
       ? -(BOARD_ESP / 2 + h / 2)
       :  (BOARD_ESP / 2 + h / 2);
 
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = new THREE.MeshPhongMaterial({
-      color: hexColor(item.cor_hex),
-      shininess: 60,
+    const group = new THREE.Group();
+
+    // Body
+    const geo  = new THREE.BoxGeometry(w, h, d);
+    const mat  = new THREE.MeshStandardMaterial({
+      color:     hexColor(item.cor_hex),
+      roughness: 0.52,
+      metalness: 0.08,
     });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
+    const body = new THREE.Mesh(geo, mat);
+    body.castShadow    = true;
+    body.receiveShadow = true;
+    group.add(body);
 
-    const px = (item.pos_x || 0) - BOARD_W / 2;
-    const pz = -((item.pos_y || 0) - BOARD_H / 2);
-    mesh.position.set(px, yBase, pz);
+    // Edge lines — define a borda 3D claramente
+    const edgeGeo = new THREE.EdgesGeometry(geo);
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
+    group.add(new THREE.LineSegments(edgeGeo, edgeMat));
 
-    if (item.angulo) {
-      mesh.rotation.y = THREE.MathUtils.degToRad(-item.angulo);
+    // Top face highlight (plano levemente mais claro)
+    const topW = Math.max(w * 0.82, w - 0.4);
+    const topD = Math.max(d * 0.82, d - 0.4);
+    const topGeo = new THREE.PlaneGeometry(topW, topD);
+    const topCol = hexColor(item.cor_hex).clone().multiplyScalar(1.5);
+    const topMat = new THREE.MeshStandardMaterial({
+      color: topCol, roughness: 0.35, metalness: 0.1, transparent: true, opacity: 0.65,
+    });
+    const topMesh = new THREE.Mesh(topGeo, topMat);
+    topMesh.rotation.x = -Math.PI / 2;
+    topMesh.position.y  = h / 2 + 0.01;
+    group.add(topMesh);
+
+    // Designator label (só se componente grande o suficiente)
+    if (w >= 3 || d >= 3) {
+      const labelTex = makeLabel(item.designator, item.cor_hex || '#64748b');
+      const labelGeo = new THREE.PlaneGeometry(Math.min(w * 0.75, w - 0.5), Math.min(d * 0.5, d - 0.4));
+      const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, opacity: 0.9, depthWrite: false });
+      const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+      labelMesh.rotation.x = -Math.PI / 2;
+      labelMesh.position.y  = h / 2 + 0.02;
+      group.add(labelMesh);
     }
 
-    mesh.userData = { item };
-    meshMap[item.id] = mesh;
-    scene.add(mesh);
+    // Posição na placa
+    const px = (item.pos_x || 0) - BOARD_W / 2;
+    const pz = -((item.pos_y || 0) - BOARD_H / 2);
+    group.position.set(px, yBase, pz);
+    if (item.angulo) group.rotation.y = THREE.MathUtils.degToRad(-item.angulo);
+
+    group.userData = { item, body };
+    meshMap[item.id] = group;
+    scene.add(group);
   });
 
   atualizarVisibilidade();
@@ -321,66 +416,72 @@ function buildComponents(items) {
 
 function atualizarVisibilidade() {
   let vis = 0;
-  Object.entries(meshMap).forEach(([id, mesh]) => {
-    const item = mesh.userData.item;
+  Object.entries(meshMap).forEach(([id, group]) => {
+    const item   = group.userData.item;
     const oculto = hiddenSet.has(Number(id));
-    const ladoOk = filtroAtual === 'all' || filtroAtual === item.lado ||
-                   filtroAtual === item.tipo;
-    mesh.visible = !oculto && ladoOk;
-    if (mesh.visible) vis++;
+    const ladoOk = filtroAtual === 'all' || filtroAtual === item.lado || filtroAtual === item.tipo;
+    group.visible = !oculto && ladoOk;
+    if (group.visible) vis++;
   });
   document.getElementById('infoVisiveis').textContent = vis;
   atualizarStats();
 }
 
 function atualizarStats() {
-  const vis = Object.values(meshMap).filter(m => m.visible).length;
+  const vis = Object.values(meshMap).filter(g => g.visible).length;
   document.getElementById('viewerStats').textContent =
-    `${vis} / ${allItems.filter(i=>i.ativo).length} componentes`;
+    `${vis} / ${allItems.filter(i => i.ativo).length} componentes`;
 }
 
 function resetCameraPos() {
-  const d = Math.max(BOARD_W, BOARD_H) * 1.8;
-  camera.position.set(0, d, d * 0.6);
+  const d = Math.max(BOARD_W, BOARD_H) * 1.85;
+  camera.position.set(0, d, d * 0.65);
   camera.lookAt(0, 0, 0);
+  controls.target.set(0, 0, 0);
+  controls.update();
 }
 
 window.resetCamera = resetCameraPos;
 
 window.definirLado = function(lado) {
   ladoAtual = lado;
-  const fator = lado === 'bottom' ? -1 : 1;
-  const d = Math.max(BOARD_W, BOARD_H) * 1.8;
-  camera.position.set(0, d * fator, d * 0.5 * fator);
+  const d = Math.max(BOARD_W, BOARD_H) * 1.85;
+  camera.position.set(0, lado === 'top' ? d : -d, d * (lado === 'top' ? 0.65 : -0.5));
   camera.lookAt(0, 0, 0);
+  controls.target.set(0, 0, 0);
+  controls.update();
   document.getElementById('btnTop').classList.toggle('active', lado === 'top');
   document.getElementById('btnBot').classList.toggle('active', lado === 'bottom');
 };
 
 window.toggleWireframe = function() {
   wireframe = !wireframe;
-  Object.values(meshMap).forEach(m => { m.material.wireframe = wireframe; });
+  Object.values(meshMap).forEach(g => { g.userData.body.material.wireframe = wireframe; });
 };
 
-// Raycaster / tooltip
+// ── Raycaster / Tooltip ──
 const raycaster = new THREE.Raycaster();
 const mouse     = new THREE.Vector2();
 const tooltip   = document.getElementById('compTooltip');
+
+function getVisibleBodies() {
+  return Object.values(meshMap).filter(g => g.visible).map(g => g.userData.body);
+}
 
 canvas.addEventListener('mousemove', e => {
   const rect = canvas.getBoundingClientRect();
   mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
   mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(Object.values(meshMap).filter(m => m.visible));
+  const hits = raycaster.intersectObjects(getVisibleBodies(), false);
   if (hits.length) {
-    const item = hits[0].object.userData.item;
+    const item = hits[0].object.parent.userData.item;
     tooltip.style.display = 'block';
-    tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
-    tooltip.style.top  = (e.clientY - rect.top  - 10) + 'px';
-    tooltip.innerHTML  = `<strong>${item.designator}</strong>
-      ${item.valor ? item.valor + '<br>' : ''}
-      ${item.package || ''}<br>
+    tooltip.style.left    = (e.clientX - rect.left + 14) + 'px';
+    tooltip.style.top     = (e.clientY - rect.top  - 12) + 'px';
+    tooltip.innerHTML = `<strong>${item.designator}</strong>
+      ${item.valor   ? item.valor   + '<br>' : ''}
+      ${item.package ? item.package + '<br>' : ''}
       <span style="opacity:.7">${item.tipo.toUpperCase()} · ${item.lado}</span>`;
   } else {
     tooltip.style.display = 'none';
@@ -392,58 +493,59 @@ canvas.addEventListener('click', e => {
   mouse.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
   mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(Object.values(meshMap).filter(m => m.visible));
-  const item = hits.length ? hits[0].object.userData.item : null;
-  selecionarItem(item ? item.id : null);
+  const hits = raycaster.intersectObjects(getVisibleBodies(), false);
+  selecionarItem(hits.length ? hits[0].object.parent.userData.item.id : null);
 });
 
 function selecionarItem(id) {
-  if (selectedMesh) {
-    selectedMesh.material.emissive.setHex(0x000000);
-    selectedMesh = null;
+  if (selectedGroup) {
+    selectedGroup.userData.body.material.emissive.setHex(0x000000);
+    selectedGroup = null;
   }
   document.querySelectorAll('.bom-item').forEach(el => el.classList.remove('selected-comp'));
-  if (id && meshMap[id]) {
-    selectedMesh = meshMap[id];
-    selectedMesh.material.emissive.setHex(0x6366f1);
+  if (id != null && meshMap[id]) {
+    selectedGroup = meshMap[id];
+    selectedGroup.userData.body.material.emissive.setHex(0x4f46e5);
     const el = document.querySelector(`.bom-item[data-id="${id}"]`);
-    if (el) { el.classList.add('selected-comp'); el.scrollIntoView({block:'nearest'}); }
+    if (el) { el.classList.add('selected-comp'); el.scrollIntoView({ block: 'nearest' }); }
   }
 }
 
-// Resize
+// ── Resize ──
 function onResize() {
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
+  if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
 new ResizeObserver(onResize).observe(canvas);
-onResize();
+requestAnimationFrame(() => { onResize(); resetCameraPos(); });
 
-// Render loop
+// ── Render loop ──
 (function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 })();
 
-// BOM list render
+// ── BOM list ──
 function renderBomLista(items) {
   const list = document.getElementById('bomList');
   const q = document.getElementById('bomSearch').value.trim().toLowerCase();
   const filtered = items.filter(i =>
     i.ativo && (!q || i.designator.toLowerCase().includes(q) ||
-    (i.package||'').toLowerCase().includes(q) || (i.valor||'').toLowerCase().includes(q))
+    (i.package || '').toLowerCase().includes(q) ||
+    (i.valor   || '').toLowerCase().includes(q))
   );
   list.innerHTML = filtered.map(item => `
-    <div class="bom-item ${hiddenSet.has(item.id)?'hidden-comp':''}"
+    <div class="bom-item ${hiddenSet.has(item.id) ? 'hidden-comp' : ''}"
          data-id="${item.id}" onclick="window._selectItem(${item.id})">
-      <div class="bom-dot" style="background:${item.cor_hex||'#64748b'};"></div>
+      <div class="bom-dot" style="background:${item.cor_hex || '#64748b'};"></div>
       <span class="bom-des">${item.designator}</span>
-      <span class="bom-pkg">${item.package||item.valor||''}</span>
-      <span class="bom-eye bi ${hiddenSet.has(item.id)?'bi-eye-slash':'bi-eye'}"
+      <span class="bom-pkg">${item.package || item.valor || ''}</span>
+      <span class="bom-eye bi ${hiddenSet.has(item.id) ? 'bi-eye-slash' : 'bi-eye'}"
             onclick="event.stopPropagation(); window._toggleHide(${item.id})"></span>
     </div>
   `).join('');
@@ -451,14 +553,11 @@ function renderBomLista(items) {
 
 window._selectItem = id => selecionarItem(id);
 window._toggleHide = id => {
-  if (hiddenSet.has(id)) hiddenSet.delete(id);
-  else hiddenSet.add(id);
+  if (hiddenSet.has(id)) hiddenSet.delete(id); else hiddenSet.add(id);
   atualizarVisibilidade();
   renderBomLista(allItems);
 };
-
 window.filtrarBomLista = () => renderBomLista(allItems);
-
 window.setFiltro = (f, btn) => {
   filtroAtual = f;
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
@@ -466,13 +565,13 @@ window.setFiltro = (f, btn) => {
   atualizarVisibilidade();
 };
 
-// Init
+// ── Init ──
 buildComponents(allItems);
 renderBomLista(allItems);
-document.getElementById('infoTotal').textContent = allItems.filter(i=>i.ativo).length;
+document.getElementById('infoTotal').textContent = allItems.filter(i => i.ativo).length;
 
 // ── BOM Import ──
-let bomStep = 1;
+let bomStep   = 1;
 let bomHeader = [];
 let bomMapa   = {};
 
@@ -487,15 +586,15 @@ document.getElementById('btnToggleLado').addEventListener('click', () => {
 });
 
 function atualizarBomStepUI() {
-  document.getElementById('stepArquivo').style.display  = bomStep===1?'':'none';
-  document.getElementById('stepColunas').style.display  = bomStep===2?'':'none';
-  document.getElementById('stepConfirmar').style.display= bomStep===3?'':'none';
-  ['step1dot','step2dot','step3dot'].forEach((id,i) => {
+  document.getElementById('stepArquivo').style.display   = bomStep === 1 ? '' : 'none';
+  document.getElementById('stepColunas').style.display   = bomStep === 2 ? '' : 'none';
+  document.getElementById('stepConfirmar').style.display = bomStep === 3 ? '' : 'none';
+  ['step1dot','step2dot','step3dot'].forEach((id, i) => {
     const el = document.getElementById(id);
     el.className = 'step-dot' + (i+1 < bomStep ? ' done' : i+1 === bomStep ? ' active' : '');
   });
-  document.getElementById('btnBomBack').style.display = bomStep>1 ? '' : 'none';
-  document.getElementById('btnBomNext').textContent   = bomStep===3 ? 'Importar' : 'Próximo';
+  document.getElementById('btnBomBack').style.display = bomStep > 1 ? '' : 'none';
+  document.getElementById('btnBomNext').textContent   = bomStep === 3 ? 'Importar' : 'Próximo';
 }
 
 window.bomStepBack = () => { bomStep--; atualizarBomStepUI(); };
@@ -506,9 +605,9 @@ window.bomStepNext = async () => {
     if (!f) { alert('Selecione um arquivo CSV'); return; }
     const fd = new FormData();
     fd.append('arquivo', f);
-    const res = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/detectar-colunas`, { method:'POST', body:fd });
+    const res  = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/detectar-colunas`, { method: 'POST', body: fd });
     const data = await res.json();
-    if (!data.ok) { alert(data.erro||'Erro ao ler arquivo'); return; }
+    if (!data.ok) { alert(data.erro || 'Erro ao ler arquivo'); return; }
     bomHeader = data.header;
     bomMapa   = data.mapa;
     renderColMap();
@@ -519,9 +618,9 @@ window.bomStepNext = async () => {
       const sel = document.getElementById(`map_${c}`);
       if (sel && sel.value) bomMapa[c] = sel.value; else delete bomMapa[c];
     });
-    const total = allItems.filter(i=>i.ativo).length;
+    const total = allItems.filter(i => i.ativo).length;
     document.getElementById('importResumo').innerHTML =
-      `<p>Mapeamento configurado. ${Object.keys(bomMapa).length} campos mapeados.</p>
+      `<p>Mapeamento configurado. <strong>${Object.keys(bomMapa).length}</strong> campos mapeados.</p>
        <p style="color:var(--text-muted);font-size:0.82rem;">
          ${document.getElementById('chkSubstituir').checked
            ? `⚠️ Os ${total} itens atuais serão substituídos.`
@@ -534,7 +633,7 @@ window.bomStepNext = async () => {
     fd.append('arquivo', f);
     fd.append('mapa', JSON.stringify(bomMapa));
     fd.append('substituir', document.getElementById('chkSubstituir').checked ? '1' : '0');
-    const res = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/importar`, { method:'POST', body:fd });
+    const res  = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/importar`, { method: 'POST', body: fd });
     const data = await res.json();
     if (data.ok) {
       bootstrap.Modal.getInstance(document.getElementById('modalBOM')).hide();
@@ -548,25 +647,23 @@ window.bomStepNext = async () => {
 
 function renderColMap() {
   const campos = [
-    {key:'designator', label:'Designator *'},
-    {key:'valor',      label:'Valor'},
-    {key:'package',    label:'Package'},
-    {key:'descricao',  label:'Descrição'},
-    {key:'part_number',label:'Part Number'},
-    {key:'tipo',       label:'Tipo'},
-    {key:'pos_x',      label:'Pos X'},
-    {key:'pos_y',      label:'Pos Y'},
-    {key:'angulo',     label:'Ângulo'},
-    {key:'lado',       label:'Lado'},
+    { key: 'designator',  label: 'Designator *' },
+    { key: 'valor',       label: 'Valor'         },
+    { key: 'package',     label: 'Package'       },
+    { key: 'descricao',   label: 'Descrição'     },
+    { key: 'part_number', label: 'Part Number'   },
+    { key: 'tipo',        label: 'Tipo'          },
+    { key: 'pos_x',       label: 'Pos X'         },
+    { key: 'pos_y',       label: 'Pos Y'         },
+    { key: 'angulo',      label: 'Ângulo'        },
+    { key: 'lado',        label: 'Lado'          },
   ];
   const opts = ['<option value="">-- não mapear --</option>',
     ...bomHeader.map(h => `<option value="${h}">${h}</option>`)].join('');
   document.getElementById('colMapContainer').innerHTML = campos.map(c => `
     <div class="col-map-row">
       <span class="col-map-lbl">${c.label}</span>
-      <select id="map_${c.key}" class="form-select form-select-sm col-map-sel">
-        ${opts}
-      </select>
+      <select id="map_${c.key}" class="form-select form-select-sm col-map-sel">${opts}</select>
     </div>
   `).join('');
   campos.forEach(c => {
