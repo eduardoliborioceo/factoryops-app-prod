@@ -1,40 +1,11 @@
 {% extends "layouts/app.html" %}
 {% block title %}Linhas e Setores — PCI Hub{% endblock %}
 
-{% block styles %}
-<style>
-.cad-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
-.cad-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
-  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
-.cad-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
-.cad-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
-  color:var(--text-muted);padding:8px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
-.cad-table td { padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
-.cad-table td input,.cad-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
-  padding:3px 7px;background:var(--card);color:var(--text);width:100%; }
-.cad-table td input:focus,.cad-table td select:focus { outline:none;border-color:#0d6efd; }
-.st-ativa { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.st-inat  { background:rgba(15,23,42,0.07);color:var(--text-muted);font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.st-manut { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-@media print { .no-print { display:none!important; } }
-@media (max-width:767px) {
-  .cad-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
-  .cad-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
-  .cad-table th:nth-child(n+5),.cad-table td:nth-child(n+5) { display:none; }
-}
-</style>
-{% endblock %}
-
 {% block page_title %}
 <div class="page-header">
-  <div class="d-flex align-items-center gap-2">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#cadastro" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div class="page-header-title">
-      <span class="page-header-section">PCI Hub · Cadastro</span>
-      <h1 class="page-header-name">Linhas e Setores</h1>
-    </div>
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Cadastro</span>
+    <h1 class="page-header-name">Linhas e Setores</h1>
   </div>
   <div class="page-header-actions">
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
@@ -44,131 +15,122 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+.cad-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.cad-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.cad-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.cad-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.cad-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:0.83rem; }
+.cad-table tbody tr:hover { background:rgba(13,110,253,0.025); }
+.cad-badge { font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap;font-family:monospace; }
+.badge-smt  { background:rgba(13,110,253,0.10);color:#084298; }
+.badge-pth  { background:rgba(25,135,84,0.12);color:#0a3622; }
+.badge-emb  { background:rgba(255,193,7,0.15);color:#664d03; }
+.badge-tes  { background:rgba(111,66,193,0.12);color:#3d1a78; }
+.badge-gen  { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+.linha-avatar { width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:800;font-family:monospace;flex-shrink:0;
+  background:rgba(13,110,253,0.10);color:#084298;letter-spacing:0.5px; }
+.cad-empty  { text-align:center;padding:48px 24px;color:var(--text-muted);font-size:0.875rem; }
+.cad-count  { font-size:0.75rem;color:var(--text-muted);padding:8px 18px;border-top:1px solid var(--border); }
+@media (max-width:767px) {
+  .cad-hdr { flex-direction:column;align-items:flex-start; }
+  .cad-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .cad-table th:nth-child(n+4),.cad-table td:nth-child(n+4) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+
+  <div class="mb-3">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#cadastro" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+    </a>
+  </div>
 
   <div class="cad-card">
     <div class="cad-hdr">
       <div class="d-flex align-items-center gap-2">
-        <span><i class="bi bi-diagram-3 text-success me-1"></i>Configuração de Linhas de Produção e Setores</span>
+        <i class="bi bi-diagram-3 text-success"></i>
+        <span>Linhas de Produção e Setores Configurados</span>
       </div>
-      <div class="d-flex gap-2 no-print">
-        <select id="filterSetor" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
+      <div class="d-flex gap-2">
+        <input type="text" id="filterBusca" class="form-control form-control-sm" style="width:160px;"
+               placeholder="Buscar linha…" oninput="filtrar()">
+        <select id="filterSetor" class="form-select form-select-sm" style="width:auto;" onchange="filtrar()">
           <option value="">Todos setores</option>
+          {% set setores = linhas | map(attribute='setor') | unique | sort | list %}
+          {% for s in setores %}
+            {% if s %}<option>{{ s }}</option>{% endif %}
+          {% endfor %}
         </select>
-        <select id="filterStatus" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
-          <option value="">Todos status</option>
-          <option>Ativa</option><option>Inativa</option><option>Manutenção</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
-        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Linha</button>
+        <a href="{{ url_for('pages.config_linhas') }}" class="btn btn-outline-primary btn-sm" title="Gerenciar em Configurações">
+          <i class="bi bi-gear me-1"></i>Gerenciar
+        </a>
       </div>
     </div>
-    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:28px;"></div>
+
+    {% if linhas %}
     <div class="table-responsive">
-      <table class="cad-table">
+      <table class="cad-table" id="tabelaLinhas">
         <thead>
           <tr>
-            <th style="min-width:80px;">Linha</th>
-            <th style="min-width:100px;">Setor</th>
-            <th style="min-width:130px;">Descrição</th>
-            <th>Turno</th>
-            <th>Cap. Hora</th>
-            <th>Status</th>
-            <th style="min-width:110px;">Responsável</th>
-            <th class="no-print" style="width:30px;"></th>
+            <th style="width:130px;">Linha</th>
+            <th>Setor</th>
+            <th>Filial</th>
           </tr>
         </thead>
-        <tbody id="tBody"></tbody>
+        <tbody>
+          {% for l in linhas %}
+          {% set setor_lower = (l.setor or '') | lower %}
+          {% set badge_cls = 'badge-smt' if 'smt' in setor_lower else 'badge-pth' if 'pth' in setor_lower else 'badge-emb' if 'emb' in setor_lower else 'badge-tes' if 'test' in setor_lower or 'ict' in setor_lower else 'badge-gen' %}
+          <tr data-busca="{{ l.linha }}" data-setor="{{ l.setor or '' }}">
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="linha-avatar">{{ l.linha[:4] if l.linha else '?' }}</div>
+                <code style="font-size:0.82rem;font-weight:700;">{{ l.linha }}</code>
+              </div>
+            </td>
+            <td><span class="cad-badge {{ badge_cls }}">{{ l.setor or '—' }}</span></td>
+            <td style="color:var(--text-muted);font-size:0.8rem;">{{ l.filial or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
+    <div class="cad-count" id="countLabel">{{ linhas|length }} linha{{ 's' if linhas|length != 1 else '' }} configurada{{ 's' if linhas|length != 1 else '' }}</div>
+    {% else %}
+    <div class="cad-empty">
+      <i class="bi bi-diagram-3 fs-2 d-block mb-2 opacity-25"></i>
+      Nenhuma linha configurada.<br>
+      <a href="{{ url_for('pages.config_linhas') }}" class="btn btn-sm btn-primary mt-3">
+        <i class="bi bi-gear me-1"></i>Configurar Linhas
+      </a>
+    </div>
+    {% endif %}
   </div>
 
 </div>
 <script>
-(function(){
-  "use strict";
-  const SK = "pci_cad_linhas";
-  const TURNOS = ["1 Turno","2 Turnos","3 Turnos","Variável"];
-  const STATUS = ["Ativa","Inativa","Manutenção"];
-  const ST_CLS = {"Ativa":"st-ativa","Inativa":"st-inat","Manutenção":"st-manut"};
-  let rows=[]; let nextId=1;
-
-  function turnoOpts(sel){ return TURNOS.map(t=>`<option${t===sel?" selected":""}>${t}</option>`).join(""); }
-  function stOpts(sel)   { return STATUS.map(s=>`<option${s===sel?" selected":""}>${s}</option>`).join(""); }
-
-  function setores(){ return [...new Set(rows.map(r=>r.setor).filter(Boolean))]; }
-  function populateSetorFilter(){
-    const el=document.getElementById("filterSetor");
-    const cur=el.value;
-    el.innerHTML='<option value="">Todos setores</option>';
-    setores().forEach(s=>{ const o=document.createElement("option"); o.value=o.textContent=s; if(s===cur)o.selected=true; el.appendChild(o); });
-  }
-
-  function addRow(d={}){
-    const id=nextId++;
-    rows.push({id,linha:d.linha||"",setor:d.setor||"",desc:d.desc||"",
-      turno:d.turno||"2 Turnos",cap:d.cap||"",status:d.status||"Ativa",resp:d.resp||""});
-    populateSetorFilter(); renderTable();
-  }
-  window.addRow=addRow;
-
-  function removeRow(id){rows=rows.filter(r=>r.id!==id);populateSetorFilter();renderTable();}
-  window.removeRow=removeRow;
-
-  function onField(id,f,v){const r=rows.find(r=>r.id===id);if(r){r[f]=v;if(f==="setor")populateSetorFilter();}}
-  window.onField=onField;
-
-  function renderTable(){
-    const fs=document.getElementById("filterSetor").value;
-    const fst=document.getElementById("filterStatus").value;
-    const tbody=document.getElementById("tBody");
-    tbody.innerHTML="";
-    rows.filter(r=>(!fs||r.setor===fs)&&(!fst||r.status===fst)).forEach(r=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td><input type="text" value="${r.linha}" placeholder="IM-01" onchange="onField(${r.id},'linha',this.value)"
-             style="max-width:70px;font-family:monospace;font-weight:700;text-transform:uppercase;"
-             oninput="this.value=this.value.toUpperCase()"></td>
-        <td><input type="text" value="${r.setor}" placeholder="SMT, PTH..." onchange="onField(${r.id},'setor',this.value)"></td>
-        <td><input type="text" value="${r.desc}" placeholder="Linha de montagem SMT..." onchange="onField(${r.id},'desc',this.value)"></td>
-        <td><select onchange="onField(${r.id},'turno',this.value)">${turnoOpts(r.turno)}</select></td>
-        <td><input type="number" min="0" value="${r.cap}" placeholder="120" onchange="onField(${r.id},'cap',this.value)" style="max-width:65px;text-align:center;"></td>
-        <td>
-          <select onchange="onField(${r.id},'status',this.value)">${stOpts(r.status)}</select>
-          <span class="${ST_CLS[r.status]||''}" style="display:block;margin-top:3px;">${r.status}</span>
-        </td>
-        <td><input type="text" value="${r.resp}" placeholder="Supervisor" onchange="onField(${r.id},'resp',this.value)"></td>
-        <td class="no-print" style="text-align:center;">
-          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function saveData(){
-    localStorage.setItem(SK,JSON.stringify({rows,nextId}));
-    const m=document.getElementById("saveMsg");
-    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
-    setTimeout(()=>m.innerHTML="",3000);
-  }
-  window.saveData=saveData;
-
-  document.addEventListener("DOMContentLoaded",()=>{
-    try{
-      const d=JSON.parse(localStorage.getItem(SK)||"{}");
-      if(d.nextId)nextId=d.nextId;
-      if(d.rows&&d.rows.length){rows=d.rows;populateSetorFilter();renderTable();return;}
-    }catch(e){}
-    addRow({linha:"IM-01",setor:"SMT",desc:"Linha de montagem superficial — DEK + Yamaha + Heller",turno:"2 Turnos",cap:"150",status:"Ativa",resp:"Carlos Mendes"});
-    addRow({linha:"IM-02",setor:"SMT",desc:"Linha de montagem superficial — DEK + Juki + Forno",turno:"2 Turnos",cap:"130",status:"Ativa",resp:"Carlos Mendes"});
-    addRow({linha:"PTH-01",setor:"PTH",desc:"Linha de solda seletiva e inserção manual",turno:"1 Turno",cap:"80",status:"Ativa",resp:"Ana Lima"});
-    addRow({linha:"EMB-01",setor:"Embalagem",desc:"Posto de embalagem e rastreabilidade",turno:"2 Turnos",cap:"200",status:"Ativa",resp:"Pedro Costa"});
-    addRow({linha:"ICT-01",setor:"Teste",desc:"Bancada de teste in-circuit (ICT)",turno:"1 Turno",cap:"60",status:"Manutenção",resp:"Ana Lima"});
-    populateSetorFilter();
+function filtrar() {
+  const fb = (document.getElementById("filterBusca").value || "").toLowerCase();
+  const fs = (document.getElementById("filterSetor").value || "").toLowerCase();
+  const rows = document.querySelectorAll("#tabelaLinhas tbody tr");
+  let vis = 0;
+  rows.forEach(r => {
+    const bMatch = !fb || (r.dataset.busca || "").toLowerCase().includes(fb);
+    const sMatch = !fs || (r.dataset.setor || "").toLowerCase() === fs;
+    const show = bMatch && sMatch;
+    r.style.display = show ? "" : "none";
+    if (show) vis++;
   });
-})();
+  const lbl = document.getElementById("countLabel");
+  if (lbl) lbl.textContent = vis + " linha" + (vis !== 1 ? "s" : "") + " encontrada" + (vis !== 1 ? "s" : "");
+}
 </script>
 {% endblock %}

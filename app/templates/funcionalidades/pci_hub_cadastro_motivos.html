@@ -1,42 +1,11 @@
 {% extends "layouts/app.html" %}
 {% block title %}Motivos de Parada — PCI Hub{% endblock %}
 
-{% block styles %}
-<style>
-.cad-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
-.cad-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
-  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700; }
-.cad-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
-.cad-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
-  color:var(--text-muted);padding:8px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
-.cad-table td { padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle; }
-.cad-table td input,.cad-table td select { border:1px solid var(--border);border-radius:6px;font-size:0.8rem;
-  padding:3px 7px;background:var(--card);color:var(--text);width:100%; }
-.cad-table td input:focus,.cad-table td select:focus { outline:none;border-color:#0d6efd; }
-.cat-seg   { background:rgba(220,53,69,0.10);color:#842029;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.cat-qual  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.cat-maint { background:rgba(13,110,253,0.12);color:#084298;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.cat-oper  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-.cat-logis { background:rgba(111,66,193,0.12);color:#3d1a78;font-size:0.7rem;font-weight:700;padding:2px 7px;border-radius:5px; }
-@media print { .no-print { display:none!important; } }
-@media (max-width:767px) {
-  .cad-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
-  .cad-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
-  .cad-table th:nth-child(n+5),.cad-table td:nth-child(n+5) { display:none; }
-}
-</style>
-{% endblock %}
-
 {% block page_title %}
 <div class="page-header">
-  <div class="d-flex align-items-center gap-2">
-    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#cadastro" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div class="page-header-title">
-      <span class="page-header-section">PCI Hub · Cadastro</span>
-      <h1 class="page-header-name">Motivos de Parada</h1>
-    </div>
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Cadastro</span>
+    <h1 class="page-header-name">Motivos de Parada</h1>
   </div>
   <div class="page-header-actions">
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
@@ -46,116 +15,110 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+.cad-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.cad-hdr  { display:flex;align-items:center;justify-content:space-between;padding:12px 18px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);font-size:0.875rem;font-weight:700;flex-wrap:wrap;gap:10px; }
+.cad-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.cad-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;
+  color:var(--text-muted);padding:8px 12px;border-bottom:2px solid var(--border);background:rgba(15,23,42,0.04);white-space:nowrap; }
+.cad-table td { padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:0.83rem; }
+.cad-table tbody tr:hover { background:rgba(13,110,253,0.025); }
+.cad-badge { font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap; }
+.badge-seg   { background:rgba(220,53,69,0.10);color:#842029; }
+.badge-qual  { background:rgba(255,193,7,0.15);color:#664d03; }
+.badge-maint { background:rgba(13,110,253,0.12);color:#084298; }
+.badge-oper  { background:rgba(25,135,84,0.12);color:#0a3622; }
+.badge-log   { background:rgba(111,66,193,0.12);color:#3d1a78; }
+.badge-gen   { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+.cad-empty   { text-align:center;padding:48px 24px;color:var(--text-muted);font-size:0.875rem; }
+.cad-count   { font-size:0.75rem;color:var(--text-muted);padding:8px 18px;border-top:1px solid var(--border); }
+@media (max-width:767px) {
+  .cad-hdr { flex-direction:column;align-items:flex-start; }
+  .cad-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
+  .cad-table th:nth-child(n+4),.cad-table td:nth-child(n+4) { display:none; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+
+  <div class="mb-3">
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#cadastro" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
+    </a>
+  </div>
 
   <div class="cad-card">
     <div class="cad-hdr">
       <div class="d-flex align-items-center gap-2">
-        <span><i class="bi bi-exclamation-triangle text-warning me-1"></i>Códigos de Motivo de Parada — Lançamentos de Produção PCI</span>
+        <i class="bi bi-exclamation-triangle text-warning"></i>
+        <span>Motivos de Parada — Lançamentos de Produção PCI</span>
       </div>
-      <div class="d-flex gap-2 no-print">
-        <select id="filterCat" class="form-select form-select-sm" style="width:auto;" onchange="renderTable()">
-          <option value="">Todas categorias</option>
-          <option>Segurança</option><option>Qualidade</option><option>Manutenção</option>
-          <option>Operacional</option><option>Logística</option>
+      <div class="d-flex gap-2">
+        <select id="filterOrigem" class="form-select form-select-sm" style="width:auto;" onchange="filtrar()">
+          <option value="">Todas as origens</option>
+          {% set origens = motivos | map(attribute='origem') | unique | sort | list %}
+          {% for o in origens %}
+            {% if o %}<option>{{ o }}</option>{% endif %}
+          {% endfor %}
         </select>
-        <button class="btn btn-primary btn-sm" onclick="saveData()"><i class="bi bi-save me-1"></i>Salvar</button>
-        <button class="btn btn-success btn-sm" onclick="addRow()"><i class="bi bi-plus-lg me-1"></i>Motivo</button>
+        <a href="{{ url_for('pages.config_paradas') }}" class="btn btn-outline-primary btn-sm" title="Gerenciar em Configurações">
+          <i class="bi bi-gear me-1"></i>Gerenciar
+        </a>
       </div>
     </div>
-    <div id="saveMsg" style="font-size:0.8rem;padding:6px 18px;min-height:28px;"></div>
+
+    {% if motivos %}
     <div class="table-responsive">
-      <table class="cad-table">
+      <table class="cad-table" id="tabelaMotivos">
         <thead>
           <tr>
-            <th style="width:70px;">Código</th>
-            <th style="min-width:160px;">Descrição</th>
-            <th>Categoria</th>
-            <th>Impacto OEE</th>
-            <th style="min-width:130px;">Ação Recomendada</th>
-            <th class="no-print" style="width:30px;"></th>
+            <th style="width:80px;">Código</th>
+            <th style="min-width:180px;">Descrição</th>
+            <th>Origem</th>
+            <th style="min-width:140px;">Responsável</th>
           </tr>
         </thead>
-        <tbody id="tBody"></tbody>
+        <tbody>
+          {% for m in motivos %}
+          <tr data-origem="{{ m.origem or '' }}">
+            <td><code style="font-size:0.8rem;font-weight:700;letter-spacing:0.3px;">{{ m.codigo }}</code></td>
+            <td style="font-weight:600;">{{ m.descricao }}</td>
+            <td><span class="cad-badge {{ 'badge-maint' if m.origem in ['Manutenção','Manutencao'] else 'badge-qual' if m.origem == 'Qualidade' else 'badge-seg' if m.origem == 'Segurança' else 'badge-oper' if m.origem in ['Operacional','Operação'] else 'badge-log' if m.origem == 'Logística' else 'badge-gen' }}">{{ m.origem or '—' }}</span></td>
+            <td style="color:var(--text-muted);">{{ m.responsavel or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
       </table>
     </div>
+    <div class="cad-count" id="countLabel">{{ motivos|length }} motivo{{ 's' if motivos|length != 1 else '' }} cadastrado{{ 's' if motivos|length != 1 else '' }}</div>
+    {% else %}
+    <div class="cad-empty">
+      <i class="bi bi-exclamation-triangle fs-2 d-block mb-2 opacity-25"></i>
+      Nenhum motivo de parada cadastrado.<br>
+      <a href="{{ url_for('pages.config_paradas') }}" class="btn btn-sm btn-primary mt-3">
+        <i class="bi bi-gear me-1"></i>Cadastrar em Configurações
+      </a>
+    </div>
+    {% endif %}
   </div>
 
 </div>
 <script>
-(function(){
-  "use strict";
-  const SK = "pci_cad_motivos";
-  const CATS = ["Segurança","Qualidade","Manutenção","Operacional","Logística"];
-  const IMPS = ["Disponibilidade","Performance","Qualidade","Não impacta"];
-  const CAT_CLS = {"Segurança":"cat-seg","Qualidade":"cat-qual","Manutenção":"cat-maint","Operacional":"cat-oper","Logística":"cat-logis"};
-  let rows = []; let nextId = 1;
-
-  function catOpts(sel) { return CATS.map(c=>`<option${c===sel?" selected":""}>${c}</option>`).join(""); }
-  function impOpts(sel) { return IMPS.map(i=>`<option${i===sel?" selected":""}>${i}</option>`).join(""); }
-
-  function addRow(d={}) {
-    const id = nextId++;
-    rows.push({id, codigo:d.codigo||"", desc:d.desc||"", cat:d.cat||"Operacional",
-      imp:d.imp||"Disponibilidade", acao:d.acao||""});
-    renderTable();
-  }
-  window.addRow = addRow;
-
-  function removeRow(id) { rows=rows.filter(r=>r.id!==id); renderTable(); }
-  window.removeRow = removeRow;
-
-  function onField(id,f,v){ const r=rows.find(r=>r.id===id);if(r)r[f]=v; }
-  window.onField=onField;
-
-  function renderTable(){
-    const fc = document.getElementById("filterCat").value;
-    const tbody = document.getElementById("tBody");
-    tbody.innerHTML="";
-    rows.filter(r=>!fc||r.cat===fc).forEach(r=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td><input type="text" value="${r.codigo}" placeholder="PAR-01" onchange="onField(${r.id},'codigo',this.value)"
-             style="max-width:65px;font-family:monospace;font-weight:700;text-transform:uppercase;"
-             oninput="this.value=this.value.toUpperCase()"></td>
-        <td><input type="text" value="${r.desc}" placeholder="Descrição do motivo" onchange="onField(${r.id},'desc',this.value)" style="font-weight:600;"></td>
-        <td>
-          <select onchange="onField(${r.id},'cat',this.value)">${catOpts(r.cat)}</select>
-          <span class="${CAT_CLS[r.cat]||''}" style="display:block;margin-top:3px;">${r.cat}</span>
-        </td>
-        <td><select onchange="onField(${r.id},'imp',this.value)">${impOpts(r.imp)}</select></td>
-        <td><input type="text" value="${r.acao}" placeholder="Acione manutenção, verifique..." onchange="onField(${r.id},'acao',this.value)"></td>
-        <td class="no-print" style="text-align:center;">
-          <button type="button" onclick="removeRow(${r.id})" style="background:none;border:none;color:#dc3545;cursor:pointer;">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function saveData(){
-    localStorage.setItem(SK, JSON.stringify({rows,nextId}));
-    const m=document.getElementById("saveMsg");
-    m.innerHTML=`<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Salvo em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
-    setTimeout(()=>m.innerHTML="",3000);
-  }
-  window.saveData=saveData;
-
-  document.addEventListener("DOMContentLoaded",()=>{
-    try{
-      const d=JSON.parse(localStorage.getItem(SK)||"{}");
-      if(d.nextId)nextId=d.nextId;
-      if(d.rows&&d.rows.length){rows=d.rows;renderTable();return;}
-    }catch(e){}
-    addRow({codigo:"MP-01",desc:"Falta de material / componente",cat:"Logística",imp:"Disponibilidade",acao:"Acionar PCP para reabastecimento emergencial"});
-    addRow({codigo:"MP-02",desc:"Quebra de equipamento",cat:"Manutenção",imp:"Disponibilidade",acao:"Registrar OS corretiva e acionar manutenção"});
-    addRow({codigo:"MP-03",desc:"Reprovação no inspetor óptico (AOI)",cat:"Qualidade",imp:"Qualidade",acao:"Verificar parâmetros da DEK e limpar stencil"});
-    addRow({codigo:"MP-04",desc:"Setup / troca de modelo",cat:"Operacional",imp:"Disponibilidade",acao:"Seguir procedimento de setup documentado"});
-    addRow({codigo:"MP-05",desc:"Refeição / intervalo programado",cat:"Operacional",imp:"Não impacta",acao:"Parada planejada conforme jornada"});
-    addRow({codigo:"MP-06",desc:"Acidente ou quase acidente",cat:"Segurança",imp:"Disponibilidade",acao:"Acionar segurança do trabalho e preencher CAT"});
+function filtrar() {
+  const f = document.getElementById("filterOrigem").value.toLowerCase();
+  const rows = document.querySelectorAll("#tabelaMotivos tbody tr");
+  let vis = 0;
+  rows.forEach(r => {
+    const show = !f || (r.dataset.origem || "").toLowerCase() === f;
+    r.style.display = show ? "" : "none";
+    if (show) vis++;
   });
-})();
+  const lbl = document.getElementById("countLabel");
+  if (lbl) lbl.textContent = vis + " motivo" + (vis !== 1 ? "s" : "") + " encontrado" + (vis !== 1 ? "s" : "");
+}
 </script>
 {% endblock %}
