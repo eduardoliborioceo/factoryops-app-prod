@@ -1,0 +1,552 @@
+{% extends "layouts/app.html" %}
+{% block title %}Distribuidor Automático — RH Hub{% endblock %}
+
+{% block styles %}
+<style>
+.dist-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 991px) {
+  .dist-layout { grid-template-columns: 1fr; }
+}
+
+/* Config panel */
+.config-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  position: sticky;
+  top: calc(var(--header-height) + 16px);
+}
+.config-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.config-section:last-child { border-bottom: none; }
+.config-title {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 10px;
+}
+
+/* Route item */
+.rota-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: background 0.1s;
+}
+.rota-item:hover { background: rgba(15,23,42,0.03); }
+.rota-item input[type=checkbox] { accent-color: var(--primary); flex-shrink: 0; width: 16px; height: 16px; }
+.rota-cor { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rota-item-nome { font-size: 0.875rem; font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rota-item-meta { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
+.turno-pip {
+  font-size: 0.62rem; font-weight: 800; padding: 1px 6px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
+}
+.turno-pip-1 { background: rgba(13,110,253,0.12); color: #0a4085; }
+.turno-pip-2 { background: rgba(25,135,84,0.12); color: #0a3622; }
+.turno-pip-3 { background: rgba(111,66,193,0.12); color: #4a2680; }
+
+/* Criteria toggle */
+.criterio-group { display: flex; gap: 6px; }
+.criterio-btn {
+  flex: 1; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: none; font-size: 0.8rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; text-align: center;
+  transition: all 0.12s;
+}
+.criterio-btn.active {
+  border-color: var(--primary); background: rgba(13,110,253,0.08); color: var(--primary);
+}
+
+/* Employee list */
+.emp-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.emp-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  background: rgba(15,23,42,0.02);
+}
+.emp-search {
+  flex: 1; min-width: 180px; height: 34px; border: 1px solid var(--border);
+  border-radius: 8px; padding: 0 12px; font-size: 0.875rem; outline: none;
+  background: var(--card); color: var(--text);
+}
+.emp-search:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,0.12); }
+.emp-filter-select {
+  height: 34px; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px;
+  font-size: 0.8rem; font-weight: 600; background: var(--card); color: var(--text); outline: none;
+}
+.emp-filter-select:focus { border-color: var(--primary); }
+.emp-toggle-sem-rota {
+  display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600;
+  color: var(--text-muted); cursor: pointer; white-space: nowrap;
+}
+.emp-toggle-sem-rota input { accent-color: var(--primary); }
+
+.emp-table { width: 100%; border-collapse: collapse; font-size: 0.855rem; }
+.emp-table th {
+  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-muted); padding: 9px 14px; border-bottom: 2px solid var(--border);
+  background: rgba(15,23,42,0.03); white-space: nowrap;
+}
+.emp-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.emp-table tbody tr:last-child td { border-bottom: none; }
+.emp-table tbody tr:hover { background: rgba(15,23,42,0.02); }
+.emp-table input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
+.dept-badge {
+  font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: rgba(15,23,42,0.06); color: var(--text-muted);
+}
+.geo-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  background: #198754; flex-shrink: 0;
+}
+.geo-dot.no-geo { background: #adb5bd; }
+.rota-atual-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  background: rgba(13,110,253,0.10); color: #084298; white-space: nowrap;
+}
+.emp-empty { text-align: center; padding: 36px 20px; color: var(--text-muted); }
+.emp-empty i { font-size: 2rem; opacity: 0.25; display: block; margin-bottom: 10px; }
+
+/* Select-all row */
+.sel-all-row { padding: 8px 14px; border-bottom: 1px solid var(--border); background: rgba(15,23,42,0.02); }
+.sel-all-count { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+.sel-all-count span { color: var(--primary); }
+
+/* Action bar */
+.dist-action-bar {
+  position: sticky; bottom: 0; z-index: 10;
+  background: var(--card); border-top: 1px solid var(--border);
+  padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  box-shadow: 0 -4px 16px rgba(15,23,42,0.06);
+}
+.dist-action-bar .dist-count-info { font-size: 0.875rem; color: var(--text-muted); }
+.dist-action-bar .dist-count-info strong { color: var(--text); }
+
+/* Preview section */
+#preview-section { display: none; }
+.preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.preview-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+}
+.preview-card-head {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-card-cor { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.preview-card-nome { font-size: 0.9rem; font-weight: 700; color: var(--text); flex: 1; }
+.preview-card-count {
+  font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  background: rgba(13,110,253,0.10); color: #084298;
+}
+.preview-emp-list { list-style: none; margin: 0; padding: 8px 0; max-height: 220px; overflow-y: auto; }
+.preview-emp-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; font-size: 0.82rem;
+}
+.preview-emp-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+.preview-emp-name { font-weight: 600; color: var(--text); flex: 1; }
+.preview-emp-dept { font-size: 0.7rem; color: var(--text-muted); }
+
+.preview-confirm-bar {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-top: 16px;
+}
+.preview-summary { font-size: 0.875rem; color: var(--text-muted); }
+.preview-summary strong { color: var(--text); }
+
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(255,255,255,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.loading-overlay.hide { display: none; }
+
+@media (max-width: 767px) {
+  .dist-layout { gap: 12px; }
+  .config-card { position: static; }
+  .emp-table .hide-mobile { display: none; }
+  .dist-action-bar { flex-direction: column; align-items: stretch; }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">RH Hub · Transporte</span>
+    <h1 class="page-header-name">Distribuidor Automático</h1>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('pages.rh_ops_hub') }}#transporte" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+<div id="loadingOverlay" class="loading-overlay hide">
+  <div class="d-flex flex-column align-items-center gap-3">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span style="font-size:0.875rem;font-weight:600;color:var(--text-muted);">Calculando distribuição…</span>
+  </div>
+</div>
+
+{% if not rotas %}
+<div class="text-center py-5">
+  <i class="bi bi-signpost-split" style="font-size:2.5rem;opacity:0.2;display:block;margin-bottom:14px;"></i>
+  <p style="color:var(--text-muted);font-size:0.875rem;margin:0 0 14px;">Nenhuma rota ativa cadastrada.</p>
+  <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="btn btn-sm btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Criar primeira rota
+  </a>
+</div>
+{% else %}
+
+<div class="dist-layout">
+
+  <!-- Config panel -->
+  <div class="config-card">
+
+    <div class="config-section">
+      <div class="config-title">Rotas de destino</div>
+      <div id="rotasList">
+        {% for r in rotas %}
+        <label class="rota-item">
+          <input type="checkbox" class="rota-chk" value="{{ r.id }}" data-cor="{{ r.cor }}" data-nome="{{ r.nome }}" data-turno="{{ r.turno }}">
+          <span class="rota-cor" style="background:{{ r.cor }};"></span>
+          <span class="rota-item-nome">{{ r.nome }}</span>
+          <span class="turno-pip turno-pip-{{ r.turno }}">T{{ r.turno }}</span>
+          <span class="rota-item-meta">{{ r.total_colaboradores }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="d-flex gap-2 mt-2">
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;" onclick="selecionarTodasRotas(true)">Todas</button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.78rem;" onclick="selecionarTodasRotas(false)">Nenhuma</button>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <div class="config-title">Critério de distribuição</div>
+      <div class="criterio-group">
+        <button class="criterio-btn active" data-criterio="equilibrado" onclick="selecionarCriterio(this)">
+          <i class="bi bi-bar-chart-line d-block mb-1" style="font-size:1.1rem;"></i>
+          Equilibrado
+        </button>
+        <button class="criterio-btn" data-criterio="geografico" onclick="selecionarCriterio(this)">
+          <i class="bi bi-geo-alt d-block mb-1" style="font-size:1.1rem;"></i>
+          Geográfico
+        </button>
+      </div>
+      <p style="font-size:0.75rem;color:var(--text-muted);margin-top:8px;margin-bottom:0;" id="criterioDesc">
+        Divide igualmente: cada rota recebe um número similar de colaboradores.
+      </p>
+    </div>
+
+    <div class="config-section">
+      <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+        <input type="checkbox" id="chkLimpar" style="accent-color:var(--primary);width:16px;height:16px;">
+        <div>
+          <div style="font-size:0.8rem;font-weight:600;color:var(--text);">Limpar alocações existentes</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">Remove todos os colaboradores já alocados nas rotas selecionadas antes de aplicar.</div>
+        </div>
+      </label>
+    </div>
+
+  </div>
+
+  <!-- Employees panel -->
+  <div>
+    <div class="emp-card">
+      <div class="emp-toolbar">
+        <input type="text" class="emp-search" id="empSearch" placeholder="Buscar colaborador…" oninput="filtrarEmployees()">
+        <select class="emp-filter-select" id="empDept" onchange="carregarEmployees()">
+          <option value="">Todos os departamentos</option>
+          {% for d in departamentos %}
+          <option value="{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </select>
+        <label class="emp-toggle-sem-rota">
+          <input type="checkbox" id="chkSemRota" onchange="carregarEmployees()">
+          Sem rota
+        </label>
+      </div>
+
+      <div class="sel-all-row d-flex align-items-center justify-content-between">
+        <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+          <input type="checkbox" id="chkTodos" style="accent-color:var(--primary);width:15px;height:15px;" onchange="selecionarTodos(this.checked)">
+          <span class="sel-all-count">Selecionar todos visíveis</span>
+        </label>
+        <span class="sel-all-count">Selecionados: <span id="selCount">0</span></span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="emp-table">
+          <thead>
+            <tr>
+              <th style="width:36px;"></th>
+              <th>Colaborador</th>
+              <th class="hide-mobile">Departamento</th>
+              <th class="hide-mobile" title="Dados geográficos disponíveis">Geo</th>
+              <th class="hide-mobile">Rota atual</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody">
+            <tr><td colspan="5" class="emp-empty"><i class="bi bi-hourglass-split"></i>Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Action bar -->
+<div class="dist-action-bar mt-3">
+  <div class="dist-count-info">
+    <strong id="empTotalCount">0</strong> colaboradores carregados ·
+    <strong id="empSelCount">0</strong> selecionados ·
+    <strong id="rotasSelCount">0</strong> rotas selecionadas
+  </div>
+  <button class="btn btn-primary ms-auto" id="btnCalcular" onclick="calcularDistribuicao()" disabled>
+    <i class="bi bi-shuffle me-2"></i>Calcular Distribuição
+  </button>
+</div>
+
+<!-- Preview section -->
+<div id="preview-section" class="mt-4">
+  <h5 style="font-size:0.875rem;font-weight:700;color:var(--text);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.5px;">
+    <i class="bi bi-eye me-2" style="color:var(--primary);"></i>Prévia da Distribuição
+  </h5>
+  <div class="preview-grid" id="previewGrid"></div>
+
+  <div class="preview-confirm-bar">
+    <div class="preview-summary" id="previewSummary"></div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <button class="btn btn-outline-secondary btn-sm" onclick="resetarPreview()">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Recalcular
+      </button>
+      <button class="btn btn-success" id="btnAplicar" onclick="aplicarDistribuicao()">
+        <i class="bi bi-check-lg me-2"></i>Confirmar e Aplicar
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+</div>
+
+<script>
+let allEmployees = [];
+let previewData = null;
+
+const criterioDescs = {
+  equilibrado: 'Divide igualmente: cada rota recebe um número similar de colaboradores.',
+  geografico: 'Agrupa por proximidade: colaboradores com endereço geocodificado vão para a rota mais próxima. Demais são distribuídos por equilíbrio.'
+};
+
+async function carregarEmployees() {
+  const dept = document.getElementById('empDept').value;
+  const semRota = document.getElementById('chkSemRota').checked ? '1' : '';
+  const params = new URLSearchParams();
+  if (dept) params.set('departamento', dept);
+  if (semRota) params.set('apenas_sem_rota', '1');
+
+  try {
+    const r = await fetch(`/rh-ops/api/transporte/distribuidor/employees?${params}`);
+    allEmployees = await r.json();
+  } catch {
+    allEmployees = [];
+  }
+  renderEmployees();
+  atualizarContadores();
+}
+
+function filtrarEmployees() {
+  renderEmployees();
+}
+
+function renderEmployees() {
+  const busca = document.getElementById('empSearch').value.toLowerCase();
+  const tbody = document.getElementById('empTableBody');
+  const visible = allEmployees.filter(e =>
+    !busca || e.full_name.toLowerCase().includes(busca) || e.employee_code.includes(busca)
+  );
+
+  if (!visible.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="emp-empty"><i class="bi bi-people"></i>Nenhum colaborador encontrado.</td></tr>`;
+    atualizarContadores();
+    return;
+  }
+
+  tbody.innerHTML = visible.map(e => {
+    const rotaBadge = e.rota_atual_nome
+      ? `<span class="rota-atual-badge">${escHtml(e.rota_atual_nome)}</span>`
+      : `<span style="font-size:0.75rem;color:var(--text-muted);">—</span>`;
+    const geoDot = `<span class="geo-dot${e.geocodificado ? '' : ' no-geo'}" title="${e.geocodificado ? 'Geocodificado' : 'Sem geo'}"></span>`;
+    return `<tr>
+      <td><input type="checkbox" class="emp-chk" value="${e.id}" onchange="atualizarContadores()"></td>
+      <td>
+        <div style="font-weight:600;font-size:0.875rem;color:var(--text);">${escHtml(e.full_name)}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">${escHtml(e.employee_code)} · ${escHtml(e.job_title || '')}</div>
+      </td>
+      <td class="hide-mobile"><span class="dept-badge">${escHtml(e.department || '—')}</span></td>
+      <td class="hide-mobile">${geoDot}</td>
+      <td class="hide-mobile">${rotaBadge}</td>
+    </tr>`;
+  }).join('');
+
+  atualizarContadores();
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selecionarTodos(checked) {
+  document.querySelectorAll('.emp-chk').forEach(c => c.checked = checked);
+  atualizarContadores();
+}
+
+function selecionarTodasRotas(checked) {
+  document.querySelectorAll('.rota-chk').forEach(c => c.checked = checked);
+  atualizarContadores();
+}
+
+function selecionarCriterio(btn) {
+  document.querySelectorAll('.criterio-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('criterioDesc').textContent = criterioDescs[btn.dataset.criterio] || '';
+}
+
+function atualizarContadores() {
+  const empSel = document.querySelectorAll('.emp-chk:checked').length;
+  const rotasSel = document.querySelectorAll('.rota-chk:checked').length;
+  const total = document.querySelectorAll('.emp-chk').length;
+
+  document.getElementById('empTotalCount').textContent = allEmployees.length;
+  document.getElementById('empSelCount').textContent = empSel;
+  document.getElementById('rotasSelCount').textContent = rotasSel;
+  document.getElementById('selCount').textContent = empSel;
+
+  const btn = document.getElementById('btnCalcular');
+  btn.disabled = empSel === 0 || rotasSel === 0;
+}
+
+async function calcularDistribuicao() {
+  const employeeIds = [...document.querySelectorAll('.emp-chk:checked')].map(c => parseInt(c.value));
+  const rotaIds = [...document.querySelectorAll('.rota-chk:checked')].map(c => parseInt(c.value));
+  const criterio = document.querySelector('.criterio-btn.active')?.dataset.criterio || 'equilibrado';
+
+  document.getElementById('loadingOverlay').classList.remove('hide');
+  try {
+    const r = await fetch('/rh-ops/api/transporte/distribuidor/preview', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({employee_ids: employeeIds, rota_ids: rotaIds, criterio})
+    });
+    const data = await r.json();
+    if (!data.ok) { alert(data.error || 'Erro ao calcular.'); return; }
+    previewData = data;
+    renderPreview(data);
+  } catch {
+    alert('Erro de comunicação.');
+  } finally {
+    document.getElementById('loadingOverlay').classList.add('hide');
+  }
+}
+
+function renderPreview(data) {
+  const grid = document.getElementById('previewGrid');
+  grid.innerHTML = data.rotas.map(r => {
+    const emps = r.colaboradores.map(e =>
+      `<li class="preview-emp-item">
+        <span class="geo-dot${e.geocodificado ? '' : ' no-geo'}" title="${e.geocodificado ? 'Geocodificado' : 'Sem geo'}"></span>
+        <div style="flex:1;min-width:0;">
+          <div class="preview-emp-name">${escHtml(e.full_name)}</div>
+          <div class="preview-emp-dept">${escHtml(e.employee_code)} · ${escHtml(e.department || '')}</div>
+        </div>
+      </li>`
+    ).join('');
+
+    return `<div class="preview-card">
+      <div class="preview-card-head">
+        <span class="preview-card-cor" style="background:${escHtml(r.cor)};"></span>
+        <span class="preview-card-nome">${escHtml(r.nome)}</span>
+        <span class="turno-pip turno-pip-${r.turno}">T${r.turno}</span>
+        <span class="preview-card-count">${r.total}</span>
+      </div>
+      <ul class="preview-emp-list">
+        ${emps || '<li class="preview-emp-item" style="color:var(--text-muted);">Nenhum colaborador</li>'}
+      </ul>
+    </div>`;
+  }).join('');
+
+  const limpar = document.getElementById('chkLimpar').checked;
+  document.getElementById('previewSummary').innerHTML =
+    `<strong>${data.total_colaboradores}</strong> colaborador${data.total_colaboradores !== 1 ? 'es' : ''} em
+     <strong>${data.rotas.length}</strong> rota${data.rotas.length !== 1 ? 's' : ''}.
+     ${limpar ? '<span style="color:#dc3545;font-weight:600;"> · Alocações existentes serão removidas.</span>' : ''}`;
+
+  document.getElementById('preview-section').style.display = 'block';
+  document.getElementById('preview-section').scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+
+function resetarPreview() {
+  document.getElementById('preview-section').style.display = 'none';
+  previewData = null;
+}
+
+async function aplicarDistribuicao() {
+  if (!previewData) return;
+  const limpar = document.getElementById('chkLimpar').checked;
+
+  const distribuicao = previewData.rotas.map(r => ({
+    rota_id: r.rota_id,
+    employee_ids: r.colaboradores.map(e => e.id)
+  }));
+
+  if (!confirm(`Confirmar distribuição de ${previewData.total_colaboradores} colaboradores?${limpar ? '\n\nAtenção: as alocações existentes nas rotas selecionadas serão removidas.' : ''}`)) return;
+
+  document.getElementById('loadingOverlay').classList.remove('hide');
+  document.getElementById('btnAplicar').disabled = true;
+  try {
+    const r = await fetch('/rh-ops/api/transporte/distribuidor/aplicar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({distribuicao, limpar_anterior: limpar})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      window.location.href = `{{ url_for('pages.rh_transporte_alocacao') }}`;
+    } else {
+      alert('Erro ao aplicar distribuição.');
+      document.getElementById('btnAplicar').disabled = false;
+    }
+  } catch {
+    alert('Erro de comunicação.');
+    document.getElementById('btnAplicar').disabled = false;
+  } finally {
+    document.getElementById('loadingOverlay').classList.add('hide');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  carregarEmployees();
+  document.querySelectorAll('.rota-chk').forEach(c => c.addEventListener('change', atualizarContadores));
+});
+</script>
+{% endblock %}

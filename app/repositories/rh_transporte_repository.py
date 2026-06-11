@@ -349,6 +349,120 @@ def buscar_employees(termo: str, limit: int = 10) -> list:
             return cur.fetchall()
 
 
+def listar_employees_para_distribuidor(
+    departamento: Optional[str] = None,
+    apenas_sem_rota: bool = False
+) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            params: list = []
+            extra: list = []
+
+            if departamento:
+                extra.append("AND e.department = %s")
+                params.append(departamento)
+
+            if apenas_sem_rota:
+                extra.append("""
+                    AND NOT EXISTS (
+                        SELECT 1 FROM rh_rota_colaborador rc WHERE rc.employee_id = e.id
+                    )
+                """)
+
+            cur.execute(f"""
+                SELECT e.id, e.employee_code, e.full_name, e.job_title, e.department,
+                       p.street        AS endereco_rua,
+                       p.number        AS endereco_numero,
+                       p.neighborhood  AS endereco_bairro,
+                       p.city          AS endereco_cidade,
+                       p.state         AS endereco_estado,
+                       geo.lat, geo.lng, geo.geocodificado,
+                       alocado.rota_id   AS rota_atual_id,
+                       alocado.rota_nome AS rota_atual_nome
+                FROM employees e
+                LEFT JOIN users u
+                    ON (u.employee_id = e.id
+                        OR ltrim(u.matricula, '0') = ltrim(e.employee_code, '0'))
+                LEFT JOIN user_profiles p ON p.user_id = u.id
+                LEFT JOIN LATERAL (
+                    SELECT rc.lat::FLOAT8 AS lat, rc.lng::FLOAT8 AS lng, rc.geocodificado
+                    FROM rh_rota_colaborador rc
+                    WHERE rc.employee_id = e.id AND rc.geocodificado = TRUE
+                    ORDER BY rc.criado_em DESC LIMIT 1
+                ) geo ON TRUE
+                LEFT JOIN LATERAL (
+                    SELECT rc.rota_id, r.nome AS rota_nome
+                    FROM rh_rota_colaborador rc
+                    JOIN rh_rota r ON r.id = rc.rota_id AND r.ativo
+                    WHERE rc.employee_id = e.id
+                    ORDER BY rc.criado_em DESC LIMIT 1
+                ) alocado ON TRUE
+                WHERE e.status = 'ACTIVE'
+                {"".join(extra)}
+                ORDER BY e.full_name
+            """, params)
+            return cur.fetchall()
+
+
+def listar_departamentos_employees() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT DISTINCT department
+                FROM employees
+                WHERE status = 'ACTIVE' AND department IS NOT NULL
+                ORDER BY department
+            """)
+            return [r['department'] for r in cur.fetchall()]
+
+
+def distribuicao_em_massa(alocacoes: list) -> int:
+    if not alocacoes:
+        return 0
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            count = 0
+            for aloc in alocacoes:
+                cur.execute(
+                    "SELECT COALESCE(MAX(ordem), 0) + 1 FROM rh_rota_colaborador WHERE rota_id = %s",
+                    (aloc['rota_id'],)
+                )
+                row = cur.fetchone()
+                ordem = row[0] if row else 1
+                cur.execute("""
+                    INSERT INTO rh_rota_colaborador
+                        (rota_id, employee_id, nome, endereco_rua, endereco_numero,
+                         endereco_bairro, endereco_cidade, endereco_estado,
+                         tipo_parada, ordem)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,'embarque_descida',%s)
+                """, (
+                    aloc['rota_id'], aloc['employee_id'], aloc['nome'],
+                    aloc.get('endereco_rua'), aloc.get('endereco_numero'),
+                    aloc.get('endereco_bairro'),
+                    aloc.get('endereco_cidade') or 'Manaus',
+                    aloc.get('endereco_estado') or 'AM',
+                    ordem,
+                ))
+                count += 1
+            conn.commit()
+    return count
+
+
+def limpar_colaboradores_rotas(rota_ids: list) -> int:
+    if not rota_ids:
+        return 0
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            placeholders = ','.join(['%s'] * len(rota_ids))
+            cur.execute(
+                f"DELETE FROM rh_rota_colaborador WHERE rota_id IN ({placeholders})",
+                rota_ids,
+            )
+            count = cur.rowcount
+            conn.commit()
+    return count
+
+
 # ── Turno Config ──
 
 _TURNO_COLS = """

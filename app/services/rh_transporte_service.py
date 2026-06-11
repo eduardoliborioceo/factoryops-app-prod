@@ -295,3 +295,42 @@ def calcular_trajeto(rota_id: int) -> Optional[dict]:
         return r.json()
     except Exception:
         return None
+
+
+def calcular_distribuicao(employees: list, rotas: list, criterio: str) -> dict:
+    """
+    Distributes employees across routes.
+    Returns {rota_id: [employee_dict, ...]} for preview.
+    criterio: 'equilibrado' | 'geografico'
+    """
+    if not employees or not rotas:
+        return {}
+
+    resultado: dict = {r['id']: [] for r in rotas}
+    rota_ids = [r['id'] for r in rotas]
+
+    if criterio == 'geografico':
+        rotas_com_geo = [r for r in rotas if r.get('partida_lat') and r.get('partida_lng')]
+        with_geo = [e for e in employees if e.get('lat') and e.get('lng')]
+        without_geo = [e for e in employees if not (e.get('lat') and e.get('lng'))]
+
+        if rotas_com_geo:
+            for emp in with_geo:
+                nearest = min(
+                    rotas_com_geo,
+                    key=lambda r: _haversine_km(
+                        float(emp['lat']), float(emp['lng']),
+                        float(r['partida_lat']), float(r['partida_lng'])
+                    )
+                )
+                resultado[nearest['id']].append(emp)
+        else:
+            without_geo = list(employees)
+
+        for i, emp in enumerate(without_geo):
+            resultado[rota_ids[i % len(rota_ids)]].append(emp)
+    else:
+        for i, emp in enumerate(employees):
+            resultado[rota_ids[i % len(rota_ids)]].append(emp)
+
+    return resultado
