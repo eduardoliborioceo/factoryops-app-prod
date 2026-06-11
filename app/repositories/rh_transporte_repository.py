@@ -562,12 +562,17 @@ def listar_precos_combustivel() -> list:
             return cur.fetchall()
 
 
-def upsert_preco_combustivel(tipo: str, preco_litro: float, fonte: str = 'manual') -> dict:
+def upsert_preco_combustivel(
+    tipo: str,
+    preco_litro: float,
+    fonte: str = 'manual',
+    data_referencia=None,
+) -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute("""
                 INSERT INTO rh_combustivel_config (tipo, preco_litro, fonte, data_referencia)
-                VALUES (%s, %s, %s, CURRENT_DATE)
+                VALUES (%s, %s, %s, COALESCE(%s::DATE, CURRENT_DATE))
                 ON CONFLICT (tipo, cidade) DO UPDATE SET
                     preco_litro     = EXCLUDED.preco_litro,
                     fonte           = EXCLUDED.fonte,
@@ -575,9 +580,46 @@ def upsert_preco_combustivel(tipo: str, preco_litro: float, fonte: str = 'manual
                     atualizado_em   = NOW()
                 RETURNING id, tipo, preco_litro::FLOAT8, cidade, estado, fonte,
                           data_referencia::TEXT AS data_referencia, atualizado_em
-            """, (tipo, preco_litro, fonte))
+            """, (tipo, preco_litro, fonte, str(data_referencia) if data_referencia else None))
             conn.commit()
             return cur.fetchone()
+
+
+def criar_anp_sync_log(
+    status: str,
+    precos_atualizados: int,
+    semana_referencia,
+    fonte_url: Optional[str],
+    erro: Optional[str],
+) -> None:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO rh_anp_sync_log
+                    (status, precos_atualizados, semana_referencia, fonte_url, erro)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (
+                status,
+                precos_atualizados,
+                str(semana_referencia) if semana_referencia else None,
+                fonte_url,
+                erro,
+            ))
+            conn.commit()
+
+
+def listar_anp_sync_log(limit: int = 10) -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                SELECT id, executado_em, status, precos_atualizados,
+                       semana_referencia::TEXT AS semana_referencia,
+                       fonte_url, erro
+                FROM rh_anp_sync_log
+                ORDER BY executado_em DESC
+                LIMIT %s
+            """, (limit,))
+            return cur.fetchall()
 
 
 def listar_rotas_para_custo() -> list:

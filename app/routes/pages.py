@@ -3489,6 +3489,27 @@ def rh_api_custos_combustivel():
     return jsonify({"ok": True, "custos": custos, "custo_total": total})
 
 
+@bp.route("/rh-ops/api/transporte/combustivel/sincronizar-anp", methods=["POST"])
+@login_required
+def rh_api_sincronizar_anp():
+    from flask import jsonify
+    from app.services import anp_combustivel_service as anp_svc
+    try:
+        resultado = anp_svc.sincronizar_precos_anp()
+        return jsonify({"ok": True, **resultado})
+    except Exception as exc:
+        return jsonify({"ok": False, "erro": str(exc)}), 500
+
+
+@bp.route("/rh-ops/api/transporte/combustivel/anp-log", methods=["GET"])
+@login_required
+def rh_api_anp_log():
+    from flask import jsonify
+    from app.repositories import rh_transporte_repository as repo
+    logs = repo.listar_anp_sync_log(limit=10)
+    return jsonify([dict(l) for l in logs])
+
+
 @bp.route("/rh-ops/api/transporte/rotas/<int:rota_id>/tempo", methods=["POST"])
 @login_required
 def rh_api_tempo_rota(rota_id):
