@@ -275,3 +275,63 @@ def buscar_employees(termo: str, limit: int = 10) -> list:
                 LIMIT %s
             """, (like, like, limit))
             return cur.fetchall()
+
+
+# ── Turno Config ──
+
+def listar_turno_configs() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT * FROM rh_turno_config ORDER BY filial, turno")
+            return cur.fetchall()
+
+
+def buscar_turno_config(config_id: int) -> Optional[dict]:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("SELECT * FROM rh_turno_config WHERE id = %s", (config_id,))
+            return cur.fetchone()
+
+
+def criar_turno_config(turno: str, filial: str, tipo_descida: str,
+                       raio_embarque_m: int, tolerancia_min: int,
+                       horario_saida: Optional[str], observacao: str) -> dict:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute("""
+                INSERT INTO rh_turno_config
+                    (turno, filial, tipo_descida, raio_embarque_m, tolerancia_min,
+                     horario_saida, observacao)
+                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *
+            """, (turno, filial, tipo_descida, raio_embarque_m, tolerancia_min,
+                  horario_saida or None, observacao or None))
+            conn.commit()
+            return cur.fetchone()
+
+
+def atualizar_turno_config(config_id: int, **kwargs) -> Optional[dict]:
+    allowed = {
+        'turno', 'filial', 'tipo_descida', 'raio_embarque_m',
+        'tolerancia_min', 'horario_saida', 'observacao', 'ativo'
+    }
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return None
+    set_clause = ', '.join(f"{k} = %s" for k in fields)
+    values = list(fields.values()) + [config_id]
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"UPDATE rh_turno_config SET {set_clause}, atualizado_em = NOW() WHERE id = %s RETURNING *",
+                values
+            )
+            conn.commit()
+            return cur.fetchone()
+
+
+def deletar_turno_config(config_id: int) -> bool:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM rh_turno_config WHERE id = %s", (config_id,))
+            conn.commit()
+            return cur.rowcount > 0
