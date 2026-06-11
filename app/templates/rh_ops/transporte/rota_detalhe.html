@@ -117,6 +117,55 @@
   width: 34px; height: 34px; background: #0f172a; font-size: 0.9rem;
 }
 
+/* Custo estimado card */
+.custo-card {
+  margin-top: 10px;
+  background: rgba(251,191,36,.07);
+  border: 1px solid rgba(234,88,12,.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.custo-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #92400e;
+  margin-bottom: 10px;
+}
+.custo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+.custo-item { display: flex; flex-direction: column; }
+.custo-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text-muted);
+}
+.custo-val { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+.custo-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid rgba(234,88,12,.15);
+}
+.custo-total-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.custo-total-val {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ea580c;
+}
+
 /* Mobile layout */
 @media (max-width: 767px) {
   .rota-layout { flex-direction: column; height: auto; }
@@ -264,6 +313,54 @@
           <i class="bi bi-arrow-clockwise"></i>
         </button>
       </div>
+
+      <!-- Custo estimado -->
+      {% if custo_rota %}
+      <div class="custo-card">
+        <div class="custo-card-title">
+          <i class="bi bi-fuel-pump-fill me-1"></i>Custo Estimado de Combustível
+        </div>
+        <div class="custo-grid">
+          <div class="custo-item">
+            <span class="custo-label">Veículo</span>
+            <span class="custo-val">{{ custo_rota.veiculo or '—' }}</span>
+          </div>
+          <div class="custo-item">
+            <span class="custo-label">Combustível</span>
+            <span class="custo-val">{{ custo_rota.tipo_combustivel | replace('_',' ') | title }}</span>
+          </div>
+          <div class="custo-item">
+            <span class="custo-label">Consumo veículo</span>
+            <span class="custo-val">{{ custo_rota.consumo_km_l }} km/L</span>
+          </div>
+          <div class="custo-item">
+            <span class="custo-label">Preço do litro</span>
+            <span class="custo-val">R$ {{ "%.3f"|format(custo_rota.preco_litro) }}</span>
+          </div>
+          <div class="custo-item">
+            <span class="custo-label">Distância est.</span>
+            <span class="custo-val">{{ custo_rota.dist_km_est }} km
+              {% if custo_rota.colab_geocoded < custo_rota.total_colabs %}
+              <span style="font-size:0.68rem;color:var(--text-muted);">({{ custo_rota.colab_geocoded }}/{{ custo_rota.total_colabs }} geocod.)</span>
+              {% endif %}
+            </span>
+          </div>
+          <div class="custo-item">
+            <span class="custo-label">Consumo est.</span>
+            <span class="custo-val">{{ custo_rota.litros_est }} L</span>
+          </div>
+        </div>
+        <div class="custo-total">
+          <span class="custo-total-label">Custo estimado / percurso</span>
+          <span class="custo-total-val">R$ {{ "%.2f"|format(custo_rota.custo_est) }}</span>
+        </div>
+        {% if custo_rota.colab_geocoded == 0 and custo_rota.total_colabs > 0 %}
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">
+          <i class="bi bi-info-circle me-1"></i>Geocodifique os endereços para cálculo por GPS. Usando estimativa de 5 km/colaborador.
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
 
     <!-- Right: map -->
