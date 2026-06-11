@@ -2850,27 +2850,36 @@ def funcionalidades_pci_hub_revisao_excluir(rel_id):
 @bp.route("/funcionalidades/sistemas/pci-hub/cadastro/motivos")
 @login_required
 def funcionalidades_pci_hub_cadastro_motivos():
+    from app.repositories import sistema_input_lancamento_repository as input_repo
+    motivos = input_repo.listar_motivos()
     return render_template(
         "funcionalidades/pci_hub_cadastro_motivos.html",
         active_menu="funcionalidades_pci_hub",
+        motivos=motivos,
     )
 
 
 @bp.route("/funcionalidades/sistemas/pci-hub/cadastro/defeitos")
 @login_required
 def funcionalidades_pci_hub_cadastro_defeitos():
+    from app.repositories import sistema_input_lancamento_repository as input_repo
+    defeitos = input_repo.listar_defeitos()
     return render_template(
         "funcionalidades/pci_hub_cadastro_defeitos.html",
         active_menu="funcionalidades_pci_hub",
+        defeitos=defeitos,
     )
 
 
 @bp.route("/funcionalidades/sistemas/pci-hub/cadastro/linhas")
 @login_required
 def funcionalidades_pci_hub_cadastro_linhas():
+    from app.repositories import linha_config_repository as linha_repo
+    linhas = linha_repo.listar_todas()
     return render_template(
         "funcionalidades/pci_hub_cadastro_linhas.html",
         active_menu="funcionalidades_pci_hub",
+        linhas=linhas,
     )
 
 

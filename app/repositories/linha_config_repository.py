@@ -2,6 +2,15 @@ from app.extensions import get_db
 from psycopg.rows import dict_row
 
 
+def listar_todas() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                "SELECT id, filial, setor, linha FROM linha_config ORDER BY filial, setor, linha"
+            )
+            return cur.fetchall()
+
+
 def listar_por_filial_setor() -> dict:
     with get_db() as conn:
         with conn.cursor(row_factory=dict_row) as cur:
