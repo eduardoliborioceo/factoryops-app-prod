@@ -65,8 +65,8 @@ def buscar_projeto_com_bom(projeto_id: int) -> Optional[dict]:
                        b.pos_y::FLOAT8  AS pos_y,
                        b.angulo::FLOAT8 AS angulo,
                        b.lado, b.ativo,
-                       COALESCE(c.comp_mm::FLOAT8, 2.0) AS comp_mm,
-                       COALESCE(c.larg_mm::FLOAT8, 2.0) AS larg_mm,
+                       COALESCE(b.comp_mm::FLOAT8, c.comp_mm::FLOAT8, 2.0) AS comp_mm,
+                       COALESCE(b.larg_mm::FLOAT8, c.larg_mm::FLOAT8, 2.0) AS larg_mm,
                        COALESCE(c.alt_mm::FLOAT8,  1.0) AS alt_mm,
                        COALESCE(c.cor_hex, '#64748b') AS cor_hex,
                        b.componente_id
@@ -175,8 +175,8 @@ def inserir_bom_items(projeto_id: int, items: list) -> int:
 
 
 def atualizar_bom_item(item_id: int, **kwargs) -> Optional[dict]:
-    allowed = {'ativo', 'pos_x', 'pos_y', 'angulo', 'componente_id',
-               'valor', 'package', 'descricao', 'tipo', 'lado'}
+    allowed = {'ativo', 'pos_x', 'pos_y', 'angulo', 'comp_mm', 'larg_mm',
+               'componente_id', 'valor', 'package', 'descricao', 'tipo', 'lado'}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
     if not fields:
         return None

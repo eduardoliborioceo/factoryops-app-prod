@@ -99,6 +99,32 @@
             font-size:0.8rem; font-weight:500; color:var(--text); text-decoration:none;
             transition:background 0.1s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .doc-link:hover { background:var(--bg); color:var(--primary); }
+
+/* 2D Layout Editor */
+#layoutCanvas { position:absolute; top:0; left:0; width:100%; height:100%; display:none;
+                cursor:default; touch-action:none; }
+#editorToolbar { position:absolute; top:10px; left:10px; display:none; flex-direction:row;
+                 gap:6px; z-index:5; flex-wrap:wrap; max-width:calc(100% - 20px); }
+.editor-btn { background:rgba(255,255,255,0.93); border:1px solid var(--border); border-radius:8px;
+              padding:5px 11px; font-size:0.78rem; font-weight:600; color:var(--text); cursor:pointer;
+              transition:all 0.12s; backdrop-filter:blur(4px); white-space:nowrap; }
+.editor-btn:hover { background:#fff; box-shadow:0 2px 8px rgba(15,23,42,0.1); }
+.editor-btn.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
+
+#editorPropsPanel { position:absolute; bottom:0; left:0; right:0; display:none;
+                    background:rgba(255,255,255,0.97); border-top:1px solid var(--border);
+                    border-radius:0 0 12px 12px; padding:10px 14px; z-index:6;
+                    flex-direction:row; align-items:center; gap:10px; flex-wrap:wrap; }
+.ep-field { display:flex; flex-direction:column; gap:2px; }
+.ep-field label { font-size:0.65rem; font-weight:700; text-transform:uppercase;
+                  letter-spacing:0.4px; color:var(--text-muted); }
+.ep-field input, .ep-field select { width:74px; border:1px solid var(--border); border-radius:6px;
+                                    padding:4px 7px; font-size:0.8rem; color:var(--text);
+                                    background:#fff; outline:none; }
+.ep-field input:focus, .ep-field select:focus { border-color:#6366f1;
+  box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
+#epDesignator { font-size:0.88rem; font-weight:700; color:var(--text); min-width:60px;
+                border-right:1px solid var(--border); padding-right:10px; margin-right:2px; }
 </style>
 
 <div class="d-flex align-items-center flex-wrap gap-2 mb-3 no-print">
@@ -111,7 +137,11 @@
   <button class="btn btn-sm btn-outline-secondary" id="btnToggleLado">
     <i class="bi bi-layers me-1"></i>Alterar Top/Bottom
   </button>
+  <button class="btn btn-sm btn-outline-secondary" id="btnEditorLayout" onclick="window.toggleEditorMode()">
+    <i class="bi bi-grid-1x2 me-1"></i>Editor Layout
+  </button>
 </div>
+<input type="file" id="editorFileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
 
 <div class="studio-layout">
 
@@ -191,6 +221,48 @@
   <!-- ── Viewer 3D ── -->
   <div class="studio-viewer-wrap">
     <canvas id="threeCanvas"></canvas>
+
+    <!-- 2D Layout Editor canvas -->
+    <canvas id="layoutCanvas"></canvas>
+
+    <!-- Editor toolbar (only in editor mode) -->
+    <div id="editorToolbar">
+      <button class="editor-btn" onclick="window.trocarFotoPlaca('top')" id="btnTrocarTop">
+        <i class="bi bi-image me-1"></i>Trocar foto TOP
+      </button>
+      <button class="editor-btn" onclick="window.trocarFotoPlaca('bottom')" id="btnTrocarBottom">
+        <i class="bi bi-image me-1"></i>Trocar foto BOTTOM
+      </button>
+      <button class="editor-btn" onclick="window.editorToggleLado()">
+        <i class="bi bi-layers me-1"></i><span id="editorLadoLabel">Ver BOTTOM</span>
+      </button>
+    </div>
+
+    <!-- Editor properties panel (bottom, shown when component selected) -->
+    <div id="editorPropsPanel">
+      <span id="epDesignator"></span>
+      <div class="ep-field"><label>X (mm)</label>
+        <input type="number" id="epX" step="0.1" oninput="window.epLiveUpdate()"></div>
+      <div class="ep-field"><label>Y (mm)</label>
+        <input type="number" id="epY" step="0.1" oninput="window.epLiveUpdate()"></div>
+      <div class="ep-field"><label>Comp (mm)</label>
+        <input type="number" id="epW" step="0.1" min="0.1" oninput="window.epLiveUpdate()"></div>
+      <div class="ep-field"><label>Larg (mm)</label>
+        <input type="number" id="epH" step="0.1" min="0.1" oninput="window.epLiveUpdate()"></div>
+      <div class="ep-field"><label>Rot (°)</label>
+        <input type="number" id="epRot" step="1" oninput="window.epLiveUpdate()"></div>
+      <div class="ep-field"><label>Lado</label>
+        <select id="epLado" onchange="window.epLiveUpdate()">
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+        </select>
+      </div>
+      <button class="btn btn-sm text-white" id="epSaveBtn" onclick="window.salvarComponente()"
+              style="background:#6366f1;border-color:#6366f1;border-radius:8px;padding:5px 14px;">
+        <i class="bi bi-check2 me-1"></i>Salvar
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="window.deselecionarEditor()">✕</button>
+    </div>
 
     <div class="viewer-overlay">
       <button class="viewer-btn active" id="btnTop" onclick="definirLado('top')">Top</button>
@@ -893,7 +965,14 @@ function renderBomLista(items) {
   `).join('');
 }
 
-window._selectItem = id => selecionarItem(id);
+window._selectItem = id => {
+  if (editorMode) {
+    const item = allItems.find(i => i.id === id);
+    if (item) _editorSelect(item);
+  } else {
+    selecionarItem(id);
+  }
+};
 window._toggleHide = id => {
   if (hiddenSet.has(id)) hiddenSet.delete(id); else hiddenSet.add(id);
   atualizarVisibilidade();
@@ -986,6 +1065,390 @@ window.bomStepNext = async () => {
   }
   atualizarBomStepUI();
 };
+
+// ── 2D Layout Editor ──
+let editorMode           = false;
+let editorLado2d         = 'top';
+let editorScale          = 1;
+let editorOffX           = 0;
+let editorOffY           = 0;
+let editorDragging       = false;
+let editorDragItem       = null;
+let editorDragMouseStart = { x: 0, y: 0 };
+let editorDragItemStart  = { x: 0, y: 0 };
+let editorSelectedId     = null;
+let _boardImgTop2d       = null;
+let _boardImgBot2d       = null;
+
+const _lc   = document.getElementById('layoutCanvas');
+const _lctx = _lc.getContext('2d');
+
+function _resizeEditor() {
+  const wrap = _lc.parentElement;
+  const panH = document.getElementById('editorPropsPanel').offsetHeight || 0;
+  _lc.width  = wrap.clientWidth;
+  _lc.height = wrap.clientHeight;
+  const margin = 30;
+  editorScale = Math.min(
+    (_lc.width  - margin * 2) / BOARD_W,
+    (_lc.height - panH - margin * 2) / BOARD_H
+  );
+  editorOffX = (_lc.width  - BOARD_W * editorScale) / 2;
+  editorOffY = margin;
+}
+
+function _renderEditor() {
+  if (!editorMode) return;
+  const ctx = _lctx;
+  const W   = _lc.width, H = _lc.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(0, 0, W, H);
+
+  const bw = BOARD_W * editorScale;
+  const bh = BOARD_H * editorScale;
+
+  ctx.shadowColor   = 'rgba(0,0,0,0.2)';
+  ctx.shadowBlur    = 14;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = BOARD_COR;
+  ctx.fillRect(editorOffX, editorOffY, bw, bh);
+  ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+
+  const img2d = editorLado2d === 'top' ? _boardImgTop2d : _boardImgBot2d;
+  if (img2d && img2d.complete) {
+    ctx.save();
+    if (editorLado2d === 'bottom') {
+      ctx.translate(editorOffX + bw / 2, editorOffY + bh / 2);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img2d, -bw / 2, -bh / 2, bw, bh);
+    } else {
+      ctx.drawImage(img2d, editorOffX, editorOffY, bw, bh);
+    }
+    ctx.restore();
+  }
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+  ctx.lineWidth   = 1.5;
+  ctx.strokeRect(editorOffX, editorOffY, bw, bh);
+
+  const barMm = Math.max(5, Math.round(BOARD_W * 0.08));
+  const barPx = barMm * editorScale;
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(editorOffX + 6, editorOffY + bh - 22, barPx + 34, 18);
+  ctx.fillStyle    = '#1e293b';
+  ctx.fillRect(editorOffX + 8, editorOffY + bh - 14, barPx, 3);
+  ctx.font         = 'bold 10px Inter,sans-serif';
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${barMm}mm`, editorOffX + 12 + barPx, editorOffY + bh - 13);
+
+  const visible = allItems.filter(i => i.ativo && i.lado === editorLado2d);
+  for (const item of visible) _drawComp2d(ctx, item);
+}
+
+function _drawComp2d(ctx, item) {
+  const cx  = editorOffX + (item.pos_x || 0) * editorScale;
+  const cy  = editorOffY + (item.pos_y || 0) * editorScale;
+  const w   = Math.max(2, (item.comp_mm || 2) * editorScale);
+  const h   = Math.max(2, (item.larg_mm || 2) * editorScale);
+  const ang = (item.angulo || 0) * Math.PI / 180;
+  const sel = item.id === editorSelectedId;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(ang);
+
+  ctx.globalAlpha = 0.88;
+  ctx.fillStyle   = sel ? '#4338ca' : (item.cor_hex || '#64748b');
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = sel ? '#6366f1' : 'rgba(0,0,0,0.35)';
+  ctx.lineWidth   = sel ? 2.5 : 0.8;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+
+  if (sel) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(
+      -w / 2 + Math.min(3.5, w * 0.18),
+      -h / 2 + Math.min(3.5, h * 0.18),
+      Math.min(3.5, Math.min(w, h) * 0.14), 0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  if (w > 18 && h > 10) {
+    const fs = Math.min(11, Math.floor(Math.min(w, h) * 0.42));
+    ctx.fillStyle    = '#ffffff';
+    ctx.font         = `bold ${fs}px Inter,sans-serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.designator.substring(0, 7), 0, 0);
+  }
+
+  ctx.restore();
+}
+
+function _editorHit(mx, my) {
+  const items = allItems.filter(i => i.ativo && i.lado === editorLado2d);
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    const cx  = editorOffX + (item.pos_x || 0) * editorScale;
+    const cy  = editorOffY + (item.pos_y || 0) * editorScale;
+    const hw  = Math.max(5, (item.comp_mm || 2) * editorScale / 2);
+    const hh  = Math.max(5, (item.larg_mm || 2) * editorScale / 2);
+    const ang = -(item.angulo || 0) * Math.PI / 180;
+    const dx  = mx - cx, dy = my - cy;
+    const lx  = dx * Math.cos(ang) - dy * Math.sin(ang);
+    const ly  = dx * Math.sin(ang) + dy * Math.cos(ang);
+    if (Math.abs(lx) <= hw + 2 && Math.abs(ly) <= hh + 2) return item;
+  }
+  return null;
+}
+
+function _editorSelect(item) {
+  editorSelectedId = item ? item.id : null;
+  const panel = document.getElementById('editorPropsPanel');
+  document.querySelectorAll('.bom-item').forEach(el => el.classList.remove('selected-comp'));
+  if (!item) {
+    panel.style.display = 'none';
+    _renderEditor();
+    return;
+  }
+  panel.style.display = 'flex';
+  document.getElementById('epDesignator').textContent =
+    item.designator + (item.valor ? ' · ' + item.valor : '');
+  document.getElementById('epX').value    = (item.pos_x   || 0).toFixed(2);
+  document.getElementById('epY').value    = (item.pos_y   || 0).toFixed(2);
+  document.getElementById('epW').value    = (item.comp_mm || 2).toFixed(2);
+  document.getElementById('epH').value    = (item.larg_mm || 2).toFixed(2);
+  document.getElementById('epRot').value  = (item.angulo  || 0);
+  document.getElementById('epLado').value = item.lado || 'top';
+  const el = document.querySelector(`.bom-item[data-id="${item.id}"]`);
+  if (el) { el.classList.add('selected-comp'); el.scrollIntoView({ block: 'nearest' }); }
+  _resizeEditor();
+  _renderEditor();
+}
+
+window.epLiveUpdate = function() {
+  const item = allItems.find(i => i.id === editorSelectedId);
+  if (!item) return;
+  item.pos_x   = parseFloat(document.getElementById('epX').value)   || 0;
+  item.pos_y   = parseFloat(document.getElementById('epY').value)   || 0;
+  item.comp_mm = parseFloat(document.getElementById('epW').value)   || 2;
+  item.larg_mm = parseFloat(document.getElementById('epH').value)   || 2;
+  item.angulo  = parseFloat(document.getElementById('epRot').value) || 0;
+  item.lado    = document.getElementById('epLado').value;
+  _renderEditor();
+};
+
+window.salvarComponente = async function() {
+  const item = allItems.find(i => i.id === editorSelectedId);
+  if (!item) return;
+  const payload = {
+    pos_x: item.pos_x,   pos_y: item.pos_y,
+    comp_mm: item.comp_mm, larg_mm: item.larg_mm,
+    angulo: item.angulo,   lado: item.lado,
+  };
+  const btn = document.getElementById('epSaveBtn');
+  btn.disabled    = true;
+  btn.textContent = '...';
+  const res  = await fetch(`/engenharia/api/pci-studio/bom/${item.id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+  });
+  btn.disabled    = false;
+  btn.innerHTML   = '<i class="bi bi-check2 me-1"></i>Salvar';
+  const data = await res.json();
+  if (!data.ok) alert('Erro: ' + (data.erro || ''));
+  else buildComponents(allItems);
+};
+
+window.deselecionarEditor = function() { _editorSelect(null); };
+
+window.editorToggleLado = function() {
+  editorLado2d = editorLado2d === 'top' ? 'bottom' : 'top';
+  document.getElementById('editorLadoLabel').textContent =
+    editorLado2d === 'top' ? 'Ver BOTTOM' : 'Ver TOP';
+  _editorSelect(null);
+  _renderEditor();
+};
+
+window.trocarFotoPlaca = function(tipo) {
+  const inp = document.getElementById('editorFileInput');
+  inp.setAttribute('data-tipo', tipo);
+  inp.value = '';
+  inp.click();
+};
+
+document.getElementById('editorFileInput').addEventListener('change', async e => {
+  const f    = e.target.files[0];
+  const tipo = e.target.getAttribute('data-tipo');
+  if (!f) return;
+  const btnId = tipo === 'top' ? 'btnTrocarTop' : 'btnTrocarBottom';
+  const btn   = document.getElementById(btnId);
+  btn.disabled    = true;
+  btn.textContent = 'Enviando...';
+  const fd = new FormData();
+  fd.append('arquivo', f); fd.append('tipo', tipo);
+  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/upload`, { method: 'POST', body: fd });
+  const data = await res.json();
+  btn.disabled    = false;
+  btn.textContent = tipo === 'top' ? 'Trocar foto TOP' : 'Trocar foto BOTTOM';
+  if (!data.ok) { alert('Erro no upload: ' + (data.erro || '')); return; }
+  const url = data.url + '?t=' + Date.now();
+  const img = new Image();
+  img.onload = () => {
+    if (tipo === 'top') {
+      _boardImgTop2d = img;
+      texLoader.load(url, tex => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        boardMaterials[2] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+        boardMesh.material = boardMaterials;
+        silkMesh.material.opacity  = 0.06;
+        traceMesh.material.opacity = 0.12;
+      });
+    } else {
+      _boardImgBot2d = img;
+      texLoader.load(url, tex => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.RepeatWrapping; tex.repeat.x = -1;
+        boardMaterials[3] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+        boardMesh.material = boardMaterials;
+      });
+    }
+    _renderEditor();
+  };
+  img.src = url;
+});
+
+window.toggleEditorMode = function() {
+  editorMode = !editorMode;
+  document.getElementById('threeCanvas').style.display    = editorMode ? 'none' : 'block';
+  document.getElementById('layoutCanvas').style.display   = editorMode ? 'block' : 'none';
+  document.getElementById('editorToolbar').style.display  = editorMode ? 'flex' : 'none';
+  document.querySelector('.viewer-overlay').style.display = editorMode ? 'none' : 'flex';
+  document.getElementById('viewerStats').style.display    = editorMode ? 'none' : '';
+  const btn = document.getElementById('btnEditorLayout');
+  btn.classList.toggle('active', editorMode);
+  btn.innerHTML = editorMode
+    ? '<i class="bi bi-box me-1"></i>Vista 3D'
+    : '<i class="bi bi-grid-1x2 me-1"></i>Editor Layout';
+  if (editorMode) {
+    _resizeEditor();
+    if (BOARD_IMG_TOP && !_boardImgTop2d) {
+      _boardImgTop2d = new Image();
+      _boardImgTop2d.onload = _renderEditor;
+      _boardImgTop2d.src    = BOARD_IMG_TOP;
+    } else {
+      _renderEditor();
+    }
+    if (BOARD_IMG_BOTTOM && !_boardImgBot2d) {
+      _boardImgBot2d = new Image();
+      _boardImgBot2d.src = BOARD_IMG_BOTTOM;
+    }
+  } else {
+    _editorSelect(null);
+  }
+};
+
+new ResizeObserver(() => {
+  if (editorMode) { _resizeEditor(); _renderEditor(); }
+}).observe(_lc.parentElement);
+
+function _evtXY(e) {
+  const rect = _lc.getBoundingClientRect();
+  if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+_lc.addEventListener('mousedown', e => {
+  const { x, y } = _evtXY(e);
+  const hit = _editorHit(x, y);
+  if (hit) {
+    _editorSelect(hit);
+    editorDragging       = true;
+    editorDragItem       = hit;
+    editorDragMouseStart = { x, y };
+    editorDragItemStart  = { x: hit.pos_x || 0, y: hit.pos_y || 0 };
+    _lc.style.cursor = 'grabbing';
+  } else {
+    _editorSelect(null);
+  }
+});
+
+_lc.addEventListener('mousemove', e => {
+  if (!editorMode) return;
+  const { x, y } = _evtXY(e);
+  if (editorDragging && editorDragItem) {
+    const dx = (x - editorDragMouseStart.x) / editorScale;
+    const dy = (y - editorDragMouseStart.y) / editorScale;
+    editorDragItem.pos_x = +Math.max(0, Math.min(BOARD_W, editorDragItemStart.x + dx)).toFixed(2);
+    editorDragItem.pos_y = +Math.max(0, Math.min(BOARD_H, editorDragItemStart.y + dy)).toFixed(2);
+    document.getElementById('epX').value = editorDragItem.pos_x.toFixed(2);
+    document.getElementById('epY').value = editorDragItem.pos_y.toFixed(2);
+    _renderEditor();
+  } else {
+    _lc.style.cursor = _editorHit(x, y) ? 'grab' : 'default';
+  }
+});
+
+_lc.addEventListener('mouseup', async () => {
+  if (!editorDragging || !editorDragItem) return;
+  editorDragging   = false;
+  _lc.style.cursor = 'grab';
+  const item = editorDragItem;
+  await fetch(`/engenharia/api/pci-studio/bom/${item.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pos_x: item.pos_x, pos_y: item.pos_y }),
+  });
+  buildComponents(allItems);
+});
+
+_lc.addEventListener('mouseleave', () => { editorDragging = false; });
+
+_lc.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const { x, y } = _evtXY(e);
+  const hit = _editorHit(x, y);
+  if (hit) {
+    _editorSelect(hit);
+    editorDragging       = true;
+    editorDragItem       = hit;
+    editorDragMouseStart = { x, y };
+    editorDragItemStart  = { x: hit.pos_x || 0, y: hit.pos_y || 0 };
+  } else {
+    _editorSelect(null);
+  }
+}, { passive: false });
+
+_lc.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!editorDragging || !editorDragItem) return;
+  const { x, y } = _evtXY(e);
+  const dx = (x - editorDragMouseStart.x) / editorScale;
+  const dy = (y - editorDragMouseStart.y) / editorScale;
+  editorDragItem.pos_x = +Math.max(0, Math.min(BOARD_W, editorDragItemStart.x + dx)).toFixed(2);
+  editorDragItem.pos_y = +Math.max(0, Math.min(BOARD_H, editorDragItemStart.y + dy)).toFixed(2);
+  document.getElementById('epX').value = editorDragItem.pos_x.toFixed(2);
+  document.getElementById('epY').value = editorDragItem.pos_y.toFixed(2);
+  _renderEditor();
+}, { passive: false });
+
+_lc.addEventListener('touchend', async () => {
+  if (!editorDragging || !editorDragItem) return;
+  editorDragging = false;
+  const item = editorDragItem;
+  await fetch(`/engenharia/api/pci-studio/bom/${item.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pos_x: item.pos_x, pos_y: item.pos_y }),
+  });
+  buildComponents(allItems);
+});
 
 function renderColMap() {
   const campos = [
