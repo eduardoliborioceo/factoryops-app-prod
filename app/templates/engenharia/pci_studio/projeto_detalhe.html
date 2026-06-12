@@ -176,8 +176,11 @@
 
         <!-- Step 1 -->
         <div id="stepArquivo">
-          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Arquivo CSV</label>
-          <input type="file" class="form-control form-control-sm" id="bomFile" accept=".csv,.txt">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Arquivo BOM</label>
+          <input type="file" class="form-control form-control-sm" id="bomFile" accept=".csv,.txt,.xlsx,.xls,.docx">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
+            Suporta: CSV, TXT, Excel (.xlsx/.xls) e Word (.docx com tabela)
+          </div>
           <div class="mt-3">
             <label class="form-check">
               <input type="checkbox" class="form-check-input" id="chkSubstituir" checked>
@@ -189,7 +192,7 @@
         <!-- Step 2 -->
         <div id="stepColunas" style="display:none;">
           <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">
-            Mapeie as colunas do seu CSV para os campos do sistema.
+            Mapeie as colunas do arquivo para os campos do sistema.
           </p>
           <div id="colMapContainer"></div>
         </div>
@@ -602,7 +605,7 @@ window.bomStepBack = () => { bomStep--; atualizarBomStepUI(); };
 window.bomStepNext = async () => {
   if (bomStep === 1) {
     const f = document.getElementById('bomFile').files[0];
-    if (!f) { alert('Selecione um arquivo CSV'); return; }
+    if (!f) { alert('Selecione um arquivo BOM (CSV, TXT, Excel ou Word)'); return; }
     const fd = new FormData();
     fd.append('arquivo', f);
     const res  = await fetch(`/engenharia/api/pci-studio/projetos/${PROJETO_ID}/bom/detectar-colunas`, { method: 'POST', body: fd });

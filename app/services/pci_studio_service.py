@@ -1,6 +1,7 @@
 import csv
 import io
 import math
+import os
 from typing import Optional
 
 from app.repositories import pci_studio_repository as repo
@@ -32,7 +33,16 @@ _TIPO_COR_PADRAO = {
 }
 
 
-def detectar_colunas(header: list[str]) -> dict:
+def extrair_header_e_rows(f_bytes: bytes, filename: str) -> tuple[list, list]:
+    ext = os.path.splitext(filename.lower())[1]
+    if ext in ('.xlsx', '.xls'):
+        return _extrair_excel(f_bytes)
+    if ext == '.docx':
+        return _extrair_docx(f_bytes)
+    return _extrair_csv(f_bytes)
+
+
+def detectar_colunas(header: list) -> dict:
     mapa: dict = {}
     for campo, aliases in _COLUNA_ALIASES.items():
         for col in header:
@@ -42,30 +52,13 @@ def detectar_colunas(header: list[str]) -> dict:
     return mapa
 
 
-def parse_bom_csv(conteudo: str, mapa: dict) -> list[dict]:
-    reader = csv.DictReader(io.StringIO(conteudo))
-    items = []
-    for row in reader:
-        designator = row.get(mapa.get('designator', ''), '').strip()
-        if not designator:
-            continue
+def parse_bom_arquivo(f_bytes: bytes, filename: str, mapa: dict) -> list:
+    _, rows = extrair_header_e_rows(f_bytes, filename)
+    return _parse_rows(rows, mapa)
 
-        tipo_raw = row.get(mapa.get('tipo', ''), '').strip().lower()
-        tipo = _TIPO_MAP.get(tipo_raw, 'smd')
 
-        items.append({
-            'designator':  designator,
-            'valor':       row.get(mapa.get('valor', ''), '').strip() or None,
-            'package':     row.get(mapa.get('package', ''), '').strip() or None,
-            'descricao':   row.get(mapa.get('descricao', ''), '').strip() or None,
-            'part_number': row.get(mapa.get('part_number', ''), '').strip() or None,
-            'tipo':        tipo,
-            'pos_x':       _to_float(row.get(mapa.get('pos_x', ''), '')),
-            'pos_y':       _to_float(row.get(mapa.get('pos_y', ''), '')),
-            'angulo':      _to_float(row.get(mapa.get('angulo', ''), '')) or 0.0,
-            'lado':        _normalizar_lado(row.get(mapa.get('lado', ''), '')),
-        })
-    return items
+def parse_bom_csv(conteudo: str, mapa: dict) -> list:
+    return parse_bom_arquivo(conteudo.encode('utf-8'), 'bom.csv', mapa)
 
 
 def auto_match_componentes(items: list) -> tuple[list, int]:
@@ -104,7 +97,80 @@ def gerar_posicoes_automaticas(items: list, board_w: float, board_h: float) -> l
     return items
 
 
-def _to_float(val: str) -> Optional[float]:
+def _extrair_csv(f_bytes: bytes) -> tuple[list, list]:
+    text = f_bytes.decode('utf-8-sig', errors='replace')
+    delimiter = _sniff_csv_delimiter(text)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    header = list(reader.fieldnames or [])
+    rows = list(reader)
+    return header, rows
+
+
+def _sniff_csv_delimiter(text: str) -> str:
+    try:
+        return csv.Sniffer().sniff(text[:4096], delimiters=',;\t|').delimiter
+    except csv.Error:
+        return ','
+
+
+def _extrair_excel(f_bytes: bytes) -> tuple[list, list]:
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(f_bytes), read_only=True, data_only=True)
+    ws = wb.active
+    header = None
+    rows = []
+    for row in ws.iter_rows(values_only=True):
+        cells = [str(c).strip() if c is not None else '' for c in row]
+        if not any(cells):
+            continue
+        if header is None:
+            header = cells
+        else:
+            rows.append(dict(zip(header, cells)))
+    return (header or []), rows
+
+
+def _extrair_docx(f_bytes: bytes) -> tuple[list, list]:
+    from docx import Document
+    doc = Document(io.BytesIO(f_bytes))
+    if not doc.tables:
+        return [], []
+    table = doc.tables[0]
+    header = [cell.text.strip() for cell in table.rows[0].cells]
+    rows = []
+    for tr in table.rows[1:]:
+        cells = [cell.text.strip() for cell in tr.cells]
+        if any(cells):
+            rows.append(dict(zip(header, cells)))
+    return header, rows
+
+
+def _parse_rows(rows: list, mapa: dict) -> list:
+    items = []
+    for row in rows:
+        designator = row.get(mapa.get('designator', ''), '').strip()
+        if not designator:
+            continue
+
+        tipo_raw = row.get(mapa.get('tipo', ''), '').strip().lower()
+        tipo = _TIPO_MAP.get(tipo_raw, 'smd')
+
+        items.append({
+            'designator':  designator,
+            'valor':       row.get(mapa.get('valor', ''), '').strip() or None,
+            'package':     row.get(mapa.get('package', ''), '').strip() or None,
+            'descricao':   row.get(mapa.get('descricao', ''), '').strip() or None,
+            'part_number': row.get(mapa.get('part_number', ''), '').strip() or None,
+            'tipo':        tipo,
+            'pos_x':       _to_float(row.get(mapa.get('pos_x', ''), '')),
+            'pos_y':       _to_float(row.get(mapa.get('pos_y', ''), '')),
+            'angulo':      _to_float(row.get(mapa.get('angulo', ''), '')) or 0.0,
+            'lado':        _normalizar_lado(row.get(mapa.get('lado', ''), '')),
+        })
+    return items
+
+
+def _to_float(val) -> Optional[float]:
     try:
         return float(str(val).replace(',', '.').strip())
     except (ValueError, TypeError):
@@ -112,5 +178,5 @@ def _to_float(val: str) -> Optional[float]:
 
 
 def _normalizar_lado(val: str) -> str:
-    v = val.strip().lower()
+    v = str(val).strip().lower()
     return 'bottom' if v in ('bottom', 'bot', 'b', 'inferior', 'f.cu') else 'top'
