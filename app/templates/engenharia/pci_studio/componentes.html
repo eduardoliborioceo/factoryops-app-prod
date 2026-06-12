@@ -7,9 +7,6 @@
     <h1 class="page-header-name">Acervo de Componentes</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="abrirModalNovoComp()" title="Novo Componente">
       <i class="bi bi-plus-lg"></i>
     </button>
@@ -81,6 +78,12 @@
              border:2px solid transparent; transition:border-color 0.12s; }
 .color-opt.active, .color-opt:hover { border-color:var(--text); }
 </style>
+
+<div class="mb-3 no-print">
+  <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Studio
+  </a>
+</div>
 
 <div class="lib-stats">
   <div class="lib-stat">

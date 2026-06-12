@@ -34,9 +34,6 @@
     <h1 class="page-header-name">Produtividade</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -46,6 +43,12 @@
 
 {% block content %}
 <div class="container-fluid">
+
+  <div class="mb-3 no-print">
+    <a href="{{ url_for('pages.eng_hub') }}#processo" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar ao Engenharia Hub
+    </a>
+  </div>
 
   <!-- Metas e parâmetros -->
   <div class="prod-card">
