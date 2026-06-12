@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 from app.extensions import get_db
@@ -29,10 +30,16 @@ def buscar_projeto(projeto_id: int) -> Optional[dict]:
             cur.execute("""
                 SELECT id, nome, codigo, descricao,
                        comp_mm::FLOAT8, larg_mm::FLOAT8, esp_mm::FLOAT8, cor_placa,
+                       img_top, img_bottom, docs,
                        criado_em, atualizado_em
                 FROM pci_projeto WHERE id = %s
             """, (projeto_id,))
-            return cur.fetchone()
+            row = cur.fetchone()
+            if row:
+                row = dict(row)
+                if row.get('docs') is None:
+                    row['docs'] = []
+            return row
 
 
 def buscar_projeto_com_bom(projeto_id: int) -> Optional[dict]:
@@ -41,6 +48,7 @@ def buscar_projeto_com_bom(projeto_id: int) -> Optional[dict]:
             cur.execute("""
                 SELECT p.id, p.nome, p.codigo, p.descricao,
                        p.comp_mm::FLOAT8, p.larg_mm::FLOAT8, p.esp_mm::FLOAT8, p.cor_placa,
+                       p.img_top, p.img_bottom, p.docs,
                        p.criado_em, p.atualizado_em
                 FROM pci_projeto p WHERE p.id = %s
             """, (projeto_id,))
@@ -69,7 +77,10 @@ def buscar_projeto_com_bom(projeto_id: int) -> Optional[dict]:
             """, (projeto_id,))
             itens = cur.fetchall()
 
-    return {**dict(projeto), 'itens': [dict(i) for i in itens]}
+    p = dict(projeto)
+    if p.get('docs') is None:
+        p['docs'] = []
+    return {**p, 'itens': [dict(i) for i in itens]}
 
 
 def criar_projeto(nome: str, codigo: str, descricao: str,
@@ -90,7 +101,8 @@ def criar_projeto(nome: str, codigo: str, descricao: str,
 
 
 def atualizar_projeto(projeto_id: int, **kwargs) -> Optional[dict]:
-    allowed = {'nome', 'codigo', 'descricao', 'comp_mm', 'larg_mm', 'esp_mm', 'cor_placa'}
+    allowed = {'nome', 'codigo', 'descricao', 'comp_mm', 'larg_mm', 'esp_mm', 'cor_placa',
+               'img_top', 'img_bottom', 'docs'}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
     if not fields:
         return None
@@ -111,6 +123,19 @@ def deletar_projeto(projeto_id: int) -> bool:
     with get_db() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM pci_projeto WHERE id = %s", (projeto_id,))
+            conn.commit()
+            return cur.rowcount > 0
+
+
+def adicionar_doc_projeto(projeto_id: int, doc: dict) -> bool:
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE pci_projeto
+                SET docs = COALESCE(docs, '[]'::jsonb) || %s::jsonb,
+                    atualizado_em = NOW()
+                WHERE id = %s
+            """, (json.dumps([doc]), projeto_id))
             conn.commit()
             return cur.rowcount > 0
 

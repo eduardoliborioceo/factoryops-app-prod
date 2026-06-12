@@ -58,6 +58,20 @@
 .color-opt { width:28px; height:28px; border-radius:6px; cursor:pointer; border:2px solid transparent;
              transition:border-color 0.12s; }
 .color-opt.active, .color-opt:hover { border-color:var(--text); }
+
+.proj-step-bar { display:flex; gap:0; margin-bottom:20px; }
+.proj-step-dot { flex:1; text-align:center; font-size:0.72rem; font-weight:700; padding:6px 0;
+                 color:var(--text-muted); border-bottom:2px solid var(--border); }
+.proj-step-dot.active { color:#6366f1; border-color:#6366f1; }
+.proj-step-dot.done   { color:#198754; border-color:#198754; }
+
+.img-upload-area { border:1.5px dashed var(--border); border-radius:8px; padding:10px 12px;
+                   display:flex; align-items:center; gap:10px; cursor:pointer; transition:border-color 0.12s; }
+.img-upload-area:hover { border-color:#6366f1; }
+.img-upload-thumb { width:56px; height:40px; object-fit:cover; border-radius:6px;
+                    border:1px solid var(--border); display:none; flex-shrink:0; }
+.img-upload-lbl { font-size:0.78rem; color:var(--text-muted); flex:1; }
+.img-upload-lbl strong { display:block; font-size:0.8rem; color:var(--text); font-weight:600; }
 </style>
 
 <div class="mb-3 no-print">
@@ -155,51 +169,121 @@
 
 <!-- Modal Projeto -->
 <div class="modal fade" id="modalProjeto" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
       <div class="modal-header" style="border-bottom:1px solid var(--border);">
         <h5 class="modal-title fw-700" id="modalProjetoTitulo">Novo Projeto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+
+        <div class="proj-step-bar" id="projetoStepBar" style="display:none;">
+          <div class="proj-step-dot active" id="pstep1dot">1. Dados</div>
+          <div class="proj-step-dot"        id="pstep2dot">2. Imagens &amp; Docs</div>
+        </div>
+
         <input type="hidden" id="projetoId">
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label-sm">Nome *</label>
-            <input type="text" class="form-control form-control-sm" id="pNome" placeholder="Ex: Placa Principal v2.1">
-          </div>
-          <div class="col-6">
-            <label class="form-label-sm">Código</label>
-            <input type="text" class="form-control form-control-sm" id="pCodigo" placeholder="Ex: PCB-001">
-          </div>
-          <div class="col-6">
-            <label class="form-label-sm">Espessura (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="pEsp" value="1.6" step="0.1" min="0.1">
-          </div>
-          <div class="col-6">
-            <label class="form-label-sm">Comprimento (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="pComp" value="100" step="1" min="1">
-          </div>
-          <div class="col-6">
-            <label class="form-label-sm">Largura (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="pLarg" value="80" step="1" min="1">
-          </div>
-          <div class="col-12">
-            <label class="form-label-sm">Descrição</label>
-            <textarea class="form-control form-control-sm" id="pDesc" rows="2" placeholder="Opcional"></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label-sm">Cor da Placa</label>
-            <div class="color-row mt-1" id="colorRow"></div>
-            <input type="hidden" id="pCor" value="#1d4f2a">
+
+        <!-- Passo 1: dados do projeto -->
+        <div id="projetoStep1">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label-sm">Nome *</label>
+              <input type="text" class="form-control form-control-sm" id="pNome" placeholder="Ex: Placa Principal v2.1">
+            </div>
+            <div class="col-6">
+              <label class="form-label-sm">Código</label>
+              <input type="text" class="form-control form-control-sm" id="pCodigo" placeholder="Ex: PCB-001">
+            </div>
+            <div class="col-6">
+              <label class="form-label-sm">Espessura (mm)</label>
+              <input type="number" class="form-control form-control-sm" id="pEsp" value="1.6" step="0.1" min="0.1">
+            </div>
+            <div class="col-6">
+              <label class="form-label-sm">Comprimento (mm)</label>
+              <input type="number" class="form-control form-control-sm" id="pComp" value="100" step="1" min="1">
+            </div>
+            <div class="col-6">
+              <label class="form-label-sm">Largura (mm)</label>
+              <input type="number" class="form-control form-control-sm" id="pLarg" value="80" step="1" min="1">
+            </div>
+            <div class="col-12">
+              <label class="form-label-sm">Descrição</label>
+              <textarea class="form-control form-control-sm" id="pDesc" rows="2" placeholder="Opcional"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label-sm">Cor da Placa</label>
+              <div class="color-row mt-1" id="colorRow"></div>
+              <input type="hidden" id="pCor" value="#1d4f2a">
+            </div>
           </div>
         </div>
+
+        <!-- Passo 2: imagens e documentos (somente novo projeto) -->
+        <div id="projetoStep2" style="display:none;">
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:18px;">
+            Adicione imagens da placa nua (sem componentes) para melhorar a visualização 3D.
+            Documentos de setup e OP ficam disponíveis como referência no projeto.
+            <strong style="color:var(--text);">Todos opcionais — podem ser adicionados depois.</strong>
+          </p>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-sm">Imagem Fase TOP</label>
+              <div class="img-upload-area" onclick="document.getElementById('pImgTop').click()">
+                <img id="thumbTop" class="img-upload-thumb" alt="">
+                <div class="img-upload-lbl">
+                  <strong id="lblTop">Nenhuma imagem selecionada</strong>
+                  Clique para selecionar JPG / PNG / WebP
+                </div>
+              </div>
+              <input type="file" id="pImgTop" accept=".jpg,.jpeg,.png,.webp" style="display:none;"
+                     onchange="previewImg(this,'thumbTop','lblTop')">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-sm">Imagem Fase BOTTOM</label>
+              <div class="img-upload-area" onclick="document.getElementById('pImgBottom').click()">
+                <img id="thumbBottom" class="img-upload-thumb" alt="">
+                <div class="img-upload-lbl">
+                  <strong id="lblBottom">Nenhuma imagem selecionada</strong>
+                  Clique para selecionar JPG / PNG / WebP
+                </div>
+              </div>
+              <input type="file" id="pImgBottom" accept=".jpg,.jpeg,.png,.webp" style="display:none;"
+                     onchange="previewImg(this,'thumbBottom','lblBottom')">
+            </div>
+            <div class="col-12">
+              <label class="form-label-sm">Folha de Setup e OP <span style="font-weight:500;color:var(--text-muted);">(múltiplos arquivos)</span></label>
+              <input type="file" class="form-control form-control-sm" id="pDocs"
+                     accept=".jpg,.jpeg,.png,.webp,.pdf" multiple
+                     onchange="mostrarDocsSelecionados(this)">
+              <div id="docsLista" style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;"></div>
+            </div>
+          </div>
+
+          <div id="uploadProgressWrap" style="display:none;margin-top:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <span id="uploadMsg" style="font-size:0.78rem;color:var(--text-muted);"></span>
+              <span id="uploadPct" style="font-size:0.75rem;font-weight:600;color:#6366f1;"></span>
+            </div>
+            <div class="progress" style="height:5px;border-radius:3px;">
+              <div class="progress-bar" id="uploadBar"
+                   style="width:0%;background:#6366f1;transition:width 0.3s;border-radius:3px;"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <div class="modal-footer" style="border-top:1px solid var(--border);">
-        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-sm text-white fw-600" id="btnSalvarProjeto"
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnProjetoVoltar"
+                style="display:none;" onclick="projetoVoltar()">Voltar</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnProjetoPular"
+                style="display:none;" onclick="projetoFinalizar()">Pular</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                id="btnProjetoCancelar" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-sm text-white fw-600" id="btnProjetoAcao"
                 style="background:#6366f1;border-color:#6366f1;border-radius:8px;"
-                onclick="salvarProjeto()">Salvar</button>
+                onclick="projetoAcao()">Próximo</button>
       </div>
     </div>
   </div>
@@ -207,6 +291,8 @@
 
 <script>
 const BOARD_COLORS = ['#1d4f2a','#0c2340','#2d1b00','#1a1a2e','#4b0082','#8b1a1a','#2c2c2c','#0f172a'];
+let _modoEdicao  = false;
+let _projetoNovo = null;
 
 function buildColorRow(selected) {
   const row = document.getElementById('colorRow');
@@ -221,69 +307,197 @@ function selectColor(c) {
   document.querySelectorAll('.color-opt').forEach(el => el.classList.toggle('active', el.dataset.color===c));
 }
 
+function _resetModalUI(editMode) {
+  _modoEdicao = editMode;
+  document.getElementById('projetoStepBar').style.display  = editMode ? 'none' : 'flex';
+  document.getElementById('projetoStep1').style.display    = '';
+  document.getElementById('projetoStep2').style.display    = 'none';
+  document.getElementById('btnProjetoVoltar').style.display = 'none';
+  document.getElementById('btnProjetoPular').style.display  = 'none';
+  document.getElementById('btnProjetoCancelar').style.display = '';
+  document.getElementById('btnProjetoAcao').textContent    = editMode ? 'Salvar' : 'Próximo';
+  if (!editMode) {
+    document.getElementById('pstep1dot').className = 'proj-step-dot active';
+    document.getElementById('pstep2dot').className = 'proj-step-dot';
+    document.getElementById('pImgTop').value    = '';
+    document.getElementById('pImgBottom').value = '';
+    document.getElementById('pDocs').value      = '';
+    document.getElementById('thumbTop').style.display    = 'none';
+    document.getElementById('thumbBottom').style.display = 'none';
+    document.getElementById('lblTop').textContent    = 'Nenhuma imagem selecionada';
+    document.getElementById('lblBottom').textContent = 'Nenhuma imagem selecionada';
+    document.getElementById('docsLista').textContent  = '';
+    document.getElementById('uploadProgressWrap').style.display = 'none';
+  }
+}
+
 function abrirModalNovoProjeto() {
-  document.getElementById('projetoId').value = '';
-  document.getElementById('modalProjetoTitulo').textContent = 'Novo Projeto';
-  document.getElementById('pNome').value = '';
-  document.getElementById('pCodigo').value = '';
-  document.getElementById('pComp').value = 100;
-  document.getElementById('pLarg').value = 80;
-  document.getElementById('pEsp').value = 1.6;
-  document.getElementById('pDesc').value = '';
-  document.getElementById('pCor').value = '#1d4f2a';
+  document.getElementById('projetoId').value  = '';
+  document.getElementById('pNome').value      = '';
+  document.getElementById('pCodigo').value    = '';
+  document.getElementById('pComp').value      = 100;
+  document.getElementById('pLarg').value      = 80;
+  document.getElementById('pEsp').value       = 1.6;
+  document.getElementById('pDesc').value      = '';
+  document.getElementById('pCor').value       = '#1d4f2a';
   buildColorRow('#1d4f2a');
+  _resetModalUI(false);
   new bootstrap.Modal(document.getElementById('modalProjeto')).show();
 }
 
 function editarProjeto(id, dados) {
-  document.getElementById('projetoId').value = id;
-  document.getElementById('modalProjetoTitulo').textContent = 'Editar Projeto';
-  document.getElementById('pNome').value = dados.nome || '';
-  document.getElementById('pCodigo').value = dados.codigo || '';
-  document.getElementById('pComp').value = dados.comp_mm || 100;
-  document.getElementById('pLarg').value = dados.larg_mm || 80;
-  document.getElementById('pEsp').value = dados.esp_mm || 1.6;
-  document.getElementById('pDesc').value = dados.descricao || '';
+  document.getElementById('projetoId').value  = id;
+  document.getElementById('pNome').value      = dados.nome || '';
+  document.getElementById('pCodigo').value    = dados.codigo || '';
+  document.getElementById('pComp').value      = dados.comp_mm || 100;
+  document.getElementById('pLarg').value      = dados.larg_mm || 80;
+  document.getElementById('pEsp').value       = dados.esp_mm || 1.6;
+  document.getElementById('pDesc').value      = dados.descricao || '';
   const cor = dados.cor_placa || '#1d4f2a';
   document.getElementById('pCor').value = cor;
   buildColorRow(cor);
+  document.getElementById('modalProjetoTitulo').textContent = 'Editar Projeto';
+  _resetModalUI(true);
   new bootstrap.Modal(document.getElementById('modalProjeto')).show();
 }
 
-async function salvarProjeto() {
-  const id = document.getElementById('projetoId').value;
+function previewImg(input, thumbId, lblId) {
+  const f = input.files[0];
+  if (!f) return;
+  const thumb = document.getElementById(thumbId);
+  thumb.src = URL.createObjectURL(f);
+  thumb.style.display = 'block';
+  document.getElementById(lblId).textContent = f.name;
+}
+
+function mostrarDocsSelecionados(input) {
+  const nomes = Array.from(input.files).map(f => f.name).join(', ');
+  document.getElementById('docsLista').textContent = nomes || '';
+}
+
+async function projetoAcao() {
+  if (_modoEdicao) {
+    await _salvarEdicao();
+  } else {
+    await _avancarParaImagens();
+  }
+}
+
+async function _avancarParaImagens() {
   const body = {
-    nome: document.getElementById('pNome').value.trim(),
-    codigo: document.getElementById('pCodigo').value.trim(),
+    nome:      document.getElementById('pNome').value.trim(),
+    codigo:    document.getElementById('pCodigo').value.trim(),
     descricao: document.getElementById('pDesc').value.trim(),
-    comp_mm: parseFloat(document.getElementById('pComp').value) || 100,
-    larg_mm: parseFloat(document.getElementById('pLarg').value) || 80,
-    esp_mm: parseFloat(document.getElementById('pEsp').value) || 1.6,
+    comp_mm:   parseFloat(document.getElementById('pComp').value) || 100,
+    larg_mm:   parseFloat(document.getElementById('pLarg').value) || 80,
+    esp_mm:    parseFloat(document.getElementById('pEsp').value)  || 1.6,
     cor_placa: document.getElementById('pCor').value,
   };
   if (!body.nome) { alert('Nome é obrigatório'); return; }
 
-  const url = id
-    ? `/engenharia/api/pci-studio/projetos/${id}`
-    : '/engenharia/api/pci-studio/projetos';
-  const method = id ? 'PUT' : 'POST';
-
-  const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const res  = await fetch('/engenharia/api/pci-studio/projetos', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
   const data = await res.json();
-  if (data.ok) {
-    if (!id) {
-      window.location = `/engenharia/pci-studio/projetos/${data.projeto.id}`;
-    } else {
-      window.location.reload();
-    }
-  } else {
-    alert('Erro: ' + (data.erro || 'desconhecido'));
-  }
+  if (!data.ok) { alert('Erro: ' + (data.erro || 'desconhecido')); return; }
+
+  _projetoNovo = data.projeto;
+  document.getElementById('projetoStep1').style.display = 'none';
+  document.getElementById('projetoStep2').style.display = '';
+  document.getElementById('pstep1dot').className = 'proj-step-dot done';
+  document.getElementById('pstep2dot').className = 'proj-step-dot active';
+  document.getElementById('btnProjetoVoltar').style.display  = 'none';
+  document.getElementById('btnProjetoPular').style.display   = '';
+  document.getElementById('btnProjetoCancelar').style.display = 'none';
+  document.getElementById('btnProjetoAcao').textContent = 'Finalizar';
 }
+
+async function projetoVoltar() {
+  document.getElementById('projetoStep2').style.display = 'none';
+  document.getElementById('projetoStep1').style.display = '';
+  document.getElementById('pstep1dot').className = 'proj-step-dot active';
+  document.getElementById('pstep2dot').className = 'proj-step-dot';
+  document.getElementById('btnProjetoVoltar').style.display  = 'none';
+  document.getElementById('btnProjetoPular').style.display   = 'none';
+  document.getElementById('btnProjetoCancelar').style.display = '';
+  document.getElementById('btnProjetoAcao').textContent = 'Próximo';
+}
+
+async function projetoFinalizar() {
+  window.location = `/engenharia/pci-studio/projetos/${_projetoNovo.id}`;
+}
+
+async function _salvarEdicao() {
+  const id   = document.getElementById('projetoId').value;
+  const body = {
+    nome:      document.getElementById('pNome').value.trim(),
+    codigo:    document.getElementById('pCodigo').value.trim(),
+    descricao: document.getElementById('pDesc').value.trim(),
+    comp_mm:   parseFloat(document.getElementById('pComp').value) || 100,
+    larg_mm:   parseFloat(document.getElementById('pLarg').value) || 80,
+    esp_mm:    parseFloat(document.getElementById('pEsp').value)  || 1.6,
+    cor_placa: document.getElementById('pCor').value,
+  };
+  if (!body.nome) { alert('Nome é obrigatório'); return; }
+  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (data.ok) window.location.reload();
+  else alert('Erro: ' + (data.erro || 'desconhecido'));
+}
+
+async function _uploadArquivo(projetoId, file, tipo, progFn) {
+  const fd = new FormData();
+  fd.append('arquivo', file);
+  fd.append('tipo', tipo);
+  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${projetoId}/upload`, { method: 'POST', body: fd });
+  progFn();
+  return res.json();
+}
+
+document.getElementById('btnProjetoAcao').addEventListener('click', async () => {
+  if (document.getElementById('btnProjetoAcao').textContent.trim() !== 'Finalizar') return;
+
+  const id    = _projetoNovo.id;
+  const top   = document.getElementById('pImgTop').files[0];
+  const bot   = document.getElementById('pImgBottom').files[0];
+  const docs  = Array.from(document.getElementById('pDocs').files);
+  const total = (top ? 1 : 0) + (bot ? 1 : 0) + docs.length;
+
+  if (total === 0) { projetoFinalizar(); return; }
+
+  document.getElementById('uploadProgressWrap').style.display = '';
+  document.getElementById('btnProjetoAcao').disabled = true;
+  document.getElementById('btnProjetoPular').disabled = true;
+
+  let done = 0;
+  const prog = () => {
+    done++;
+    const pct = Math.round((done / total) * 100);
+    document.getElementById('uploadBar').style.width = pct + '%';
+    document.getElementById('uploadPct').textContent  = pct + '%';
+  };
+
+  if (top) {
+    document.getElementById('uploadMsg').textContent = 'Enviando imagem TOP...';
+    await _uploadArquivo(id, top, 'top', prog);
+  }
+  if (bot) {
+    document.getElementById('uploadMsg').textContent = 'Enviando imagem BOTTOM...';
+    await _uploadArquivo(id, bot, 'bottom', prog);
+  }
+  for (let i = 0; i < docs.length; i++) {
+    document.getElementById('uploadMsg').textContent = `Enviando documento ${i + 1}/${docs.length}...`;
+    await _uploadArquivo(id, docs[i], 'doc', prog);
+  }
+
+  projetoFinalizar();
+});
 
 async function deletarProjeto(id, nome) {
   if (!confirm(`Deletar projeto "${nome}" e todos os seus itens de BOM?`)) return;
-  const res = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, { method: 'DELETE' });
+  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, { method: 'DELETE' });
   const data = await res.json();
   if (data.ok) window.location.reload();
   else alert('Erro ao deletar');
