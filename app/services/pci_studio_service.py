@@ -2,22 +2,29 @@ import csv
 import io
 import math
 import os
+import unicodedata
 from typing import Optional
 
 from app.repositories import pci_studio_repository as repo
 
 _COLUNA_ALIASES = {
-    'designator': ['designator', 'des', 'ref', 'referencia', 'comp', 'reference', 'refdes'],
-    'valor':      ['valor', 'value', 'val'],
-    'package':    ['package', 'footprint', 'encapsulamento', 'pkg', 'pcb footprint'],
-    'descricao':  ['descricao', 'description', 'desc', 'comment'],
-    'part_number':['part_number', 'pn', 'part number', 'numero de parte', 'manufacturer pn', 'mfr pn'],
-    'tipo':       ['tipo', 'type', 'mount', 'mounting'],
-    'pos_x':      ['pos_x', 'x', 'mid x', 'posx', 'ref x'],
-    'pos_y':      ['pos_y', 'y', 'mid y', 'posy', 'ref y'],
-    'angulo':     ['angulo', 'angle', 'rotation', 'rot'],
-    'lado':       ['lado', 'side', 'layer', 'board side'],
+    'designator': ['designator', 'des', 'ref', 'referencia', 'comp', 'reference', 'refdes', 'ref des', 'component'],
+    'valor':      ['valor', 'value', 'val', 'component value'],
+    'package':    ['package', 'footprint', 'encapsulamento', 'pkg', 'pcb footprint', 'land pattern', 'footprint ref'],
+    'descricao':  ['descricao', 'description', 'desc', 'comment', 'comentario', 'descr', 'descricao do componente'],
+    'part_number':['part_number', 'pn', 'mpn', 'mpn#', 'part number', 'numero de parte', 'manufacturer pn',
+                   'mfr pn', 'manufacturer part number', 'part no', 'part#', 'mfg part number'],
+    'tipo':       ['tipo', 'type', 'mount', 'mounting', 'mount type'],
+    'pos_x':      ['pos_x', 'x', 'mid x', 'posx', 'ref x', 'center x', 'cx', 'x(mm)', 'x mm'],
+    'pos_y':      ['pos_y', 'y', 'mid y', 'posy', 'ref y', 'center y', 'cy', 'y(mm)', 'y mm'],
+    'angulo':     ['angulo', 'angle', 'rotation', 'rot', 'orient', 'orientation'],
+    'lado':       ['lado', 'side', 'layer', 'board side', 'tb', 'top/bot', 'face'],
 }
+
+
+def _norm_col(texto: str) -> str:
+    sem_acento = unicodedata.normalize('NFD', texto.lower().strip())
+    return ''.join(c for c in sem_acento if unicodedata.category(c) != 'Mn')
 
 _TIPO_MAP = {
     'smd': 'smd', 'surface': 'smd', 'surface mount': 'smd', 'sm': 'smd',
@@ -46,7 +53,7 @@ def detectar_colunas(header: list) -> dict:
     mapa: dict = {}
     for campo, aliases in _COLUNA_ALIASES.items():
         for col in header:
-            if col.lower().strip() in aliases:
+            if _norm_col(col) in aliases:
                 mapa[campo] = col
                 break
     return mapa
