@@ -7,15 +7,6 @@
     <h1 class="page-header-name">{{ projeto.nome }}</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <button class="btn-header-icon" id="btnImportarBOM" title="Importar BOM">
-      <i class="bi bi-upload"></i>
-    </button>
-    <button class="btn-header-icon" id="btnToggleLado" title="Alternar Top/Bottom">
-      <i class="bi bi-layers"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -104,6 +95,18 @@
 .col-map-lbl { width:90px; font-size:0.78rem; font-weight:600; color:var(--text); flex-shrink:0; }
 .col-map-sel { flex:1; font-size:0.8rem; }
 </style>
+
+<div class="d-flex align-items-center flex-wrap gap-2 mb-3 no-print">
+  <a href="{{ url_for('pages.eng_pci_studio_hub') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Studio
+  </a>
+  <button class="btn btn-sm btn-outline-primary" id="btnImportarBOM">
+    <i class="bi bi-upload me-1"></i>Importar BOM
+  </button>
+  <button class="btn btn-sm btn-outline-secondary" id="btnToggleLado">
+    <i class="bi bi-layers me-1"></i>Alterar Top/Bottom
+  </button>
+</div>
 
 <div class="studio-layout">
 
