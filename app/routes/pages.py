@@ -4136,13 +4136,14 @@ def eng_api_pci_detectar_colunas(projeto_id):
     f = request.files.get("arquivo")
     if not f:
         return jsonify({"ok": False, "erro": "Arquivo não enviado"}), 400
-    conteudo = f.read().decode("utf-8-sig", errors="replace")
-    import csv, io
-    reader = csv.reader(io.StringIO(conteudo))
+    f_bytes = f.read()
+    filename = f.filename or 'bom.csv'
     try:
-        header = next(reader)
-    except StopIteration:
-        return jsonify({"ok": False, "erro": "CSV vazio"}), 400
+        header, _ = svc.extrair_header_e_rows(f_bytes, filename)
+    except Exception as e:
+        return jsonify({"ok": False, "erro": f"Erro ao processar arquivo: {e}"}), 400
+    if not header:
+        return jsonify({"ok": False, "erro": "Arquivo vazio ou sem colunas reconhecíveis"}), 400
     mapa = svc.detectar_colunas(header)
     return jsonify({"ok": True, "header": header, "mapa": mapa})
 
@@ -4162,11 +4163,15 @@ def eng_api_pci_importar_bom(projeto_id):
         mapa = _json.loads(mapa_raw)
     except ValueError:
         mapa = {}
-    conteudo = f.read().decode("utf-8-sig", errors="replace")
+    f_bytes = f.read()
+    filename = f.filename or 'bom.csv'
     projeto = repo.buscar_projeto(projeto_id)
     if not projeto:
         return jsonify({"ok": False, "erro": "Projeto não encontrado"}), 404
-    items = svc.parse_bom_csv(conteudo, mapa)
+    try:
+        items = svc.parse_bom_arquivo(f_bytes, filename, mapa)
+    except Exception as e:
+        return jsonify({"ok": False, "erro": f"Erro ao processar arquivo: {e}"}), 400
     items, matched = svc.auto_match_componentes(items)
     items = svc.gerar_posicoes_automaticas(items, projeto["comp_mm"], projeto["larg_mm"])
     if request.form.get("substituir") == "1":
