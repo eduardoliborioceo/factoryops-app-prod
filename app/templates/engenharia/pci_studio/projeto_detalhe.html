@@ -111,6 +111,11 @@
 .editor-btn:hover { background:#fff; box-shadow:0 2px 8px rgba(15,23,42,0.1); }
 .editor-btn.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
 
+#editorCoords { position:absolute; bottom:14px; right:10px; z-index:5; pointer-events:none;
+                background:rgba(15,23,42,0.55); color:#e2e8f0; font-size:0.7rem; font-weight:600;
+                padding:3px 8px; border-radius:6px; font-family:Inter,monospace; letter-spacing:0.3px;
+                display:none; }
+
 #editorPropsPanel { position:absolute; bottom:0; left:0; right:0; display:none;
                     background:rgba(255,255,255,0.97); border-top:1px solid var(--border);
                     border-radius:0 0 12px 12px; padding:10px 14px; z-index:6;
@@ -236,7 +241,12 @@
       <button class="editor-btn" onclick="window.editorToggleLado()">
         <i class="bi bi-layers me-1"></i><span id="editorLadoLabel">Ver BOTTOM</span>
       </button>
+      <button class="editor-btn" onclick="window.resetEditorZoom()" title="Resetar zoom e posição">
+        <i class="bi bi-arrows-angle-contract me-1"></i><span id="editorZoomLabel">100%</span>
+      </button>
     </div>
+
+    <div id="editorCoords"></div>
 
     <!-- Editor properties panel (bottom, shown when component selected) -->
     <div id="editorPropsPanel">
@@ -1070,32 +1080,65 @@ window.bomStepNext = async () => {
 let editorMode           = false;
 let editorLado2d         = 'top';
 let editorScale          = 1;
+let editorBaseScale      = 1;
+let editorZoom           = 1.0;
 let editorOffX           = 0;
 let editorOffY           = 0;
 let editorDragging       = false;
 let editorDragItem       = null;
 let editorDragMouseStart = { x: 0, y: 0 };
 let editorDragItemStart  = { x: 0, y: 0 };
+let editorPanning        = false;
+let editorPanStart       = { x: 0, y: 0 };
+let editorPanOffStart    = { x: 0, y: 0 };
 let editorSelectedId     = null;
+let _lastPinchDist       = null;
 let _boardImgTop2d       = null;
 let _boardImgBot2d       = null;
 
 const _lc   = document.getElementById('layoutCanvas');
 const _lctx = _lc.getContext('2d');
 
-function _resizeEditor() {
+function _resizeEditor(resetView = false) {
   const wrap = _lc.parentElement;
   const panH = document.getElementById('editorPropsPanel').offsetHeight || 0;
   _lc.width  = wrap.clientWidth;
   _lc.height = wrap.clientHeight;
   const margin = 30;
-  editorScale = Math.min(
+  editorBaseScale = Math.min(
     (_lc.width  - margin * 2) / BOARD_W,
     (_lc.height - panH - margin * 2) / BOARD_H
   );
-  editorOffX = (_lc.width  - BOARD_W * editorScale) / 2;
-  editorOffY = margin;
+  if (resetView) {
+    editorZoom  = 1.0;
+    editorScale = editorBaseScale;
+    editorOffX  = (_lc.width  - BOARD_W * editorScale) / 2;
+    editorOffY  = margin;
+    _updateZoomLabel();
+  } else {
+    editorScale = editorBaseScale * editorZoom;
+  }
 }
+
+function _applyZoom(newZoom, mx, my) {
+  const oldScale = editorScale;
+  editorZoom     = Math.max(0.3, Math.min(10, newZoom));
+  editorScale    = editorBaseScale * editorZoom;
+  editorOffX     = mx - (mx - editorOffX) * (editorScale / oldScale);
+  editorOffY     = my - (my - editorOffY) * (editorScale / oldScale);
+  _updateZoomLabel();
+  _renderEditor();
+}
+
+function _updateZoomLabel() {
+  const el = document.getElementById('editorZoomLabel');
+  if (el) el.textContent = Math.round(editorZoom * 100) + '%';
+}
+
+window.resetEditorZoom = function() {
+  _resizeEditor(true);
+  _renderEditor();
+};
 
 function _renderEditor() {
   if (!editorMode) return;
@@ -1329,6 +1372,7 @@ window.toggleEditorMode = function() {
   document.getElementById('threeCanvas').style.display    = editorMode ? 'none' : 'block';
   document.getElementById('layoutCanvas').style.display   = editorMode ? 'block' : 'none';
   document.getElementById('editorToolbar').style.display  = editorMode ? 'flex' : 'none';
+  document.getElementById('editorCoords').style.display   = editorMode ? 'block' : 'none';
   document.querySelector('.viewer-overlay').style.display = editorMode ? 'none' : 'flex';
   document.getElementById('viewerStats').style.display    = editorMode ? 'none' : '';
   const btn = document.getElementById('btnEditorLayout');
@@ -1337,7 +1381,7 @@ window.toggleEditorMode = function() {
     ? '<i class="bi bi-box me-1"></i>Vista 3D'
     : '<i class="bi bi-grid-1x2 me-1"></i>Editor Layout';
   if (editorMode) {
-    _resizeEditor();
+    _resizeEditor(true);
     if (BOARD_IMG_TOP && !_boardImgTop2d) {
       _boardImgTop2d = new Image();
       _boardImgTop2d.onload = _renderEditor;
@@ -1373,15 +1417,23 @@ _lc.addEventListener('mousedown', e => {
     editorDragItem       = hit;
     editorDragMouseStart = { x, y };
     editorDragItemStart  = { x: hit.pos_x || 0, y: hit.pos_y || 0 };
-    _lc.style.cursor = 'grabbing';
+    _lc.style.cursor     = 'grabbing';
   } else {
     _editorSelect(null);
+    editorPanning     = true;
+    editorPanStart    = { x, y };
+    editorPanOffStart = { x: editorOffX, y: editorOffY };
+    _lc.style.cursor  = 'grabbing';
   }
 });
 
 _lc.addEventListener('mousemove', e => {
   if (!editorMode) return;
   const { x, y } = _evtXY(e);
+  const mmX = ((x - editorOffX) / editorScale).toFixed(1);
+  const mmY = ((y - editorOffY) / editorScale).toFixed(1);
+  const coordEl = document.getElementById('editorCoords');
+  if (coordEl) coordEl.textContent = `${mmX}, ${mmY} mm`;
   if (editorDragging && editorDragItem) {
     const dx = (x - editorDragMouseStart.x) / editorScale;
     const dy = (y - editorDragMouseStart.y) / editorScale;
@@ -1390,12 +1442,21 @@ _lc.addEventListener('mousemove', e => {
     document.getElementById('epX').value = editorDragItem.pos_x.toFixed(2);
     document.getElementById('epY').value = editorDragItem.pos_y.toFixed(2);
     _renderEditor();
+  } else if (editorPanning) {
+    editorOffX = editorPanOffStart.x + (x - editorPanStart.x);
+    editorOffY = editorPanOffStart.y + (y - editorPanStart.y);
+    _renderEditor();
   } else {
     _lc.style.cursor = _editorHit(x, y) ? 'grab' : 'default';
   }
 });
 
 _lc.addEventListener('mouseup', async () => {
+  if (editorPanning) {
+    editorPanning    = false;
+    _lc.style.cursor = 'default';
+    return;
+  }
   if (!editorDragging || !editorDragItem) return;
   editorDragging   = false;
   _lc.style.cursor = 'grab';
@@ -1408,10 +1469,30 @@ _lc.addEventListener('mouseup', async () => {
   buildComponents(allItems);
 });
 
-_lc.addEventListener('mouseleave', () => { editorDragging = false; });
+_lc.addEventListener('mouseleave', () => {
+  editorDragging = false;
+  editorPanning  = false;
+});
+
+_lc.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect   = _lc.getBoundingClientRect();
+  const mx     = e.clientX - rect.left;
+  const my     = e.clientY - rect.top;
+  const factor = e.deltaY > 0 ? 0.9 : 1.11;
+  _applyZoom(editorZoom * factor, mx, my);
+}, { passive: false });
 
 _lc.addEventListener('touchstart', e => {
   e.preventDefault();
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    _lastPinchDist = Math.hypot(dx, dy);
+    editorDragging = false;
+    editorPanning  = false;
+    return;
+  }
   const { x, y } = _evtXY(e);
   const hit = _editorHit(x, y);
   if (hit) {
@@ -1422,23 +1503,48 @@ _lc.addEventListener('touchstart', e => {
     editorDragItemStart  = { x: hit.pos_x || 0, y: hit.pos_y || 0 };
   } else {
     _editorSelect(null);
+    editorPanning     = true;
+    editorPanStart    = { x, y };
+    editorPanOffStart = { x: editorOffX, y: editorOffY };
   }
 }, { passive: false });
 
 _lc.addEventListener('touchmove', e => {
   e.preventDefault();
-  if (!editorDragging || !editorDragItem) return;
-  const { x, y } = _evtXY(e);
-  const dx = (x - editorDragMouseStart.x) / editorScale;
-  const dy = (y - editorDragMouseStart.y) / editorScale;
-  editorDragItem.pos_x = +Math.max(0, Math.min(BOARD_W, editorDragItemStart.x + dx)).toFixed(2);
-  editorDragItem.pos_y = +Math.max(0, Math.min(BOARD_H, editorDragItemStart.y + dy)).toFixed(2);
-  document.getElementById('epX').value = editorDragItem.pos_x.toFixed(2);
-  document.getElementById('epY').value = editorDragItem.pos_y.toFixed(2);
-  _renderEditor();
+  if (e.touches.length === 2) {
+    const dx   = e.touches[0].clientX - e.touches[1].clientX;
+    const dy   = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    if (_lastPinchDist) {
+      const rect = _lc.getBoundingClientRect();
+      const mx   = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      const my   = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      _applyZoom(editorZoom * (dist / _lastPinchDist), mx, my);
+    }
+    _lastPinchDist = dist;
+    return;
+  }
+  _lastPinchDist = null;
+  if (editorDragging && editorDragItem) {
+    const { x, y } = _evtXY(e);
+    const dx = (x - editorDragMouseStart.x) / editorScale;
+    const dy = (y - editorDragMouseStart.y) / editorScale;
+    editorDragItem.pos_x = +Math.max(0, Math.min(BOARD_W, editorDragItemStart.x + dx)).toFixed(2);
+    editorDragItem.pos_y = +Math.max(0, Math.min(BOARD_H, editorDragItemStart.y + dy)).toFixed(2);
+    document.getElementById('epX').value = editorDragItem.pos_x.toFixed(2);
+    document.getElementById('epY').value = editorDragItem.pos_y.toFixed(2);
+    _renderEditor();
+  } else if (editorPanning) {
+    const { x, y } = _evtXY(e);
+    editorOffX = editorPanOffStart.x + (x - editorPanStart.x);
+    editorOffY = editorPanOffStart.y + (y - editorPanStart.y);
+    _renderEditor();
+  }
 }, { passive: false });
 
 _lc.addEventListener('touchend', async () => {
+  _lastPinchDist = null;
+  if (editorPanning) { editorPanning = false; return; }
   if (!editorDragging || !editorDragItem) return;
   editorDragging = false;
   const item = editorDragItem;
