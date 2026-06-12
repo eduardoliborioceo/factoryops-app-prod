@@ -292,6 +292,7 @@
 <script>
 const BOARD_COLORS = ['#1d4f2a','#0c2340','#2d1b00','#1a1a2e','#4b0082','#8b1a1a','#2c2c2c','#0f172a'];
 let _modoEdicao  = false;
+let _projetoStep = 1;
 let _projetoNovo = null;
 
 function buildColorRow(selected) {
@@ -308,14 +309,16 @@ function selectColor(c) {
 }
 
 function _resetModalUI(editMode) {
-  _modoEdicao = editMode;
-  document.getElementById('projetoStepBar').style.display  = editMode ? 'none' : 'flex';
-  document.getElementById('projetoStep1').style.display    = '';
-  document.getElementById('projetoStep2').style.display    = 'none';
-  document.getElementById('btnProjetoVoltar').style.display = 'none';
-  document.getElementById('btnProjetoPular').style.display  = 'none';
+  _modoEdicao  = editMode;
+  _projetoStep = 1;
+  document.getElementById('projetoStepBar').style.display   = editMode ? 'none' : 'flex';
+  document.getElementById('projetoStep1').style.display     = '';
+  document.getElementById('projetoStep2').style.display     = 'none';
+  document.getElementById('btnProjetoVoltar').style.display  = 'none';
+  document.getElementById('btnProjetoPular').style.display   = 'none';
   document.getElementById('btnProjetoCancelar').style.display = '';
-  document.getElementById('btnProjetoAcao').textContent    = editMode ? 'Salvar' : 'Próximo';
+  document.getElementById('btnProjetoAcao').textContent     = editMode ? 'Salvar' : 'Próximo';
+  document.getElementById('btnProjetoAcao').disabled        = false;
   if (!editMode) {
     document.getElementById('pstep1dot').className = 'proj-step-dot active';
     document.getElementById('pstep2dot').className = 'proj-step-dot';
@@ -332,27 +335,27 @@ function _resetModalUI(editMode) {
 }
 
 function abrirModalNovoProjeto() {
-  document.getElementById('projetoId').value  = '';
-  document.getElementById('pNome').value      = '';
-  document.getElementById('pCodigo').value    = '';
-  document.getElementById('pComp').value      = 100;
-  document.getElementById('pLarg').value      = 80;
-  document.getElementById('pEsp').value       = 1.6;
-  document.getElementById('pDesc').value      = '';
-  document.getElementById('pCor').value       = '#1d4f2a';
+  document.getElementById('projetoId').value = '';
+  document.getElementById('pNome').value     = '';
+  document.getElementById('pCodigo').value   = '';
+  document.getElementById('pComp').value     = 100;
+  document.getElementById('pLarg').value     = 80;
+  document.getElementById('pEsp').value      = 1.6;
+  document.getElementById('pDesc').value     = '';
+  document.getElementById('pCor').value      = '#1d4f2a';
   buildColorRow('#1d4f2a');
   _resetModalUI(false);
   new bootstrap.Modal(document.getElementById('modalProjeto')).show();
 }
 
 function editarProjeto(id, dados) {
-  document.getElementById('projetoId').value  = id;
-  document.getElementById('pNome').value      = dados.nome || '';
-  document.getElementById('pCodigo').value    = dados.codigo || '';
-  document.getElementById('pComp').value      = dados.comp_mm || 100;
-  document.getElementById('pLarg').value      = dados.larg_mm || 80;
-  document.getElementById('pEsp').value       = dados.esp_mm || 1.6;
-  document.getElementById('pDesc').value      = dados.descricao || '';
+  document.getElementById('projetoId').value = id;
+  document.getElementById('pNome').value     = dados.nome || '';
+  document.getElementById('pCodigo').value   = dados.codigo || '';
+  document.getElementById('pComp').value     = dados.comp_mm || 100;
+  document.getElementById('pLarg').value     = dados.larg_mm || 80;
+  document.getElementById('pEsp').value      = dados.esp_mm || 1.6;
+  document.getElementById('pDesc').value     = dados.descricao || '';
   const cor = dados.cor_placa || '#1d4f2a';
   document.getElementById('pCor').value = cor;
   buildColorRow(cor);
@@ -376,11 +379,9 @@ function mostrarDocsSelecionados(input) {
 }
 
 async function projetoAcao() {
-  if (_modoEdicao) {
-    await _salvarEdicao();
-  } else {
-    await _avancarParaImagens();
-  }
+  if (_modoEdicao)       { await _salvarEdicao(); return; }
+  if (_projetoStep === 1) { await _avancarParaImagens(); return; }
+  if (_projetoStep === 2) { await _uploadEFinalizar(); }
 }
 
 async function _avancarParaImagens() {
@@ -396,69 +397,40 @@ async function _avancarParaImagens() {
   if (!body.nome) { alert('Nome é obrigatório'); return; }
 
   const res  = await fetch('/engenharia/api/pci-studio/projetos', {
-    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!data.ok) { alert('Erro: ' + (data.erro || 'desconhecido')); return; }
 
   _projetoNovo = data.projeto;
-  document.getElementById('projetoStep1').style.display = 'none';
-  document.getElementById('projetoStep2').style.display = '';
-  document.getElementById('pstep1dot').className = 'proj-step-dot done';
-  document.getElementById('pstep2dot').className = 'proj-step-dot active';
-  document.getElementById('btnProjetoVoltar').style.display  = 'none';
-  document.getElementById('btnProjetoPular').style.display   = '';
+  _projetoStep = 2;
+  document.getElementById('projetoStep1').style.display      = 'none';
+  document.getElementById('projetoStep2').style.display      = '';
+  document.getElementById('pstep1dot').className             = 'proj-step-dot done';
+  document.getElementById('pstep2dot').className             = 'proj-step-dot active';
+  document.getElementById('btnProjetoVoltar').style.display   = 'none';
+  document.getElementById('btnProjetoPular').style.display    = '';
   document.getElementById('btnProjetoCancelar').style.display = 'none';
-  document.getElementById('btnProjetoAcao').textContent = 'Finalizar';
+  document.getElementById('btnProjetoAcao').textContent      = 'Finalizar';
 }
 
 async function projetoVoltar() {
-  document.getElementById('projetoStep2').style.display = 'none';
-  document.getElementById('projetoStep1').style.display = '';
-  document.getElementById('pstep1dot').className = 'proj-step-dot active';
-  document.getElementById('pstep2dot').className = 'proj-step-dot';
-  document.getElementById('btnProjetoVoltar').style.display  = 'none';
-  document.getElementById('btnProjetoPular').style.display   = 'none';
+  _projetoStep = 1;
+  document.getElementById('projetoStep2').style.display      = 'none';
+  document.getElementById('projetoStep1').style.display      = '';
+  document.getElementById('pstep1dot').className             = 'proj-step-dot active';
+  document.getElementById('pstep2dot').className             = 'proj-step-dot';
+  document.getElementById('btnProjetoVoltar').style.display   = 'none';
+  document.getElementById('btnProjetoPular').style.display    = 'none';
   document.getElementById('btnProjetoCancelar').style.display = '';
-  document.getElementById('btnProjetoAcao').textContent = 'Próximo';
+  document.getElementById('btnProjetoAcao').textContent      = 'Próximo';
 }
 
 async function projetoFinalizar() {
   window.location = `/engenharia/pci-studio/projetos/${_projetoNovo.id}`;
 }
 
-async function _salvarEdicao() {
-  const id   = document.getElementById('projetoId').value;
-  const body = {
-    nome:      document.getElementById('pNome').value.trim(),
-    codigo:    document.getElementById('pCodigo').value.trim(),
-    descricao: document.getElementById('pDesc').value.trim(),
-    comp_mm:   parseFloat(document.getElementById('pComp').value) || 100,
-    larg_mm:   parseFloat(document.getElementById('pLarg').value) || 80,
-    esp_mm:    parseFloat(document.getElementById('pEsp').value)  || 1.6,
-    cor_placa: document.getElementById('pCor').value,
-  };
-  if (!body.nome) { alert('Nome é obrigatório'); return; }
-  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, {
-    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if (data.ok) window.location.reload();
-  else alert('Erro: ' + (data.erro || 'desconhecido'));
-}
-
-async function _uploadArquivo(projetoId, file, tipo, progFn) {
-  const fd = new FormData();
-  fd.append('arquivo', file);
-  fd.append('tipo', tipo);
-  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${projetoId}/upload`, { method: 'POST', body: fd });
-  progFn();
-  return res.json();
-}
-
-document.getElementById('btnProjetoAcao').addEventListener('click', async () => {
-  if (document.getElementById('btnProjetoAcao').textContent.trim() !== 'Finalizar') return;
-
+async function _uploadEFinalizar() {
   const id    = _projetoNovo.id;
   const top   = document.getElementById('pImgTop').files[0];
   const bot   = document.getElementById('pImgBottom').files[0];
@@ -468,14 +440,14 @@ document.getElementById('btnProjetoAcao').addEventListener('click', async () => 
   if (total === 0) { projetoFinalizar(); return; }
 
   document.getElementById('uploadProgressWrap').style.display = '';
-  document.getElementById('btnProjetoAcao').disabled = true;
+  document.getElementById('btnProjetoAcao').disabled  = true;
   document.getElementById('btnProjetoPular').disabled = true;
 
   let done = 0;
   const prog = () => {
     done++;
     const pct = Math.round((done / total) * 100);
-    document.getElementById('uploadBar').style.width = pct + '%';
+    document.getElementById('uploadBar').style.width  = pct + '%';
     document.getElementById('uploadPct').textContent  = pct + '%';
   };
 
@@ -493,7 +465,38 @@ document.getElementById('btnProjetoAcao').addEventListener('click', async () => 
   }
 
   projetoFinalizar();
-});
+}
+
+async function _salvarEdicao() {
+  const id   = document.getElementById('projetoId').value;
+  const body = {
+    nome:      document.getElementById('pNome').value.trim(),
+    codigo:    document.getElementById('pCodigo').value.trim(),
+    descricao: document.getElementById('pDesc').value.trim(),
+    comp_mm:   parseFloat(document.getElementById('pComp').value) || 100,
+    larg_mm:   parseFloat(document.getElementById('pLarg').value) || 80,
+    esp_mm:    parseFloat(document.getElementById('pEsp').value)  || 1.6,
+    cor_placa: document.getElementById('pCor').value,
+  };
+  if (!body.nome) { alert('Nome é obrigatório'); return; }
+  const res  = await fetch(`/engenharia/api/pci-studio/projetos/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.ok) window.location.reload();
+  else alert('Erro: ' + (data.erro || 'desconhecido'));
+}
+
+async function _uploadArquivo(projetoId, file, tipo, progFn) {
+  const fd = new FormData();
+  fd.append('arquivo', file);
+  fd.append('tipo', tipo);
+  const res = await fetch(`/engenharia/api/pci-studio/projetos/${projetoId}/upload`, {
+    method: 'POST', body: fd,
+  });
+  progFn();
+  return res.json();
+}
 
 async function deletarProjeto(id, nome) {
   if (!confirm(`Deletar projeto "${nome}" e todos os seus itens de BOM?`)) return;
