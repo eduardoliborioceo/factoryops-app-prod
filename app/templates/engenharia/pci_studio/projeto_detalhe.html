@@ -330,19 +330,319 @@ scene.add(traceMesh);
 // ── Helpers ──
 function hexColor(hex) { return new THREE.Color(hex || '#64748b'); }
 
-function makeLabel(text, color) {
+const _SILVER_MAT = new THREE.MeshStandardMaterial({ color: 0xb8bec6, roughness: 0.25, metalness: 0.75 });
+const _EDGE_MAT   = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 });
+
+function addEdges(group, geo) {
+  group.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), _EDGE_MAT));
+}
+
+function makeLabel(text, bgColor) {
   const c2d = document.createElement('canvas');
   c2d.width = 128; c2d.height = 64;
   const ctx = c2d.getContext('2d');
-  ctx.fillStyle = color;
+  ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, 128, 64);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 28px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text.substring(0, 6), 64, 32);
-  const tex = new THREE.CanvasTexture(c2d);
-  return tex;
+  return new THREE.CanvasTexture(c2d);
+}
+
+function makeCodeLabel(code, bodyHex) {
+  const c2d = document.createElement('canvas');
+  c2d.width = 64; c2d.height = 32;
+  const ctx = c2d.getContext('2d');
+  ctx.fillStyle = bodyHex || '#2d2d2d';
+  ctx.fillRect(0, 0, 64, 32);
+  ctx.fillStyle = '#e0e0e0';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((code || '').substring(0, 6), 32, 16);
+  return new THREE.CanvasTexture(c2d);
+}
+
+function inferTipoVisual(item) {
+  const des = (item.designator || '').toUpperCase();
+  if (/^R\d|^RN|^RP/.test(des))              return 'resistor';
+  if (/^C\d|^CB/.test(des))                  return 'capacitor';
+  if (/^L\d|^FL|^FB/.test(des))              return 'inductor';
+  if (/^U\d|^U[A-Z]|^IC/.test(des))          return 'ic';
+  if (/^Q\d|^TR/.test(des))                  return 'transistor';
+  if (/^LED/.test(des))                      return 'led';
+  if (/^D\d|^Z\d/.test(des))                 return 'diode';
+  if (/^Y\d|^X\d|^XTAL/.test(des))           return 'crystal';
+  if (/^SW|^S\d|^BTN/.test(des))             return 'switch';
+  if (/^J\d|^P\d|^CN|^H\d/.test(des) || item.tipo === 'conector') return 'connector';
+  return 'generic';
+}
+
+function buildEndCaps(group, w, h, d, bodyHex, capRatio) {
+  const isWide  = w >= d;
+  const mainLen = isWide ? w : d;
+  const capLen  = mainLen * capRatio;
+  const bodyLen = mainLen - capLen * 2;
+  const bGeo    = isWide ? new THREE.BoxGeometry(bodyLen, h, d) : new THREE.BoxGeometry(w, h, bodyLen);
+  const bMat    = new THREE.MeshStandardMaterial({ color: hexColor(bodyHex), roughness: 0.55, metalness: 0.05 });
+  const bMesh   = new THREE.Mesh(bGeo, bMat);
+  bMesh.castShadow = true;
+  group.add(bMesh);
+  addEdges(group, bGeo);
+
+  const cGeo   = isWide
+    ? new THREE.BoxGeometry(capLen + 0.05, h + 0.06, d + 0.06)
+    : new THREE.BoxGeometry(w + 0.06, h + 0.06, capLen + 0.05);
+  const offset = bodyLen / 2 + capLen / 2;
+  [-1, 1].forEach(sign => {
+    const cap = new THREE.Mesh(cGeo, _SILVER_MAT);
+    cap.castShadow = true;
+    if (isWide) cap.position.x = sign * offset;
+    else        cap.position.z = sign * offset;
+    group.add(cap);
+  });
+  return { bodyLen, isWide };
+}
+
+function buildResistor(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#2a2a2a';
+  const { bodyLen, isWide } = buildEndCaps(group, w, h, d, bodyHex, 0.16);
+
+  const codeText = item.valor || item.nome || '';
+  if (codeText) {
+    const mW = isWide ? Math.min(bodyLen * 0.8, w - 0.3) : Math.min(w * 0.7, w - 0.2);
+    const mD = isWide ? Math.min(d * 0.7, d - 0.2) : Math.min(bodyLen * 0.8, d - 0.3);
+    const mGeo = new THREE.PlaneGeometry(Math.max(mW, 0.2), Math.max(mD, 0.2));
+    const mMat = new THREE.MeshBasicMaterial({
+      map: makeCodeLabel(codeText, bodyHex), transparent: true, opacity: 0.95, depthWrite: false
+    });
+    const mMesh = new THREE.Mesh(mGeo, mMat);
+    mMesh.rotation.x = -Math.PI / 2;
+    mMesh.position.y  = h / 2 + 0.01;
+    group.add(mMesh);
+  }
+}
+
+function buildCapacitor(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#c8a87a';
+  const { bodyLen, isWide } = buildEndCaps(group, w, h, d, bodyHex, 0.18);
+
+  const stripeLen = (isWide ? bodyLen : bodyLen) * 0.18;
+  const stripeGeo = isWide
+    ? new THREE.BoxGeometry(stripeLen, h * 1.01, d)
+    : new THREE.BoxGeometry(w, h * 1.01, stripeLen);
+  const stripeCol = hexColor(bodyHex).clone().multiplyScalar(1.35);
+  const stripeMat = new THREE.MeshStandardMaterial({ color: stripeCol, roughness: 0.5 });
+  const stripe    = new THREE.Mesh(stripeGeo, stripeMat);
+  const off       = bodyLen / 2 - stripeLen / 2;
+  if (isWide) stripe.position.x = off;
+  else        stripe.position.z = off;
+  group.add(stripe);
+}
+
+function buildInductor(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#1e2840';
+  buildEndCaps(group, w, h, d, bodyHex, 0.16);
+
+  const mainLen  = Math.max(w, d);
+  const winding  = Math.max(3, Math.round(mainLen / 0.65));
+  const totalLen = mainLen * 0.68;
+  const step     = totalLen / winding;
+  const isWide   = w >= d;
+  const copperMat = new THREE.MeshStandardMaterial({ color: 0xb87333, roughness: 0.3, metalness: 0.6 });
+
+  for (let i = 0; i < winding; i++) {
+    const sg = isWide
+      ? new THREE.BoxGeometry(0.08, h * 0.38, d * 0.88)
+      : new THREE.BoxGeometry(w * 0.88, h * 0.38, 0.08);
+    const sm = new THREE.Mesh(sg, copperMat);
+    const pos = -totalLen / 2 + step * i + step / 2;
+    if (isWide) sm.position.x = pos;
+    else        sm.position.z = pos;
+    sm.position.y = h * 0.28;
+    group.add(sm);
+  }
+}
+
+function buildIC(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#1a1a1a';
+  const bGeo = new THREE.BoxGeometry(w, h, d);
+  const bMat = new THREE.MeshStandardMaterial({ color: hexColor(bodyHex), roughness: 0.65, metalness: 0.05 });
+  const bMesh = new THREE.Mesh(bGeo, bMat);
+  bMesh.castShadow = true;
+  group.add(bMesh);
+  addEdges(group, bGeo);
+
+  const dotR = Math.min(w, d) * 0.09;
+  const dotGeo = new THREE.CylinderGeometry(dotR, dotR, 0.05, 8);
+  const dotMat = new THREE.MeshStandardMaterial({ color: 0xd8d8d8, roughness: 0.4 });
+  const dot    = new THREE.Mesh(dotGeo, dotMat);
+  dot.position.set(-w * 0.38, h / 2 + 0.03, -d * 0.38);
+  group.add(dot);
+
+  const pinSide  = w >= d ? 'x' : 'z';
+  const pinCount = Math.max(4, Math.round((pinSide === 'x' ? d : w) / 0.6));
+  const pinSpan  = (pinSide === 'x' ? d : w) * 0.8;
+  const pinStep  = pinSpan / pinCount;
+  const pinW     = pinSide === 'x' ? w * 0.13 : 0.09;
+  const pinD     = pinSide === 'x' ? 0.09       : d * 0.13;
+  const pinH     = h * 0.35;
+  const pinOff   = (pinSide === 'x' ? w : d) / 2 + pinW * 0.6;
+
+  for (let i = 0; i < pinCount; i++) {
+    const pos = -pinSpan / 2 + pinStep * i + pinStep / 2;
+    [-1, 1].forEach(side => {
+      const pg  = new THREE.BoxGeometry(pinW, pinH, pinD);
+      const pm  = new THREE.Mesh(pg, _SILVER_MAT);
+      pm.position.y = -(h / 2 - pinH / 2);
+      if (pinSide === 'x') { pm.position.x = side * pinOff; pm.position.z = pos; }
+      else                 { pm.position.z = side * pinOff; pm.position.x = pos; }
+      group.add(pm);
+    });
+  }
+
+  if (w >= 3 || d >= 3) {
+    const labelGeo = new THREE.PlaneGeometry(Math.min(w * 0.75, w - 0.5), Math.min(d * 0.5, d - 0.4));
+    const labelMat = new THREE.MeshBasicMaterial({
+      map: makeLabel(item.designator, bodyHex), transparent: true, opacity: 0.9, depthWrite: false
+    });
+    const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+    labelMesh.rotation.x = -Math.PI / 2;
+    labelMesh.position.y  = h / 2 + 0.02;
+    group.add(labelMesh);
+  }
+}
+
+function buildDiode(group, item, w, h, d, isLed) {
+  const bodyHex = item.cor_hex || (isLed ? '#1a3a1a' : '#1e1e22');
+  const { bodyLen, isWide } = buildEndCaps(group, w, h, d, bodyHex, 0.14);
+
+  const bandLen = (isWide ? bodyLen : bodyLen) * 0.14;
+  const bandGeo = isWide
+    ? new THREE.BoxGeometry(bandLen, h * 1.02, d)
+    : new THREE.BoxGeometry(w, h * 1.02, bandLen);
+  const bandMat = new THREE.MeshStandardMaterial({ color: 0xd0d0d8, roughness: 0.35, metalness: 0.6 });
+  const band    = new THREE.Mesh(bandGeo, bandMat);
+  if (isWide) band.position.x = bodyLen * 0.28;
+  else        band.position.z = bodyLen * 0.28;
+  group.add(band);
+
+  if (isLed) {
+    const ledColor = hexColor(item.cor_hex || '#00cc44');
+    const topGeo = new THREE.PlaneGeometry(w * 0.72, d * 0.72);
+    const topMat = new THREE.MeshStandardMaterial({
+      color: ledColor, emissive: ledColor, emissiveIntensity: 0.55,
+      roughness: 0.2, transparent: true, opacity: 0.85
+    });
+    const topMesh = new THREE.Mesh(topGeo, topMat);
+    topMesh.rotation.x = -Math.PI / 2;
+    topMesh.position.y  = h / 2 + 0.01;
+    group.add(topMesh);
+  }
+}
+
+function buildCrystal(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#b0b8c0';
+  const bGeo = new THREE.BoxGeometry(w, h, d);
+  const bMat = new THREE.MeshStandardMaterial({ color: hexColor(bodyHex), roughness: 0.18, metalness: 0.72 });
+  const bMesh = new THREE.Mesh(bGeo, bMat);
+  bMesh.castShadow = true;
+  group.add(bMesh);
+  addEdges(group, bGeo);
+
+  const topGeo = new THREE.PlaneGeometry(w * 0.62, d * 0.62);
+  const topMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.6 });
+  const topMesh = new THREE.Mesh(topGeo, topMat);
+  topMesh.rotation.x = -Math.PI / 2;
+  topMesh.position.y  = h / 2 + 0.01;
+  group.add(topMesh);
+}
+
+function buildConnector(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#dde0e8';
+  const bGeo = new THREE.BoxGeometry(w, h, d);
+  const bMat = new THREE.MeshStandardMaterial({ color: hexColor(bodyHex), roughness: 0.75 });
+  const bMesh = new THREE.Mesh(bGeo, bMat);
+  bMesh.castShadow = true;
+  group.add(bMesh);
+  addEdges(group, bGeo);
+
+  const isWide    = w >= d;
+  const pinCount  = Math.max(2, Math.round(Math.max(w, d) / 2.54));
+  const pinSpan   = (isWide ? w : d) * 0.8;
+  const pinStep   = pinSpan / pinCount;
+  const holeSize  = Math.min(pinStep * 0.52, 0.85);
+
+  for (let i = 0; i < pinCount; i++) {
+    const pos  = -pinSpan / 2 + pinStep * i + pinStep / 2;
+    const hGeo = isWide
+      ? new THREE.BoxGeometry(holeSize, 0.08, Math.min(d * 0.55, holeSize))
+      : new THREE.BoxGeometry(Math.min(w * 0.55, holeSize), 0.08, holeSize);
+    const hMat  = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+    const hole  = new THREE.Mesh(hGeo, hMat);
+    hole.position.y = h / 2 + 0.01;
+    if (isWide) hole.position.x = pos;
+    else        hole.position.z = pos;
+    group.add(hole);
+
+    const pGeo = isWide
+      ? new THREE.BoxGeometry(holeSize * 0.55, h * 0.6, Math.min(d * 0.38, holeSize * 0.55))
+      : new THREE.BoxGeometry(Math.min(w * 0.38, holeSize * 0.55), h * 0.6, holeSize * 0.55);
+    const pin  = new THREE.Mesh(pGeo, _SILVER_MAT);
+    if (isWide) pin.position.x = pos;
+    else        pin.position.z = pos;
+    group.add(pin);
+  }
+}
+
+function buildTransistor(group, item, w, h, d) {
+  const bodyHex = item.cor_hex || '#1a1a1a';
+  const bGeo = new THREE.BoxGeometry(w, h, d);
+  const bMat = new THREE.MeshStandardMaterial({ color: hexColor(bodyHex), roughness: 0.6, metalness: 0.05 });
+  const bMesh = new THREE.Mesh(bGeo, bMat);
+  bMesh.castShadow = true;
+  group.add(bMesh);
+  addEdges(group, bGeo);
+
+  const padSz  = Math.min(w, d) * 0.35;
+  const padH   = 0.12;
+  const padGeo = new THREE.BoxGeometry(padSz, padH, padSz);
+  [[-w * 0.3, d * 0.25], [w * 0.3, d * 0.25], [0, -d * 0.25]].forEach(([px, pz]) => {
+    const pad = new THREE.Mesh(padGeo, _SILVER_MAT);
+    pad.position.set(px, -(h / 2 + padH / 2), pz);
+    group.add(pad);
+  });
+}
+
+function buildGeneric(group, item, w, h, d) {
+  const geo  = new THREE.BoxGeometry(w, h, d);
+  const mat  = new THREE.MeshStandardMaterial({ color: hexColor(item.cor_hex), roughness: 0.52, metalness: 0.08 });
+  const body = new THREE.Mesh(geo, mat);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+  addEdges(group, geo);
+
+  const topGeo = new THREE.PlaneGeometry(Math.max(w * 0.82, w - 0.4), Math.max(d * 0.82, d - 0.4));
+  const topCol = hexColor(item.cor_hex).clone().multiplyScalar(1.5);
+  const topMat = new THREE.MeshStandardMaterial({ color: topCol, roughness: 0.35, transparent: true, opacity: 0.65 });
+  const topMesh = new THREE.Mesh(topGeo, topMat);
+  topMesh.rotation.x = -Math.PI / 2;
+  topMesh.position.y  = h / 2 + 0.01;
+  group.add(topMesh);
+
+  if (w >= 3 || d >= 3) {
+    const labelGeo = new THREE.PlaneGeometry(Math.min(w * 0.75, w - 0.5), Math.min(d * 0.5, d - 0.4));
+    const labelMat = new THREE.MeshBasicMaterial({
+      map: makeLabel(item.designator, item.cor_hex || '#64748b'), transparent: true, opacity: 0.9, depthWrite: false
+    });
+    const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+    labelMesh.rotation.x = -Math.PI / 2;
+    labelMesh.position.y  = h / 2 + 0.02;
+    group.add(labelMesh);
+  }
 }
 
 // ── Component builder ──
@@ -353,65 +653,32 @@ function buildComponents(items) {
   items.forEach(item => {
     if (!item.ativo) return;
 
-    const w = item.comp_mm || 2;
-    const d = item.larg_mm || 2;
-    const h = item.alt_mm  || 1;
-
+    const w       = item.comp_mm || 2;
+    const d       = item.larg_mm || 2;
+    const h       = item.alt_mm  || 1;
     const isBottom = item.lado === 'bottom';
-    const yBase    = isBottom
-      ? -(BOARD_ESP / 2 + h / 2)
-      :  (BOARD_ESP / 2 + h / 2);
+    const yBase   = isBottom ? -(BOARD_ESP / 2 + h / 2) : (BOARD_ESP / 2 + h / 2);
+    const group   = new THREE.Group();
+    const tipoVis = inferTipoVisual(item);
 
-    const group = new THREE.Group();
+    if      (tipoVis === 'resistor')   buildResistor(group, item, w, h, d);
+    else if (tipoVis === 'capacitor')  buildCapacitor(group, item, w, h, d);
+    else if (tipoVis === 'inductor')   buildInductor(group, item, w, h, d);
+    else if (tipoVis === 'ic')         buildIC(group, item, w, h, d);
+    else if (tipoVis === 'led')        buildDiode(group, item, w, h, d, true);
+    else if (tipoVis === 'diode')      buildDiode(group, item, w, h, d, false);
+    else if (tipoVis === 'crystal')    buildCrystal(group, item, w, h, d);
+    else if (tipoVis === 'connector')  buildConnector(group, item, w, h, d);
+    else if (tipoVis === 'transistor') buildTransistor(group, item, w, h, d);
+    else                               buildGeneric(group, item, w, h, d);
 
-    // Body
-    const geo  = new THREE.BoxGeometry(w, h, d);
-    const mat  = new THREE.MeshStandardMaterial({
-      color:     hexColor(item.cor_hex),
-      roughness: 0.52,
-      metalness: 0.08,
-    });
-    const body = new THREE.Mesh(geo, mat);
-    body.castShadow    = true;
-    body.receiveShadow = true;
-    group.add(body);
-
-    // Edge lines — define a borda 3D claramente
-    const edgeGeo = new THREE.EdgesGeometry(geo);
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
-    group.add(new THREE.LineSegments(edgeGeo, edgeMat));
-
-    // Top face highlight (plano levemente mais claro)
-    const topW = Math.max(w * 0.82, w - 0.4);
-    const topD = Math.max(d * 0.82, d - 0.4);
-    const topGeo = new THREE.PlaneGeometry(topW, topD);
-    const topCol = hexColor(item.cor_hex).clone().multiplyScalar(1.5);
-    const topMat = new THREE.MeshStandardMaterial({
-      color: topCol, roughness: 0.35, metalness: 0.1, transparent: true, opacity: 0.65,
-    });
-    const topMesh = new THREE.Mesh(topGeo, topMat);
-    topMesh.rotation.x = -Math.PI / 2;
-    topMesh.position.y  = h / 2 + 0.01;
-    group.add(topMesh);
-
-    // Designator label (só se componente grande o suficiente)
-    if (w >= 3 || d >= 3) {
-      const labelTex = makeLabel(item.designator, item.cor_hex || '#64748b');
-      const labelGeo = new THREE.PlaneGeometry(Math.min(w * 0.75, w - 0.5), Math.min(d * 0.5, d - 0.4));
-      const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, opacity: 0.9, depthWrite: false });
-      const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-      labelMesh.rotation.x = -Math.PI / 2;
-      labelMesh.position.y  = h / 2 + 0.02;
-      group.add(labelMesh);
-    }
-
-    // Posição na placa
     const px = (item.pos_x || 0) - BOARD_W / 2;
     const pz = -((item.pos_y || 0) - BOARD_H / 2);
     group.position.set(px, yBase, pz);
     if (item.angulo) group.rotation.y = THREE.MathUtils.degToRad(-item.angulo);
 
-    group.userData = { item, body };
+    const bodyMesh = group.children.find(c => c.isMesh) || null;
+    group.userData = { item, body: bodyMesh };
     meshMap[item.id] = group;
     scene.add(group);
   });
