@@ -4128,6 +4128,43 @@ def eng_api_pci_deletar_projeto(projeto_id):
     return jsonify({"ok": ok})
 
 
+@bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>/upload", methods=["POST"])
+@login_required
+def eng_api_pci_upload(projeto_id):
+    import os, uuid
+    from flask import request, jsonify, current_app
+    from werkzeug.utils import secure_filename
+    from app.repositories import pci_studio_repository as repo
+
+    ALLOWED_EXT = {'.jpg', '.jpeg', '.png', '.webp', '.pdf'}
+    f    = request.files.get('arquivo')
+    tipo = request.form.get('tipo', 'doc')
+
+    if not f or not f.filename:
+        return jsonify({'ok': False, 'erro': 'Nenhum arquivo enviado'}), 400
+
+    ext = os.path.splitext(f.filename.lower())[1]
+    if ext not in ALLOWED_EXT:
+        return jsonify({'ok': False, 'erro': 'Tipo de arquivo não permitido'}), 400
+
+    upload_dir = os.path.join(current_app.static_folder, 'uploads', 'pci_studio', str(projeto_id))
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filename = f'{uuid.uuid4().hex}{ext}'
+    f.save(os.path.join(upload_dir, filename))
+    url = f'/static/uploads/pci_studio/{projeto_id}/{filename}'
+
+    if tipo == 'top':
+        repo.atualizar_projeto(projeto_id, img_top=url)
+    elif tipo == 'bottom':
+        repo.atualizar_projeto(projeto_id, img_bottom=url)
+    else:
+        nome_orig = secure_filename(f.filename) or filename
+        repo.adicionar_doc_projeto(projeto_id, {'nome': nome_orig, 'url': url, 'tipo': ext.lstrip('.')})
+
+    return jsonify({'ok': True, 'url': url})
+
+
 @bp.route("/engenharia/api/pci-studio/projetos/<int:projeto_id>/bom/detectar-colunas", methods=["POST"])
 @login_required
 def eng_api_pci_detectar_colunas(projeto_id):

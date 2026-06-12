@@ -94,6 +94,11 @@
 .col-map-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
 .col-map-lbl { width:90px; font-size:0.78rem; font-weight:600; color:var(--text); flex-shrink:0; }
 .col-map-sel { flex:1; font-size:0.8rem; }
+
+.doc-link { display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:6px;
+            font-size:0.8rem; font-weight:500; color:var(--text); text-decoration:none;
+            transition:background 0.1s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-link:hover { background:var(--bg); color:var(--primary); }
 </style>
 
 <div class="d-flex align-items-center flex-wrap gap-2 mb-3 no-print">
@@ -142,6 +147,44 @@
       <input class="bom-search" id="bomSearch" placeholder="Buscar designator..." oninput="filtrarBomLista()">
       <div class="bom-list" id="bomList"></div>
     </div>
+
+    {% if projeto.img_top or projeto.img_bottom %}
+    <!-- Fotos da placa -->
+    <div class="studio-panel">
+      <div class="studio-panel-title">Fotos da Placa</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% if projeto.img_top %}
+        <div style="flex:1;min-width:80px;">
+          <div style="font-size:0.68rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;">TOP</div>
+          <img src="{{ projeto.img_top }}" alt="TOP" onclick="window.definirLado('top')"
+               style="width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;object-fit:cover;">
+        </div>
+        {% endif %}
+        {% if projeto.img_bottom %}
+        <div style="flex:1;min-width:80px;">
+          <div style="font-size:0.68rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;">BOTTOM</div>
+          <img src="{{ projeto.img_bottom }}" alt="BOTTOM" onclick="window.definirLado('bottom')"
+               style="width:100%;border-radius:8px;border:1px solid var(--border);cursor:pointer;object-fit:cover;">
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if projeto.docs %}
+    <!-- Documentos -->
+    <div class="studio-panel">
+      <div class="studio-panel-title">Documentos</div>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        {% for doc in projeto.docs %}
+        <a href="{{ doc.url }}" target="_blank" class="doc-link">
+          <i class="bi bi-file-earmark{% if doc.tipo == 'pdf' %}-pdf{% elif doc.tipo in ['jpg','jpeg','png','webp'] %}-image{% else %}-text{% endif %}"></i>
+          {{ doc.nome }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
   </div>
 
@@ -229,11 +272,14 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const PROJETO_ID = {{ projeto.id }};
-const BOARD_W    = {{ projeto.comp_mm }};
-const BOARD_H    = {{ projeto.larg_mm }};
-const BOARD_ESP  = {{ projeto.esp_mm }};
-const BOARD_COR  = '{{ projeto.cor_placa }}';
+const PROJETO_ID       = {{ projeto.id }};
+const BOARD_W          = {{ projeto.comp_mm }};
+const BOARD_H          = {{ projeto.larg_mm }};
+const BOARD_ESP        = {{ projeto.esp_mm }};
+const BOARD_COR        = '{{ projeto.cor_placa }}';
+const BOARD_IMG_TOP    = {{ projeto.img_top | tojson }};
+const BOARD_IMG_BOTTOM = {{ projeto.img_bottom | tojson }};
+const PROJETO_DOCS     = {{ projeto.docs | tojson }};
 
 let allItems      = {{ projeto.itens | tojson }};
 let meshMap       = {};   // id → THREE.Group
@@ -282,11 +328,12 @@ dir2.position.set(-BOARD_W, BOARD_H * 0.7, -BOARD_H);
 scene.add(dir2);
 
 // ── PCB Board ──
-const boardGeo  = new THREE.BoxGeometry(BOARD_W, BOARD_ESP, BOARD_H);
-const boardMat  = new THREE.MeshStandardMaterial({
+const boardGeo      = new THREE.BoxGeometry(BOARD_W, BOARD_ESP, BOARD_H);
+const _baseBoardMat = () => new THREE.MeshStandardMaterial({
   color: new THREE.Color(BOARD_COR), roughness: 0.78, metalness: 0.04,
 });
-const boardMesh = new THREE.Mesh(boardGeo, boardMat);
+const boardMaterials = Array.from({ length: 6 }, _baseBoardMat);
+const boardMesh      = new THREE.Mesh(boardGeo, boardMaterials);
 boardMesh.receiveShadow = true;
 scene.add(boardMesh);
 
@@ -326,6 +373,28 @@ const traceMesh = new THREE.Mesh(traceGeo, traceMat);
 traceMesh.rotation.x = -Math.PI / 2;
 traceMesh.position.y  = BOARD_ESP / 2 + 0.03;
 scene.add(traceMesh);
+
+// ── PCB Photo Textures ──
+// BoxGeometry face index 2 = +Y (top), face index 3 = -Y (bottom)
+const texLoader = new THREE.TextureLoader();
+if (BOARD_IMG_TOP) {
+  texLoader.load(BOARD_IMG_TOP, tex => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    boardMaterials[2] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+    boardMesh.material = boardMaterials;
+    silkMesh.material.opacity  = 0.06;
+    traceMesh.material.opacity = 0.12;
+  });
+}
+if (BOARD_IMG_BOTTOM) {
+  texLoader.load(BOARD_IMG_BOTTOM, tex => {
+    tex.colorSpace  = THREE.SRGBColorSpace;
+    tex.wrapS       = THREE.RepeatWrapping;
+    tex.repeat.x    = -1;
+    boardMaterials[3] = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 });
+    boardMesh.material = boardMaterials;
+  });
+}
 
 // ── Helpers ──
 function hexColor(hex) { return new THREE.Color(hex || '#64748b'); }
