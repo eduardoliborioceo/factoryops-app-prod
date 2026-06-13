@@ -25,11 +25,61 @@
 .pr-alt { background:rgba(255,193,7,0.18);color:#664d03;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
 .pr-nor { background:rgba(25,135,84,0.10);color:#0a3622;font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:5px; }
 .fw-mono { font-family:monospace;font-size:0.8rem;font-weight:700;color:#0d6efd; }
+
+/* Base de Conhecimento SMD */
+.kb-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:16px 18px; }
+.kb-entry { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow 0.15s; }
+.kb-entry:hover { box-shadow:0 4px 18px rgba(15,23,42,0.09); }
+.kb-entry-hdr { padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);display:flex;align-items:flex-start;justify-content:space-between;gap:8px; }
+.kb-machine { font-size:0.8rem;font-weight:800;color:var(--text);letter-spacing:0.2px; }
+.kb-module  { font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-top:2px; }
+.kb-code-badge { background:#0d6efd;color:#fff;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;font-family:monospace; }
+.kb-cat-badge  { font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap; }
+.kb-cat-servo  { background:rgba(220,53,69,0.12);color:#842029; }
+.kb-cat-pneu   { background:rgba(13,110,253,0.10);color:#084298; }
+.kb-cat-elet   { background:rgba(255,193,7,0.16);color:#664d03; }
+.kb-cat-mec    { background:rgba(25,135,84,0.10);color:#0a3622; }
+.kb-cat-soft   { background:rgba(108,117,125,0.12);color:#495057; }
+.kb-cat-feed   { background:rgba(111,66,193,0.12);color:#3d1f7a; }
+.kb-cat-vis    { background:rgba(13,202,240,0.12);color:#055160; }
+.kb-cat-outro  { background:rgba(15,23,42,0.07);color:var(--text-muted); }
+.kb-title { font-size:0.82rem;font-weight:700;color:var(--text);padding:10px 16px 0; }
+.kb-body  { padding:8px 16px 14px; }
+.kb-section-lbl { font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:4px;margin-top:10px; }
+.kb-causa-txt { font-size:0.8rem;color:var(--text);line-height:1.55; }
+.kb-steps { padding-left:0;list-style:none;margin:0; }
+.kb-steps li { display:flex;gap:8px;align-items:flex-start;font-size:0.78rem;color:var(--text);line-height:1.5;padding:4px 0;border-bottom:1px solid var(--border); }
+.kb-steps li:last-child { border-bottom:none; }
+.kb-step-num { min-width:20px;height:20px;border-radius:50%;background:rgba(13,110,253,0.12);color:#0d6efd;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px; }
+.kb-pecas-txt { font-size:0.75rem;color:#0a3622;background:rgba(25,135,84,0.08);border:1px solid rgba(25,135,84,0.15);border-radius:6px;padding:4px 9px;display:inline-flex;align-items:center;gap:5px;margin-top:8px; }
+.kb-img-thumb { width:100%;border-radius:8px;margin-top:10px;border:1px solid var(--border);cursor:pointer;max-height:140px;object-fit:cover; }
+.kb-footer { display:flex;align-items:center;justify-content:space-between;padding:8px 16px;border-top:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.kb-date { font-size:0.68rem;color:var(--text-muted);font-weight:600; }
+.kb-del-btn { background:none;border:none;color:#dc3545;cursor:pointer;padding:2px 4px;border-radius:4px;font-size:0.78rem;opacity:0.7;transition:opacity 0.1s; }
+.kb-del-btn:hover { opacity:1; }
+.kb-empty { text-align:center;padding:40px 20px;color:var(--text-muted);font-size:0.85rem; }
+
+/* Modal styles */
+.modal-label { font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:4px; }
+.modal-input { border:1px solid var(--border);border-radius:8px;font-size:0.85rem;padding:6px 10px;width:100%;color:var(--text);background:var(--card); }
+.modal-input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.step-row { display:flex;gap:6px;align-items:center;margin-bottom:6px; }
+.step-row input { flex:1;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;padding:5px 8px;color:var(--text);background:var(--card); }
+.step-row input:focus { outline:none;border-color:#0d6efd; }
+.step-remove { background:none;border:none;color:#dc3545;cursor:pointer;padding:2px 5px;border-radius:4px; }
+
+/* Lightbox */
+.kb-lightbox { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center; }
+.kb-lightbox.open { display:flex; }
+.kb-lightbox img { max-width:90vw;max-height:88vh;border-radius:10px; }
+.kb-lightbox-close { position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer;opacity:0.8; }
+
 @media print { .no-print { display:none!important; } }
 @media (max-width:767px) {
   .os-hdr { flex-direction:column;gap:10px;align-items:flex-start; }
   .os-hdr > div:last-child { width:100%;display:flex;flex-wrap:wrap;gap:6px; }
   .os-table th:nth-child(n+7),.os-table td:nth-child(n+7) { display:none; }
+  .kb-grid { grid-template-columns:1fr;padding:12px; }
 }
 </style>
 {% endblock %}
@@ -57,6 +107,7 @@
     </a>
   </div>
 
+  <!-- Ordens de Serviço -->
   <div class="os-card">
     <div class="os-hdr">
       <div class="d-flex align-items-center gap-2">
@@ -104,8 +155,123 @@
     </div>
   </div>
 
+  <!-- Base de Conhecimento — Erros Máquinas SMD -->
+  <div class="os-card">
+    <div class="os-hdr">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-book text-primary"></i>
+        <span>Base de Conhecimento — Erros Máquinas SMD</span>
+      </div>
+      <div class="d-flex gap-2 no-print align-items-center flex-wrap">
+        <input type="text" id="kbSearch" class="form-control form-control-sm" placeholder="Buscar erro, código, máquina…"
+          style="width:200px;border-radius:8px;" oninput="renderKb()">
+        <select id="kbFilterMaq" class="form-select form-select-sm" style="width:auto;border-radius:8px;" onchange="renderKb()">
+          <option value="">Todas as máquinas</option>
+        </select>
+        <select id="kbFilterCat" class="form-select form-select-sm" style="width:auto;border-radius:8px;" onchange="renderKb()">
+          <option value="">Todas as categorias</option>
+          <option>Servo / Encoder</option>
+          <option>Pneumático</option>
+          <option>Elétrico</option>
+          <option>Mecânico</option>
+          <option>Software</option>
+          <option>Alimentador</option>
+          <option>Visão</option>
+          <option>Outro</option>
+        </select>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAddErro">
+          <i class="bi bi-plus-lg me-1"></i>Adicionar Erro
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="saveKb()"><i class="bi bi-save me-1"></i>Salvar</button>
+      </div>
+    </div>
+    <div id="kbSaveMsg" style="font-size:0.8rem;padding:6px 18px;"></div>
+    <div id="kbGrid" class="kb-grid"></div>
+  </div>
+
 </div>
+
+<!-- Lightbox -->
+<div class="kb-lightbox" id="kbLightbox" onclick="closeLightbox()">
+  <button class="kb-lightbox-close" onclick="closeLightbox()"><i class="bi bi-x-lg"></i></button>
+  <img id="kbLightboxImg" src="" alt="">
+</div>
+
+<!-- Modal — Adicionar Erro SMD -->
+<div class="modal fade" id="modalAddErro" tabindex="-1" aria-labelledby="modalAddErroLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:12px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700" id="modalAddErroLabel" style="font-size:0.95rem;">
+          <i class="bi bi-plus-circle text-primary me-2"></i>Adicionar Erro à Base de Conhecimento
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="modal-label">Máquina *</label>
+            <input type="text" id="kbMaq" class="modal-input" placeholder="Ex: Fuji NXT II, Yamaha YSM20R">
+          </div>
+          <div class="col-md-6">
+            <label class="modal-label">Módulo / Eixo</label>
+            <input type="text" id="kbMod" class="modal-input" placeholder="Ex: Módulo 9 / Eixo ZA">
+          </div>
+          <div class="col-md-4">
+            <label class="modal-label">Código do Erro</label>
+            <input type="text" id="kbCod" class="modal-input" style="font-family:monospace;font-weight:700;" placeholder="Ex: 1062">
+          </div>
+          <div class="col-md-4">
+            <label class="modal-label">Categoria *</label>
+            <select id="kbCat" class="modal-input">
+              <option value="">Selecione…</option>
+              <option>Servo / Encoder</option>
+              <option>Pneumático</option>
+              <option>Elétrico</option>
+              <option>Mecânico</option>
+              <option>Software</option>
+              <option>Alimentador</option>
+              <option>Visão</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="modal-label">Data de Registro</label>
+            <input type="date" id="kbData" class="modal-input">
+          </div>
+          <div class="col-12">
+            <label class="modal-label">Título do Erro *</label>
+            <input type="text" id="kbTitulo" class="modal-input" placeholder="Ex: Servo / Axis:ZA / Encoder Battery">
+          </div>
+          <div class="col-12">
+            <label class="modal-label">Causa / Descrição do Problema *</label>
+            <textarea id="kbCausa" class="modal-input" rows="3" style="resize:vertical;" placeholder="Descreva a causa raiz do erro e o que acontece na máquina…"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="modal-label">Passo a Passo da Solução *</label>
+            <div id="kbStepsContainer"></div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addStep()">
+              <i class="bi bi-plus me-1"></i>Adicionar passo
+            </button>
+          </div>
+          <div class="col-12">
+            <label class="modal-label">Peças / Componentes Necessários</label>
+            <input type="text" id="kbPecas" class="modal-input" placeholder="Ex: Bateria CR2032 3V (lítio), Rolamento 6205…">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="confirmAddErro()">
+          <i class="bi bi-check-lg me-1"></i>Salvar na Base
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+/* ── Ordens de Serviço ── */
 (function(){
   "use strict";
   const SK = "eng_corretiva";
@@ -215,6 +381,230 @@
     addRow({num:"OS-2026-0024",prior:"Normal",equip:"Serra Circular Automática",falha:"Freio demorando mais que o normal",modo:"Mecânico",pecas:"Pastilhas de freio 6205-BR",tempo:"1.5",status:"Encerrada",abertura:"2026-05-20",encerr:"2026-05-20",tec:"Pedro Costa",causa:"Desgaste prematuro por excesso de ciclos"});
     addRow({num:"OS-2026-0025",prior:"Urgente",equip:"Injetora KraussMaffei 200t",falha:"Vazamento de óleo hidráulico — produção parada",modo:"Hidráulico",pecas:"",tempo:"",status:"Aberta",abertura:"2026-06-09",tec:"",obs:"Vazamento no cilindro de fechamento"});
     updateKpis();
+  });
+})();
+
+/* ── Base de Conhecimento SMD ── */
+(function(){
+  "use strict";
+  const SK_KB = "eng_smd_erros";
+  const CAT_CLS = {
+    "Servo / Encoder":"kb-cat-servo",
+    "Pneumático":"kb-cat-pneu",
+    "Elétrico":"kb-cat-elet",
+    "Mecânico":"kb-cat-mec",
+    "Software":"kb-cat-soft",
+    "Alimentador":"kb-cat-feed",
+    "Visão":"kb-cat-vis",
+    "Outro":"kb-cat-outro"
+  };
+  let kbErros = [];
+  let kbNextId = 1;
+  let stepCount = 0;
+
+  const DEFAULT_ERROS = [
+    {
+      id:1,
+      maquina:"Fuji NXT II",
+      modulo:"Módulo 9 / Eixo ZA",
+      codigo:"1062",
+      categoria:"Servo / Encoder",
+      titulo:"Servo / Axis:ZA / Encoder Battery",
+      causa:"A bateria do encoder absoluto do eixo ZA (eixo Z do cabeçote de placement) está descarregada. Essa bateria mantém os dados de posição do encoder quando a máquina é desligada. Sem ela, o encoder perde a referência absoluta de posição.",
+      passos:[
+        "Pressione STOP no painel e aguarde o cabeçote retornar à posição de repouso.",
+        "Acione o EMERGENCY STOP se o cabeçote não retornar normalmente.",
+        "Desligue a alimentação do módulo 9 pelo painel de energia do módulo.",
+        "Localize a bateria CR2032 3V no conector do cabo do encoder, próxima ao servo motor do eixo Z do módulo.",
+        "Substitua a bateria — não deixe o encoder sem bateria por mais de 30 segundos para não perder a referência.",
+        "Ligue o módulo e execute o procedimento Home/Origin do eixo ZA via menu de manutenção da NXT.",
+        "No painel, acesse a tela de alarmes e pressione OK/CANCEL para limpar o erro 1062.",
+        "Execute o módulo em modo MANUAL e mova o eixo ZA verificando ausência de novos alarmes.",
+        "Realize um ciclo de teste completo antes de retornar à produção."
+      ],
+      pecas:"Bateria CR2032 3V (lítio)",
+      data:"2026-06-12",
+      imagem:"images/debug/erros-maquinas-smd/nxt-axis-ZA enconder Battery.jpeg"
+    }
+  ];
+
+  function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+  function buildMaqOptions() {
+    const sel = document.getElementById("kbFilterMaq");
+    const cur = sel.value;
+    const maquinas = [...new Set(kbErros.map(e=>e.maquina).filter(Boolean))].sort();
+    sel.innerHTML = `<option value="">Todas as máquinas</option>` + maquinas.map(m=>`<option${m===cur?" selected":""}>${esc(m)}</option>`).join("");
+  }
+
+  function renderKb() {
+    const q    = (document.getElementById("kbSearch").value||"").toLowerCase();
+    const maq  = document.getElementById("kbFilterMaq").value;
+    const cat  = document.getElementById("kbFilterCat").value;
+    const grid = document.getElementById("kbGrid");
+
+    const filtered = kbErros.filter(e=>{
+      if(maq && e.maquina !== maq) return false;
+      if(cat && e.categoria !== cat) return false;
+      if(q){
+        const hay = [e.maquina,e.modulo,e.codigo,e.titulo,e.causa,e.categoria,(e.passos||[]).join(" "),e.pecas].join(" ").toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    if(!filtered.length){
+      grid.innerHTML = `<div class="kb-empty"><i class="bi bi-search me-2"></i>Nenhum erro encontrado para os filtros selecionados.</div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(e=>{
+      const stCls = CAT_CLS[e.categoria]||"kb-cat-outro";
+      const steps = (e.passos||[]).map((p,i)=>`
+        <li>
+          <span class="kb-step-num">${i+1}</span>
+          <span>${esc(p)}</span>
+        </li>`).join("");
+      const imgBlock = e.imagem ? `
+        <img src="/static/${esc(e.imagem)}" alt="Erro ${esc(e.codigo)}" class="kb-img-thumb no-print"
+          onclick="openLightbox('/static/${esc(e.imagem)}')" title="Clique para ampliar">` : "";
+      const pecasBlock = e.pecas ? `
+        <div class="kb-pecas-txt"><i class="bi bi-box-seam"></i>${esc(e.pecas)}</div>` : "";
+      return `
+        <div class="kb-entry">
+          <div class="kb-entry-hdr">
+            <div>
+              <div class="kb-machine">${esc(e.maquina)}</div>
+              ${e.modulo?`<div class="kb-module">${esc(e.modulo)}</div>`:""}
+            </div>
+            <div class="d-flex flex-column align-items-end gap-1">
+              ${e.codigo?`<span class="kb-code-badge">${esc(e.codigo)}</span>`:""}
+              <span class="kb-cat-badge ${stCls}">${esc(e.categoria)}</span>
+            </div>
+          </div>
+          <div class="kb-title">${esc(e.titulo)}</div>
+          <div class="kb-body">
+            ${imgBlock}
+            <div class="kb-section-lbl">Causa</div>
+            <div class="kb-causa-txt">${esc(e.causa)}</div>
+            <div class="kb-section-lbl" style="margin-top:12px;">Solução — Passo a Passo</div>
+            <ul class="kb-steps">${steps}</ul>
+            ${pecasBlock}
+          </div>
+          <div class="kb-footer">
+            <span class="kb-date"><i class="bi bi-calendar3 me-1"></i>${e.data||"—"}</span>
+            <button class="kb-del-btn no-print" onclick="removeErro(${e.id})" title="Remover da base">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+  window.renderKb = renderKb;
+
+  function removeErro(id){
+    if(!confirm("Remover este erro da base de conhecimento?")) return;
+    kbErros = kbErros.filter(e=>e.id!==id);
+    buildMaqOptions();
+    renderKb();
+  }
+  window.removeErro = removeErro;
+
+  function saveKb(){
+    localStorage.setItem(SK_KB, JSON.stringify({erros:kbErros, nextId:kbNextId}));
+    const m = document.getElementById("kbSaveMsg");
+    m.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Base salva em ${new Date().toLocaleTimeString("pt-BR")}</span>`;
+    setTimeout(()=>m.innerHTML="", 3000);
+  }
+  window.saveKb = saveKb;
+
+  /* Modal — steps */
+  function addStep(val=""){
+    const container = document.getElementById("kbStepsContainer");
+    const idx = stepCount++;
+    const row = document.createElement("div");
+    row.className = "step-row";
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <span class="kb-step-num" style="min-width:20px;">${container.children.length+1}</span>
+      <input type="text" placeholder="Descreva o passo…" value="${val.replace(/"/g,'&quot;')}">
+      <button type="button" class="step-remove" onclick="removeStep(this)"><i class="bi bi-x-lg"></i></button>`;
+    container.appendChild(row);
+    renumberSteps();
+  }
+  window.addStep = addStep;
+
+  function removeStep(btn){
+    btn.closest(".step-row").remove();
+    renumberSteps();
+  }
+  window.removeStep = removeStep;
+
+  function renumberSteps(){
+    document.querySelectorAll("#kbStepsContainer .step-row .kb-step-num").forEach((el,i)=>el.textContent=i+1);
+  }
+
+  function confirmAddErro(){
+    const maq    = document.getElementById("kbMaq").value.trim();
+    const titulo = document.getElementById("kbTitulo").value.trim();
+    const causa  = document.getElementById("kbCausa").value.trim();
+    const cat    = document.getElementById("kbCat").value;
+    if(!maq||!titulo||!causa||!cat){ alert("Preencha os campos obrigatórios: Máquina, Título, Causa e Categoria."); return; }
+    const passos = [...document.querySelectorAll("#kbStepsContainer input")].map(i=>i.value.trim()).filter(Boolean);
+    if(!passos.length){ alert("Adicione ao menos um passo na solução."); return; }
+    const novo = {
+      id:kbNextId++,
+      maquina:maq,
+      modulo:document.getElementById("kbMod").value.trim(),
+      codigo:document.getElementById("kbCod").value.trim(),
+      categoria:cat,
+      titulo,
+      causa,
+      passos,
+      pecas:document.getElementById("kbPecas").value.trim(),
+      data:document.getElementById("kbData").value||new Date().toISOString().slice(0,10),
+      imagem:""
+    };
+    kbErros.unshift(novo);
+    buildMaqOptions();
+    renderKb();
+    saveKb();
+    bootstrap.Modal.getInstance(document.getElementById("modalAddErro")).hide();
+    resetModal();
+  }
+  window.confirmAddErro = confirmAddErro;
+
+  function resetModal(){
+    ["kbMaq","kbMod","kbCod","kbTitulo","kbCausa","kbPecas"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("kbCat").value="";
+    document.getElementById("kbData").value="";
+    document.getElementById("kbStepsContainer").innerHTML="";
+    stepCount = 0;
+  }
+
+  document.getElementById("modalAddErro").addEventListener("show.bs.modal", ()=>{
+    if(!document.getElementById("kbStepsContainer").children.length) addStep();
+  });
+
+  /* Lightbox */
+  window.openLightbox = function(src){
+    document.getElementById("kbLightboxImg").src = src;
+    document.getElementById("kbLightbox").classList.add("open");
+  };
+  window.closeLightbox = function(){
+    document.getElementById("kbLightbox").classList.remove("open");
+  };
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try {
+      const d = JSON.parse(localStorage.getItem(SK_KB)||"{}");
+      if(d.nextId) kbNextId = d.nextId;
+      if(d.erros&&d.erros.length){ kbErros = d.erros; buildMaqOptions(); renderKb(); return; }
+    } catch(e){}
+    kbErros = DEFAULT_ERROS.map(e=>({...e}));
+    kbNextId = kbErros.length + 1;
+    buildMaqOptions();
+    renderKb();
   });
 })();
 </script>
