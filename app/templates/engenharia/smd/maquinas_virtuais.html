@@ -279,6 +279,36 @@
   .panel-fuji,.panel-dek,.panel-inspect{max-width:100%}
   .mv-kpis{display:none}
 }
+/* ── 3D View Toggle ── */
+.mv3d-toggle-bar{display:flex;gap:4px;justify-content:center;margin-bottom:8px}
+.mv3d-togbtn{display:flex;align-items:center;gap:6px;padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--card);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;color:var(--text-muted);white-space:nowrap}
+.mv3d-togbtn:hover{background:rgba(15,23,42,0.04);color:var(--text)}
+.mv3d-togbtn.active{border-color:#0d6efd;background:rgba(13,110,253,0.10);color:#0d6efd}
+/* ── 3D Canvas ── */
+.mv3d-canvas-wrap{position:relative;background:#111827;border-radius:12px;overflow:hidden;aspect-ratio:16/9;width:100%;cursor:grab}
+.mv3d-canvas-wrap:active{cursor:grabbing}
+@media(max-width:767px){.mv3d-canvas-wrap{aspect-ratio:4/3}}
+#mv3dCanvas{width:100%!important;height:100%!important;display:block;touch-action:none}
+.mv3d-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.mv3d-overlay-msg{background:rgba(0,0,0,0.75);color:#fff;padding:12px 20px;border-radius:10px;font-size:0.82rem;font-weight:700;text-align:center;line-height:1.6}
+/* ── 3D Workflow ── */
+.mv3d-workflow{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:10px 12px;
+  background:var(--card);border:1px solid var(--border);border-radius:10px}
+.mv3d-wf-btn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1.5px solid var(--border);
+  background:var(--card);font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.15s;color:var(--text);white-space:nowrap}
+.mv3d-wf-btn:hover:not(:disabled){background:rgba(15,23,42,0.04)}
+.mv3d-wf-btn:disabled{opacity:0.32;cursor:not-allowed}
+.mv3d-wf-btn.wf-active{border-color:#0d6efd;background:rgba(13,110,253,0.10);color:#0d6efd}
+.mv3d-wf-btn.wf-done{border-color:#198754;background:rgba(25,135,84,0.10);color:#198754}
+.mv3d-wf-btn.wf-test{border-color:#6f42c1;background:rgba(111,66,193,0.10);color:#6f42c1}
+.mv3d-result{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;opacity:0;transition:opacity 0.4s;border-radius:12px;pointer-events:none}
+.mv3d-result-icon{font-size:3rem;line-height:1}
+.mv3d-result-label{font-size:1.5rem;font-weight:900;letter-spacing:4px}
+.mv3d-result.pass{background:rgba(25,135,84,0.88);color:#fff}
+.mv3d-result.fail{background:rgba(220,53,69,0.88);color:#fff}
+.mv3d-result.show{opacity:1}
 </style>
 {% endblock %}
 
@@ -314,8 +344,30 @@
       <div class="mv-err-list" id="mvErrList"></div>
     </div>
     <div class="mv-right">
-      <div id="mvStateHint" class="mv-state-hint"></div>
-      <div class="mv-panel-wrap" id="mvPanelWrap"></div>
+      <div class="mv3d-toggle-bar">
+        <button class="mv3d-togbtn active" id="btn2dView" onclick="set3DView(false)">
+          <i class="bi bi-display"></i> 2D Painel
+        </button>
+        <button class="mv3d-togbtn" id="btn3dView" onclick="set3DView(true)">
+          <i class="bi bi-box"></i> 3D Máquina
+        </button>
+      </div>
+      <div id="mv2dSection">
+        <div id="mvStateHint" class="mv-state-hint"></div>
+        <div class="mv-panel-wrap" id="mvPanelWrap"></div>
+      </div>
+      <div id="mv3dSection" style="display:none">
+        <div id="mv3dStatus" class="mv-state-hint"></div>
+        <div class="mv3d-canvas-wrap">
+          <canvas id="mv3dCanvas"></canvas>
+          <div class="mv3d-overlay" id="mv3dOverlay"></div>
+          <div class="mv3d-result" id="mv3dResult">
+            <div class="mv3d-result-icon" id="mv3dResultIcon"></div>
+            <div class="mv3d-result-label" id="mv3dResultLabel"></div>
+          </div>
+        </div>
+        <div class="mv3d-workflow" id="mv3dWorkflow"></div>
+      </div>
       <div class="mv-solution" id="mvSolution" style="display:none"></div>
     </div>
   </div>
@@ -625,6 +677,7 @@ function selectMaq(key){
   renderPanel(null);
   document.getElementById("mvSolution").style.display="none";
   updateStateHint();
+  if(view3D&&s3.inited){rebuild3DScene();render3DWorkflow();}
 }
 
 /* ─── KPIs ─── */
@@ -689,6 +742,7 @@ function selectErro(id){
   renderSolution(erro);
   document.getElementById("mvSolution").style.display="";
   updateStateHint();
+  if(view3D&&s3.inited){rebuild3DScene();render3DWorkflow();}
   if(window.innerWidth<=991)
     document.getElementById("mvPanelWrap").scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -759,7 +813,7 @@ function fujiScreenIdle(m){return`<div class="fsc-idle"><div class="fsc-idle-rea
 function fujiScreenRunning(m){return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px"><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 1 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 2 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 3 — OK</div></div></div>`;}
 function fujiScreenManual(){return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;}
 function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
-function fujiScreenEstop(){return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Gire o botão para destrancar</div><div class="fsc-estop-msg" style="margin-top:4px">Pressione OK para resetar</div></div>`;}
+function fujiScreenEstop(){return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Todos os servos desligados</div><div class="fsc-estop-msg" style="margin-top:4px;cursor:pointer;text-decoration:underline" onclick="handleBtn('ok')">Clique em OK para resetar</div></div>`;}
 function fujiScreenStopping(){return`<div class="fsc-stopping"><div class="fsc-stopping-txt">STOPPING…</div><div class="fsc-stopping-bar"><div class="fsc-stopping-fill"></div></div></div>`;}
 function fujiScreenStandby(){return`<div class="fsc-standby"><div class="fsc-standby-txt">STANDBY</div><div class="fsc-standby-sub">Sistema em espera<br>Pressione qualquer botão para ativar</div></div>`;}
 
@@ -885,12 +939,483 @@ function toggleStep(idx){
 window.openLightbox=function(src){document.getElementById("kbLightboxImg").src=src;document.getElementById("kbLightbox").classList.add("open");};
 window.closeLightbox=function(){document.getElementById("kbLightbox").classList.remove("open");};
 
+/* ─── 3D View ─── */
+let view3D = false;
+const s3 = {
+  inited:false, renderer:null, scene:null, camera:null,
+  orbit:null, rafId:null, machineGroup:null, pcbObj:null,
+  errorComp:null, errorLight:null, headObj:null,
+  pcbRemoved:false, componentFixed:false, workflowStep:0
+};
+
+function set3DView(to3D){
+  view3D=to3D;
+  document.getElementById("mv2dSection").style.display=to3D?"none":"";
+  document.getElementById("mv3dSection").style.display=to3D?"":"none";
+  document.getElementById("btn2dView").classList.toggle("active",!to3D);
+  document.getElementById("btn3dView").classList.toggle("active",to3D);
+  if(to3D){
+    if(!s3.inited) init3D();
+    else{ rebuild3DScene(); render3DWorkflow(); }
+    if(!s3.rafId) animate3D();
+  }else{
+    if(s3.rafId){cancelAnimationFrame(s3.rafId);s3.rafId=null;}
+  }
+}
+
+class SimpleOrbit{
+  constructor(cam,el){
+    this.cam=cam; this.sph={theta:0.55,phi:1.1,r:62};
+    let drag=false,ox=0,oy=0;
+    const move=(dx,dy)=>{
+      this.sph.theta-=dx*0.008;
+      this.sph.phi=Math.max(0.12,Math.min(1.52,this.sph.phi+dy*0.008));
+      this.update();
+    };
+    el.addEventListener("mousedown",e=>{drag=true;ox=e.clientX;oy=e.clientY;});
+    el.addEventListener("mouseup",()=>{drag=false;});
+    el.addEventListener("mouseleave",()=>{drag=false;});
+    el.addEventListener("mousemove",e=>{if(!drag)return;move(e.clientX-ox,e.clientY-oy);ox=e.clientX;oy=e.clientY;});
+    el.addEventListener("wheel",e=>{this.sph.r=Math.max(22,Math.min(100,this.sph.r+e.deltaY*0.04));this.update();e.preventDefault();},{passive:false});
+    let lt=null;
+    el.addEventListener("touchstart",e=>{lt=e.touches[0];},{passive:true});
+    el.addEventListener("touchmove",e=>{if(!lt)return;const t=e.touches[0];move(t.clientX-lt.clientX,t.clientY-lt.clientY);lt=t;e.preventDefault();},{passive:false});
+    this.update();
+  }
+  update(){
+    const{theta,phi,r}=this.sph;
+    this.cam.position.set(r*Math.sin(phi)*Math.sin(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.cos(theta));
+    this.cam.lookAt(0,0,0);
+  }
+}
+
+function init3D(){
+  if(!window.THREE){
+    document.getElementById("mv3dOverlay").innerHTML=`<div class="mv3d-overlay-msg"><i class="bi bi-exclamation-triangle me-2"></i>Three.js não carregou.<br>Verifique a conexão e recarregue a página.</div>`;
+    return;
+  }
+  s3.inited=true;
+  const canvas=document.getElementById("mv3dCanvas");
+  const wrap=canvas.parentElement;
+  const W=wrap.clientWidth||600, H=wrap.clientHeight||400;
+  s3.renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  s3.renderer.setSize(W,H);
+  s3.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  s3.renderer.shadowMap.enabled=true;
+  s3.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  s3.renderer.setClearColor(0x111827);
+  s3.camera=new THREE.PerspectiveCamera(40,W/H,0.1,500);
+  s3.orbit=new SimpleOrbit(s3.camera,canvas);
+  s3.scene=new THREE.Scene();
+  s3.scene.fog=new THREE.Fog(0x111827,80,180);
+  s3.scene.add(new THREE.AmbientLight(0x446688,0.7));
+  const sun=new THREE.DirectionalLight(0xfff8f0,0.9);
+  sun.position.set(20,30,25); sun.castShadow=true;
+  sun.shadow.camera.left=-35; sun.shadow.camera.right=35;
+  sun.shadow.camera.top=35; sun.shadow.camera.bottom=-35;
+  sun.shadow.mapSize.width=1024; sun.shadow.mapSize.height=1024;
+  s3.scene.add(sun);
+  const fill=new THREE.DirectionalLight(0x4499cc,0.35);
+  fill.position.set(-10,8,-15); s3.scene.add(fill);
+  const grid=new THREE.GridHelper(120,50,0x1e3a5f,0x162032);
+  grid.position.y=-13.5; s3.scene.add(grid);
+  const floor=new THREE.Mesh(
+    new THREE.PlaneGeometry(120,120),
+    new THREE.MeshStandardMaterial({color:0x0d1420,roughness:1.0})
+  );
+  floor.rotation.x=-Math.PI/2; floor.position.y=-13.55;
+  floor.receiveShadow=true; s3.scene.add(floor);
+  s3.errorLight=new THREE.PointLight(0xff2200,0,15);
+  s3.scene.add(s3.errorLight);
+  rebuild3DScene();
+  render3DWorkflow();
+  new ResizeObserver(()=>{
+    if(!view3D||!s3.renderer)return;
+    const W2=wrap.clientWidth,H2=wrap.clientHeight;
+    if(W2>0&&H2>0){s3.renderer.setSize(W2,H2);s3.camera.aspect=W2/H2;s3.camera.updateProjectionMatrix();}
+  }).observe(wrap);
+}
+
+function _m(c,r=0.5,m=0.3){return new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});}
+function _b(w,h,d,mat){const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.castShadow=true;mesh.receiveShadow=true;return mesh;}
+function _cyl(rt,rb,h,mat,seg=16){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),mat);mesh.castShadow=true;return mesh;}
+function _edges(mesh,c=0x000000,op=0.18){mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color:c,transparent:true,opacity:op})));return mesh;}
+
+function _errPos(maq,id){
+  const P={
+    nxt: {1:[-3,-1.5],2:[-3,1.5],3:[2.5,-1],4:[0.5,0],5:[3.5,2],6:[-0.5,0.5],7:[-2.5,-2],8:[2,1.5]},
+    aimex:{1:[-2.5,-1.5],2:[3,-1],3:[1.5,1.5],4:[0,2.5],5:[-2,-2.5]},
+    dek:  {1:[-1.5,0],2:[3,0.5],3:[0.5,-1.5],4:[-3,1],5:[1.5,-2.5]},
+    xp:   {1:[-2.5,-1],2:[0.5,1.5],3:[3,-1.5],4:[0,-2.5]},
+    spi:  {1:[-2,0],2:[0.5,0.5],3:[2,1],4:[-3,-1.5]},
+    aoi:  {1:[0.5,0],2:[-1.5,1.5],3:[3,-1],4:[-2,-1.5]}
+  };
+  return((P[maq]||{})[id])||[0,0];
+}
+
+function _buildPCB(g,maq,errId,pw=10,pd=6){
+  const pg=new THREE.Group();
+  const board=_b(pw,0.2,pd,_m(0x1a4a2a,0.75,0.0));
+  pg.add(board);
+  const t1=_b(6,0.05,0.1,_m(0xb8640a,0.4,0.9)); t1.position.set(-1,0.13,0.5); pg.add(t1);
+  const t2=_b(4,0.05,0.1,_m(0xb8640a,0.4,0.9)); t2.position.set(1.5,0.13,-1.5); pg.add(t2);
+  const t3=_b(0.1,0.05,4,_m(0xb8640a,0.4,0.9)); t3.position.set(-2,0.13,0); pg.add(t3);
+  const compDefs=[[-1.5,0.18,-0.5],[0.5,0.18,1.2],[1.2,0.18,-1],[2.8,0.18,0.5],[-2.8,0.18,1.5],[-0.5,0.18,-1.8],[2,0.18,0.2]];
+  compDefs.forEach(([cx,cy,cz])=>{
+    const c=_b(0.5,0.2,0.3,_m(0x2a2a2a,0.5,0.2)); c.position.set(cx,cy,cz); pg.add(c);
+  });
+  const caps=[[-1,0.26,1.5],[0.8,0.26,-0.5],[3.5,0.26,-1],[-3,0.26,-0.5]];
+  caps.forEach(([cx,cy,cz])=>{ const c=_cyl(0.22,0.22,0.35,_m(0x888822,0.4,0.3)); c.position.set(cx,cy,cz); pg.add(c); });
+  const em=new THREE.MeshStandardMaterial({color:0x111111,roughness:0.4,metalness:0.3,emissive:new THREE.Color(0,0,0)});
+  const ec=_b(0.9,0.32,0.6,em);
+  const[ex,ez]=_errPos(maq,errId);
+  ec.position.set(ex,0.28,ez);
+  pg.add(ec);
+  s3.errorComp=ec;
+  pg.position.set(0,-7.7,0);
+  s3.pcbObj=pg;
+  g.add(pg);
+}
+
+function buildPickPlaceMachine(g){
+  const mS=_m(0x3d4048,0.55,0.4), mD=_m(0x1c1f26,0.4,0.65);
+  const mG=new THREE.MeshStandardMaterial({color:0x4488cc,transparent:true,opacity:0.12,roughness:0.05,side:THREE.FrontSide});
+  const mR=_m(0x9a9a9a,0.2,0.9), mM=_m(0x252d3a,0.5,0.5);
+  const mF=_m(0x202835,0.65,0.4), mH=_m(0xb8b8b8,0.2,0.8);
+
+  // Bottom platform
+  const bot=_b(34,2,22,mD); bot.position.set(0,-12,0); g.add(bot);
+  // Back wall
+  const bw=_b(34,24,1,mS); bw.position.set(0,0,-10.5); g.add(bw);
+  // Side walls
+  const lw=_b(1,24,21,mS); lw.position.set(-16.5,0,-0.5); g.add(lw);
+  const rw=_b(1,24,21,mS); rw.position.set(16.5,0,-0.5); g.add(rw);
+  // Top
+  const top=_b(34,1.5,22,mS); top.position.set(0,12.5,0.5); g.add(top);
+  // Front glass
+  const fg=_b(34,24,0.4,mG); fg.position.set(0,0,10.5); g.add(fg);
+  // Front frame (metal border)
+  const ft=_b(34,0.8,0.6,mD); ft.position.set(0,12.2,10.5); g.add(ft);
+  const fb=_b(34,0.8,0.6,mD); fb.position.set(0,-12.2,10.5); g.add(fb);
+  const fl=_b(0.8,24,0.6,mD); fl.position.set(-16.5,0,10.5); g.add(fl);
+  const fr2=_b(0.8,24,0.6,mD); fr2.position.set(16.5,0,10.5); g.add(fr2);
+  // FUJI orange stripe
+  const os=_b(34,1.8,0.5,_m(0xf56600,0.4,0.3)); os.position.set(0,10.5,10.8); g.add(os);
+  // Status lights
+  [0x00ff44,0x00ff44,0xffcc00,0xff4400,0x4488ff].forEach((c,i)=>{
+    const lt=_b(0.55,0.55,0.28,new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:new THREE.Color(c).multiplyScalar(0.4)}));
+    lt.position.set(-8+i*4,10.5,10.9); g.add(lt);
+  });
+
+  // Left module bank
+  const lmb=_edges(_b(5,18,8,mM),0x4466aa,0.2); lmb.position.set(-12.5,-1,-6); g.add(lmb);
+  // Module units (4 stacked)
+  for(let i=0;i<4;i++){
+    const mod=_b(4,3.2,7,_m(0x1e2a3a,0.5,0.4)); mod.position.set(-12.5,-5.4+i*3.8,-5.5); g.add(mod);
+    _edges(mod,0x3366aa,0.25);
+    // Module LED
+    const led=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.2),new THREE.MeshStandardMaterial({color:0x00ff44,roughness:0.2,emissive:new THREE.Color(0x003300)}));
+    led.position.set(-10.8,-4+i*3.8,-1.8); g.add(led);
+    // Module connector area
+    const conn=_b(2,1.5,0.3,_m(0x1a3a6a,0.4,0.3)); conn.position.set(-12.5,-4.5+i*3.8,-1.8); g.add(conn);
+  }
+
+  // Right feeder bank
+  for(let row=0;row<8;row++){
+    const fd=_b(5,1.1,6,mF); fd.position.set(12.5,-7.2+row*1.85,-6); g.add(fd);
+    _edges(fd,0x000000,0.12);
+    // Tape reel
+    const reel=_cyl(0.75,0.75,0.25,_m(0x404040,0.5,0.3));
+    reel.position.set(12.5,-7.2+row*1.85,-2.8); g.add(reel);
+    // Feeder component tape strip
+    const ts=_b(4,0.1,0.3,_m(0x886644,0.7,0.1)); ts.position.set(12,-7.1+row*1.85,-0.5); g.add(ts);
+  }
+  // Left small feeder bank
+  for(let row=0;row<3;row++){
+    const fd=_b(2.5,1.1,5,mF); fd.position.set(-14.5,-3+row*2.2,-7); g.add(fd);
+  }
+
+  // X-axis gantry rail (spans machine width)
+  const xr=_m(0xaaaaaa,0.2,0.9);
+  const xRail=_b(30,0.7,0.7,xr); xRail.position.set(0,2,2); g.add(xRail);
+  _edges(xRail,0x888888,0.35);
+  // X-rail supports
+  [-13,13].forEach(x=>{
+    const sup=_b(0.5,8,0.5,xr); sup.position.set(x,-2,2); g.add(sup);
+  });
+
+  // Z-carriage & placement head
+  const zc=_b(2.2,1,3,mH); zc.position.set(3,2,2); g.add(zc);
+  const head=_b(2,3.5,2,mH); head.position.set(3,0,2);
+  _edges(head,0x888888,0.3); g.add(head);
+  s3.headObj=head;
+  // Nozzles (4)
+  for(let nx=0;nx<2;nx++) for(let nz=0;nz<2;nz++){
+    const noz=_cyl(0.1,0.1,1.2,_m(0x777777,0.2,0.9));
+    noz.position.set(3+(nx-0.5)*0.7,-2.6,2+(nz-0.5)*0.7); g.add(noz);
+  }
+  // Vision camera assembly
+  const vcam=_b(2,1.5,2,_m(0x0d1117,0.6,0.5)); vcam.position.set(-4.5,4.5,3); g.add(vcam);
+  const vlens=_cyl(0.5,0.5,0.4,_m(0x224488,0.2,0.5)); vlens.rotation.x=Math.PI/2; vlens.position.set(-4.5,4.5,4.3); g.add(vlens);
+  // LED ring around lens
+  const lr=_cyl(0.9,0.9,0.15,_m(0xffffcc,0.2,0.0)); lr.rotation.x=Math.PI/2; lr.position.set(-4.5,4.5,4.2); g.add(lr);
+
+  // Conveyor rails + belt
+  const rl=_m(0x888888,0.2,0.9);
+  const railL=_b(33,0.5,0.5,rl); railL.position.set(0,-7.5,-3); g.add(railL);
+  const railR=_b(33,0.5,0.5,rl); railR.position.set(0,-7.5,3); g.add(railR);
+  const belt=_b(33,0.18,5.8,_m(0x1a1a1a,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  s3.conveyorBelt=belt;
+  // Conveyor guide panels
+  const cgL=_b(33,2.5,0.3,mD); cgL.position.set(0,-7,-3.5); g.add(cgL);
+  const cgR=_b(33,2.5,0.3,mD); cgR.position.set(0,-7,3.5); g.add(cgR);
+  // Conveyor drive rollers at ends
+  [-15,15].forEach(x=>{
+    const dr=_cyl(1.2,1.2,6,_m(0x555555,0.3,0.7)); dr.rotation.z=Math.PI/2;
+    dr.position.set(x,-7.7,0); g.add(dr);
+  });
+
+  // PCB on conveyor
+  _buildPCB(g,currentMaq,currentErroId,10,6);
+}
+
+function buildScreenPrinterMachine(g){
+  const mB=_m(0xcecece,0.7,0.1), mD=_m(0x888888,0.5,0.3);
+  const mG=new THREE.MeshStandardMaterial({color:0x88aacc,transparent:true,opacity:0.14,roughness:0.1,side:THREE.FrontSide});
+  const mBlue=_m(0x003399,0.5,0.3), mSq=_m(0x555555,0.3,0.8);
+
+  // Machine body (wider, lower)
+  const bot=_b(38,2,22,mD); bot.position.set(0,-10,0); g.add(bot);
+  const bw=_b(38,18,1,mB); bw.position.set(0,-1,-10.5); g.add(bw);
+  const lw=_b(1,18,22,mB); lw.position.set(-18.5,-1,0); g.add(lw);
+  const rw=_b(1,18,22,mB); rw.position.set(18.5,-1,0); g.add(rw);
+  const top=_b(38,1,22,mB); top.position.set(0,8.5,0); g.add(top);
+  const fg=_b(38,18,0.4,mG); fg.position.set(0,-1,10.5); g.add(fg);
+  const ft=_b(38,0.8,0.6,mD); ft.position.set(0,8.1,10.5); g.add(ft);
+  const fb=_b(38,0.8,0.6,mD); fb.position.set(0,-9.1,10.5); g.add(fb);
+  [-18.5,18.5].forEach(x=>{ const fw=_b(0.8,18,0.6,mD); fw.position.set(x,-1,10.5); g.add(fw); });
+  // DEK blue stripe + logo
+  const bs=_b(38,2.5,0.5,mBlue); bs.position.set(0,7,10.8); g.add(bs);
+  // Control panel (right side)
+  const cp=_b(8,5,0.5,_m(0xd0d0d0,0.6,0.1)); cp.position.set(13,-3,10.6); g.add(cp);
+  const screen=_b(6,3.5,0.3,_m(0x001133,0.8,0.1)); screen.position.set(13,-3,10.8); g.add(screen);
+  [0x00ff44,0xffcc00,0xff4400].forEach((c,i)=>{
+    const led=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.2),new THREE.MeshStandardMaterial({color:c,emissive:new THREE.Color(c).multiplyScalar(0.5)}));
+    led.position.set(11.5-i*0.8,-1.5,10.85); g.add(led);
+  });
+
+  // Stencil frame assembly
+  const sf=_b(16,0.4,12,_m(0xa0a0a0,0.3,0.7)); sf.position.set(0,-2.5,0); g.add(sf);
+  _edges(sf,0x888888,0.3);
+  const si=_b(12,0.35,8,_m(0x888888,0.4,0.6)); si.position.set(0,-2.3,0); g.add(si);
+
+  // Squeegee X-rail
+  const sqr=_b(16,0.5,0.5,_m(0x666666,0.3,0.8)); sqr.position.set(0,-0.5,0); g.add(sqr);
+  // Squeegee blade
+  const sq=_b(14,0.35,0.6,mSq); sq.position.set(2,-1.5,0);
+  _edges(sq,0x444444,0.4); s3.headObj=sq; g.add(sq);
+  // Paste cartridge on squeegee
+  const pc=_cyl(0.9,0.9,3.5,_m(0xdddddd,0.6,0.1)); pc.position.set(2,-0,0); g.add(pc);
+  const pcCap=_b(2,0.4,2,_m(0xaaaaaa,0.5,0.2)); pcCap.position.set(2,1.5,0); g.add(pcCap);
+
+  // Conveyor
+  const rl=_m(0x999999,0.2,0.8);
+  const rL=_b(37,0.5,0.5,rl); rL.position.set(0,-7.5,-3); g.add(rL);
+  const rR=_b(37,0.5,0.5,rl); rR.position.set(0,-7.5,3); g.add(rR);
+  const belt=_b(37,0.18,5.8,_m(0x2a2a2a,0.9,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  const cgL=_b(37,2,0.3,_m(0xc0c0c0,0.7,0.1)); cgL.position.set(0,-7,-3.5); g.add(cgL);
+  const cgR=_b(37,2,0.3,_m(0xc0c0c0,0.7,0.1)); cgR.position.set(0,-7,3.5); g.add(cgR);
+
+  _buildPCB(g,currentMaq,currentErroId,10,6);
+}
+
+function buildInspectionMachine(g){
+  const mD=_m(0x1a1e26,0.5,0.55), mA=_m(0x14192a,0.45,0.6);
+  const mG=new THREE.MeshStandardMaterial({color:0x00ccff,transparent:true,opacity:0.1,roughness:0.1,side:THREE.FrontSide});
+  const mCyan=_m(0x0088aa,0.3,0.5);
+
+  // Machine body (dark)
+  const bot=_b(32,2,20,mA); bot.position.set(0,-11,0); g.add(bot);
+  const bw=_b(32,22,1,mD); bw.position.set(0,0,-9.5); g.add(bw);
+  const lw=_b(1,22,20,mD); lw.position.set(-15.5,0,0); g.add(lw);
+  const rw=_b(1,22,20,mD); rw.position.set(15.5,0,0); g.add(rw);
+  const top=_b(32,1,20,mD); top.position.set(0,11.5,0); g.add(top);
+  const fg=_b(32,22,0.4,mG); fg.position.set(0,0,9.5); g.add(fg);
+  const ft=_b(32,0.8,0.6,mA); ft.position.set(0,11.2,9.5); g.add(ft);
+  const fb=_b(32,0.8,0.6,mA); fb.position.set(0,-10.8,9.5); g.add(fb);
+  [-15.5,15.5].forEach(x=>{ const fw=_b(0.8,22,0.6,mA); fw.position.set(x,0,9.5); g.add(fw); });
+  // Cyan accent stripe
+  const ca=_b(32,1,0.5,mCyan); ca.position.set(0,10.5,9.8); g.add(ca);
+
+  // Camera inspection head (main assembly)
+  const ch=_b(14,2.5,14,_m(0x0d1117,0.5,0.45)); ch.position.set(0,4.5,0);
+  _edges(ch,0x004466,0.25); s3.headObj=ch; g.add(ch);
+  // Multiple camera lenses (3x3 array)
+  for(let cx=-2;cx<=2;cx+=2){
+    for(let cz=-2;cz<=2;cz+=2){
+      const l=_cyl(0.38,0.38,0.5,_m(0x224488,0.2,0.5)); l.rotation.x=Math.PI/2;
+      l.position.set(cx,3.5,cz); g.add(l);
+      // Lens ring
+      const lr=_cyl(0.55,0.55,0.18,_m(0x111111,0.3,0.8)); lr.rotation.x=Math.PI/2;
+      lr.position.set(cx,3.5,cz+0.3); g.add(lr);
+    }
+  }
+  // Structured light projector
+  const sp=_b(3,1.5,2.5,_m(0x0d1a28,0.45,0.5)); sp.position.set(-5,3.2,3); g.add(sp);
+  const spW=new THREE.Mesh(new THREE.BoxGeometry(1,0.3,1.2),new THREE.MeshStandardMaterial({color:0x88ccff,roughness:0.1,emissive:new THREE.Color(0x002244)}));
+  spW.position.set(-5,3.2,4.2); g.add(spW);
+  // Illumination ring
+  const ir=_cyl(5,5,0.4,_m(0xffeedd,0.3,0.0)); ir.rotation.x=Math.PI/2;
+  ir.position.set(0,3.3,-0.5); g.add(ir);
+  const irI=_cyl(3.5,3.5,0.45,_m(0x0d1117,0.5,0.5)); irI.rotation.x=Math.PI/2;
+  irI.position.set(0,3.3,-0.5); g.add(irI);
+
+  // Conveyor
+  const rl=_m(0x555555,0.25,0.85);
+  const rL=_b(31,0.5,0.5,rl); rL.position.set(0,-7.5,-3); g.add(rL);
+  const rR=_b(31,0.5,0.5,rl); rR.position.set(0,-7.5,3); g.add(rR);
+  const belt=_b(31,0.18,5.8,_m(0x141414,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  const cgL=_b(31,2,0.3,mD); cgL.position.set(0,-7,-3.5); g.add(cgL);
+  const cgR=_b(31,2,0.3,mD); cgR.position.set(0,-7,3.5); g.add(cgR);
+  [-14,14].forEach(x=>{ const dr=_cyl(1,1,5.6,rl); dr.rotation.z=Math.PI/2; dr.position.set(x,-7.7,0); g.add(dr); });
+
+  _buildPCB(g,currentMaq,currentErroId,9,5.5);
+}
+
+function rebuild3DScene(){
+  if(!s3.scene)return;
+  if(s3.machineGroup){s3.scene.remove(s3.machineGroup);}
+  s3.pcbRemoved=false; s3.componentFixed=false; s3.workflowStep=0;
+  s3.errorComp=null; s3.pcbObj=null; s3.headObj=null;
+  const g=new THREE.Group();
+  const m=MACHINES[currentMaq];
+  if(m.panelStyle==="fuji") buildPickPlaceMachine(g);
+  else if(m.panelStyle==="dek") buildScreenPrinterMachine(g);
+  else buildInspectionMachine(g);
+  s3.machineGroup=g;
+  s3.scene.add(g);
+  document.getElementById("mv3dResult").className="mv3d-result";
+  document.getElementById("mv3dResult").querySelector(".mv3d-result-icon").textContent="";
+  document.getElementById("mv3dResult").querySelector(".mv3d-result-label").textContent="";
+  update3DStatus();
+}
+
+function animate3D(){
+  s3.rafId=requestAnimationFrame(animate3D);
+  const t=Date.now()*0.001;
+  if(s3.errorComp&&!s3.componentFixed&&currentErroId){
+    const pulse=(Math.sin(t*3.5)+1)/2;
+    s3.errorComp.material.emissive.setRGB(pulse*0.95,0,0);
+    s3.errorComp.material.color.setRGB(0.35+pulse*0.5,0.05,0.05);
+    if(s3.errorLight){
+      s3.errorLight.position.copy(s3.errorComp.getWorldPosition(new THREE.Vector3()));
+      s3.errorLight.intensity=pulse*4;
+    }
+  } else if(s3.errorComp&&s3.componentFixed){
+    s3.errorComp.material.emissive.setRGB(0,0.3,0.05);
+    s3.errorComp.material.color.setRGB(0.1,0.65,0.2);
+    if(s3.errorLight)s3.errorLight.intensity=0;
+  } else if(s3.errorComp){
+    s3.errorComp.material.emissive.setRGB(0,0,0);
+    if(s3.errorLight)s3.errorLight.intensity=0;
+  }
+  if(s3.pcbObj){
+    const ty=s3.pcbRemoved?8:-7.7;
+    s3.pcbObj.position.y+=(ty-s3.pcbObj.position.y)*0.07;
+    if(s3.pcbRemoved) s3.pcbObj.rotation.y=Math.sin(t*0.4)*0.06;
+  }
+  if(machineState==="running"&&s3.headObj){
+    s3.headObj.position.x=Math.sin(t*1.4)*5;
+  }
+  s3.renderer.render(s3.scene,s3.camera);
+}
+
+function update3DStatus(msg){
+  const el=document.getElementById("mv3dStatus");
+  if(!el)return;
+  el.textContent=msg!==undefined?msg:(currentErroId
+    ?"Erro ativo — arraste para girar · use o fluxo abaixo para simular a correção"
+    :"Arraste para girar · Scroll para zoom · Selecione um erro à esquerda");
+}
+
+function render3DWorkflow(){
+  const wf=document.getElementById("mv3dWorkflow");
+  if(!wf)return;
+  if(!currentErroId){
+    wf.innerHTML=`<span style="color:var(--text-muted);font-size:0.78rem;font-weight:600;padding:2px 0"><i class="bi bi-info-circle me-2"></i>Selecione um erro na lista para simular em 3D</span>`;
+    return;
+  }
+  const step=s3.workflowStep;
+  const steps=[
+    {id:0,label:"Remover PCB",icon:"bi-arrow-up-circle"},
+    {id:1,label:"Inspecionar Falha",icon:"bi-zoom-in"},
+    {id:2,label:"Substituir Componente",icon:"bi-tools"},
+    {id:3,label:"Reinserir PCB",icon:"bi-arrow-down-circle"},
+    {id:4,label:"Executar Diagnóstico",icon:"bi-play-circle-fill",special:true}
+  ];
+  const fns=["wf_removePCB","wf_inspect","wf_fix","wf_reinsertPCB","wf_runTest"];
+  wf.innerHTML=steps.map(s=>{
+    const done=step>s.id;
+    const active=step===s.id;
+    const disabled=step<s.id;
+    let cls="mv3d-wf-btn";
+    if(done)cls+=" wf-done";
+    else if(active)cls+=" wf-active";
+    if(s.special&&active)cls=cls.replace("wf-active","wf-test");
+    return `<button class="${cls}" onclick="window.${fns[s.id]}()" ${disabled?"disabled":""}>
+      <i class="bi ${s.icon}"></i>${done?`<i class="bi bi-check-lg" style="color:#198754"></i>`:""}${s.label}
+    </button>`;
+  }).join("");
+}
+
+window.wf_removePCB=function(){
+  if(!currentErroId||s3.workflowStep!==0)return;
+  s3.pcbRemoved=true; s3.workflowStep=1; render3DWorkflow();
+  update3DStatus("PCB removida do conveyor — inspecione o componente com falha destacado em vermelho");
+};
+window.wf_inspect=function(){
+  if(s3.workflowStep!==1)return;
+  s3.workflowStep=2;
+  if(s3.orbit){s3.orbit.sph.r=28;s3.orbit.sph.phi=1.25;s3.orbit.update();}
+  render3DWorkflow();
+  const err=MACHINES[currentMaq].erros.find(e=>e.id===currentErroId);
+  update3DStatus("Falha identificada: "+(err?err.titulo:"")+" — substitua o componente");
+};
+window.wf_fix=function(){
+  if(s3.workflowStep!==2)return;
+  s3.componentFixed=true; s3.workflowStep=3;
+  if(s3.orbit){s3.orbit.sph.r=55;s3.orbit.sph.phi=1.1;s3.orbit.update();}
+  render3DWorkflow();
+  update3DStatus("Componente substituído com sucesso — reinsira a PCB no conveyor");
+};
+window.wf_reinsertPCB=function(){
+  if(s3.workflowStep!==3)return;
+  s3.pcbRemoved=false; s3.workflowStep=4; render3DWorkflow();
+  update3DStatus("PCB reinserida — execute o diagnóstico para validar");
+};
+window.wf_runTest=function(){
+  if(s3.workflowStep!==4)return;
+  s3.workflowStep=5; render3DWorkflow();
+  update3DStatus("Executando diagnóstico — aguarde…");
+  setTimeout(()=>{
+    const pass=s3.componentFixed;
+    const el=document.getElementById("mv3dResult");
+    el.querySelector(".mv3d-result-icon").textContent=pass?"✓":"✗";
+    el.querySelector(".mv3d-result-label").textContent=pass?"APROVADO":"FALHOU";
+    el.className="mv3d-result "+(pass?"pass":"fail")+" show";
+    update3DStatus(pass?"Teste aprovado — máquina liberada para produção":"Teste falhou — reveja os passos de correção");
+    s3.workflowStep=pass?6:4;
+    setTimeout(()=>{el.classList.remove("show");render3DWorkflow();},3500);
+  },2800);
+};
+
 /* ─── Expose globals ─── */
 window.selectMaq    = selectMaq;
 window.selectErro   = selectErro;
 window.renderErrList= renderErrList;
 window.handleBtn    = handleBtn;
 window.toggleStep   = toggleStep;
+window.set3DView    = set3DView;
 
 /* ─── Init ─── */
 document.addEventListener("DOMContentLoaded",()=>{
@@ -898,4 +1423,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 })();
 </script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
 {% endblock %}
