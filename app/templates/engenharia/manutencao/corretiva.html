@@ -429,6 +429,7 @@
   ];
 
   function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function imgSrc(p){ return '/static/'+p.split('/').map(encodeURIComponent).join('/'); }
 
   function buildMaqOptions() {
     const sel = document.getElementById("kbFilterMaq");
@@ -466,8 +467,8 @@
           <span>${esc(p)}</span>
         </li>`).join("");
       const imgBlock = e.imagem ? `
-        <img src="/static/${esc(e.imagem)}" alt="Erro ${esc(e.codigo)}" class="kb-img-thumb no-print"
-          onclick="openLightbox('/static/${esc(e.imagem)}')" title="Clique para ampliar">` : "";
+        <img src="${imgSrc(e.imagem)}" alt="Erro ${esc(e.codigo)}" class="kb-img-thumb no-print"
+          onclick="openLightbox('${imgSrc(e.imagem)}')" title="Clique para ampliar">` : "";
       const pecasBlock = e.pecas ? `
         <div class="kb-pecas-txt"><i class="bi bi-box-seam"></i>${esc(e.pecas)}</div>` : "";
       return `
