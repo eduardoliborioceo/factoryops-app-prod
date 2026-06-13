@@ -4,222 +4,280 @@
 {% block styles %}
 <style>
 /* ── Tabs ── */
-.mv-tabs-wrap { overflow-x:auto;scrollbar-width:none;margin-bottom:16px; }
-.mv-tabs-wrap::-webkit-scrollbar { display:none; }
-.mv-tabs { display:flex;gap:6px;padding-bottom:2px;min-width:max-content; }
-.mv-tab { display:flex;align-items:center;gap:7px;padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);
-  background:var(--card);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;color:var(--text-muted);white-space:nowrap; }
-.mv-tab:hover { background:rgba(15,23,42,0.04);color:var(--text); }
-.mv-tab.active { border-color:var(--mv-color,#0d6efd);background:rgba(var(--mv-rgb,13,110,253),0.10);color:var(--mv-color,#0d6efd); }
-.mv-tab-dot { width:8px;height:8px;border-radius:50%;background:var(--mv-color,#0d6efd);opacity:0.8; }
-.mv-tab-tipo { font-size:0.62rem;font-weight:500;opacity:0.7; }
-
+.mv-tabs-wrap{overflow-x:auto;scrollbar-width:none;margin-bottom:16px}
+.mv-tabs-wrap::-webkit-scrollbar{display:none}
+.mv-tabs{display:flex;gap:6px;padding-bottom:2px;min-width:max-content}
+.mv-tab{display:flex;align-items:center;gap:7px;padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--card);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;color:var(--text-muted);white-space:nowrap}
+.mv-tab:hover{background:rgba(15,23,42,0.04);color:var(--text)}
+.mv-tab.active{border-color:var(--mv-color,#0d6efd);background:rgba(var(--mv-rgb,13,110,253),0.10);color:var(--mv-color,#0d6efd)}
+.mv-tab-dot{width:8px;height:8px;border-radius:50%;background:var(--mv-color,#0d6efd);opacity:0.8}
+.mv-tab-tipo{font-size:0.62rem;font-weight:500;opacity:0.7}
 /* ── Layout ── */
-.mv-layout { display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start; }
-@media (max-width:991px){ .mv-layout { grid-template-columns:1fr; } }
-
+.mv-layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+@media(max-width:991px){.mv-layout{grid-template-columns:1fr}}
 /* ── Error list ── */
-.mv-left { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
-.mv-list-hdr { padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03); }
-.mv-search { border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.8rem;width:100%;
-  color:var(--text);background:var(--card);margin-bottom:8px; }
-.mv-search:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.10); }
-.mv-filter { border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:0.78rem;width:100%;
-  color:var(--text);background:var(--card); }
-.mv-err-list { max-height:calc(100vh - 300px);overflow-y:auto;scrollbar-width:thin; }
-@media (max-width:991px){ .mv-err-list { max-height:300px; } }
-.mv-err-item { padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;display:flex;gap:10px;align-items:flex-start; }
-.mv-err-item:last-child { border-bottom:none; }
-.mv-err-item:hover { background:rgba(15,23,42,0.03); }
-.mv-err-item.active { background:rgba(var(--mv-rgb,13,110,253),0.07);border-left:3px solid var(--mv-color,#0d6efd); }
-.mv-err-item.active .mv-err-item-title { color:var(--mv-color,#0d6efd); }
-.mv-err-item-code { font-family:monospace;font-size:0.68rem;font-weight:800;background:rgba(15,23,42,0.08);
-  border-radius:4px;padding:2px 5px;white-space:nowrap;color:var(--text-muted); }
-.mv-err-item-title { font-size:0.8rem;font-weight:700;color:var(--text);line-height:1.35;margin-bottom:3px; }
-.mv-err-item-cat { font-size:0.65rem;font-weight:600;padding:1px 6px;border-radius:10px; }
-.mv-sev-alta { background:rgba(220,53,69,0.12);color:#842029; }
-.mv-sev-media { background:rgba(255,193,7,0.16);color:#664d03; }
-.mv-sev-baixa { background:rgba(25,135,84,0.10);color:#0a3622; }
-.mv-empty-list { padding:24px;text-align:center;color:var(--text-muted);font-size:0.82rem; }
-
+.mv-left{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mv-list-hdr{padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03)}
+.mv-search{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:0.8rem;width:100%;
+  color:var(--text);background:var(--card);margin-bottom:8px}
+.mv-search:focus{outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.10)}
+.mv-filter{border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:0.78rem;width:100%;color:var(--text);background:var(--card)}
+.mv-err-list{max-height:calc(100vh - 300px);overflow-y:auto;scrollbar-width:thin}
+@media(max-width:991px){.mv-err-list{max-height:300px}}
+.mv-err-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;display:flex;gap:10px;align-items:flex-start}
+.mv-err-item:last-child{border-bottom:none}
+.mv-err-item:hover{background:rgba(15,23,42,0.03)}
+.mv-err-item.active{background:rgba(var(--mv-rgb,13,110,253),0.07);border-left:3px solid var(--mv-color,#0d6efd)}
+.mv-err-item.active .mv-err-item-title{color:var(--mv-color,#0d6efd)}
+.mv-err-item-code{font-family:monospace;font-size:0.68rem;font-weight:800;background:rgba(15,23,42,0.08);border-radius:4px;padding:2px 5px;white-space:nowrap;color:var(--text-muted)}
+.mv-err-item-title{font-size:0.8rem;font-weight:700;color:var(--text);line-height:1.35;margin-bottom:3px}
+.mv-err-item-cat{font-size:0.65rem;font-weight:600;padding:1px 6px;border-radius:10px}
+.mv-sev-alta{background:rgba(220,53,69,0.12);color:#842029}
+.mv-sev-media{background:rgba(255,193,7,0.16);color:#664d03}
+.mv-sev-baixa{background:rgba(25,135,84,0.10);color:#0a3622}
+.mv-empty-list{padding:24px;text-align:center;color:var(--text-muted);font-size:0.82rem}
 /* ── Right column ── */
-.mv-right { display:flex;flex-direction:column;gap:14px; }
+.mv-right{display:flex;flex-direction:column;gap:14px}
+.mv-panel-wrap{display:flex;justify-content:center}
+/* ── State hint ── */
+.mv-state-hint{text-align:center;font-size:0.72rem;color:var(--text-muted);padding:6px 0;font-weight:600}
 
-/* ── Machine panel wrapper ── */
-.mv-panel-wrap { display:flex;justify-content:center; }
-
-/* ── FUJI panel (NXT / AIMEX / XP) ── */
-.panel-fuji {
-  background:linear-gradient(160deg,#535353 0%,#3d3d3d 40%,#2e2e2e 100%);
+/* ── FUJI panel ── */
+.panel-fuji{background:linear-gradient(160deg,#535353 0%,#3d3d3d 40%,#2e2e2e 100%);
   border-radius:16px;border:3px solid #1c1c1c;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),0 24px 60px rgba(0,0,0,0.55);
-  padding:18px 16px 14px;width:100%;max-width:460px;
-}
-.fuji-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
-.fuji-logo { color:#f60;font-size:1rem;font-weight:900;letter-spacing:3px;text-shadow:0 0 14px rgba(255,102,0,0.35); }
-.fuji-model-badge { background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;
-  color:rgba(255,255,255,0.7);font-size:0.62rem;font-weight:700;padding:3px 8px;letter-spacing:1px; }
-.fuji-screen-bezel { background:#0d0d0d;border:3px solid #0a0a0a;border-radius:5px;
-  box-shadow:inset 0 3px 10px rgba(0,0,0,0.9);padding:3px; }
-.fuji-screen { min-height:210px;border-radius:3px;overflow:hidden;position:relative;display:flex;flex-direction:column;transition:background 0.3s; }
-.fuji-screen.idle { background:#07162b; }
-.fuji-screen.error-active { background:#f5c000; }
-/* Idle screen */
-.fsc-idle { display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:210px;gap:8px;padding:16px; }
-.fsc-idle-ready { color:#00e676;font-size:1.4rem;font-weight:800;letter-spacing:4px;text-shadow:0 0 20px rgba(0,230,118,0.5); }
-.fsc-idle-model { color:rgba(255,255,255,0.45);font-size:0.75rem;font-weight:600;letter-spacing:2px; }
-.fsc-idle-dots { display:flex;gap:6px;margin-top:6px; }
-.fsc-idle-dot { width:8px;height:8px;border-radius:50%;background:#00e676;opacity:0.8;animation:pulse-dot 2s infinite; }
-.fsc-idle-dot:nth-child(2) { animation-delay:0.4s; }
-.fsc-idle-dot:nth-child(3) { animation-delay:0.8s; }
-@keyframes pulse-dot { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
-/* Error screen (Fuji style) */
-.fsc-error { display:flex;flex-direction:column;height:100%;min-height:210px; }
-.fsc-err-top { background:rgba(30,30,30,0.85);padding:6px 10px;display:flex;justify-content:space-between;align-items:center; }
-.fsc-err-module { color:#fff;font-size:0.68rem;font-weight:800;letter-spacing:0.5px; }
-.fsc-err-soak { text-align:right;line-height:1.5; }
-.fsc-err-soak span { color:rgba(255,255,255,0.6);font-size:0.62rem;font-family:monospace; }
-.fsc-err-soak strong { color:#fff;font-size:0.62rem;font-family:monospace;font-weight:700; }
-.fsc-err-body { flex:1;display:flex;gap:0;padding:10px; }
-.fsc-err-icons { display:flex;flex-direction:column;gap:5px;margin-right:10px; }
-.fsc-err-icon-row { display:flex;gap:5px; }
-.fsc-err-icon { width:28px;height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:700;color:#fff; }
-.fsc-err-text { flex:1;display:flex;flex-direction:column;justify-content:center; }
-.fsc-err-cat { font-size:0.68rem;font-weight:700;color:#1a1a1a;letter-spacing:0.5px;margin-bottom:4px; }
-.fsc-err-main { font-size:1.35rem;font-weight:900;color:#1a1a1a;line-height:1.1;margin-bottom:4px; }
-.fsc-err-sub  { font-size:0.82rem;font-weight:700;color:#333; }
-.fsc-err-foot { background:rgba(0,0,0,0.18);padding:4px 10px;display:flex;justify-content:space-between;align-items:center; }
-.fsc-err-info { font-size:0.58rem;color:rgba(0,0,0,0.55);font-weight:600; }
-.fsc-err-code { font-family:monospace;font-size:0.85rem;font-weight:900;color:#1a1a1a; }
-/* Fuji buttons */
-.fuji-btns { margin-top:10px;display:flex;flex-direction:column;gap:5px; }
-.fuji-btn-row { display:flex;gap:4px;justify-content:flex-start; }
-.fbtn { border-radius:4px;border:none;font-size:0.55rem;font-weight:700;padding:4px 6px;cursor:default;letter-spacing:0.3px;line-height:1.2;text-align:center;min-width:36px; }
-.fbtn-gray  { background:linear-gradient(180deg,#6a6a6a,#4a4a4a);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4); }
-.fbtn-green { background:linear-gradient(180deg,#28c563,#1a8a42);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4); }
-.fbtn-red   { background:linear-gradient(180deg,#e53935,#b71c1c);color:#fff;box-shadow:0 2px 5px rgba(0,0,0,0.5); }
-.fbtn-nav   { background:linear-gradient(180deg,#5a5a5a,#3a3a3a);color:#ddd;padding:5px 7px;box-shadow:0 2px 3px rgba(0,0,0,0.4); }
-.fbtn-ok    { background:linear-gradient(180deg,#0d6efd,#0950c0);color:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:5px 10px; }
-.fbtn-cancel{ background:linear-gradient(180deg,#6a6a6a,#3a3a3a);color:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4); }
-.fbtn-emg   { background:radial-gradient(circle,#e53935,#b71c1c);color:#fff;border-radius:50%;width:34px;height:34px;
-  font-size:0.48rem;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #ff5252,0 3px 8px rgba(0,0,0,0.5); }
-.fuji-btn-row-nav { display:flex;align-items:center;gap:4px;margin-top:2px; }
-.fuji-btn-row-emg { display:flex;align-items:center;gap:8px;margin-top:4px; }
-.fbtn-standby { background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);
-  border-radius:4px;font-size:0.5rem;font-weight:700;padding:3px 7px;cursor:default; }
+  padding:18px 16px 14px;width:100%;max-width:460px}
+.fuji-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.fuji-logo{color:#f60;font-size:1rem;font-weight:900;letter-spacing:3px;text-shadow:0 0 14px rgba(255,102,0,0.35)}
+.fuji-model-badge{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;
+  color:rgba(255,255,255,0.7);font-size:0.62rem;font-weight:700;padding:3px 8px;letter-spacing:1px}
+.fuji-screen-bezel{background:#0d0d0d;border:3px solid #0a0a0a;border-radius:5px;
+  box-shadow:inset 0 3px 10px rgba(0,0,0,0.9);padding:3px}
+.fuji-screen{min-height:210px;border-radius:3px;overflow:hidden;position:relative;display:flex;flex-direction:column;transition:background 0.3s}
+/* Screen states */
+.fuji-screen.s-idle{background:#07162b}
+.fuji-screen.s-running{background:#071e14}
+.fuji-screen.s-manual{background:#1a0d00}
+.fuji-screen.s-error{background:#f5c000}
+.fuji-screen.s-estop{background:#1f0000;animation:estop-blink 1s infinite}
+.fuji-screen.s-stopping{background:#161600}
+.fuji-screen.s-standby{background:#030308}
+@keyframes estop-blink{0%,100%{border:2px solid #dc3545}50%{border:2px solid #ff000022}}
+
+/* Idle */
+.fsc-idle{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:210px;gap:8px;padding:16px}
+.fsc-idle-ready{color:#00e676;font-size:1.4rem;font-weight:800;letter-spacing:4px;text-shadow:0 0 20px rgba(0,230,118,0.5)}
+.fsc-idle-model{color:rgba(255,255,255,0.45);font-size:0.75rem;font-weight:600;letter-spacing:2px}
+.fsc-idle-dots{display:flex;gap:6px;margin-top:6px}
+.fsc-idle-dot{width:8px;height:8px;border-radius:50%;background:#00e676;opacity:0.8;animation:pulse-dot 2s infinite}
+.fsc-idle-dot:nth-child(2){animation-delay:0.4s}
+.fsc-idle-dot:nth-child(3){animation-delay:0.8s}
+@keyframes pulse-dot{0%,80%,100%{opacity:0.3}40%{opacity:1}}
+/* Running */
+.fsc-running{display:flex;flex-direction:column;height:100%;min-height:210px;padding:12px;gap:8px}
+.fsc-run-status{color:#00e676;font-size:0.8rem;font-weight:800;letter-spacing:2px;display:flex;align-items:center;gap:6px}
+.fsc-run-dot{width:8px;height:8px;border-radius:50%;background:#00e676;animation:pulse-dot 1s infinite}
+.fsc-run-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.35);margin-top:4px}
+.fsc-run-val{font-size:1.1rem;font-weight:800;color:#fff;font-family:monospace}
+.fsc-run-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.fsc-run-cell{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:5px;padding:5px 8px}
+.fsc-run-mod{display:flex;align-items:center;gap:5px;font-size:0.62rem;color:rgba(255,255,255,0.5);font-weight:700}
+.fsc-run-mod-dot{width:6px;height:6px;border-radius:50%;background:#00e676}
+/* Manual */
+.fsc-manual{display:flex;flex-direction:column;height:100%;min-height:210px;padding:12px;gap:6px}
+.fsc-man-title{color:#f90;font-size:0.85rem;font-weight:800;letter-spacing:3px}
+.fsc-man-coords{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.fsc-man-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:rgba(255,255,255,0.04);border-radius:4px}
+.fsc-man-axis{color:#f90;font-size:0.65rem;font-weight:800}
+.fsc-man-val{color:#fff;font-family:monospace;font-size:0.9rem;font-weight:800}
+.fsc-man-unit{color:rgba(255,255,255,0.35);font-size:0.6rem}
+.fsc-man-hint{color:rgba(255,165,0,0.55);font-size:0.65rem;font-weight:600;margin-top:6px;text-align:center}
+/* ESTOP */
+.fsc-estop{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:210px;gap:8px;padding:16px}
+.fsc-estop-icon{color:#ff3333;font-size:2.5rem;line-height:1}
+.fsc-estop-title{color:#ff3333;font-size:1.1rem;font-weight:900;letter-spacing:2px}
+.fsc-estop-msg{color:rgba(255,100,100,0.7);font-size:0.68rem;font-weight:700;text-align:center}
+/* Stopping */
+.fsc-stopping{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:210px;gap:10px;padding:16px}
+.fsc-stopping-txt{color:#ffee00;font-size:1rem;font-weight:800;letter-spacing:2px}
+.fsc-stopping-bar{width:80%;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+.fsc-stopping-fill{height:100%;background:#ffee00;border-radius:3px;animation:stop-fill 1.5s linear forwards}
+@keyframes stop-fill{from{width:0}to{width:100%}}
+/* Standby */
+.fsc-standby{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:210px;gap:8px;padding:16px}
+.fsc-standby-txt{color:rgba(100,120,255,0.6);font-size:1.1rem;font-weight:800;letter-spacing:4px}
+.fsc-standby-sub{color:rgba(255,255,255,0.2);font-size:0.65rem;font-weight:600;text-align:center}
+/* Error */
+.fsc-error{display:flex;flex-direction:column;height:100%;min-height:210px}
+.fsc-err-top{background:rgba(30,30,30,0.85);padding:6px 10px;display:flex;justify-content:space-between;align-items:center}
+.fsc-err-module{color:#fff;font-size:0.68rem;font-weight:800;letter-spacing:0.5px}
+.fsc-err-soak{text-align:right;line-height:1.5}
+.fsc-err-soak span{color:rgba(255,255,255,0.6);font-size:0.62rem;font-family:monospace}
+.fsc-err-soak strong{color:#fff;font-size:0.62rem;font-family:monospace;font-weight:700}
+.fsc-err-body{flex:1;display:flex;gap:0;padding:10px}
+.fsc-err-icons{display:flex;flex-direction:column;gap:5px;margin-right:10px}
+.fsc-err-icon-row{display:flex;gap:5px}
+.fsc-err-icon{width:28px;height:22px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.55rem;font-weight:700;color:#fff}
+.fsc-err-text{flex:1;display:flex;flex-direction:column;justify-content:center}
+.fsc-err-cat{font-size:0.68rem;font-weight:700;color:#1a1a1a;letter-spacing:0.5px;margin-bottom:4px}
+.fsc-err-main{font-size:1.35rem;font-weight:900;color:#1a1a1a;line-height:1.1;margin-bottom:4px}
+.fsc-err-sub{font-size:0.82rem;font-weight:700;color:#333}
+.fsc-err-foot{background:rgba(0,0,0,0.18);padding:4px 10px;display:flex;justify-content:space-between;align-items:center}
+.fsc-err-info{font-size:0.58rem;color:rgba(0,0,0,0.55);font-weight:600}
+.fsc-err-code{font-family:monospace;font-size:0.85rem;font-weight:900;color:#1a1a1a}
+
+/* ── Fuji buttons ── */
+.fuji-btns{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.fuji-btn-row{display:flex;gap:4px;justify-content:flex-start}
+.fbtn{border-radius:4px;border:none;font-size:0.55rem;font-weight:700;padding:4px 6px;cursor:pointer;
+  letter-spacing:0.3px;line-height:1.2;text-align:center;min-width:36px;transition:filter 0.08s,transform 0.08s}
+.fbtn:active{filter:brightness(0.7);transform:scale(0.93)}
+.fbtn-gray{background:linear-gradient(180deg,#6a6a6a,#4a4a4a);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4)}
+.fbtn-green{background:linear-gradient(180deg,#28c563,#1a8a42);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4)}
+.fbtn-red{background:linear-gradient(180deg,#e53935,#b71c1c);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4)}
+.fbtn-nav{background:linear-gradient(180deg,#5a5a5a,#3a3a3a);color:#ddd;padding:5px 7px;box-shadow:0 2px 3px rgba(0,0,0,0.4)}
+.fbtn-ok{background:linear-gradient(180deg,#0d6efd,#0950c0);color:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4);padding:5px 10px}
+.fbtn-cancel{background:linear-gradient(180deg,#6a6a6a,#3a3a3a);color:#fff;box-shadow:0 2px 4px rgba(0,0,0,0.4)}
+.fbtn-orange{background:linear-gradient(180deg,#f57c00,#e65100);color:#fff;box-shadow:0 2px 3px rgba(0,0,0,0.4)}
+.fbtn-emg{background:radial-gradient(circle,#e53935,#b71c1c);color:#fff;border-radius:50%;width:34px;height:34px;
+  font-size:0.48rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2px #ff5252,0 3px 8px rgba(0,0,0,0.5);cursor:pointer;border:none;transition:box-shadow 0.1s,transform 0.08s}
+.fbtn-emg:active{box-shadow:0 0 0 5px rgba(220,53,69,0.4),0 3px 8px rgba(0,0,0,0.5);transform:scale(0.9)}
+.fuji-btn-row-nav{display:flex;align-items:center;gap:4px;margin-top:2px}
+.fuji-btn-row-emg{display:flex;align-items:center;gap:8px;margin-top:4px}
+.fbtn-standby{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.4);
+  border-radius:4px;font-size:0.5rem;font-weight:700;padding:3px 7px;cursor:pointer;transition:background 0.1s}
+.fbtn-standby:active{background:rgba(255,255,255,0.15)}
 
 /* ── DEK panel ── */
-.panel-dek {
-  background:linear-gradient(160deg,#dcdcdc 0%,#c8c8c8 50%,#b8b8b8 100%);
+.panel-dek{background:linear-gradient(160deg,#dcdcdc 0%,#c8c8c8 50%,#b8b8b8 100%);
   border-radius:14px;border:3px solid #a0a0a0;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.6),0 16px 48px rgba(0,0,0,0.35);
-  padding:16px;width:100%;max-width:460px;
-}
-.dek-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px; }
-.dek-logo { color:#003399;font-size:1.1rem;font-weight:900;letter-spacing:1px; }
-.dek-model { color:#555;font-size:0.62rem;font-weight:700;background:rgba(0,0,0,0.08);border-radius:4px;padding:2px 7px; }
-.dek-screen-bezel { background:#222;border:3px solid #1a1a1a;border-radius:6px;padding:4px;box-shadow:inset 0 2px 6px rgba(0,0,0,0.6); }
-.dek-screen { min-height:190px;border-radius:3px;overflow:hidden;background:#f0f0f0;display:flex;flex-direction:column; }
-.dek-screen-toolbar { background:#d4d0c8;border-bottom:1px solid #aaa;padding:3px 6px;display:flex;align-items:center;gap:6px; }
-.dek-toolbar-btn { width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,0.2); }
-.dek-toolbar-btn.close { background:#dc3545; }
-.dek-toolbar-btn.min { background:#ffc107; }
-.dek-toolbar-btn.max { background:#198754; }
-.dek-screen-title { font-size:0.6rem;color:#333;font-weight:600;margin-left:4px; }
-.dsc-idle { display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:16px;gap:6px; }
-.dsc-idle-status { color:#198754;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:6px; }
-.dsc-idle-bar { height:6px;border-radius:3px;background:#e0e0e0;width:100%;margin-top:4px; }
-.dsc-idle-bar-fill { height:100%;border-radius:3px;background:#198754;width:100%; }
-.dsc-idle-label { font-size:0.65rem;color:#666;font-weight:600; }
-.dsc-error { display:flex;flex-direction:column;flex:1;padding:10px; }
-.dsc-err-dialog { background:#fff;border:2px solid #dc3545;border-radius:4px;overflow:hidden;flex:1; }
-.dsc-err-dialog-title { background:#dc3545;color:#fff;padding:5px 10px;font-size:0.68rem;font-weight:700;display:flex;align-items:center;gap:6px; }
-.dsc-err-dialog-body { padding:10px; }
-.dsc-err-dialog-icon { font-size:1.4rem;text-align:center;margin-bottom:6px; }
-.dsc-err-dialog-msg { font-size:0.72rem;color:#333;font-weight:600;margin-bottom:4px; }
-.dsc-err-dialog-code { font-family:monospace;font-size:0.65rem;color:#666;background:#f5f5f5;padding:2px 6px;border-radius:3px;display:inline-block; }
-.dsc-err-btns { display:flex;gap:6px;margin-top:8px;justify-content:center; }
-.dsc-err-btn { border:1px solid #ccc;background:#d4d0c8;border-radius:2px;padding:3px 12px;font-size:0.62rem;font-weight:700;color:#333;cursor:default; }
-.dek-btns { margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end; }
-.dek-btn { background:#b0b0b0;border:1px solid #888;border-radius:3px;color:#333;font-size:0.58rem;font-weight:700;padding:5px 10px;cursor:default; }
-.dek-btn.primary { background:#003399;color:#fff;border-color:#00227a; }
-.dek-btn.red { background:#dc3545;color:#fff;border-color:#a71d2a; }
+  padding:16px;width:100%;max-width:460px}
+.dek-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dek-logo{color:#003399;font-size:1.1rem;font-weight:900;letter-spacing:1px}
+.dek-model{color:#555;font-size:0.62rem;font-weight:700;background:rgba(0,0,0,0.08);border-radius:4px;padding:2px 7px}
+.dek-screen-bezel{background:#222;border:3px solid #1a1a1a;border-radius:6px;padding:4px;box-shadow:inset 0 2px 6px rgba(0,0,0,0.6)}
+.dek-screen{min-height:190px;border-radius:3px;overflow:hidden;background:#f0f0f0;display:flex;flex-direction:column}
+.dek-screen-toolbar{background:#d4d0c8;border-bottom:1px solid #aaa;padding:3px 6px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.dek-toolbar-btn{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,0.2)}
+.dek-toolbar-btn.close{background:#dc3545}.dek-toolbar-btn.min{background:#ffc107}.dek-toolbar-btn.max{background:#198754}
+.dek-screen-title{font-size:0.6rem;color:#333;font-weight:600;margin-left:4px}
+.dsc-body{flex:1;display:flex;flex-direction:column;padding:10px;gap:8px}
+.dsc-status-ok{color:#198754;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.dsc-status-run{color:#0d6efd;font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.dsc-dot{width:8px;height:8px;border-radius:50%;animation:pulse-dot 1s infinite}
+.dsc-label{font-size:0.65rem;color:#666;font-weight:600}
+.dsc-bar{height:5px;border-radius:3px;background:#e0e0e0;width:100%;overflow:hidden}
+.dsc-bar-fill{height:100%;border-radius:3px;background:#198754;width:100%}
+.dsc-err-dialog{background:#fff;border:2px solid #dc3545;border-radius:4px;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.dsc-err-dialog-title{background:#dc3545;color:#fff;padding:5px 10px;font-size:0.68rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.dsc-err-dialog-body{padding:10px;flex:1}
+.dsc-err-dialog-icon{font-size:1.4rem;text-align:center;margin-bottom:6px}
+.dsc-err-dialog-msg{font-size:0.72rem;color:#333;font-weight:600;margin-bottom:4px}
+.dsc-err-dialog-code{font-family:monospace;font-size:0.65rem;color:#666;background:#f5f5f5;padding:2px 6px;border-radius:3px;display:inline-block}
+.dsc-err-btns{display:flex;gap:6px;margin-top:8px;justify-content:center}
+.dsc-err-btn{border:1px solid #ccc;background:#d4d0c8;border-radius:2px;padding:3px 12px;font-size:0.62rem;font-weight:700;color:#333;cursor:pointer}
+.dsc-err-btn:active{filter:brightness(0.85)}
+.dsc-estop{background:#fff0f0;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px}
+.dsc-estop-title{color:#dc3545;font-size:0.9rem;font-weight:800}
+.dsc-estop-msg{font-size:0.65rem;color:#555;text-align:center;font-weight:600}
+.dek-btns{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.dek-btn{background:#b0b0b0;border:1px solid #888;border-radius:3px;color:#333;font-size:0.58rem;font-weight:700;padding:5px 10px;cursor:pointer;transition:filter 0.08s,transform 0.08s}
+.dek-btn:active{filter:brightness(0.8);transform:scale(0.94)}
+.dek-btn.primary{background:#003399;color:#fff;border-color:#00227a}
+.dek-btn.green{background:#198754;color:#fff;border-color:#146c43}
+.dek-btn.red{background:#dc3545;color:#fff;border-color:#a71d2a}
 
 /* ── Inspect panel (SPI / AOI) ── */
-.panel-inspect {
-  background:linear-gradient(160deg,#2a2a3e 0%,#1e1e2e 60%,#161622 100%);
+.panel-inspect{background:linear-gradient(160deg,#2a2a3e 0%,#1e1e2e 60%,#161622 100%);
   border-radius:16px;border:3px solid #111;
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 20px 50px rgba(0,0,0,0.5);
-  padding:16px;width:100%;max-width:460px;
-}
-.inspect-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px; }
-.inspect-logo { color:#00e5ff;font-size:0.85rem;font-weight:900;letter-spacing:2px;text-shadow:0 0 12px rgba(0,229,255,0.3); }
-.inspect-model { color:rgba(255,255,255,0.5);font-size:0.6rem;font-weight:700;background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:2px 7px; }
-.inspect-screen-bezel { background:#0a0a0a;border:2px solid #000;border-radius:5px;padding:3px; }
-.inspect-screen { min-height:200px;border-radius:3px;overflow:hidden;background:#0d1117;display:flex;flex-direction:column; }
-.isc-idle { display:flex;flex-direction:column;flex:1;padding:12px;gap:8px; }
-.isc-idle-header { display:flex;justify-content:space-between;align-items:center; }
-.isc-idle-title { color:#00e5ff;font-size:0.68rem;font-weight:700;letter-spacing:1px; }
-.isc-idle-ok { color:#00e676;font-size:0.65rem;font-weight:700;display:flex;align-items:center;gap:4px; }
-.isc-idle-grid { display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1; }
-.isc-idle-stat { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px; }
-.isc-idle-stat-val { color:#00e5ff;font-size:0.82rem;font-weight:800;font-family:monospace; }
-.isc-idle-stat-lbl { color:rgba(255,255,255,0.35);font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px; }
-.isc-error { display:flex;flex-direction:column;flex:1;padding:10px;gap:6px; }
-.isc-err-banner { background:rgba(220,53,69,0.2);border:1px solid rgba(220,53,69,0.4);border-radius:6px;padding:6px 10px;
-  display:flex;align-items:center;gap:8px; }
-.isc-err-banner-icon { color:#ff5252;font-size:1rem; }
-.isc-err-banner-text { flex:1; }
-.isc-err-banner-cat { color:#ff5252;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px; }
-.isc-err-banner-main { color:#fff;font-size:0.82rem;font-weight:800;margin-top:1px; }
-.isc-err-banner-sub { color:rgba(255,255,255,0.6);font-size:0.68rem;margin-top:1px; }
-.isc-err-code { background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:4px 8px;
-  display:flex;justify-content:space-between;align-items:center; }
-.isc-err-code-lbl { color:rgba(255,255,255,0.4);font-size:0.6rem;font-weight:700; }
-.isc-err-code-val { color:#00e5ff;font-family:monospace;font-size:0.72rem;font-weight:800; }
-.inspect-btns { margin-top:10px;display:flex;gap:6px;justify-content:flex-end; }
-.inspect-btn { background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);
-  border-radius:5px;font-size:0.6rem;font-weight:700;padding:5px 10px;cursor:default; }
-.inspect-btn.primary { background:rgba(0,229,255,0.15);border-color:rgba(0,229,255,0.3);color:#00e5ff; }
-.inspect-btn.danger { background:rgba(220,53,69,0.2);border-color:rgba(220,53,69,0.4);color:#ff5252; }
+  padding:16px;width:100%;max-width:460px}
+.inspect-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.inspect-logo{color:#00e5ff;font-size:0.85rem;font-weight:900;letter-spacing:2px;text-shadow:0 0 12px rgba(0,229,255,0.3)}
+.inspect-model{color:rgba(255,255,255,0.5);font-size:0.6rem;font-weight:700;background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:2px 7px}
+.inspect-screen-bezel{background:#0a0a0a;border:2px solid #000;border-radius:5px;padding:3px}
+.inspect-screen{min-height:200px;border-radius:3px;overflow:hidden;background:#0d1117;display:flex;flex-direction:column}
+.isc-body{display:flex;flex-direction:column;flex:1;padding:12px;gap:8px}
+.isc-header{display:flex;justify-content:space-between;align-items:center}
+.isc-title{color:#00e5ff;font-size:0.68rem;font-weight:700;letter-spacing:1px}
+.isc-ok{color:#00e676;font-size:0.65rem;font-weight:700;display:flex;align-items:center;gap:4px}
+.isc-run{color:#00e676;font-size:0.65rem;font-weight:700;display:flex;align-items:center;gap:4px;animation:pulse-dot 1s infinite}
+.isc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1}
+.isc-stat{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 8px}
+.isc-stat-val{color:#00e5ff;font-size:0.82rem;font-weight:800;font-family:monospace}
+.isc-stat-lbl{color:rgba(255,255,255,0.35);font-size:0.55rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.isc-err-banner{background:rgba(220,53,69,0.2);border:1px solid rgba(220,53,69,0.4);border-radius:6px;padding:6px 10px;display:flex;align-items:center;gap:8px}
+.isc-err-banner-icon{color:#ff5252;font-size:1rem}
+.isc-err-banner-text{flex:1}
+.isc-err-banner-cat{color:#ff5252;font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.isc-err-banner-main{color:#fff;font-size:0.82rem;font-weight:800;margin-top:1px}
+.isc-err-banner-sub{color:rgba(255,255,255,0.6);font-size:0.68rem;margin-top:1px}
+.isc-err-code{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:4px 8px;display:flex;justify-content:space-between;align-items:center}
+.isc-err-code-lbl{color:rgba(255,255,255,0.4);font-size:0.6rem;font-weight:700}
+.isc-err-code-val{color:#00e5ff;font-family:monospace;font-size:0.72rem;font-weight:800}
+.isc-estop{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:6px;padding:12px}
+.isc-estop-title{color:#ff3333;font-size:0.9rem;font-weight:800;letter-spacing:2px}
+.isc-estop-msg{color:rgba(255,100,100,0.6);font-size:0.65rem;font-weight:600;text-align:center}
+.inspect-btns{margin-top:10px;display:flex;gap:6px;justify-content:flex-end}
+.inspect-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);
+  border-radius:5px;font-size:0.6rem;font-weight:700;padding:5px 10px;cursor:pointer;transition:filter 0.08s,transform 0.08s}
+.inspect-btn:active{filter:brightness(0.7);transform:scale(0.94)}
+.inspect-btn.primary{background:rgba(0,229,255,0.15);border-color:rgba(0,229,255,0.3);color:#00e5ff}
+.inspect-btn.danger{background:rgba(220,53,69,0.2);border-color:rgba(220,53,69,0.4);color:#ff5252}
+.inspect-btn.green{background:rgba(25,135,84,0.2);border-color:rgba(25,135,84,0.4);color:#00e676}
 
 /* ── Solution panel ── */
-.mv-solution { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
-.mv-sol-hdr { padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
-.mv-sol-title { font-size:0.9rem;font-weight:800;color:var(--text); }
-.mv-sol-meta { display:flex;gap:6px;flex-wrap:wrap;margin-top:4px; }
-.mv-sol-badge { font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:12px; }
-.mv-sol-body { padding:14px 16px; }
-.mv-sol-section { font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:6px;margin-top:14px; }
-.mv-sol-section:first-child { margin-top:0; }
-.mv-sol-causa { font-size:0.82rem;color:var(--text);line-height:1.6;background:rgba(15,23,42,0.03);border-left:3px solid var(--border);padding:8px 12px;border-radius:0 6px 6px 0; }
-.mv-sol-steps { list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px; }
-.mv-sol-steps li { display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(15,23,42,0.02);
-  border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text);line-height:1.5; }
-.mv-sol-step-num { min-width:22px;height:22px;border-radius:50%;background:rgba(13,110,253,0.12);color:#0d6efd;
-  font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center; }
-.mv-sol-pecas { font-size:0.78rem;color:#0a3622;background:rgba(25,135,84,0.08);border:1px solid rgba(25,135,84,0.18);
-  border-radius:7px;padding:7px 12px;display:inline-flex;align-items:center;gap:7px;margin-top:4px; }
-.mv-sol-img-btn { display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:600;color:#0d6efd;
-  background:rgba(13,110,253,0.08);border:1px solid rgba(13,110,253,0.2);border-radius:7px;padding:5px 12px;cursor:pointer;margin-top:8px;transition:all 0.12s; }
-.mv-sol-img-btn:hover { background:rgba(13,110,253,0.14); }
-
-/* ── Lightbox ── */
-.kb-lightbox { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center; }
-.kb-lightbox.open { display:flex; }
-.kb-lightbox img { max-width:90vw;max-height:88vh;border-radius:10px; }
-.kb-lightbox-close { position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer; }
-
+.mv-solution{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mv-sol-hdr{padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.mv-sol-title{font-size:0.9rem;font-weight:800;color:var(--text)}
+.mv-sol-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.mv-sol-badge{font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:12px}
+.mv-sol-body{padding:14px 16px}
+.mv-sol-section{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:6px;margin-top:14px}
+.mv-sol-section:first-child{margin-top:0}
+.mv-sol-causa{font-size:0.82rem;color:var(--text);line-height:1.6;background:rgba(15,23,42,0.03);border-left:3px solid var(--border);padding:8px 12px;border-radius:0 6px 6px 0}
+/* Checklist */
+.mv-progress-wrap{margin-bottom:10px}
+.mv-progress-bar-bg{height:6px;background:rgba(15,23,42,0.08);border-radius:3px;overflow:hidden}
+.mv-progress-bar-fill{height:100%;background:#198754;border-radius:3px;transition:width 0.3s}
+.mv-progress-label{font-size:0.68rem;font-weight:700;color:var(--text-muted);margin-top:4px;display:flex;justify-content:space-between}
+.mv-sol-steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.mv-step-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;
+  border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;
+  font-size:0.8rem;color:var(--text);line-height:1.5;user-select:none}
+.mv-step-item:hover{background:rgba(13,110,253,0.04);border-color:rgba(13,110,253,0.2)}
+.mv-step-item.checked{background:rgba(25,135,84,0.06);border-color:rgba(25,135,84,0.22)}
+.mv-step-item.checked .mv-step-txt{text-decoration:line-through;color:var(--text-muted)}
+.mv-step-check{min-width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;transition:all 0.15s;font-size:0.7rem;flex-shrink:0}
+.mv-step-item.checked .mv-step-check{background:#198754;border-color:#198754;color:#fff}
+.mv-step-num{min-width:18px;font-size:0.68rem;font-weight:800;color:var(--text-muted);flex-shrink:0;margin-top:1px}
+.mv-complete-banner{background:rgba(25,135,84,0.10);border:1px solid rgba(25,135,84,0.25);border-radius:8px;
+  padding:12px 14px;text-align:center;color:#0a3622;font-size:0.82rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+.mv-sol-pecas{font-size:0.78rem;color:#0a3622;background:rgba(25,135,84,0.08);border:1px solid rgba(25,135,84,0.18);
+  border-radius:7px;padding:7px 12px;display:inline-flex;align-items:center;gap:7px;margin-top:4px}
+.mv-sol-img-btn{display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;font-weight:600;color:#0d6efd;
+  background:rgba(13,110,253,0.08);border:1px solid rgba(13,110,253,0.2);border-radius:7px;
+  padding:5px 12px;cursor:pointer;margin-top:8px;transition:all 0.12s}
+.mv-sol-img-btn:hover{background:rgba(13,110,253,0.14)}
 /* ── KPIs ── */
-.mv-kpis { display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px; }
-.mv-kpi { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;min-width:70px; }
-.mv-kpi-val { font-size:1rem;font-weight:800;color:var(--text); }
-.mv-kpi-lbl { font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted); }
-
-@media (max-width:767px) {
-  .panel-fuji,.panel-dek,.panel-inspect { max-width:100%; }
-  .mv-kpis { display:none; }
+.mv-kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.mv-kpi{background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;min-width:70px}
+.mv-kpi-val{font-size:1rem;font-weight:800;color:var(--text)}
+.mv-kpi-lbl{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted)}
+/* ── Lightbox ── */
+.kb-lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center}
+.kb-lightbox.open{display:flex}
+.kb-lightbox img{max-width:90vw;max-height:88vh;border-radius:10px}
+.kb-lightbox-close{position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:1.6rem;cursor:pointer}
+@media(max-width:767px){
+  .panel-fuji,.panel-dek,.panel-inspect{max-width:100%}
+  .mv-kpis{display:none}
 }
 </style>
 {% endblock %}
@@ -243,12 +301,8 @@
 
 {% block content %}
 <div class="container-fluid">
-
   <div class="mv-kpis" id="mvKpis"></div>
-  <div class="mv-tabs-wrap">
-    <div class="mv-tabs" id="mvTabs"></div>
-  </div>
-
+  <div class="mv-tabs-wrap"><div class="mv-tabs" id="mvTabs"></div></div>
   <div class="mv-layout">
     <div class="mv-left">
       <div class="mv-list-hdr">
@@ -259,262 +313,302 @@
       </div>
       <div class="mv-err-list" id="mvErrList"></div>
     </div>
-
     <div class="mv-right">
+      <div id="mvStateHint" class="mv-state-hint"></div>
       <div class="mv-panel-wrap" id="mvPanelWrap"></div>
       <div class="mv-solution" id="mvSolution" style="display:none"></div>
     </div>
   </div>
-
 </div>
-
 <div class="kb-lightbox" id="kbLightbox" onclick="closeLightbox()">
   <button class="kb-lightbox-close"><i class="bi bi-x-lg"></i></button>
   <img id="kbLightboxImg" src="" alt="">
 </div>
-
 <script>
 (function(){
 "use strict";
 
-/* ── Error database ── */
+/* ─── Error database ─── */
 const MACHINES = {
-  nxt: {
-    label:"Fuji NXT", subtipo:"NXT II / NXT III",tipo:"Pick & Place",color:"#f60",rgb:"255,102,0",
-    panelStyle:"fuji", modelBadge:"NXT II",
+  nxt:{label:"Fuji NXT",subtipo:"NXT II / NXT III",tipo:"Pick & Place",color:"#f60",rgb:"255,102,0",panelStyle:"fuji",modelBadge:"NXT II",
     erros:[
-      { id:1,codigo:"1062",cat:"Servo / Encoder",sev:"alta",
-        titulo:"Axis:ZA — Encoder Battery",
-        display:{header:"Servo",main:"Axis:ZA",sub:"Encoder Battery",soak:"00003A21",subcode:"00000002",errcode:"1062",modulo:"9"},
-        causa:"A bateria do encoder absoluto do eixo ZA (eixo Z do cabeçote de placement) está descarregada. Essa bateria mantém os dados de posição do encoder quando a máquina é desligada. Sem ela, o encoder perde a referência absoluta de posição.",
-        passos:["Pressione STOP no painel e aguarde o cabeçote retornar à posição de repouso.","Acione o EMERGENCY STOP se o cabeçote não retornar normalmente.","Desligue a alimentação do módulo afetado pelo painel de energia.","Localize a bateria CR2032 3V no conector do cabo do encoder, próxima ao servo motor do eixo Z.","Substitua a bateria — não deixe o encoder sem bateria por mais de 30 segundos.","Ligue o módulo e execute o procedimento Home/Origin do eixo ZA via menu de manutenção.","Acesse a tela de alarmes e pressione OK/CANCEL para limpar o erro 1062.","Execute em modo MANUAL e verifique ausência de novos alarmes.","Realize um ciclo de teste completo antes de retornar à produção."],
-        pecas:"Bateria CR2032 3V (lítio)",
-        imagem:"images/debug/erros-maquinas-smd/nxt-axis-ZA enconder Battery.jpeg" },
-      { id:2,codigo:"1062",cat:"Servo / Encoder",sev:"alta",
-        titulo:"Axis:ZB — Encoder Battery",
-        display:{header:"Servo",main:"Axis:ZB",sub:"Encoder Battery",soak:"00003A22",subcode:"00000002",errcode:"1062",modulo:"5"},
-        causa:"Mesma causa do erro Axis:ZA — bateria do encoder do eixo ZB (segundo eixo Z do cabeçote duplo) descarregada.",
-        passos:["Identifique o módulo afetado no display.","Pressione STOP e aguarde o retorno do cabeçote.","Desligue a alimentação do módulo.","Localize e troque a bateria CR2032 no encoder do eixo ZB.","Não exceda 30 segundos com o encoder sem bateria.","Execute Home/Origin do eixo ZB.","Limpe o alarme 1062 via painel.","Teste em modo MANUAL antes de retornar à produção."],
-        pecas:"Bateria CR2032 3V (lítio)",imagem:"" },
-      { id:3,codigo:"3012",cat:"Nozzle / Pickup",sev:"media",
-        titulo:"Nozzle Not Picked — Head 1",
-        display:{header:"Erro de Pickup",main:"Nozzle 3012",sub:"Head 1 — Not Picked",soak:"00005B01",subcode:"00000001",errcode:"3012",modulo:"3"},
-        causa:"O bico (nozzle) não conseguiu pegar o componente do tape. Causas comuns: bico desgastado ou entupido, fita posicionada incorretamente, pressão de vácuo baixa.",
-        passos:["Pare a máquina com STOP.","Inspecione o bico do Head 1 — verifique entupimento ou deformação.","Limpe o bico com álcool isopropílico e ar comprimido limpo.","Verifique a pressão de vácuo (deve estar entre -65 a -80 kPa).","Confirme que o tape da fita está avançando corretamente.","Reposicione o reel se necessário.","Limpe o alarme e reteste com MANUAL JOG.","Se o erro persistir, substitua o nozzle pelo reserva."],
-        pecas:"Nozzle sobressalente (verificar número do modelo)",imagem:"" },
-      { id:4,codigo:"2001",cat:"Placement",sev:"media",
-        titulo:"Component Missing After Placement",
-        display:{header:"Component",main:"Missing 2001",sub:"After Placement",soak:"00002C10",subcode:"00000003",errcode:"2001",modulo:"2"},
-        causa:"O sistema de visão detectou que o componente não está presente na PCB após o movimento de placement. Causas: falha no pickup (vácuo), tombamento durante movimento, componente de tamanho fora do spec.",
-        passos:["Pare a máquina com STOP.","Inspecione visualmente a placa na posição de parada.","Verifique o bico e a pressão de vácuo do módulo.","Acesse o menu de visão e revise os parâmetros do componente (tamanho, tolerância).","Verifique se o tape do componente está dentro do prazo de validade e não está deformado.","Ajuste os parâmetros de pickup height se necessário.","Execute o teste do nozzle em modo MANUAL.","Limpe o alarme e reteste."],
-        pecas:"—",imagem:"" },
-      { id:5,codigo:"4021",cat:"Feeder",sev:"media",
-        titulo:"Feeder Feed Error — Slot 23",
-        display:{header:"Feeder",main:"Feed Error",sub:"Slot 23 — Jam",soak:"00004D17",subcode:"00000005",errcode:"4021",modulo:"7"},
-        causa:"O alimentador (feeder) no slot 23 não avançou corretamente o tape de componentes. Causas: tape dobrado, sprocket danificado, feeder com desgaste mecânico.",
-        passos:["Pressione STOP — não force o avanço manual.","Retire o feeder do slot 23 com cuidado.","Inspecione o tape: verifique se há dobras, rasgos ou avanço irregular.","Corte o tape antes do ponto travado e rebobine 5 cm.","Inspecione os sprockets do feeder — verifique desgaste ou dente quebrado.","Reinstale o feeder e faça o avanço manual via menu de feeder.","Se o feeder continuar com erro, substitua pelo reserva.","Limpe o alarme e reinicie o módulo."],
-        pecas:"Feeder sobressalente (8mm/12mm/16mm conforme o tipo)",imagem:"" },
-      { id:6,codigo:"5011",cat:"Visão",sev:"media",
-        titulo:"Fiducial Mark Not Found",
-        display:{header:"Vision",main:"Fiducial 5011",sub:"Mark Not Found",soak:"00005E0B",subcode:"00000002",errcode:"5011",modulo:"1"},
-        causa:"A câmera de visão não conseguiu localizar o ponto fiducial da PCB. Causas: placa oxidada, ponto fiducial obscurecido por pasta de solda, parâmetros de visão desatualizados, câmera suja.",
-        passos:["Pare a máquina com STOP.","Inspecione o ponto fiducial da PCB — verifique oxidação ou sujeira.","Limpe a lente da câmera superior com pano de microfibra limpo.","Acesse o menu de visão e execute o ensaio do fiducial.","Ajuste o threshold de contraste se a PCB for nova ou com acabamento diferente.","Se o ponto fiducial estiver encoberto por pasta, retorne a PCB à impressora.","Atualize o modelo de visão se necessário.","Limpe o alarme e reteste."],
-        pecas:"—",imagem:"" },
-      { id:7,codigo:"1045",cat:"Servo / Encoder",sev:"alta",
-        titulo:"Z-Axis Upper Limit Error",
-        display:{header:"Servo",main:"Axis:Z Limit",sub:"Upper Limit Exceed",soak:"00001A2D",subcode:"00000004",errcode:"1045",modulo:"4"},
-        causa:"O eixo Z ultrapassou o limite superior de curso. Causas: PCB com altura incorreta, fixação inadequada da placa, componente na placa acima do esperado, falha no sensor de limite.",
-        passos:["Pressione EMERGENCY STOP imediatamente.","Verifique se há colisão física — NÃO force o eixo manualmente.","Inspecione a PCB: verifique a altura e que não há componente alto obstruindo o percurso.","Confirme a fixação da placa nos trilhos — placa solta sobe com o cabeçote.","Verifique o sensor de limite superior do eixo Z — confirme funcionamento.","Reposicione o eixo Z via menu de manutenção (movimento manual).","Ajuste o parâmetro de Z-clearance se a placa for mais alta que o normal.","Limpe o alarme e execute ciclo de teste."],
-        pecas:"Sensor de limite (se danificado no impacto)",imagem:"" },
-      { id:8,codigo:"3031",cat:"Pneumático",sev:"media",
-        titulo:"Vacuum Level Low — Head 2",
-        display:{header:"Pneumático",main:"Vacuum Low",sub:"Head 2 — 3031",soak:"00003F1F",subcode:"00000002",errcode:"3031",modulo:"6"},
-        causa:"O nível de vácuo no Head 2 está abaixo do mínimo necessário para o pickup. Causas: filtro de vácuo entupido, nozzle com microtrinca, gerador de vácuo com desgaste.",
-        passos:["Pare a máquina.","Acesse o menu de diagnóstico de vácuo e verifique a leitura atual.","Substitua o filtro de vácuo do módulo (verificar localização no manual do módulo).","Inspecione o nozzle do Head 2 — troque se tiver trinca visível.","Verifique as conexões de mangueiras de vácuo — aperte ou troque vedações.","Teste o gerador de vácuo acionando em modo manual.","Se o gerador estiver abaixo de -65 kPa, solicite substituição ao fornecedor.","Limpe o alarme e reteste."],
-        pecas:"Filtro de vácuo, nozzle sobressalente, vedações",imagem:"" }
-    ]
-  },
-
-  aimex: {
-    label:"Fuji AIMEX",subtipo:"AIMEX III",tipo:"Pick & Place",color:"#e63946",rgb:"230,57,70",
-    panelStyle:"fuji",modelBadge:"AIMEX III",
+      {id:1,codigo:"1062",cat:"Servo / Encoder",sev:"alta",titulo:"Axis:ZA — Encoder Battery",
+       display:{header:"Servo",main:"Axis:ZA",sub:"Encoder Battery",soak:"00003A21",subcode:"00000002",errcode:"1062",modulo:"9"},
+       causa:"A bateria do encoder absoluto do eixo ZA está descarregada. Essa bateria mantém a posição do encoder quando a máquina é desligada. Sem ela, o encoder perde a referência absoluta.",
+       passos:["Pressione STOP e aguarde o cabeçote retornar à posição de repouso.","Acione EMERGENCY STOP se o cabeçote não parar normalmente.","Desligue a alimentação do módulo afetado.","Localize a bateria CR2032 3V no conector do encoder próxima ao servo motor do eixo Z.","Substitua a bateria — não deixe sem bateria por mais de 30 segundos.","Ligue o módulo e execute Home/Origin do eixo ZA via menu de manutenção.","Acesse a tela de alarmes e pressione OK para limpar o erro 1062.","Teste em modo MANUAL e verifique ausência de novos alarmes.","Execute ciclo de teste completo antes de retornar à produção."],
+       pecas:"Bateria CR2032 3V (lítio)",imagem:"images/debug/erros-maquinas-smd/nxt-axis-ZA enconder Battery.jpeg"},
+      {id:2,codigo:"1062",cat:"Servo / Encoder",sev:"alta",titulo:"Axis:ZB — Encoder Battery",
+       display:{header:"Servo",main:"Axis:ZB",sub:"Encoder Battery",soak:"00003A22",subcode:"00000002",errcode:"1062",modulo:"5"},
+       causa:"Bateria do encoder do eixo ZB descarregada. Mesmo tipo de falha do eixo ZA, porém no segundo eixo Z do cabeçote duplo.",
+       passos:["Identifique o módulo afetado no display.","Pressione STOP e aguarde o retorno do cabeçote.","Desligue a alimentação do módulo.","Troque a bateria CR2032 no encoder do eixo ZB — máximo 30 segundos sem bateria.","Execute Home/Origin do eixo ZB.","Limpe o alarme 1062.","Teste em modo MANUAL."],
+       pecas:"Bateria CR2032 3V (lítio)",imagem:""},
+      {id:3,codigo:"3012",cat:"Nozzle / Pickup",sev:"media",titulo:"Nozzle Not Picked — Head 1",
+       display:{header:"Pickup Error",main:"Nozzle 3012",sub:"Head 1 Not Picked",soak:"00005B01",subcode:"00000001",errcode:"3012",modulo:"3"},
+       causa:"Bico não conseguiu pegar o componente do tape. Causas: bico desgastado/entupido, tape posicionado incorretamente, pressão de vácuo baixa.",
+       passos:["Pare a máquina com STOP.","Inspecione o bico do Head 1 — verifique entupimento ou deformação.","Limpe o bico com álcool isopropílico e ar comprimido (baixa pressão).","Verifique a pressão de vácuo (-65 a -80 kPa).","Confirme que o tape avança corretamente.","Limpe o alarme e reteste com MANUAL JOG.","Se persistir, substitua o nozzle."],
+       pecas:"Nozzle sobressalente",imagem:""},
+      {id:4,codigo:"2001",cat:"Placement",sev:"media",titulo:"Component Missing After Placement",
+       display:{header:"Component",main:"Missing 2001",sub:"After Placement",soak:"00002C10",subcode:"00000003",errcode:"2001",modulo:"2"},
+       causa:"O sistema de visão detectou ausência do componente na PCB após o placement. Causas: falha no vácuo, tombamento durante movimento, componente fora do spec.",
+       passos:["Pare com STOP.","Inspecione visualmente a placa na posição de parada.","Verifique bico e pressão de vácuo.","Revise parâmetros do componente no menu de visão (tamanho, tolerância).","Verifique validade e condição do tape do componente.","Ajuste pickup height se necessário.","Limpe o alarme e reteste."],
+       pecas:"—",imagem:""},
+      {id:5,codigo:"4021",cat:"Feeder",sev:"media",titulo:"Feeder Feed Error — Slot 23",
+       display:{header:"Feeder",main:"Feed Error",sub:"Slot 23 — Jam",soak:"00004D17",subcode:"00000005",errcode:"4021",modulo:"7"},
+       causa:"Feeder no slot 23 não avançou o tape. Causas: tape dobrado, sprocket danificado, desgaste mecânico do feeder.",
+       passos:["Pressione STOP — não force o avanço manual.","Retire o feeder do slot 23 com cuidado.","Inspecione o tape: dobras, rasgos ou avanço irregular.","Corte o tape antes do ponto travado e rebobine 5 cm.","Inspecione os sprockets — verifique desgaste ou dente quebrado.","Reinstale e avance manualmente via menu de feeder.","Se persistir, substitua o feeder.","Limpe o alarme."],
+       pecas:"Feeder sobressalente (8/12/16mm conforme tipo)",imagem:""},
+      {id:6,codigo:"5011",cat:"Visão",sev:"media",titulo:"Fiducial Mark Not Found",
+       display:{header:"Vision",main:"Fiducial 5011",sub:"Mark Not Found",soak:"00005E0B",subcode:"00000002",errcode:"5011",modulo:"1"},
+       causa:"Câmera de visão não localizou o fiducial da PCB. Causas: oxidação, pasta de solda cobrindo o ponto, câmera suja, parâmetros de visão desatualizados.",
+       passos:["Pare com STOP.","Inspecione o fiducial da PCB — oxidação ou sujeira?","Limpe a lente da câmera superior com microfibra.","Execute ensaio do fiducial no menu de visão.","Ajuste threshold de contraste.","Se o ponto estiver coberto por pasta, retorne a PCB à impressora.","Atualize o modelo de visão se necessário.","Limpe o alarme e reteste."],
+       pecas:"—",imagem:""},
+      {id:7,codigo:"1045",cat:"Servo / Encoder",sev:"alta",titulo:"Z-Axis Upper Limit Error",
+       display:{header:"Servo",main:"Z Limit 1045",sub:"Upper Limit Exceed",soak:"00001A2D",subcode:"00000004",errcode:"1045",modulo:"4"},
+       causa:"Eixo Z ultrapassou o limite superior de curso. Causas: PCB com altura incorreta, placa solta, componente alto, sensor de limite com falha.",
+       passos:["Pressione EMERGENCY STOP imediatamente.","Verifique se há colisão física — não force o eixo.","Inspecione a PCB: altura e fixação nos trilhos.","Verifique o sensor de limite superior do eixo Z.","Reposicione o eixo via menu de manutenção (movimento manual).","Ajuste o parâmetro Z-clearance se a placa for mais alta.","Limpe o alarme e execute ciclo de teste."],
+       pecas:"Sensor de limite (se danificado)",imagem:""},
+      {id:8,codigo:"3031",cat:"Pneumático",sev:"media",titulo:"Vacuum Level Low — Head 2",
+       display:{header:"Pneumático",main:"Vacuum Low",sub:"Head 2 — 3031",soak:"00003F1F",subcode:"00000002",errcode:"3031",modulo:"6"},
+       causa:"Nível de vácuo no Head 2 abaixo do mínimo. Causas: filtro entupido, nozzle com microtrinca, gerador com desgaste.",
+       passos:["Pare a máquina.","Verifique a leitura de vácuo no menu de diagnóstico.","Substitua o filtro de vácuo do módulo.","Inspecione o nozzle do Head 2 — troque se houver trinca.","Verifique mangueiras e vedações.","Teste o gerador de vácuo em modo manual.","Se gerador abaixo de -65 kPa, solicite substituição.","Limpe o alarme e reteste."],
+       pecas:"Filtro de vácuo, nozzle sobressalente, vedações",imagem:""}
+    ]},
+  aimex:{label:"Fuji AIMEX",subtipo:"AIMEX III",tipo:"Pick & Place",color:"#e63946",rgb:"230,57,70",panelStyle:"fuji",modelBadge:"AIMEX III",
     erros:[
-      { id:1,codigo:"1102",cat:"Servo / Encoder",sev:"alta",
-        titulo:"Axis:H1 — Position Error",
-        display:{header:"Servo",main:"Axis:H1",sub:"Position Error",soak:"00001102",subcode:"00000003",errcode:"1102",modulo:"2"},
-        causa:"O eixo H1 (eixo horizontal do cabeçote 1) não atingiu a posição esperada dentro do tempo limite. Causas: obstáculo mecânico, correia desgastada, configuração de torque incorreta.",
-        passos:["Pressione STOP e aguarde o cabeçote parar.","Verifique se há obstáculo físico no percurso do eixo H1.","Inspecione a correia de transmissão do eixo H1.","Acesse o menu de servo e verifique os parâmetros de ganho e torque.","Execute o procedimento de origem (Home) via menu de manutenção.","Limpe o alarme e teste em modo MANUAL.","Se o erro persistir, chamar o serviço Fuji."],
-        pecas:"Correia de transmissão H1 (verificar part number)",imagem:"" },
-      { id:2,codigo:"4010",cat:"Feeder",sev:"media",
-        titulo:"Feeder Empty — 8mm Slot",
-        display:{header:"Feeder",main:"Tape Empty",sub:"Slot — 8mm",soak:"00004010",subcode:"00000001",errcode:"4010",modulo:"3"},
-        causa:"O tape do alimentador chegou ao fim. O sensor de fim de tape foi ativado.",
-        passos:["Pare a máquina com STOP.","Localize o feeder indicado no display.","Carregue novo reel do componente correspondente.","Emende o tape com tape splice conforme procedimento padrão.","Reposicione o feeder.","Limpe o alarme e reteste."],
-        pecas:"Reel do componente, tape splice",imagem:"" },
-      { id:3,codigo:"3025",cat:"Nozzle / Pickup",sev:"media",
-        titulo:"Nozzle Clogged — Head 3",
-        display:{header:"Nozzle",main:"Clogged 3025",sub:"Head 3",soak:"00003025",subcode:"00000002",errcode:"3025",modulo:"1"},
-        causa:"O bico do Head 3 está entupido com fluxo ou material contaminante, impedindo o vácuo adequado.",
-        passos:["Pare a máquina.","Retire o nozzle do Head 3.","Mergulhe o nozzle em álcool isopropílico por 5 minutos.","Limpe com ar comprimido limpo (pressão baixa, máx 2 bar).","Inspecione com lupa — o furo central deve estar limpo.","Se não limpar, substitua o nozzle.","Reinstale e teste o vácuo em modo manual.","Limpe o alarme."],
-        pecas:"Nozzle sobressalente, álcool isopropílico",imagem:"" },
-      { id:4,codigo:"6005",cat:"Conveyor",sev:"alta",
-        titulo:"Board Clamp Error",
-        display:{header:"Conveyor",main:"Clamp Error",sub:"Board Clamping",soak:"00006005",subcode:"00000001",errcode:"6005",modulo:"—"},
-        causa:"O sistema de fixação da placa não conseguiu prender a PCB corretamente. Causas: sensor de presença de placa com defeito, placa fora do tamanho programado, cilindro pneumático de fixação com vazamento.",
-        passos:["Pare a máquina.","Verifique se há PCB na posição de produção.","Inspecione os cilindros de fixação — verifique pressão e curso.","Confira que a largura dos trilhos corresponde à PCB em produção.","Teste o sensor de presença da placa via menu de diagnóstico.","Lubrifique os guias dos trilhos se necessário.","Limpe o alarme e reteste."],
-        pecas:"Cilindro pneumático de fixação, sensor de presença",imagem:"" },
-      { id:5,codigo:"6010",cat:"Conveyor",sev:"alta",
-        titulo:"Conveyor Jam",
-        display:{header:"Conveyor",main:"Jam 6010",sub:"Board Stuck",soak:"00006010",subcode:"00000002",errcode:"6010",modulo:"—"},
-        causa:"A PCB ficou travada no conveyor. Causas: borda da placa presa no trilho, sensor mal posicionado, componente caído no trilho.",
-        passos:["Pressione STOP.","Não force a placa manualmente.","Verifique visualmente se há objeto obstruindo os trilhos.","Se houver PCB presa, remova-a com cuidado pelo painel lateral.","Inspecione os trilhos de transporte — limpe e lubrifique se necessário.","Verifique os sensores de posição do conveyor.","Limpe o alarme e reteste com placa de teste."],
-        pecas:"—",imagem:"" }
-    ]
-  },
-
-  dek: {
-    label:"DEK",subtipo:"Horizon / Infinity",tipo:"Screen Printer",color:"#003399",rgb:"0,51,153",
-    panelStyle:"dek",modelBadge:"Horizon",
+      {id:1,codigo:"1102",cat:"Servo / Encoder",sev:"alta",titulo:"Axis:H1 — Position Error",
+       display:{header:"Servo",main:"Axis:H1",sub:"Position Error",soak:"00001102",subcode:"00000003",errcode:"1102",modulo:"2"},
+       causa:"Eixo H1 não atingiu a posição no tempo limite. Causas: obstáculo mecânico, correia desgastada, parâmetro de torque incorreto.",
+       passos:["Pressione STOP e aguarde o cabeçote parar.","Verifique obstáculo no percurso do eixo H1.","Inspecione a correia de transmissão.","Verifique parâmetros de ganho e torque no menu servo.","Execute Home via menu de manutenção.","Teste em modo MANUAL.","Se persistir, contate suporte Fuji com código 1102."],
+       pecas:"Correia de transmissão H1",imagem:""},
+      {id:2,codigo:"4010",cat:"Feeder",sev:"media",titulo:"Feeder Empty — 8mm Slot",
+       display:{header:"Feeder",main:"Tape Empty",sub:"Slot 8mm",soak:"00004010",subcode:"00000001",errcode:"4010",modulo:"3"},
+       causa:"Tape do alimentador chegou ao fim. Sensor de fim de tape acionado.",
+       passos:["Pare com STOP.","Localize o feeder indicado no display.","Carregue novo reel do componente.","Emende o tape com splice conforme procedimento.","Reposicione o feeder.","Limpe o alarme e reteste."],
+       pecas:"Reel do componente, tape splice",imagem:""},
+      {id:3,codigo:"3025",cat:"Nozzle / Pickup",sev:"media",titulo:"Nozzle Clogged — Head 3",
+       display:{header:"Nozzle",main:"Clogged 3025",sub:"Head 3",soak:"00003025",subcode:"00000002",errcode:"3025",modulo:"1"},
+       causa:"Bico do Head 3 entupido com fluxo ou contaminante, impedindo vácuo adequado.",
+       passos:["Pare a máquina.","Retire o nozzle do Head 3.","Mergulhe em álcool isopropílico por 5 minutos.","Limpe com ar comprimido (máx 2 bar).","Inspecione com lupa — furo central deve estar limpo.","Substitua se não limpar.","Reinstale e teste vácuo em manual.","Limpe o alarme."],
+       pecas:"Nozzle sobressalente, álcool isopropílico",imagem:""},
+      {id:4,codigo:"6005",cat:"Conveyor",sev:"alta",titulo:"Board Clamp Error",
+       display:{header:"Conveyor",main:"Clamp Error",sub:"Board Clamping",soak:"00006005",subcode:"00000001",errcode:"6005",modulo:"—"},
+       causa:"Sistema de fixação da placa não prendeu a PCB. Causas: sensor de presença com defeito, PCB fora do tamanho, cilindro pneumático com vazamento.",
+       passos:["Pare a máquina.","Verifique se há PCB na posição.","Inspecione os cilindros de fixação e pressão.","Confira largura dos trilhos vs PCB em produção.","Teste sensor de presença via diagnóstico de I/O.","Lubrifique guias se necessário.","Limpe o alarme e reteste."],
+       pecas:"Cilindro pneumático, sensor de presença",imagem:""},
+      {id:5,codigo:"6010",cat:"Conveyor",sev:"alta",titulo:"Conveyor Jam",
+       display:{header:"Conveyor",main:"Jam 6010",sub:"Board Stuck",soak:"00006010",subcode:"00000002",errcode:"6010",modulo:"—"},
+       causa:"PCB travada no conveyor. Causas: borda presa no trilho, objeto no trilho, sensor mal posicionado.",
+       passos:["Pressione STOP.","Não force a placa manualmente.","Verifique obstáculos nos trilhos.","Remova a PCB com cuidado pelo painel lateral.","Limpe e lubrifique os trilhos.","Verifique sensores de posição.","Limpe o alarme e reteste com placa de teste."],
+       pecas:"—",imagem:""}
+    ]},
+  dek:{label:"DEK",subtipo:"Horizon / Infinity",tipo:"Screen Printer",color:"#003399",rgb:"0,51,153",panelStyle:"dek",modelBadge:"Horizon",
     erros:[
-      { id:1,codigo:"E-0123",cat:"Visão",sev:"alta",
-        titulo:"Camera — Fiducial Not Found",
-        display:{header:"Vision Error",main:"E-0123",sub:"Fiducial Not Found",errcode:"E-0123"},
-        causa:"A câmera de visão não localizou o ponto fiducial na PCB. Causas: iluminação insuficiente, placa oxidada, PCB posicionada incorretamente, câmera descalibrada.",
-        passos:["Rejeite a placa atual do processo.","Limpe a câmera com pano de microfibra seco.","Verifique a iluminação do sistema de visão — LEDs funcionando.","Posicione uma nova PCB e execute o reconhecimento manual via menu Vision.","Ajuste os parâmetros de contraste e threshold de reconhecimento.","Se o erro persistir com placa nova, recalibre a câmera (Camera Calibration Wizard).","Documente e notifique se o problema for recorrente."],
-        pecas:"—",imagem:"" },
-      { id:2,codigo:"E-0215",cat:"Mecânico",sev:"media",
-        titulo:"Squeegee Pressure Out of Range",
-        display:{header:"Process Error",main:"E-0215",sub:"Squeegee Pressure",errcode:"E-0215"},
-        causa:"A pressão do squeegee está fora da faixa configurada para o processo. Causas: regulador de pressão com desgaste, linha de ar com variação, parâmetro de processo fora do spec.",
-        passos:["Verifique o manômetro do squeegee — comparar com o valor de processo.","Ajuste o regulador de pressão — geralmente entre 3–8 N dependendo da pasta.","Verifique a linha de ar comprimido: pressão de alimentação mínima 5 bar.","Se o regulador não responder, substitua o regulador de squeegee.","Revalide o processo com uma placa de teste e inspecione a deposição de pasta."],
-        pecas:"Regulador de pressão do squeegee",imagem:"" },
-      { id:3,codigo:"E-0301",cat:"Pneumático",sev:"media",
-        titulo:"Paste Dispense Error",
-        display:{header:"Paste Error",main:"E-0301",sub:"Dispense Failed",errcode:"E-0301"},
-        causa:"Sistema de dispensação de pasta falhou. Causas: cartucho vazio, pasta curada no bico dispensador, pressão insuficiente.",
-        passos:["Verifique o nível de pasta no cartucho.","Se vazio, troque o cartucho conforme procedimento padrão de troca de pasta.","Inspecione o bico do dispensador — limpe com espátula e solvente apropriado.","Verifique a data de validade da pasta (geralmente 6 meses).","Purgue o sistema de dispensação (Purge → Dispense 5x em placa de descarte).","Reteste com PCB de produção."],
-        pecas:"Cartucho de pasta de solda, kit de limpeza do dispensador",imagem:"" },
-      { id:4,codigo:"E-0412",cat:"Conveyor",sev:"alta",
-        titulo:"Board Not Detected",
-        display:{header:"Conveyor Error",main:"E-0412",sub:"Board Not Detected",errcode:"E-0412"},
-        causa:"O sensor de entrada não detectou a PCB no tempo esperado. Causas: sensor sujo, PCB não carregada, problema no conveyor upstream.",
-        passos:["Verifique se há PCB disponível no buffer upstream.","Limpe o sensor de entrada com ar comprimido.","Verifique a tensão de alimentação do sensor (normalmente 24V DC).","Teste o sensor via menu de diagnóstico de I/O.","Inspecione a correia do conveyor de entrada.","Substitua o sensor se não reagir a nenhuma placa."],
-        pecas:"Sensor de presença de PCB",imagem:"" },
-      { id:5,codigo:"E-0520",cat:"Mecânico",sev:"alta",
-        titulo:"Print Head Stall",
-        display:{header:"Mechanical Error",main:"E-0520",sub:"Print Head Stall",errcode:"E-0520"},
-        causa:"O cabeçote de impressão (print head) travou durante o movimento. Causas: PCB saiu do posicionamento, trilhos com sujeira acumulada, motor do cabeçote com desgaste.",
-        passos:["Pressione EMERGENCY STOP.","Verifique se há PCB fora do posicionamento — remova-a com cuidado.","Limpe os trilhos do cabeçote com pano sem fiapos e álcool.","Verifique os cintos de transmissão do cabeçote.","Lubrifique os guias lineares com lubrificante indicado no manual.","Mova o cabeçote manualmente para verificar se há obstáculo.","Ligue a máquina, execute Home e reteste."],
-        pecas:"Lubrificante de guias, correia do cabeçote (se danificada)",imagem:"" }
-    ]
-  },
-
-  xp: {
-    label:"Fuji XP",subtipo:"XPF / XP**",tipo:"Pick & Place",color:"#6f42c1",rgb:"111,66,193",
-    panelStyle:"fuji",modelBadge:"XPF",
+      {id:1,codigo:"E-0123",cat:"Visão",sev:"alta",titulo:"Camera — Fiducial Not Found",
+       display:{header:"Vision Error",main:"E-0123",sub:"Fiducial Not Found",errcode:"E-0123"},
+       causa:"Câmera não localizou o fiducial na PCB. Causas: iluminação insuficiente, placa oxidada, PCB mal posicionada, câmera descalibrada.",
+       passos:["Rejeite a placa atual.","Limpe a câmera com microfibra seco.","Verifique iluminação — LEDs funcionando.","Posicione nova PCB e execute reconhecimento manual via menu Vision.","Ajuste contraste e threshold de reconhecimento.","Se persistir com placa nova, recalibre (Camera Calibration Wizard)."],
+       pecas:"—",imagem:""},
+      {id:2,codigo:"E-0215",cat:"Mecânico",sev:"media",titulo:"Squeegee Pressure Out of Range",
+       display:{header:"Process Error",main:"E-0215",sub:"Squeegee Pressure",errcode:"E-0215"},
+       causa:"Pressão do squeegee fora da faixa configurada. Causas: regulador com desgaste, variação na linha de ar, parâmetro fora do spec.",
+       passos:["Verifique o manômetro — compare com valor de processo.","Ajuste o regulador de pressão (tipicamente 3–8 N).","Verifique linha de ar: mínimo 5 bar de alimentação.","Se regulador não responder, substitua.","Revalide com placa de teste e inspecione deposição de pasta."],
+       pecas:"Regulador de pressão do squeegee",imagem:""},
+      {id:3,codigo:"E-0301",cat:"Pneumático",sev:"media",titulo:"Paste Dispense Error",
+       display:{header:"Paste Error",main:"E-0301",sub:"Dispense Failed",errcode:"E-0301"},
+       causa:"Sistema de dispensação falhou. Causas: cartucho vazio, pasta curada no bico, pressão insuficiente.",
+       passos:["Verifique o nível de pasta no cartucho.","Troque o cartucho se vazio.","Verifique data de validade da pasta.","Inspecione o bico — limpe com espátula e solvente.","Purgue o sistema (Purge → Dispense 5x em placa de descarte).","Reteste com PCB de produção."],
+       pecas:"Cartucho de pasta, kit de limpeza",imagem:""},
+      {id:4,codigo:"E-0412",cat:"Conveyor",sev:"alta",titulo:"Board Not Detected",
+       display:{header:"Conveyor Error",main:"E-0412",sub:"Board Not Detected",errcode:"E-0412"},
+       causa:"Sensor de entrada não detectou PCB no tempo esperado. Causas: sensor sujo, PCB não carregada, problema upstream.",
+       passos:["Verifique se há PCB disponível no buffer upstream.","Limpe o sensor de entrada com ar comprimido.","Verifique tensão do sensor (normalmente 24V DC).","Teste via diagnóstico de I/O.","Inspecione correia do conveyor.","Substitua sensor se não reagir a nenhuma placa."],
+       pecas:"Sensor de presença PCB",imagem:""},
+      {id:5,codigo:"E-0520",cat:"Mecânico",sev:"alta",titulo:"Print Head Stall",
+       display:{header:"Mechanical Error",main:"E-0520",sub:"Print Head Stall",errcode:"E-0520"},
+       causa:"Cabeçote de impressão travou. Causas: PCB fora do posicionamento, trilhos sujos, motor com desgaste.",
+       passos:["Pressione EMERGENCY STOP.","Verifique se há PCB fora do posicionamento — remova com cuidado.","Limpe os trilhos com pano sem fiapos e álcool.","Verifique cintos de transmissão.","Lubrifique guias lineares.","Mova o cabeçote manualmente para verificar obstáculos.","Ligue, execute Home e reteste."],
+       pecas:"Lubrificante de guias, correia (se danificada)",imagem:""}
+    ]},
+  xp:{label:"Fuji XP",subtipo:"XPF / XP**",tipo:"Pick & Place",color:"#6f42c1",rgb:"111,66,193",panelStyle:"fuji",modelBadge:"XPF",
     erros:[
-      { id:1,codigo:"A021",cat:"Servo / Encoder",sev:"alta",
-        titulo:"Z-Axis Servo Error",
-        display:{header:"Servo Alarm",main:"Z-Axis A021",sub:"Servo Error",soak:"—",subcode:"—",errcode:"A021",modulo:"—"},
-        causa:"Alarme de servo do eixo Z. Causas: sobrecorrente no motor, temperatura elevada, falha no driver.",
-        passos:["Desligue a máquina completamente por 5 minutos (reset térmico).","Verifique a temperatura do drive — ambiente deve estar abaixo de 40°C.","Inspecione o cabeamento do motor Z — verifique dobras ou danos.","Ligue a máquina e monitore a corrente do motor Z via painel de diagnóstico.","Se o alarme retornar imediatamente, o driver precisa de substituição.","Contate o suporte Fuji com o código A021 para orientação."],
-        pecas:"Drive servo eixo Z (verificar part number do XPF)",imagem:"" },
-      { id:2,codigo:"B034",cat:"Visão",sev:"media",
-        titulo:"Component Recognition Error",
-        display:{header:"Vision",main:"Recog. B034",sub:"Component Mismatch",soak:"—",subcode:"—",errcode:"B034",modulo:"—"},
-        causa:"O sistema de visão não reconheceu o componente como esperado. Dimensões ou pad pattern fora do modelo registrado.",
-        passos:["Verifique o reel: componente correto para a posição programada?","Acesse o editor de componentes e revise o modelo de visão.","Capture novas imagens do componente com boa iluminação.","Ajuste tolerâncias de reconhecimento (tamanho, ângulo).","Se o componente mudou de fabricante, recrie o modelo do zero.","Reteste com 5 ciclos em modo manual."],
-        pecas:"—",imagem:"" },
-      { id:3,codigo:"C015",cat:"Feeder",sev:"media",
-        titulo:"Feeder Jam — Tape Stuck",
-        display:{header:"Feeder",main:"Jam C015",sub:"Tape Stuck",soak:"—",subcode:"—",errcode:"C015",modulo:"—"},
-        causa:"Tape do componente travou no feeder. Sprocket saltou ou tape com defeito de embossing.",
-        passos:["Remova o feeder do slot.","Corte o tape no ponto travado e retire o trecho danificado.","Inspecione os sprockets — verifique dentes quebrados.","Se o tape tiver embossing irregular, retire mais 10 furos e retente.","Reinstale e avance manualmente 3 componentes antes de produzir.","Limpe o alarme e reteste."],
-        pecas:"Feeder sobressalente se sprocket danificado",imagem:"" },
-      { id:4,codigo:"E001",cat:"Mecânico",sev:"alta",
-        titulo:"Emergency Stop Active",
-        display:{header:"E-STOP",main:"E001",sub:"Emergency Active",soak:"—",subcode:"—",errcode:"E001",modulo:"—"},
-        causa:"O botão de emergência foi acionado ou a trava de segurança foi aberta durante a operação.",
-        passos:["Identifique qual botão de emergência está acionado.","Verifique se todas as tampas de segurança estão fechadas e travadas.","Gire o botão de emergência no sentido horário para destravá-lo.","Pressione RESET no painel.","Execute o procedimento de Home antes de reiniciar a produção.","Documente o ocorrido e verifique se houve colisão."],
-        pecas:"—",imagem:"" }
-    ]
-  },
-
-  spi: {
-    label:"SPI",subtipo:"Koh Young / Parmi",tipo:"Inspeção de Pasta",color:"#0dcaf0",rgb:"13,202,240",
-    panelStyle:"inspect",modelBadge:"KY-8030",
+      {id:1,codigo:"A021",cat:"Servo / Encoder",sev:"alta",titulo:"Z-Axis Servo Error",
+       display:{header:"Servo Alarm",main:"Z-Axis A021",sub:"Servo Error",soak:"—",subcode:"—",errcode:"A021",modulo:"—"},
+       causa:"Alarme de servo do eixo Z. Causas: sobrecorrente, temperatura elevada, falha no driver.",
+       passos:["Desligue completamente por 5 minutos (reset térmico).","Verifique temperatura do drive — ambiente abaixo de 40°C.","Inspecione cabeamento do motor Z.","Ligue e monitore corrente do motor Z via diagnóstico.","Se alarme retornar imediatamente, o driver precisa substituição.","Contate suporte Fuji com código A021."],
+       pecas:"Drive servo eixo Z",imagem:""},
+      {id:2,codigo:"B034",cat:"Visão",sev:"media",titulo:"Component Recognition Error",
+       display:{header:"Vision",main:"Recog. B034",sub:"Component Mismatch",soak:"—",subcode:"—",errcode:"B034",modulo:"—"},
+       causa:"Sistema de visão não reconheceu o componente. Dimensões ou pad pattern fora do modelo registrado.",
+       passos:["Verifique o reel — componente correto para a posição?","Acesse editor de componentes e revise o modelo de visão.","Capture novas imagens com boa iluminação.","Ajuste tolerâncias de reconhecimento.","Se componente mudou de fabricante, recrie o modelo.","Reteste com 5 ciclos em manual."],
+       pecas:"—",imagem:""},
+      {id:3,codigo:"C015",cat:"Feeder",sev:"media",titulo:"Feeder Jam — Tape Stuck",
+       display:{header:"Feeder",main:"Jam C015",sub:"Tape Stuck",soak:"—",subcode:"—",errcode:"C015",modulo:"—"},
+       causa:"Tape travou no feeder. Sprocket saltou ou tape com defeito de embossing.",
+       passos:["Remova o feeder do slot.","Corte o tape no ponto travado e retire o trecho danificado.","Inspecione sprockets — dentes quebrados?","Rebobine mais 10 furos e retente.","Reinstale e avance 3 componentes manualmente antes de produzir.","Limpe o alarme."],
+       pecas:"Feeder sobressalente se sprocket danificado",imagem:""},
+      {id:4,codigo:"E001",cat:"Mecânico",sev:"alta",titulo:"Emergency Stop Active",
+       display:{header:"E-STOP",main:"E001",sub:"Emergency Active",soak:"—",subcode:"—",errcode:"E001",modulo:"—"},
+       causa:"Botão de emergência acionado ou trava de segurança aberta durante operação.",
+       passos:["Identifique qual botão de emergência está acionado.","Verifique se todas as tampas estão fechadas.","Gire o botão no sentido horário para destravar.","Pressione RESET no painel.","Execute Home antes de reiniciar.","Documente e verifique se houve colisão."],
+       pecas:"—",imagem:""}
+    ]},
+  spi:{label:"SPI",subtipo:"Koh Young / Parmi",tipo:"Inspeção de Pasta",color:"#0dcaf0",rgb:"13,202,240",panelStyle:"inspect",modelBadge:"KY-8030",
     erros:[
-      { id:1,codigo:"SPI-H01",cat:"Calibração",sev:"alta",
-        titulo:"Height Reference Error",
-        display:{header:"Height Ref",main:"SPI-H01",sub:"Calibration Required",errcode:"SPI-H01"},
-        causa:"O sistema de referência de altura perdeu a calibração. Causas: choque mecânico, temperatura ambiente fora do spec, tempo de calibração expirado.",
-        passos:["Acesse o menu de Calibração no software SPI.","Execute a rotina Height Reference Calibration com a placa de referência certificada.","Certifique-se de que a temperatura do ambiente está entre 20–25°C.","Execute a medição de validação com a placa padrão após a calibração.","Documente a data e hora da calibração no registro de calibrações.","Se o erro persistir após calibração, contate o suporte Koh Young."],
-        pecas:"Placa de referência certificada (se necessário)",imagem:"" },
-      { id:2,codigo:"SPI-F02",cat:"Visão",sev:"media",
-        titulo:"Board Fiducial Not Found",
-        display:{header:"Vision",main:"SPI-F02",sub:"Fiducial Not Found",errcode:"SPI-F02"},
-        causa:"O sistema de visão não encontrou os fiduciais da PCB. Causas: placa fora do posicionamento, iluminação da câmera com problema, parâmetros de reconhecimento desatualizados.",
-        passos:["Verifique o posicionamento da PCB no conveyor.","Execute o teste de fiducial em modo manual.","Ajuste o limite de contraste para o tipo de acabamento da placa.","Limpe a câmera com pano de microfibra.","Atualize o template de fiducial se a placa mudou de fornecedor.","Limpe o alarme e reteste."],
-        pecas:"—",imagem:"" },
-      { id:3,codigo:"SPI-C03",cat:"Calibração",sev:"media",
-        titulo:"Calibration Interval Expired",
-        display:{header:"Calibração",main:"SPI-C03",sub:"Interval Expired",errcode:"SPI-C03"},
-        causa:"O intervalo de calibração configurado expirou. A máquina requer recalibração periódica para garantir precisão nas medições.",
-        passos:["Execute a rotina completa de calibração (Full Calibration).","Use somente as placas de referência certificadas para o equipamento.","Registre a calibração no sistema de gestão de qualidade.","Ajuste o intervalo de calibração no menu de configuração se necessário."],
-        pecas:"Placa de calibração certificada",imagem:"" },
-      { id:4,codigo:"SPI-T04",cat:"Conveyor",sev:"alta",
-        titulo:"Conveyor Sensor Error",
-        display:{header:"Conveyor",main:"SPI-T04",sub:"Sensor Fault",errcode:"SPI-T04"},
-        causa:"Sensor do conveyor não respondeu. Causas: sensor sujo com pasta de solda, falha elétrica, cabo solto.",
-        passos:["Limpe o sensor com álcool isopropílico e ar comprimido.","Verifique a tensão de alimentação (24V DC).","Teste o sensor via menu de diagnóstico de I/O.","Inspecione o cabo do sensor — verifique dobras e conexões.","Substitua o sensor se não responder após limpeza."],
-        pecas:"Sensor de conveyor (verificar part number)",imagem:"" }
-    ]
-  },
-
-  aoi: {
-    label:"AOI",subtipo:"Saki / Koh Young",tipo:"Inspeção Óptica",color:"#198754",rgb:"25,135,84",
-    panelStyle:"inspect",modelBadge:"BR-X",
+      {id:1,codigo:"SPI-H01",cat:"Calibração",sev:"alta",titulo:"Height Reference Error",
+       display:{header:"Height Ref",main:"SPI-H01",sub:"Calibration Required",errcode:"SPI-H01"},
+       causa:"Sistema de referência de altura perdeu a calibração. Causas: choque mecânico, temperatura fora do spec, calibração expirada.",
+       passos:["Acesse menu de Calibração no software SPI.","Execute Height Reference Calibration com a placa de referência certificada.","Temperatura ambiente deve estar entre 20–25°C.","Execute medição de validação após calibração.","Documente data e hora no registro de calibrações.","Se persistir, contate suporte Koh Young."],
+       pecas:"Placa de referência certificada",imagem:""},
+      {id:2,codigo:"SPI-F02",cat:"Visão",sev:"media",titulo:"Board Fiducial Not Found",
+       display:{header:"Vision",main:"SPI-F02",sub:"Fiducial Not Found",errcode:"SPI-F02"},
+       causa:"Sistema de visão não encontrou fiduciais da PCB. Causas: placa fora do posicionamento, iluminação com problema, parâmetros desatualizados.",
+       passos:["Verifique posicionamento da PCB no conveyor.","Execute teste de fiducial em modo manual.","Ajuste limite de contraste para o tipo de acabamento.","Limpe a câmera com microfibra.","Atualize template de fiducial se placa mudou de fornecedor.","Limpe o alarme."],
+       pecas:"—",imagem:""},
+      {id:3,codigo:"SPI-C03",cat:"Calibração",sev:"media",titulo:"Calibration Interval Expired",
+       display:{header:"Calibração",main:"SPI-C03",sub:"Interval Expired",errcode:"SPI-C03"},
+       causa:"Intervalo de calibração configurado expirou. Recalibração periódica necessária para garantir precisão.",
+       passos:["Execute rotina completa de calibração (Full Calibration).","Use apenas placas de referência certificadas.","Registre no sistema de gestão de qualidade.","Ajuste intervalo de calibração se necessário."],
+       pecas:"Placa de calibração certificada",imagem:""},
+      {id:4,codigo:"SPI-T04",cat:"Conveyor",sev:"alta",titulo:"Conveyor Sensor Error",
+       display:{header:"Conveyor",main:"SPI-T04",sub:"Sensor Fault",errcode:"SPI-T04"},
+       causa:"Sensor do conveyor não respondeu. Causas: sensor sujo com pasta, falha elétrica, cabo solto.",
+       passos:["Limpe o sensor com álcool isopropílico e ar comprimido.","Verifique tensão de alimentação (24V DC).","Teste via diagnóstico de I/O.","Inspecione cabo do sensor — dobras e conexões.","Substitua o sensor se não responder após limpeza."],
+       pecas:"Sensor de conveyor",imagem:""}
+    ]},
+  aoi:{label:"AOI",subtipo:"Saki / Koh Young",tipo:"Inspeção Óptica",color:"#198754",rgb:"25,135,84",panelStyle:"inspect",modelBadge:"BR-X",
     erros:[
-      { id:1,codigo:"AOI-R01",cat:"Referência",sev:"alta",
-        titulo:"Reference Board Required",
-        display:{header:"Reference",main:"AOI-R01",sub:"Board Required",errcode:"AOI-R01"},
-        causa:"A AOI necessita de uma placa de referência (golden board) para iniciar a inspeção. A placa de referência anterior foi invalidada ou nunca foi registrada para este programa.",
-        passos:["Obtenha a golden board aprovada para este produto.","Acesse o menu de Reference Board Registration.","Execute o scan da golden board com todas as câmeras.","Valide o scan — aguarde a confirmação do sistema.","Salve o arquivo de referência com identificação do produto e data.","Reteste a inspeção com uma placa de produção."],
-        pecas:"Golden board aprovada (mantida pela qualidade)",imagem:"" },
-      { id:2,codigo:"AOI-C02",cat:"Calibração",sev:"media",
-        titulo:"Camera Calibration Required",
-        display:{header:"Camera Cal.",main:"AOI-C02",sub:"Calibration Needed",errcode:"AOI-C02"},
-        causa:"Uma ou mais câmeras perderam a calibração. Causas: vibração, temperatura, tempo expirado, câmera substituída.",
-        passos:["Acesse Camera Calibration no menu de manutenção.","Execute a calibração de todas as câmeras com o gabarito de calibração.","Aguarde o processo automático (pode levar 10–15 minutos).","Verifique o relatório de calibração — todas as câmeras devem estar dentro da tolerância.","Salve o arquivo de calibração com data.","Execute uma inspeção de validação com placa de referência."],
-        pecas:"Gabarito de calibração das câmeras",imagem:"" },
-      { id:3,codigo:"AOI-J03",cat:"Conveyor",sev:"alta",
-        titulo:"Conveyor Jam",
-        display:{header:"Conveyor",main:"AOI-J03",sub:"Board Jammed",errcode:"AOI-J03"},
-        causa:"PCB travada no conveyor da AOI. Causas: borda da placa presa, componente alto colidindo com o sensor, detritos no trilho.",
-        passos:["Pressione STOP imediatamente.","Abra o painel de acesso da AOI.","Remova a PCB com cuidado — não force.","Limpe os trilhos com ar comprimido.","Inspecione se algum componente da placa pode estar alto demais para o clearance da AOI.","Verifique e limpe os sensores de posição.","Reteste com placa de produção."],
-        pecas:"—",imagem:"" },
-      { id:4,codigo:"AOI-L04",cat:"Iluminação",sev:"media",
-        titulo:"Lighting Unit Failure",
-        display:{header:"Lighting",main:"AOI-L04",sub:"Unit Failure",errcode:"AOI-L04"},
-        causa:"Uma das unidades de iluminação LED está com defeito. A falha na iluminação compromete a precisão das inspeções.",
-        passos:["Identifique qual unidade de luz está com falha via menu de diagnóstico.","Verifique o conector de alimentação da unidade afetada.","Execute o teste de iluminação individual via software.","Se o LED não acender, substitua a unidade de iluminação.","Após substituição, recalibre as câmeras afetadas.","Execute inspeção de validação."],
-        pecas:"Unidade de iluminação LED (verificar part number da AOI)",imagem:"" }
-    ]
-  }
+      {id:1,codigo:"AOI-R01",cat:"Referência",sev:"alta",titulo:"Reference Board Required",
+       display:{header:"Reference",main:"AOI-R01",sub:"Board Required",errcode:"AOI-R01"},
+       causa:"AOI necessita de golden board para iniciar inspeção. Placa anterior invalidada ou nunca registrada para este programa.",
+       passos:["Obtenha a golden board aprovada para este produto.","Acesse Reference Board Registration.","Execute scan da golden board com todas as câmeras.","Valide o scan — aguarde confirmação do sistema.","Salve o arquivo de referência com identificação e data.","Reteste com placa de produção."],
+       pecas:"Golden board aprovada",imagem:""},
+      {id:2,codigo:"AOI-C02",cat:"Calibração",sev:"media",titulo:"Camera Calibration Required",
+       display:{header:"Camera Cal.",main:"AOI-C02",sub:"Calibration Needed",errcode:"AOI-C02"},
+       causa:"Uma ou mais câmeras perderam a calibração. Causas: vibração, temperatura, câmera substituída.",
+       passos:["Acesse Camera Calibration no menu de manutenção.","Execute calibração com o gabarito certificado.","Aguarde o processo automático (10–15 minutos).","Verifique relatório — todas câmeras dentro da tolerância.","Salve arquivo com data.","Execute inspeção de validação com placa de referência."],
+       pecas:"Gabarito de calibração",imagem:""},
+      {id:3,codigo:"AOI-J03",cat:"Conveyor",sev:"alta",titulo:"Conveyor Jam",
+       display:{header:"Conveyor",main:"AOI-J03",sub:"Board Jammed",errcode:"AOI-J03"},
+       causa:"PCB travada no conveyor. Causas: borda presa, componente alto colidindo com sensor, detritos no trilho.",
+       passos:["Pressione STOP.","Abra o painel de acesso da AOI.","Remova a PCB com cuidado — não force.","Limpe trilhos com ar comprimido.","Verifique se algum componente está alto demais para o clearance.","Verifique e limpe sensores de posição.","Reteste."],
+       pecas:"—",imagem:""},
+      {id:4,codigo:"AOI-L04",cat:"Iluminação",sev:"media",titulo:"Lighting Unit Failure",
+       display:{header:"Lighting",main:"AOI-L04",sub:"Unit Failure",errcode:"AOI-L04"},
+       causa:"Unidade de iluminação LED com defeito. Compromete precisão das inspeções.",
+       passos:["Identifique unidade com falha via diagnóstico.","Verifique conector de alimentação da unidade.","Teste iluminação individual via software.","Substitua a unidade se não acender.","Após substituição, recalibre câmeras afetadas.","Execute inspeção de validação."],
+       pecas:"Unidade LED (verificar part number)",imagem:""}
+    ]}
 };
 
-/* ── State ── */
-let currentMaq = "nxt";
-let currentErroId = null;
-let currentCatFilter = "";
+/* ─── State ─── */
+let currentMaq   = "nxt";
+let currentErroId= null;
+let machineState = "idle";
+let headPos      = {x:150.00,y:200.00,z:0.00};
+let cycleCount   = 0;
+let cycleTimer   = null;
+let stepChecks   = {};
 
-/* ── Render machine tabs ── */
+function stepKey(){ return currentMaq+"-"+(currentErroId||"none"); }
+
+/* ─── State machine ─── */
+function setMachineState(s){
+  if(cycleTimer){ clearInterval(cycleTimer); cycleTimer=null; }
+  machineState = s;
+  if(s==="running"){
+    cycleTimer = setInterval(()=>{
+      cycleCount++;
+      const el=document.getElementById("fscCycleCount");
+      if(el) el.textContent=String(cycleCount).padStart(4,"0");
+    },2000);
+  }
+  if(s==="stopping"){
+    setTimeout(()=>{ setMachineState("idle"); },1600);
+  }
+  if(s==="idle"){
+    currentErroId=null;
+    document.getElementById("mvSolution").style.display="none";
+    renderErrList();
+  }
+  renderPanel(currentErroId ? MACHINES[currentMaq].erros.find(e=>e.id===currentErroId) : null);
+  updateStateHint();
+}
+
+function updateStateHint(){
+  const hints={idle:"Máquina pronta — selecione um erro à esquerda ou pressione START",
+    running:"Em produção — pressione STOP para parar",
+    manual:"Modo manual — use as setas para mover o cabeçote · READY para sair",
+    error:"Erro ativo — siga o passo a passo · pressione OK no painel para limpar",
+    estop:"EMERGENCY STOP ativo — destrave o botão e pressione OK para resetar",
+    stopping:"Parando produção…",
+    standby:"Standby — pressione qualquer botão para ativar"};
+  document.getElementById("mvStateHint").textContent = hints[machineState]||"";
+}
+
+/* ─── Button handler ─── */
+function handleBtn(action){
+  switch(action){
+    case"start":
+      if(["idle","standby"].includes(machineState)){ cycleCount=0; setMachineState("running"); }
+      break;
+    case"stop": case"inche_stop":
+      if(["running","error"].includes(machineState)) setMachineState("stopping");
+      break;
+    case"manual":
+      if(["idle","standby"].includes(machineState)) setMachineState("manual");
+      break;
+    case"ready":
+      if(machineState==="manual") setMachineState("idle");
+      break;
+    case"ok":
+      if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
+      else if(machineState==="estop") setMachineState("idle");
+      break;
+    case"cancel":
+      if(["manual","error"].includes(machineState)) setMachineState("idle");
+      break;
+    case"estop":
+      setMachineState("estop");
+      break;
+    case"standby":
+      if(machineState==="idle") setMachineState("standby");
+      break;
+    case"nav_up":    jog("y",+5); break;
+    case"nav_down":  jog("y",-5); break;
+    case"nav_left":  jog("x",-5); break;
+    case"nav_right": jog("x",+5); break;
+    case"dek_run":
+      if(["idle","standby"].includes(machineState)){ cycleCount=0; setMachineState("running"); }
+      break;
+    case"dek_stop":
+      if(["running","error"].includes(machineState)) setMachineState("stopping");
+      break;
+    case"dek_estop": setMachineState("estop"); break;
+    case"insp_run":
+      if(["idle","standby"].includes(machineState)){ cycleCount=0; setMachineState("running"); }
+      break;
+    case"insp_stop":
+      if(["running","error"].includes(machineState)) setMachineState("stopping");
+      break;
+    case"insp_estop": setMachineState("estop"); break;
+  }
+}
+
+function jog(axis, delta){
+  if(machineState!=="manual") return;
+  headPos[axis]=Math.max(0,Math.min(600,headPos[axis]+delta));
+  const ex=document.getElementById("fscPosX");
+  const ey=document.getElementById("fscPosY");
+  if(ex) ex.textContent=headPos.x.toFixed(2);
+  if(ey) ey.textContent=headPos.y.toFixed(2);
+}
+
+/* ─── Tabs ─── */
 function renderTabs(){
-  const wrap = document.getElementById("mvTabs");
-  wrap.innerHTML = Object.entries(MACHINES).map(([key,m])=>`
-    <button class="mv-tab${key===currentMaq?" active":""}"
+  document.getElementById("mvTabs").innerHTML=Object.entries(MACHINES).map(([k,m])=>`
+    <button class="mv-tab${k===currentMaq?" active":""}"
       style="--mv-color:${m.color};--mv-rgb:${m.rgb}"
-      onclick="selectMaq('${key}')">
+      onclick="selectMaq('${k}')">
       <span class="mv-tab-dot" style="background:${m.color}"></span>
       <span>${m.label}</span>
       <span class="mv-tab-tipo">${m.tipo}</span>
@@ -522,67 +616,53 @@ function renderTabs(){
 }
 
 function selectMaq(key){
-  currentMaq = key;
-  currentErroId = null;
-  currentCatFilter = "";
-  document.getElementById("mvFilterCat").value = "";
-  document.getElementById("mvSearch").value = "";
-  renderTabs();
-  renderKpis();
-  buildCatFilter();
-  renderErrList();
+  currentMaq=key; currentErroId=null;
+  if(cycleTimer){clearInterval(cycleTimer);cycleTimer=null;}
+  machineState="idle";
+  document.getElementById("mvFilterCat").value="";
+  document.getElementById("mvSearch").value="";
+  renderTabs(); renderKpis(); buildCatFilter(); renderErrList();
   renderPanel(null);
-  document.getElementById("mvSolution").style.display = "none";
+  document.getElementById("mvSolution").style.display="none";
+  updateStateHint();
 }
 
-/* ── KPIs ── */
+/* ─── KPIs ─── */
 function renderKpis(){
-  const m = MACHINES[currentMaq];
-  const total = m.erros.length;
-  const alta  = m.erros.filter(e=>e.sev==="alta").length;
-  const media = m.erros.filter(e=>e.sev==="media").length;
-  const baixa = m.erros.filter(e=>e.sev==="baixa").length;
-  const cats  = new Set(m.erros.map(e=>e.cat)).size;
-  document.getElementById("mvKpis").innerHTML = `
-    <div class="mv-kpi"><div class="mv-kpi-val">${total}</div><div class="mv-kpi-lbl">Erros</div></div>
-    <div class="mv-kpi"><div class="mv-kpi-val" style="color:#dc3545">${alta}</div><div class="mv-kpi-lbl">Severidade Alta</div></div>
-    <div class="mv-kpi"><div class="mv-kpi-val" style="color:#856404">${media}</div><div class="mv-kpi-lbl">Média</div></div>
-    <div class="mv-kpi"><div class="mv-kpi-val" style="color:#198754">${baixa||"—"}</div><div class="mv-kpi-lbl">Baixa</div></div>
-    <div class="mv-kpi"><div class="mv-kpi-val">${cats}</div><div class="mv-kpi-lbl">Categorias</div></div>`;
+  const m=MACHINES[currentMaq];
+  const t=m.erros.length,a=m.erros.filter(e=>e.sev==="alta").length,
+        med=m.erros.filter(e=>e.sev==="media").length,
+        c=new Set(m.erros.map(e=>e.cat)).size;
+  document.getElementById("mvKpis").innerHTML=`
+    <div class="mv-kpi"><div class="mv-kpi-val">${t}</div><div class="mv-kpi-lbl">Erros</div></div>
+    <div class="mv-kpi"><div class="mv-kpi-val" style="color:#dc3545">${a}</div><div class="mv-kpi-lbl">Alta Sev.</div></div>
+    <div class="mv-kpi"><div class="mv-kpi-val" style="color:#856404">${med}</div><div class="mv-kpi-lbl">Média Sev.</div></div>
+    <div class="mv-kpi"><div class="mv-kpi-val">${c}</div><div class="mv-kpi-lbl">Categorias</div></div>`;
 }
 
-/* ── Category filter ── */
 function buildCatFilter(){
-  const m = MACHINES[currentMaq];
-  const cats = [...new Set(m.erros.map(e=>e.cat))].sort();
-  const sel = document.getElementById("mvFilterCat");
-  sel.innerHTML = `<option value="">Todas as categorias</option>` + cats.map(c=>`<option>${c}</option>`).join("");
+  const cats=[...new Set(MACHINES[currentMaq].erros.map(e=>e.cat))].sort();
+  const sel=document.getElementById("mvFilterCat");
+  sel.innerHTML=`<option value="">Todas as categorias</option>`+cats.map(c=>`<option>${c}</option>`).join("");
 }
 
-/* ── Error list ── */
+/* ─── Error list ─── */
 function renderErrList(){
-  const m = MACHINES[currentMaq];
-  const q = (document.getElementById("mvSearch").value||"").toLowerCase();
-  const cat = document.getElementById("mvFilterCat").value;
-  const color = MACHINES[currentMaq].color;
-  const rgb   = MACHINES[currentMaq].rgb;
-  const sevCls = {alta:"mv-sev-alta",media:"mv-sev-media",baixa:"mv-sev-baixa"};
-  const filtered = m.erros.filter(e=>{
-    if(cat && e.cat!==cat) return false;
-    if(q){
-      const hay=[e.codigo,e.titulo,e.cat,e.causa].join(" ").toLowerCase();
-      if(!hay.includes(q)) return false;
-    }
+  const m=MACHINES[currentMaq];
+  const q=(document.getElementById("mvSearch").value||"").toLowerCase();
+  const cat=document.getElementById("mvFilterCat").value;
+  const color=m.color,rgb=m.rgb;
+  const sevCls={alta:"mv-sev-alta",media:"mv-sev-media",baixa:"mv-sev-baixa"};
+  const filtered=m.erros.filter(e=>{
+    if(cat&&e.cat!==cat)return false;
+    if(q&&![e.codigo,e.titulo,e.cat,e.causa].join(" ").toLowerCase().includes(q))return false;
     return true;
   });
-  const list = document.getElementById("mvErrList");
-  if(!filtered.length){
-    list.innerHTML=`<div class="mv-empty-list"><i class="bi bi-search me-2"></i>Nenhum erro encontrado.</div>`;
-    return;
-  }
-  list.innerHTML = filtered.map(e=>`
+  const list=document.getElementById("mvErrList");
+  if(!filtered.length){list.innerHTML=`<div class="mv-empty-list"><i class="bi bi-search me-2"></i>Nenhum erro encontrado.</div>`;return;}
+  list.innerHTML=filtered.map(e=>`
     <div class="mv-err-item${e.id===currentErroId?" active":""}"
-      style="${e.id===currentErroId?"--mv-color:"+color+";--mv-rgb:"+rgb+";border-left-color:"+color:"--mv-color:"+color+";--mv-rgb:"+rgb}"
+      style="--mv-color:${color};--mv-rgb:${rgb}${e.id===currentErroId?";border-left:3px solid "+color:""}"
       onclick="selectErro(${e.id})">
       <div style="flex:1">
         <div class="mv-err-item-title">${e.titulo}</div>
@@ -595,77 +675,42 @@ function renderErrList(){
     </div>`).join("");
 }
 
-/* ── Select error ── */
+/* ─── Select error ─── */
 function selectErro(id){
-  const m = MACHINES[currentMaq];
-  const erro = m.erros.find(e=>e.id===id);
-  if(!erro) return;
-  currentErroId = id;
+  const m=MACHINES[currentMaq];
+  const erro=m.erros.find(e=>e.id===id);
+  if(!erro)return;
+  if(machineState==="estop"){updateStateHint();return;}
+  currentErroId=id;
+  if(cycleTimer){clearInterval(cycleTimer);cycleTimer=null;}
+  machineState="error";
   renderErrList();
   renderPanel(erro);
   renderSolution(erro);
-  document.getElementById("mvSolution").style.display = "";
-  if(window.innerWidth <= 991){
+  document.getElementById("mvSolution").style.display="";
+  updateStateHint();
+  if(window.innerWidth<=991)
     document.getElementById("mvPanelWrap").scrollIntoView({behavior:"smooth",block:"start"});
-  }
 }
 
-/* ── Render machine panel ── */
+/* ─── Render panel (dispatcher) ─── */
 function renderPanel(erro){
-  const m = MACHINES[currentMaq];
-  const wrap = document.getElementById("mvPanelWrap");
-  const style = m.panelStyle;
-  if(style === "fuji") wrap.innerHTML = renderFujiPanel(m, erro);
-  else if(style === "dek") wrap.innerHTML = renderDekPanel(m, erro);
-  else wrap.innerHTML = renderInspectPanel(m, erro);
+  const m=MACHINES[currentMaq];
+  const wrap=document.getElementById("mvPanelWrap");
+  if(m.panelStyle==="fuji") wrap.innerHTML=renderFujiPanel(m,erro);
+  else if(m.panelStyle==="dek") wrap.innerHTML=renderDekPanel(m,erro);
+  else wrap.innerHTML=renderInspectPanel(m,erro);
 }
 
-function renderFujiPanel(m, erro){
-  const d = erro ? erro.display : null;
-  const screenClass = erro ? "error-active" : "idle";
-  const screenContent = erro ? `
-    <div class="fsc-error">
-      <div class="fsc-err-top">
-        <div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div>
-        <div class="fsc-err-soak">
-          <div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div>
-          <div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div>
-        </div>
-      </div>
-      <div class="fsc-err-body">
-        <div class="fsc-err-icons">
-          <div class="fsc-err-icon-row">
-            <div class="fsc-err-icon" style="background:#1565c0">H1</div>
-            <div class="fsc-err-icon" style="background:#0d47a1">H2</div>
-          </div>
-          <div class="fsc-err-icon-row">
-            <div class="fsc-err-icon" style="background:#f57c00">FD</div>
-            <div class="fsc-err-icon" style="background:#388e3c">CV</div>
-          </div>
-          <div class="fsc-err-icon-row">
-            <div class="fsc-err-icon" style="background:#6a1b9a">VS</div>
-          </div>
-        </div>
-        <div class="fsc-err-text">
-          <div class="fsc-err-cat">${d.header||""}</div>
-          <div class="fsc-err-main">${d.main||""}</div>
-          <div class="fsc-err-sub">${d.sub||""}</div>
-        </div>
-      </div>
-      <div class="fsc-err-foot">
-        <span class="fsc-err-info">${m.label} — ${m.subtipo}</span>
-        <span class="fsc-err-code">${d.errcode||""}</span>
-      </div>
-    </div>` : `
-    <div class="fsc-idle">
-      <div class="fsc-idle-ready">READY</div>
-      <div class="fsc-idle-model">${m.label} ${m.subtipo}</div>
-      <div class="fsc-idle-dots">
-        <div class="fsc-idle-dot"></div>
-        <div class="fsc-idle-dot"></div>
-        <div class="fsc-idle-dot"></div>
-      </div>
-    </div>`;
+/* ─── Fuji panel ─── */
+function renderFujiPanel(m,erro){
+  let screenClass="s-idle", screenContent=fujiScreenIdle(m);
+  if(machineState==="running"){screenClass="s-running";screenContent=fujiScreenRunning(m);}
+  else if(machineState==="manual"){screenClass="s-manual";screenContent=fujiScreenManual();}
+  else if(machineState==="error"&&erro){screenClass="s-error";screenContent=fujiScreenError(m,erro);}
+  else if(machineState==="estop"){screenClass="s-estop";screenContent=fujiScreenEstop();}
+  else if(machineState==="stopping"){screenClass="s-stopping";screenContent=fujiScreenStopping();}
+  else if(machineState==="standby"){screenClass="s-standby";screenContent=fujiScreenStandby();}
   return `
     <div class="panel-fuji">
       <div class="fuji-top">
@@ -677,194 +722,179 @@ function renderFujiPanel(m, erro){
       </div>
       <div class="fuji-btns">
         <div class="fuji-btn-row">
-          <button class="fbtn fbtn-gray">INCHE<br>STOP</button>
-          <button class="fbtn fbtn-gray">READY<br>(AUTO)</button>
-          <button class="fbtn fbtn-gray">GROUP</button>
-          <button class="fbtn fbtn-green">▶ START</button>
-          <button class="fbtn fbtn-gray">■ STOP</button>
-          <button class="fbtn fbtn-gray">⏻ PWR</button>
+          <button class="fbtn fbtn-gray" onclick="handleBtn('inche_stop')" title="Para após o ciclo atual">INCHE<br>STOP</button>
+          <button class="fbtn fbtn-gray" onclick="handleBtn('ready')" title="Modo automático / sair do manual">READY<br>(AUTO)</button>
+          <button class="fbtn fbtn-gray" title="Operação em grupo">GROUP</button>
+          <button class="fbtn fbtn-green" onclick="handleBtn('start')" title="Iniciar produção">▶ START</button>
+          <button class="fbtn fbtn-red"   onclick="handleBtn('stop')"  title="Parar produção">■ STOP</button>
+          <button class="fbtn fbtn-gray"  title="Power">⏻ PWR</button>
         </div>
         <div class="fuji-btn-row">
-          <button class="fbtn fbtn-gray">⊙ MANUAL</button>
-          <button class="fbtn fbtn-gray">⊙</button>
+          <button class="fbtn fbtn-orange" onclick="handleBtn('manual')" title="Ativar modo manual">⊙ MANUAL</button>
+          <button class="fbtn fbtn-gray"   title="Monitor" onclick="handleBtn('monitor')">MONITOR</button>
         </div>
         <div class="fuji-btn-row-nav">
           <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-            <button class="fbtn fbtn-nav">△</button>
+            <button class="fbtn fbtn-nav" onclick="handleBtn('nav_up')"    title="Jogar cabeçote para cima (Y+)">△</button>
             <div style="display:flex;gap:3px">
-              <button class="fbtn fbtn-nav">◁</button>
-              <button class="fbtn fbtn-nav">○</button>
-              <button class="fbtn fbtn-nav">▷</button>
+              <button class="fbtn fbtn-nav" onclick="handleBtn('nav_left')"  title="Jogar cabeçote esquerda (X-)">◁</button>
+              <button class="fbtn fbtn-nav" title="Confirmar">○</button>
+              <button class="fbtn fbtn-nav" onclick="handleBtn('nav_right')" title="Jogar cabeçote direita (X+)">▷</button>
             </div>
-            <button class="fbtn fbtn-nav">▽</button>
+            <button class="fbtn fbtn-nav" onclick="handleBtn('nav_down')"   title="Jogar cabeçote para baixo (Y-)">▽</button>
           </div>
           <div style="margin-left:auto;display:flex;flex-direction:column;gap:4px">
-            <button class="fbtn fbtn-ok">OK</button>
-            <button class="fbtn fbtn-cancel">CANCEL ×</button>
+            <button class="fbtn fbtn-ok"     onclick="handleBtn('ok')"     title="Confirmar / Limpar alarme">OK</button>
+            <button class="fbtn fbtn-cancel" onclick="handleBtn('cancel')" title="Cancelar / Voltar">CANCEL ×</button>
           </div>
         </div>
         <div class="fuji-btn-row-emg">
-          <button class="fbtn-emg">EMRG<br>STOP</button>
-          <span class="fbtn-standby">STANDBY</span>
-          <span class="fbtn-standby">MONITOR</span>
+          <button class="fbtn-emg" onclick="handleBtn('estop')" title="Parada de emergência — corta servos imediatamente">EMRG<br>STOP</button>
+          <button class="fbtn-standby" onclick="handleBtn('standby')" title="Modo standby — baixo consumo">STANDBY</button>
         </div>
       </div>
     </div>`;
 }
+function fujiScreenIdle(m){return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div><div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;}
+function fujiScreenRunning(m){return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px"><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 1 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 2 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 3 — OK</div></div></div>`;}
+function fujiScreenManual(){return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;}
+function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
+function fujiScreenEstop(){return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Gire o botão para destrancar</div><div class="fsc-estop-msg" style="margin-top:4px">Pressione OK para resetar</div></div>`;}
+function fujiScreenStopping(){return`<div class="fsc-stopping"><div class="fsc-stopping-txt">STOPPING…</div><div class="fsc-stopping-bar"><div class="fsc-stopping-fill"></div></div></div>`;}
+function fujiScreenStandby(){return`<div class="fsc-standby"><div class="fsc-standby-txt">STANDBY</div><div class="fsc-standby-sub">Sistema em espera<br>Pressione qualquer botão para ativar</div></div>`;}
 
-function renderDekPanel(m, erro){
-  const d = erro ? erro.display : null;
-  const screenContent = erro ? `
-    <div class="dsc-error">
-      <div class="dsc-err-dialog">
-        <div class="dsc-err-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i>&nbsp;${d.header||"Error"}</div>
-        <div class="dsc-err-dialog-body">
-          <div class="dsc-err-dialog-icon">⚠️</div>
-          <div class="dsc-err-dialog-msg">${d.sub||""}</div>
-          <div class="dsc-err-dialog-code">Error Code: ${d.errcode||""}</div>
-          <div class="dsc-err-btns">
-            <div class="dsc-err-btn">Retry</div>
-            <div class="dsc-err-btn">Abort</div>
-            <div class="dsc-err-btn">Help</div>
-          </div>
-        </div>
-      </div>
-    </div>` : `
-    <div class="dsc-idle">
-      <div class="dsc-idle-status"><span style="width:10px;height:10px;border-radius:50%;background:#198754;display:inline-block"></span>SYSTEM READY</div>
-      <div style="width:100%">
-        <div class="dsc-idle-label">Print Status</div>
-        <div class="dsc-idle-bar"><div class="dsc-idle-bar-fill"></div></div>
-      </div>
-      <div class="dsc-idle-label">${m.label} ${m.subtipo} — Idle</div>
-    </div>`;
+/* ─── DEK panel ─── */
+function renderDekPanel(m,erro){
+  let bodyContent;
+  if(machineState==="error"&&erro){
+    const d=erro.display;
+    bodyContent=`<div class="dsc-err-dialog"><div class="dsc-err-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i>&nbsp;${d.header||"Error"}</div><div class="dsc-err-dialog-body"><div class="dsc-err-dialog-icon">⚠️</div><div class="dsc-err-dialog-msg">${d.sub||""}</div><div class="dsc-err-dialog-code">Error Code: ${d.errcode||""}</div><div class="dsc-err-btns"><div class="dsc-err-btn" onclick="handleBtn('dek_stop')">Abort</div><div class="dsc-err-btn" onclick="handleBtn('ok')">Dismiss</div></div></div></div>`;
+  } else if(machineState==="running"){
+    bodyContent=`<div class="dsc-status-run"><div class="dsc-dot" style="background:#0d6efd"></div>PRINTING</div><div class="dsc-label" style="margin-top:6px">Boards: <strong id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</strong></div><div class="dsc-label">Paste: OK &nbsp;|&nbsp; Squeegee: OK</div><div class="dsc-bar" style="margin-top:8px"><div class="dsc-bar-fill" style="background:#0d6efd"></div></div>`;
+  } else if(machineState==="estop"){
+    bodyContent=`<div class="dsc-estop"><div class="dsc-estop-title">⊗ EMERGENCY STOP</div><div class="dsc-estop-msg">Desbloqueie o botão e pressione OK</div></div>`;
+  } else {
+    bodyContent=`<div class="dsc-status-ok"><span style="width:10px;height:10px;border-radius:50%;background:#198754;display:inline-block"></span>SYSTEM READY</div><div class="dsc-label" style="margin-top:6px">${m.label} ${m.subtipo}</div><div class="dsc-bar" style="margin-top:8px"><div class="dsc-bar-fill"></div></div>`;
+  }
   return `
     <div class="panel-dek">
-      <div class="dek-top">
-        <span class="dek-logo">DEK</span>
-        <span class="dek-model">${m.modelBadge}</span>
-      </div>
+      <div class="dek-top"><span class="dek-logo">DEK</span><span class="dek-model">${m.modelBadge}</span></div>
       <div class="dek-screen-bezel">
         <div class="dek-screen">
           <div class="dek-screen-toolbar">
-            <div class="dek-toolbar-btn close"></div>
-            <div class="dek-toolbar-btn min"></div>
-            <div class="dek-toolbar-btn max"></div>
-            <span class="dek-screen-title">${m.label} ${m.subtipo} — Control Software</span>
+            <div class="dek-toolbar-btn close"></div><div class="dek-toolbar-btn min"></div><div class="dek-toolbar-btn max"></div>
+            <span class="dek-screen-title">${m.label} — Control Software</span>
           </div>
-          ${screenContent}
+          <div class="dsc-body">${bodyContent}</div>
         </div>
       </div>
       <div class="dek-btns">
-        <div class="dek-btn">F1 Help</div>
-        <div class="dek-btn">F2 Setup</div>
-        <div class="dek-btn primary">F5 Run</div>
-        <div class="dek-btn red">ESC Stop</div>
+        <div class="dek-btn" title="Ajuda contextual">F1 Help</div>
+        <div class="dek-btn" title="Configuração de processo">F2 Setup</div>
+        <div class="dek-btn green" onclick="handleBtn('dek_run')" title="Iniciar ciclo de impressão">F5 Run</div>
+        <div class="dek-btn red"   onclick="handleBtn('dek_stop')" title="Parar operação">ESC Stop</div>
+        <div class="dek-btn red"   onclick="handleBtn('dek_estop')" title="Emergência">E-STOP</div>
+        <div class="dek-btn primary" onclick="handleBtn('ok')" title="OK / Limpar alarme">OK</div>
       </div>
     </div>`;
 }
 
-function renderInspectPanel(m, erro){
-  const d = erro ? erro.display : null;
-  const screenContent = erro ? `
-    <div class="isc-error">
-      <div class="isc-err-banner">
-        <div class="isc-err-banner-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
-        <div class="isc-err-banner-text">
-          <div class="isc-err-banner-cat">${d.header||"Error"}</div>
-          <div class="isc-err-banner-main">${d.main||""}</div>
-          <div class="isc-err-banner-sub">${d.sub||""}</div>
-        </div>
-      </div>
-      <div class="isc-err-code">
-        <span class="isc-err-code-lbl">ERROR CODE</span>
-        <span class="isc-err-code-val">${d.errcode||""}</span>
-      </div>
-    </div>` : `
-    <div class="isc-idle">
-      <div class="isc-idle-header">
-        <span class="isc-idle-title">${m.label} ${m.subtipo}</span>
-        <span class="isc-idle-ok"><i class="bi bi-check-circle-fill"></i> RUNNING</span>
-      </div>
-      <div class="isc-idle-grid">
-        <div class="isc-idle-stat"><div class="isc-idle-stat-val">100%</div><div class="isc-idle-stat-lbl">Pass Rate</div></div>
-        <div class="isc-idle-stat"><div class="isc-idle-stat-val">0</div><div class="isc-idle-stat-lbl">Defects</div></div>
-        <div class="isc-idle-stat"><div class="isc-idle-stat-val">ONLINE</div><div class="isc-idle-stat-lbl">Status</div></div>
-        <div class="isc-idle-stat"><div class="isc-idle-stat-val">—</div><div class="isc-idle-stat-lbl">Alarm</div></div>
-      </div>
-    </div>`;
+/* ─── Inspect panel ─── */
+function renderInspectPanel(m,erro){
+  let screenContent;
+  if(machineState==="error"&&erro){
+    const d=erro.display;
+    screenContent=`<div class="isc-body"><div class="isc-err-banner"><div class="isc-err-banner-icon"><i class="bi bi-exclamation-circle-fill"></i></div><div class="isc-err-banner-text"><div class="isc-err-banner-cat">${d.header||"Error"}</div><div class="isc-err-banner-main">${d.main||""}</div><div class="isc-err-banner-sub">${d.sub||""}</div></div></div><div class="isc-err-code"><span class="isc-err-code-lbl">ERROR CODE</span><span class="isc-err-code-val">${d.errcode||""}</span></div></div>`;
+  } else if(machineState==="running"){
+    screenContent=`<div class="isc-body"><div class="isc-header"><span class="isc-title">${m.label} ${m.subtipo}</span><span class="isc-run"><i class="bi bi-record-circle-fill"></i>INSPECTING</span></div><div class="isc-grid"><div class="isc-stat"><div class="isc-stat-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div><div class="isc-stat-lbl">Boards</div></div><div class="isc-stat"><div class="isc-stat-val">100%</div><div class="isc-stat-lbl">Pass Rate</div></div><div class="isc-stat"><div class="isc-stat-val">0</div><div class="isc-stat-lbl">Defects</div></div><div class="isc-stat"><div class="isc-stat-val" style="color:#00e676">ONLINE</div><div class="isc-stat-lbl">Status</div></div></div></div>`;
+  } else if(machineState==="estop"){
+    screenContent=`<div class="isc-body"><div class="isc-estop"><div class="isc-estop-title">⊗ E-STOP</div><div class="isc-estop-msg">Desbloqueie o botão<br>e pressione RUN para resetar</div></div></div>`;
+  } else {
+    screenContent=`<div class="isc-body"><div class="isc-header"><span class="isc-title">${m.label} ${m.subtipo}</span><span class="isc-ok"><i class="bi bi-check-circle-fill"></i>READY</span></div><div class="isc-grid"><div class="isc-stat"><div class="isc-stat-val">—</div><div class="isc-stat-lbl">Boards</div></div><div class="isc-stat"><div class="isc-stat-val">—</div><div class="isc-stat-lbl">Pass Rate</div></div><div class="isc-stat"><div class="isc-stat-val">IDLE</div><div class="isc-stat-lbl">Status</div></div><div class="isc-stat"><div class="isc-stat-val" style="color:#00e676">OK</div><div class="isc-stat-lbl">Alarm</div></div></div></div>`;
+  }
   return `
     <div class="panel-inspect">
-      <div class="inspect-top">
-        <span class="inspect-logo">${m.label}</span>
-        <span class="inspect-model">${m.modelBadge}</span>
-      </div>
+      <div class="inspect-top"><span class="inspect-logo">${m.label}</span><span class="inspect-model">${m.modelBadge}</span></div>
       <div class="inspect-screen-bezel">
         <div class="inspect-screen">${screenContent}</div>
       </div>
       <div class="inspect-btns">
-        <div class="inspect-btn">STOP</div>
-        <div class="inspect-btn danger">E-STOP</div>
-        <div class="inspect-btn primary">RUN</div>
+        <div class="inspect-btn danger"  onclick="handleBtn('insp_estop')" title="Emergência">E-STOP</div>
+        <div class="inspect-btn"         onclick="handleBtn('insp_stop')"  title="Parar inspeção">STOP</div>
+        <div class="inspect-btn primary"  onclick="handleBtn('ok')"         title="OK / Limpar alarme">OK</div>
+        <div class="inspect-btn green"   onclick="handleBtn('insp_run')"   title="Iniciar inspeção">RUN</div>
       </div>
     </div>`;
 }
 
-/* ── Render solution guide ── */
+/* ─── Solution with checklist ─── */
 function renderSolution(erro){
-  const m = MACHINES[currentMaq];
-  const sevCls = {alta:"mv-sev-alta",media:"mv-sev-media",baixa:"mv-sev-baixa"};
-  const steps = (erro.passos||[]).map((p,i)=>`
-    <li>
-      <span class="mv-sol-step-num">${i+1}</span>
-      <span>${p}</span>
-    </li>`).join("");
-  const imgBtn = erro.imagem ? `
-    <div class="mv-sol-img-btn" onclick="openLightbox('/static/${erro.imagem.split('/').map(encodeURIComponent).join('/')}')" title="Ver foto real da ocorrência">
-      <i class="bi bi-image"></i>Ver foto real da ocorrência
-    </div>` : "";
-  document.getElementById("mvSolution").innerHTML = `
+  const m=MACHINES[currentMaq];
+  const key=stepKey();
+  const checked=stepChecks[key]||new Set();
+  const total=erro.passos.length;
+  const done=checked.size;
+  const pct=total>0?Math.round(done/total*100):0;
+  const sevCls={alta:"mv-sev-alta",media:"mv-sev-media",baixa:"mv-sev-baixa"};
+  const steps=erro.passos.map((p,i)=>{
+    const ck=checked.has(i);
+    return `<li class="mv-step-item${ck?" checked":""}" onclick="toggleStep(${i})">
+      <div class="mv-step-check">${ck?'<i class="bi bi-check-lg"></i>':''}</div>
+      <span class="mv-step-num">${i+1}</span>
+      <span class="mv-step-txt">${p}</span>
+    </li>`;
+  }).join("");
+  const complete=done===total&&total>0?`<div class="mv-complete-banner"><i class="bi bi-check-circle-fill"></i>Todos os ${total} passos concluídos — máquina pronta para retornar à produção.</div>`:"";
+  const imgBtn=erro.imagem?`<div class="mv-sol-img-btn" onclick="openLightbox('/static/${erro.imagem.split('/').map(encodeURIComponent).join('/')}')"><i class="bi bi-image"></i>Ver foto real da ocorrência</div>`:"";
+  document.getElementById("mvSolution").innerHTML=`
     <div class="mv-sol-hdr">
       <div>
         <div class="mv-sol-title">${erro.titulo}</div>
         <div class="mv-sol-meta">
           ${erro.codigo?`<span class="mv-sol-badge" style="background:rgba(13,110,253,0.10);color:#084298;font-family:monospace">${erro.codigo}</span>`:""}
-          <span class="mv-sol-badge ${sevCls[erro.sev]||''}">${erro.cat}</span>
+          <span class="mv-sol-badge ${sevCls[erro.sev]||""}">${erro.cat}</span>
           <span class="mv-sol-badge" style="background:rgba(15,23,42,0.06);color:var(--text-muted)">${m.label}</span>
         </div>
       </div>
     </div>
     <div class="mv-sol-body">
+      <div class="mv-progress-wrap">
+        <div class="mv-progress-bar-bg"><div class="mv-progress-bar-fill" style="width:${pct}%"></div></div>
+        <div class="mv-progress-label"><span>${done} de ${total} passos concluídos</span><span>${pct}%</span></div>
+      </div>
       <div class="mv-sol-section">Causa</div>
       <div class="mv-sol-causa">${erro.causa}</div>
-      <div class="mv-sol-section">Solução — Passo a Passo</div>
+      <div class="mv-sol-section">Solução — clique em cada passo ao concluir</div>
       <ul class="mv-sol-steps">${steps}</ul>
       ${erro.pecas?`<div class="mv-sol-section">Peças / Componentes</div><div class="mv-sol-pecas"><i class="bi bi-box-seam"></i>${erro.pecas}</div>`:""}
       ${imgBtn}
+      ${complete}
     </div>`;
 }
 
-/* ── Expose to global scope (used in onclick attributes) ── */
-window.selectMaq   = selectMaq;
-window.selectErro  = selectErro;
-window.renderErrList = renderErrList;
+function toggleStep(idx){
+  const key=stepKey();
+  if(!stepChecks[key]) stepChecks[key]=new Set();
+  if(stepChecks[key].has(idx)) stepChecks[key].delete(idx);
+  else stepChecks[key].add(idx);
+  const erro=MACHINES[currentMaq].erros.find(e=>e.id===currentErroId);
+  if(erro) renderSolution(erro);
+}
 
-/* ── Lightbox ── */
-window.openLightbox = function(src){
-  document.getElementById("kbLightboxImg").src = src;
-  document.getElementById("kbLightbox").classList.add("open");
-};
-window.closeLightbox = function(){
-  document.getElementById("kbLightbox").classList.remove("open");
-};
+/* ─── Lightbox ─── */
+window.openLightbox=function(src){document.getElementById("kbLightboxImg").src=src;document.getElementById("kbLightbox").classList.add("open");};
+window.closeLightbox=function(){document.getElementById("kbLightbox").classList.remove("open");};
 
-/* ── Init ── */
-document.addEventListener("DOMContentLoaded", ()=>{
-  renderTabs();
-  renderKpis();
-  buildCatFilter();
-  renderErrList();
-  renderPanel(null);
+/* ─── Expose globals ─── */
+window.selectMaq    = selectMaq;
+window.selectErro   = selectErro;
+window.renderErrList= renderErrList;
+window.handleBtn    = handleBtn;
+window.toggleStep   = toggleStep;
+
+/* ─── Init ─── */
+document.addEventListener("DOMContentLoaded",()=>{
+  renderTabs(); renderKpis(); buildCatFilter(); renderErrList(); renderPanel(null); updateStateHint();
 });
 })();
 </script>
