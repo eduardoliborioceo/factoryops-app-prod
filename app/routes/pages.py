@@ -4316,6 +4316,12 @@ def eng_mnt_indicadores():
     return render_template("engenharia/manutencao/indicadores.html", active_menu="eng_hub")
 
 
+@bp.route("/engenharia/smd/maquinas-virtuais", methods=["GET"])
+@login_required
+def eng_smd_maquinas_virtuais():
+    return render_template("engenharia/smd/maquinas_virtuais.html", active_menu="eng_hub")
+
+
 @bp.route("/sw.js", endpoint="pwa_sw")
 def service_worker():
     from flask import current_app, make_response, render_template
