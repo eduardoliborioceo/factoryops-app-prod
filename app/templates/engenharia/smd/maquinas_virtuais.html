@@ -844,6 +844,11 @@ function renderSolution(erro){
     </div>`;
 }
 
+/* ── Expose to global scope (used in onclick attributes) ── */
+window.selectMaq   = selectMaq;
+window.selectErro  = selectErro;
+window.renderErrList = renderErrList;
+
 /* ── Lightbox ── */
 window.openLightbox = function(src){
   document.getElementById("kbLightboxImg").src = src;
