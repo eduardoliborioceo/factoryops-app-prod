@@ -2877,6 +2877,12 @@ def rh_ops_hub():
     return render_template("rh_ops/rh_hub.html", active_menu="rh_ops_hub")
 
 
+@bp.route("/rh-ops/meu-rh", methods=["GET"])
+@login_required
+def rh_meu_rh():
+    return render_template("rh_ops/meu_rh.html", active_menu="rh_meu_rh")
+
+
 # ── Colaboradores ──
 
 @bp.route("/rh-ops/colaboradores", methods=["GET"])
