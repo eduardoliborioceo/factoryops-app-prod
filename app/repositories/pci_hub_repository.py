@@ -183,6 +183,25 @@ def listar_sessoes_filtradas(
             return cur.fetchall()
 
 
+def listar_sessoes_abertas() -> list:
+    with get_db() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                f"""
+                SELECT id, linha, usuario, op, modelo, cliente,
+                       data::text, turno, meta_hora, qtd_por_caixa,
+                       (iniciado_em AT TIME ZONE '{_TZ}')::text AS iniciado_em,
+                       status
+                FROM pci_embalagem_sessao
+                WHERE status = 'aberta'
+                  AND data >= CURRENT_DATE - INTERVAL '1 day'
+                ORDER BY iniciado_em DESC
+                LIMIT 5
+                """
+            )
+            return cur.fetchall()
+
+
 def fechar_sessao(sessao_id: int) -> None:
     with get_db() as conn:
         with conn.cursor() as cur:

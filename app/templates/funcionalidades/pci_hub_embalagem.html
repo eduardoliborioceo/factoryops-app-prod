@@ -262,6 +262,33 @@
 }
 .btn-encerrar:hover { background: rgba(220,53,69,0.08); }
 
+/* ─── Banner retomar ──────────────────────────── */
+.retomar-banner {
+  display: none;
+  width: 100%;
+  max-width: 520px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 12px;
+}
+.retomar-card {
+  background: var(--card);
+  border: 1px solid rgba(13,110,253,0.35);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(13,110,253,0.10);
+}
+.retomar-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.9rem; font-weight: 700; color: #0d6efd;
+}
+.retomar-info  { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+.retomar-info strong { color: var(--text); }
+.retomar-btns  { display: flex; gap: 8px; }
+
 /* ─── Mobile ──────────────────────────────────── */
 @media (max-width: 767px) {
   .setup-card { padding: 24px 18px; }
@@ -311,6 +338,27 @@
       <a href="{{ url_for('pages.funcionalidades_pci_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Voltar ao PCI Hub
       </a>
+    </div>
+
+    <!-- Banner: sessão em aberto -->
+    <div class="retomar-banner" id="retormarBanner">
+      <div class="retomar-card">
+        <div class="retomar-title">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          Há uma embalagem em aberto
+        </div>
+        <div class="retomar-info" id="retomarInfo"></div>
+        <div class="retomar-btns">
+          <button class="btn btn-primary btn-sm fw-700" style="border-radius:8px;min-width:110px;"
+                  onclick="retormarSessao()">
+            <i class="bi bi-play-fill me-1"></i>Retomar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm fw-600" style="border-radius:8px;"
+                  onclick="dispensarRetomar()">
+            Nova sessão
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="setup-bg" aria-hidden="true">
@@ -547,21 +595,70 @@ const URL_SCAN         = "{{ url_for('pages.funcionalidades_pci_hub_embalagem_sc
 const URL_FECHAR       = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/fechar`;
 const URL_INTERVALOS   = (id) => `/funcionalidades/sistemas/pci-hub/embalagem/sessao/${id}/intervalos`;
 
-let _sessao    = null;
-let _scans     = [];
-let _turnoInfo = null;
-let _acTimerL  = null;
-let _acTimerO  = null;
-let _fbTimer   = null;
-let _ivTimer   = null;
+let _sessao          = null;
+let _sessaoAberta    = null;
+let _scans           = [];
+let _turnoInfo       = null;
+let _acTimerL        = null;
+let _acTimerO        = null;
+let _fbTimer         = null;
+let _ivTimer         = null;
 
 /* ── Init ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   iniciarAcLinha();
   iniciarAcOp();
   carregarTurnoAtual();
+  verificarSessaoAberta();
   document.addEventListener('click', fecharDropdowns);
 });
+
+/* ── Verificar sessão em aberto ─────────────────────────── */
+function verificarSessaoAberta() {
+  fetch(URL_SESSAO)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok || !d.sessoes?.length) return;
+      const s = d.sessoes[0];
+      _sessaoAberta = s;
+      const hora = (s.iniciado_em || '').slice(11, 16);
+      const data = (s.iniciado_em || '').slice(0, 10).split('-').reverse().join('/');
+      document.getElementById('retomarInfo').innerHTML =
+        `<strong>${s.linha}</strong> · OP <strong>${s.op}</strong>` +
+        (s.modelo ? ` · ${s.modelo}` : '') +
+        `<br>Iniciada por <strong>${s.usuario}</strong> em ${data} às ${hora}`;
+      document.getElementById('retormarBanner').style.display = '';
+    })
+    .catch(() => {});
+}
+
+function retormarSessao() {
+  if (!_sessaoAberta) return;
+  const s = _sessaoAberta;
+  document.getElementById('retormarBanner').style.display = 'none';
+  fetch(`/funcionalidades/sistemas/pci-hub/embalagem/sessao/${s.id}/scans`)
+    .then(r => r.json())
+    .then(d => {
+      _sessao = s;
+      _scans  = d.ok ? d.scans.reverse() : [];
+      preencherInfobar();
+      document.getElementById('scanTotal').textContent = _scans.length;
+      renderScanList();
+      atualizarStatusCaixa(_scans.length);
+      document.getElementById('faseSetup').classList.add('d-none');
+      document.getElementById('faseScan').classList.remove('d-none');
+      document.getElementById('btnVoltar').classList.add('d-none');
+      carregarIntervalos();
+      _ivTimer = setInterval(carregarIntervalos, 30000);
+      setTimeout(() => document.getElementById('scanInput').focus(), 120);
+    })
+    .catch(() => {});
+}
+
+function dispensarRetomar() {
+  _sessaoAberta = null;
+  document.getElementById('retormarBanner').style.display = 'none';
+}
 
 /* ── Turno auto-detect ──────────────────────────────────── */
 function carregarTurnoAtual() {
@@ -921,10 +1018,11 @@ function confirmarEncerrar() {
 }
 
 function resetarSessao() {
-  _sessao = null; _scans = [];
+  _sessao = null; _scans = []; _sessaoAberta = null;
   document.getElementById('faseScan').classList.add('d-none');
   document.getElementById('faseSetup').classList.remove('d-none');
   document.getElementById('btnVoltar').classList.remove('d-none');
+  document.getElementById('retormarBanner').style.display = 'none';
   document.getElementById('setupBuscaLinha').value = '';
   document.getElementById('setupLinha').value = '';
   document.getElementById('setupLinhaOk').classList.add('d-none');

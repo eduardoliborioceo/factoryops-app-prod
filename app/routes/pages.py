@@ -2400,11 +2400,17 @@ def funcionalidades_pci_hub_embalagem():
     )
 
 
-@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao", methods=["POST"])
+@bp.route("/funcionalidades/sistemas/pci-hub/embalagem/sessao", methods=["GET", "POST"])
 @login_required
 def funcionalidades_pci_hub_embalagem_sessao():
     from flask import request, jsonify
     from app.services import pci_hub_service as svc
+
+    if request.method == "GET":
+        try:
+            return jsonify({"ok": True, "sessoes": svc.sessoes_abertas()})
+        except Exception:
+            return jsonify({"ok": True, "sessoes": []})
 
     try:
         data = request.get_json(force=True) or {}

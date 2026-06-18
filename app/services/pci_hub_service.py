@@ -50,6 +50,10 @@ def fechar_sessao(sessao_id: int) -> None:
     repo.fechar_sessao(sessao_id)
 
 
+def sessoes_abertas() -> list:
+    return [dict(s) for s in repo.listar_sessoes_abertas()]
+
+
 _CHAR_FIX = str.maketrans({"§": "º", "\xa7": "º", "°": "º"})
 
 
