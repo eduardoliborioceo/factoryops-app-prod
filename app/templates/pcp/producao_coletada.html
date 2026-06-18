@@ -1,18 +1,18 @@
 {% extends "layouts/app.html" %}
-{% block title %}PCP · Produção Coletada{% endblock %}
+{% block title %}PCP · Produção Input{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
     <span class="page-header-section">PCP</span>
-    <h1 class="page-header-name">Produção Coletada</h1>
+    <h1 class="page-header-name">Produção Input</h1>
   </div>
   <div class="page-header-actions">
     <span class="badge text-bg-danger me-1" style="font-size:0.7rem;padding:5px 8px;">
       <i class="bi bi-shield-lock"></i> Admin
     </span>
-    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
+    <a href="{{ url_for('pages.smt_mais') }}" class="d-flex d-md-none btn btn-sm btn-outline-secondary align-items-center gap-1" style="border-radius:6px;font-size:0.8rem;">
+      <i class="bi bi-arrow-left"></i> Voltar ao menu
     </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
