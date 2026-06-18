@@ -7,9 +7,6 @@
     <h1 class="page-header-name">Usuários Pendentes</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.inicio') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     {% if current_user.is_authenticated and current_user.is_admin %}
     <a href="{{ url_for('auth.admin_users') }}" class="btn btn-sm btn-primary">
       <i class="bi bi-shield-lock"></i> Pendentes
