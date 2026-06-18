@@ -373,9 +373,15 @@ body {
   }
 
   .content {
-    padding: 16px;
-    padding-top: calc(var(--header-height) + 16px);
-    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+    padding: 6px;
+    padding-top: calc(var(--header-height) + 12px);
+    padding-bottom: calc(var(--bottom-nav-height) + 12px);
+  }
+
+  .content .container-fluid,
+  .content .container {
+    padding-left: 2px;
+    padding-right: 2px;
   }
 
   .desktop-header {
