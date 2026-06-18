@@ -3916,6 +3916,12 @@ def eng_produto_homologacao():
     return render_template("engenharia/produto/homologacao.html", active_menu="eng_hub")
 
 
+@bp.route("/engenharia/produto/modelos-cliente", methods=["GET"])
+@login_required
+def eng_produto_modelos_cliente():
+    return render_template("engenharia/produto/modelos_cliente.html", active_menu="eng_hub")
+
+
 # Engenharia de Automação
 
 @bp.route("/engenharia/automacao/clps", methods=["GET"])
