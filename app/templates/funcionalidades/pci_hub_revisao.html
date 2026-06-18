@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Posto de Revisão</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" id="btnImprimir" onclick="imprimirRelatorio()" title="Imprimir" style="display:none;">
-      <i class="bi bi-printer"></i>
-    </button>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -667,7 +664,6 @@ function mostrarForm() {
   document.getElementById('listaPanel').classList.add('d-none');
   document.getElementById('formPanel').classList.remove('d-none');
   document.getElementById('btnVoltar').classList.add('d-none');
-  document.getElementById('btnImprimir').style.display = '';
   document.getElementById('btnExcluir').style.display = _relId ? '' : 'none';
 }
 
@@ -675,7 +671,6 @@ function voltarLista() {
   document.getElementById('formPanel').classList.add('d-none');
   document.getElementById('listaPanel').classList.remove('d-none');
   document.getElementById('btnVoltar').classList.remove('d-none');
-  document.getElementById('btnImprimir').style.display = 'none';
 }
 
 /* ── Autocomplete filtro de linha ─────── */
