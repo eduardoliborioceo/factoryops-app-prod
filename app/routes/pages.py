@@ -2328,6 +2328,28 @@ def funcionalidades_pci_hub():
     )
 
 
+@bp.route("/funcionalidades/sistemas/pci-hub/hora-a-hora", methods=["GET"])
+@login_required
+def funcionalidades_pci_hub_hora_a_hora():
+    from app.repositories import turno_config_repository as turno_repo
+    from app.repositories import producao_coletada_repository as pc_repo
+    try:
+        turnos = [str(t) for t in turno_repo.listar_turnos()]
+    except Exception:
+        turnos = []
+    try:
+        setores = list(pc_repo.setores_disponiveis())
+        setores.sort()
+    except Exception:
+        setores = ["SMD", "PTH", "IM/PA"]
+    return render_template(
+        "funcionalidades/pci_hub_hora_a_hora.html",
+        active_menu="funcionalidades_pci_hub",
+        turnos=turnos,
+        setores=setores,
+    )
+
+
 @bp.route("/funcionalidades/sistemas/pci-hub/embalagem", methods=["GET"])
 @login_required
 def funcionalidades_pci_hub_embalagem():
