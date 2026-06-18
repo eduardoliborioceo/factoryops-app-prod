@@ -40,7 +40,7 @@
   'smt_cadastro','smt_calcular',
   'funcionalidades_im_pa','smt_modelos','funcionalidades_pth',
   'funcionalidades_vtt',
-  'funcionalidades_resumo_producao','pcp_etiquetas_manuais',
+  'pcp_etiquetas_manuais',
   'funcionalidades_sistema_input',
   'funcionalidades_pci_hub',
   'rh_ops_hub'
@@ -189,10 +189,6 @@
               </div>
             </div>
 
-            <a href="{{ url_for('pages.funcionalidades_resumo_producao') }}"
-               class="{% if active_menu == 'funcionalidades_resumo_producao' %}active{% endif %}">
-              <i class="bi bi-bar-chart-steps"></i> Resumo de Produção
-            </a>
             <a href="{{ url_for('pages.pcp_etiquetas_manuais') }}"
                class="{% if active_menu == 'pcp_etiquetas_manuais' %}active{% endif %}">
               <i class="bi bi-tag"></i> Etiquetas Manuais
