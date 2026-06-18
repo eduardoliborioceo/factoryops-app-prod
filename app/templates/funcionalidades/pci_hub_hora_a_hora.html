@@ -1,0 +1,463 @@
+{% extends "layouts/app.html" %}
+{% block title %}Hora a Hora · PCI Hub{% endblock %}
+
+{% block page_title %}
+<div class="page-header">
+  <div class="page-header-title">
+    <span class="page-header-section">PCI Hub · Operação</span>
+    <h1 class="page-header-name">Monitor Hora a Hora</h1>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn-header-icon" id="btnRefresh" onclick="carregar()" title="Atualizar">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+    <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
+      <i class="bi bi-arrows-fullscreen"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* ─── Filtros ───────────────────────────── */
+.mon-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.mon-filtros .form-label { font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; }
+.mon-filtros .form-control,
+.mon-filtros .form-select { font-size: 0.82rem; border-radius: 8px; }
+.mon-filtros-field { display: flex; flex-direction: column; }
+
+/* ─── Sumário global ────────────────────── */
+.mon-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.mon-sum-card {
+  flex: 1;
+  min-width: 120px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.mon-sum-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.mon-sum-lbl { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+/* ─── Tabela de linhas ─────────────────── */
+.mon-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mon-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.mon-table-wrap thead th {
+  padding: 10px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(15,23,42,0.04);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.mon-table-wrap tbody tr { border-bottom: 1px solid var(--border); }
+.mon-table-wrap tbody tr:last-child { border-bottom: none; }
+.mon-table-wrap tbody td {
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.linha-nome { font-weight: 700; font-size: 0.875rem; white-space: nowrap; }
+.linha-info { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ─── Slots inline ─────────────────────── */
+.slots-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.slot-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 8px;
+  min-width: 60px;
+  border: 1px solid transparent;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  transition: transform 0.1s;
+  cursor: default;
+}
+.slot-pill:hover { transform: translateY(-1px); }
+.slot-pill .sp-hora  { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); }
+.slot-pill .sp-prod  { font-size: 1rem; font-weight: 800; }
+.slot-pill .sp-meta  { font-size: 0.65rem; color: var(--text-muted); }
+.slot-pill .sp-pct   { font-size: 0.7rem; font-weight: 700; }
+
+.sp-verde  { background: rgba(25,135,84,0.08);  border-color: rgba(25,135,84,0.25);  color: #0f5132; }
+.sp-verde .sp-pct, .sp-verde .sp-prod { color: #198754; }
+.sp-amarelo{ background: rgba(253,126,20,0.08); border-color: rgba(253,126,20,0.25); color: #6d3a1e; }
+.sp-amarelo .sp-pct, .sp-amarelo .sp-prod { color: #d86c07; }
+.sp-vermelho{ background: rgba(220,53,69,0.08);  border-color: rgba(220,53,69,0.25);  color: #6b0f19; }
+.sp-vermelho .sp-pct, .sp-vermelho .sp-prod { color: #dc3545; }
+.sp-cinza  { background: rgba(15,23,42,0.04);   border-color: var(--border);          color: var(--text-muted); }
+.sp-cinza .sp-prod { color: var(--text-muted); font-size: 0.82rem; }
+
+/* ─── Eficiência geral da linha ─────────── */
+.ef-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 90px; }
+.ef-bar { flex: 1; height: 6px; background: rgba(15,23,42,0.08); border-radius: 3px; overflow: hidden; }
+.ef-fill { height: 100%; border-radius: 3px; }
+.ef-pct  { font-size: 0.82rem; font-weight: 700; min-width: 36px; text-align: right; }
+
+/* ─── Estados de carregamento ───────────── */
+.mon-empty {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text-muted);
+}
+.mon-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.35; }
+.mon-empty p { font-size: 0.875rem; margin: 0; }
+
+/* ─── Auto-refresh indicator ────────────── */
+.refresh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(15,23,42,0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 10px;
+}
+
+/* ─── Mobile ────────────────────────────── */
+@media (max-width: 767px) {
+  .mon-filtros { gap: 6px; }
+  .mon-filtros-field { flex: 1 1 calc(50% - 4px); }
+  .mon-filtros-field.full { flex: 1 1 100%; }
+  .mon-sum-val { font-size: 1.2rem; }
+  .mon-summary { gap: 8px; }
+  .mon-sum-card { padding: 10px 12px; }
+
+  /* Mobile: linhas em cards verticais ao invés de tabela */
+  .mon-table-wrap { display: none; }
+  .mon-cards-mobile { display: block; }
+  .mon-line-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+  }
+  .mon-line-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+}
+@media (min-width: 768px) {
+  .mon-cards-mobile { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- ── Filtros ── -->
+  <div class="mon-filtros">
+    <div class="mon-filtros-field">
+      <label class="form-label">Data</label>
+      <input type="date" class="form-control form-control-sm" id="fData" style="min-width:130px;">
+    </div>
+    <div class="mon-filtros-field">
+      <label class="form-label">Turno</label>
+      <select class="form-select form-select-sm" id="fTurno" style="min-width:110px;">
+        <option value="">Todos</option>
+        {% for t in turnos %}
+        <option value="{{ t }}">{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mon-filtros-field">
+      <label class="form-label">Filial</label>
+      <select class="form-select form-select-sm" id="fFilial" style="min-width:90px;">
+        <option value="">Todas</option>
+        <option value="VTE">VTE</option>
+        <option value="VTT">VTT</option>
+      </select>
+    </div>
+    <div class="mon-filtros-field">
+      <label class="form-label">Setor</label>
+      <select class="form-select form-select-sm" id="fSetor" style="min-width:90px;">
+        <option value="">Todos</option>
+        {% for s in setores %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mon-filtros-field" style="justify-content:flex-end;">
+      <button class="btn btn-primary btn-sm fw-600" style="border-radius:8px;height:34px;min-width:100px;" onclick="carregar()">
+        <i class="bi bi-play-fill me-1"></i>Carregar
+      </button>
+    </div>
+    <div class="mon-filtros-field d-none d-md-flex" style="justify-content:flex-end;align-items:center;">
+      <span class="refresh-badge"><i class="bi bi-clock"></i><span id="nextRefresh">—</span></span>
+    </div>
+  </div>
+
+  <!-- ── Sumário ── -->
+  <div class="mon-summary" id="monSummary" style="display:none!important;"></div>
+
+  <!-- ── Tabela desktop ── -->
+  <div class="mon-table-wrap" id="monTable">
+    <div class="mon-empty">
+      <i class="bi bi-table"></i>
+      <p>Selecione os filtros e clique em <strong>Carregar</strong> para visualizar o plano hora a hora.</p>
+    </div>
+  </div>
+
+  <!-- ── Cards mobile ── -->
+  <div id="monCards" class="mon-cards-mobile"></div>
+
+</div>
+
+<script>
+const URL_HIST = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
+
+let _timer = null;
+let _countdown = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+  document.getElementById('fData').value = hoje;
+
+  const t = detectarTurnoAtual();
+  if (t) document.getElementById('fTurno').value = t;
+
+  carregar();
+});
+
+function detectarTurnoAtual() {
+  const agora = new Date();
+  const h = agora.getHours();
+  const opts = document.querySelectorAll('#fTurno option');
+  for (const o of opts) {
+    if (!o.value) continue;
+    const txt = o.value.toLowerCase();
+    if ((txt.includes('1') || txt.includes('i')) && h >= 6 && h < 14) return o.value;
+    if ((txt.includes('2') || txt.includes('ii')) && h >= 14 && h < 22) return o.value;
+    if ((txt.includes('3') || txt.includes('iii')) && (h >= 22 || h < 6)) return o.value;
+  }
+  return '';
+}
+
+function carregar() {
+  const data  = document.getElementById('fData').value;
+  const turno = document.getElementById('fTurno').value;
+  const filial = document.getElementById('fFilial').value;
+  const setor  = document.getElementById('fSetor').value;
+
+  if (!data) { return; }
+
+  setLoading();
+
+  const params = new URLSearchParams({ data_inicial: data, data_final: data });
+  if (turno)  params.set('turno', turno);
+  if (filial) params.set('filial', filial);
+  if (setor)  params.set('setor', setor);
+
+  fetch(URL_HIST + '?' + params)
+    .then(r => r.json())
+    .then(d => {
+      if (!d.registros?.length) {
+        setVazio('Nenhum lançamento encontrado para os filtros selecionados.');
+        return;
+      }
+      renderizar(d.registros);
+      iniciarAutoRefresh(120);
+    })
+    .catch(() => setVazio('Erro de conexão. Tente novamente.'));
+}
+
+function setLoading() {
+  document.getElementById('monTable').innerHTML = `
+    <div class="mon-empty"><div class="spinner-border spinner-border-sm mb-3"></div><p>Carregando...</p></div>`;
+  document.getElementById('monCards').innerHTML = '';
+  document.getElementById('monSummary').style.setProperty('display', 'none', 'important');
+}
+
+function setVazio(msg) {
+  document.getElementById('monTable').innerHTML = `
+    <div class="mon-empty"><i class="bi bi-inbox"></i><p>${msg}</p></div>`;
+  document.getElementById('monCards').innerHTML = `
+    <div class="mon-empty d-md-none"><i class="bi bi-inbox"></i><p>${msg}</p></div>`;
+  document.getElementById('monSummary').style.setProperty('display', 'none', 'important');
+}
+
+function renderizar(registros) {
+  const linhaMap = {};
+  registros.forEach(r => {
+    const key = `${r.filial}|${r.setor}|${r.linha}`;
+    if (!linhaMap[key]) linhaMap[key] = { filial: r.filial, setor: r.setor, linha: r.linha, slots: [] };
+    linhaMap[key].slots.push(r);
+  });
+
+  const linhas = Object.values(linhaMap).sort((a, b) => {
+    if (a.filial !== b.filial) return a.filial.localeCompare(b.filial);
+    if (a.setor !== b.setor) return a.setor.localeCompare(b.setor);
+    return a.linha.localeCompare(b.linha);
+  });
+
+  let totalProd = 0, totalMeta = 0;
+  linhas.forEach(l => l.slots.forEach(s => {
+    totalProd += s.producao_real || 0;
+    totalMeta += s.meta_hora || 0;
+  }));
+  const efGlobal = totalMeta > 0 ? Math.min(100, Math.round(totalProd / totalMeta * 100)) : null;
+  const corGlobal = efGlobal == null ? 'var(--text-muted)' : efGlobal >= 95 ? '#198754' : efGlobal >= 80 ? '#fd7e14' : '#dc3545';
+
+  const sumEl = document.getElementById('monSummary');
+  sumEl.innerHTML = `
+    <div class="mon-sum-card"><div class="mon-sum-val">${totalProd}</div><div class="mon-sum-lbl">Produzido</div></div>
+    <div class="mon-sum-card"><div class="mon-sum-val">${totalMeta}</div><div class="mon-sum-lbl">Meta</div></div>
+    <div class="mon-sum-card"><div class="mon-sum-val" style="color:${corGlobal};">${efGlobal != null ? efGlobal + '%' : '—'}</div><div class="mon-sum-lbl">Eficiência</div></div>
+    <div class="mon-sum-card"><div class="mon-sum-val">${linhas.length}</div><div class="mon-sum-lbl">Linhas</div></div>
+    <div class="mon-sum-card"><div class="mon-sum-val">${registros.length}</div><div class="mon-sum-lbl">Slots</div></div>`;
+  sumEl.style.removeProperty('display');
+
+  renderizarDesktop(linhas);
+  renderizarMobile(linhas);
+}
+
+function slotCor(prod, meta) {
+  if (!meta) return 'cinza';
+  const pct = Math.min(100, prod / meta * 100);
+  if (pct >= 95) return 'verde';
+  if (pct >= 80) return 'amarelo';
+  return 'vermelho';
+}
+
+function buildSlotPill(s) {
+  const prod  = s.producao_real || 0;
+  const meta  = s.meta_hora || 0;
+  const cor   = slotCor(prod, meta);
+  const pct   = meta > 0 ? Math.min(100, Math.round(prod / meta * 100)) : null;
+  const hi    = (s.hora_inicio || '').substring(0, 5);
+  const hf    = (s.hora_fim    || '').substring(0, 5);
+  return `<div class="slot-pill sp-${cor}" title="${hi}→${hf} · ${prod} pcs${meta?' / meta '+meta:''}">
+    <span class="sp-hora">${hi}</span>
+    <span class="sp-prod">${prod}</span>
+    ${meta ? `<span class="sp-meta">/${meta}</span>` : ''}
+    ${pct != null ? `<span class="sp-pct">${pct}%</span>` : ''}
+  </div>`;
+}
+
+function eficienciaLinha(slots) {
+  let p = 0, m = 0;
+  slots.forEach(s => { p += s.producao_real || 0; m += s.meta_hora || 0; });
+  if (!m) return { pct: null, prod: p, meta: m };
+  return { pct: Math.min(100, Math.round(p / m * 100)), prod: p, meta: m };
+}
+
+function renderizarDesktop(linhas) {
+  let html = `<table>
+    <thead><tr>
+      <th style="padding:10px 16px;">Linha</th>
+      <th>Slots Hora a Hora</th>
+      <th style="min-width:120px;">Eficiência</th>
+    </tr></thead><tbody>`;
+
+  linhas.forEach(l => {
+    const ef = eficienciaLinha(l.slots);
+    const cor = ef.pct == null ? 'var(--text-muted)' : ef.pct >= 95 ? '#198754' : ef.pct >= 80 ? '#fd7e14' : '#dc3545';
+    const pillsHtml = l.slots
+      .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+      .map(buildSlotPill).join('');
+
+    html += `<tr>
+      <td>
+        <div class="linha-nome">${l.linha}</div>
+        <div class="linha-info">${l.filial} · ${l.setor}</div>
+      </td>
+      <td><div class="slots-row">${pillsHtml}</div></td>
+      <td>
+        <div class="ef-bar-wrap">
+          <div class="ef-bar"><div class="ef-fill" style="width:${ef.pct ?? 0}%;background:${cor};"></div></div>
+          <span class="ef-pct" style="color:${cor};">${ef.pct != null ? ef.pct + '%' : '—'}</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">${ef.prod} / ${ef.meta || '—'}</div>
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('monTable').innerHTML = html;
+}
+
+function renderizarMobile(linhas) {
+  let html = '';
+  linhas.forEach(l => {
+    const ef  = eficienciaLinha(l.slots);
+    const cor = ef.pct == null ? 'var(--text-muted)' : ef.pct >= 95 ? '#198754' : ef.pct >= 80 ? '#fd7e14' : '#dc3545';
+    const pillsHtml = l.slots
+      .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+      .map(buildSlotPill).join('');
+
+    html += `<div class="mon-line-card">
+      <div class="mon-line-card-header">
+        <div>
+          <div class="linha-nome">${l.linha}</div>
+          <div class="linha-info">${l.filial} · ${l.setor}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.1rem;font-weight:800;color:${cor};">${ef.pct != null ? ef.pct + '%' : '—'}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">${ef.prod}/${ef.meta || '—'}</div>
+        </div>
+      </div>
+      <div style="height:4px;background:rgba(15,23,42,0.08);border-radius:3px;margin-bottom:10px;overflow:hidden;">
+        <div style="height:100%;width:${ef.pct ?? 0}%;background:${cor};border-radius:3px;"></div>
+      </div>
+      <div class="slots-row">${pillsHtml}</div>
+    </div>`;
+  });
+  document.getElementById('monCards').innerHTML = html;
+}
+
+function iniciarAutoRefresh(segundos) {
+  clearInterval(_timer);
+  _countdown = segundos;
+  const el = document.getElementById('nextRefresh');
+  _timer = setInterval(() => {
+    _countdown--;
+    if (el) {
+      const m = Math.floor(_countdown / 60);
+      const s = _countdown % 60;
+      el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    }
+    if (_countdown <= 0) { clearInterval(_timer); carregar(); }
+  }, 1000);
+}
+</script>
+{% endblock %}
