@@ -9,6 +9,8 @@ _DEFAULTS = {
     "cnpj": "",
     "logo_url": None,
     "filiais": ["VTE", "VTT"],
+    "filiais_extra": "",
+    "endereco": {},
     "menu_visivel": {
         "funcionalidades": True,
         "producao": True,
@@ -39,6 +41,10 @@ def get_config() -> dict:
         result["menu_visivel"] = json.loads(result["menu_visivel"])
     if isinstance(result.get("setores_por_filial"), str):
         result["setores_por_filial"] = json.loads(result["setores_por_filial"])
+    if isinstance(result.get("endereco"), str):
+        result["endereco"] = json.loads(result["endereco"])
+    if not isinstance(result.get("endereco"), dict):
+        result["endereco"] = {}
     return result
 
 
@@ -47,21 +53,25 @@ def update_config(data: dict) -> None:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO empresa_config (id, nome_empresa, nome_exibicao, cnpj,
-                    filiais, menu_visivel, setores_por_filial, atualizado_em)
-                VALUES (1, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb, NOW())
+                    filiais, filiais_extra, endereco, menu_visivel, setores_por_filial, atualizado_em)
+                VALUES (1, %s, %s, %s, %s::jsonb, %s, %s::jsonb, %s::jsonb, %s::jsonb, NOW())
                 ON CONFLICT (id) DO UPDATE SET
-                    nome_empresa = EXCLUDED.nome_empresa,
-                    nome_exibicao = EXCLUDED.nome_exibicao,
-                    cnpj = EXCLUDED.cnpj,
-                    filiais = EXCLUDED.filiais,
-                    menu_visivel = EXCLUDED.menu_visivel,
-                    setores_por_filial = EXCLUDED.setores_por_filial,
-                    atualizado_em = NOW()
+                    nome_empresa        = EXCLUDED.nome_empresa,
+                    nome_exibicao       = EXCLUDED.nome_exibicao,
+                    cnpj                = EXCLUDED.cnpj,
+                    filiais             = EXCLUDED.filiais,
+                    filiais_extra       = EXCLUDED.filiais_extra,
+                    endereco            = EXCLUDED.endereco,
+                    menu_visivel        = EXCLUDED.menu_visivel,
+                    setores_por_filial  = EXCLUDED.setores_por_filial,
+                    atualizado_em       = NOW()
             """, (
                 data.get("nome_empresa", "Venttos Electronics"),
                 data.get("nome_exibicao") or None,
                 data.get("cnpj") or None,
                 json.dumps(data.get("filiais", ["VTE", "VTT"])),
+                data.get("filiais_extra") or None,
+                json.dumps(data.get("endereco") or {}),
                 json.dumps(data.get("menu_visivel", _DEFAULTS["menu_visivel"])),
                 json.dumps(data.get("setores_por_filial", _DEFAULTS["setores_por_filial"])),
             ))
