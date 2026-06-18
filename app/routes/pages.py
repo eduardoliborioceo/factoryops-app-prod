@@ -2331,22 +2331,63 @@ def funcionalidades_pci_hub():
 @bp.route("/funcionalidades/sistemas/pci-hub/hora-a-hora", methods=["GET"])
 @login_required
 def funcionalidades_pci_hub_hora_a_hora():
+    from flask import request as req
+    from datetime import date
     from app.repositories import turno_config_repository as turno_repo
     from app.repositories import producao_coletada_repository as pc_repo
+    from app.services import sistema_input_lancamento_service as svc
+
     try:
         turnos = [str(t) for t in turno_repo.listar_turnos()]
     except Exception:
         turnos = []
     try:
-        setores = list(pc_repo.setores_disponiveis())
-        setores.sort()
+        setores = sorted(list(pc_repo.setores_disponiveis()))
     except Exception:
         setores = ["SMD", "PTH", "IM/PA"]
+
+    hoje = str(date.today())
+    f_data   = req.args.get("data",   hoje)
+    f_turno  = req.args.get("turno",  "")
+    f_filial = req.args.get("filial", "")
+    f_setor  = req.args.get("setor",  "")
+
+    try:
+        registros_raw = svc.historico(
+            filial=f_filial, setor=f_setor, linha="",
+            turno=f_turno,
+            data_inicial=f_data, data_final=f_data,
+        )
+        registros = [dict(r) for r in registros_raw]
+    except Exception:
+        registros = []
+
+    linha_map = {}
+    for r in registros:
+        key = (r.get("filial", ""), r.get("setor", ""), r.get("linha", ""))
+        if key not in linha_map:
+            linha_map[key] = {"filial": key[0], "setor": key[1], "linha": key[2], "slots": []}
+        linha_map[key]["slots"].append(r)
+
+    linhas = sorted(linha_map.values(), key=lambda x: (x["filial"], x["setor"], x["linha"]))
+
+    total_prod = sum(s.get("producao_real") or 0 for l in linhas for s in l["slots"])
+    total_meta = sum(s.get("meta_hora") or 0 for l in linhas for s in l["slots"])
+    ef_global  = round(min(100, total_prod / total_meta * 100)) if total_meta > 0 else None
+
     return render_template(
         "funcionalidades/pci_hub_hora_a_hora.html",
         active_menu="funcionalidades_pci_hub",
         turnos=turnos,
         setores=setores,
+        linhas=linhas,
+        total_prod=total_prod,
+        total_meta=total_meta,
+        ef_global=ef_global,
+        f_data=f_data,
+        f_turno=f_turno,
+        f_filial=f_filial,
+        f_setor=f_setor,
     )
 
 

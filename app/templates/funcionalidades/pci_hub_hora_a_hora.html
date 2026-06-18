@@ -8,9 +8,9 @@
     <h1 class="page-header-name">Monitor Hora a Hora</h1>
   </div>
   <div class="page-header-actions">
-    <button class="btn-header-icon" id="btnRefresh" onclick="carregar()" title="Atualizar">
-      <i class="bi bi-arrow-clockwise"></i>
-    </button>
+    <a href="{{ url_for('pages.funcionalidades_pci_hub') }}" class="btn-header-icon" title="Voltar">
+      <i class="bi bi-arrow-left"></i>
+    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -20,164 +20,89 @@
 
 {% block styles %}
 <style>
-/* ─── Filtros ───────────────────────────── */
-.mon-filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: flex-end;
-  padding: 14px 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin-bottom: 20px;
+.hah-filtros {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
+  padding: 14px 16px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px;
 }
-.mon-filtros .form-label { font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; }
-.mon-filtros .form-control,
-.mon-filtros .form-select { font-size: 0.82rem; border-radius: 8px; }
-.mon-filtros-field { display: flex; flex-direction: column; }
+.hah-field { display: flex; flex-direction: column; }
+.hah-field label { font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+.hah-field .form-control,
+.hah-field .form-select { font-size: 0.82rem; border-radius: 8px; }
 
-/* ─── Sumário global ────────────────────── */
-.mon-summary {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
+.hah-summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.hah-sum-card {
+  flex: 1; min-width: 100px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; text-align: center;
 }
-.mon-sum-card {
-  flex: 1;
-  min-width: 120px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  text-align: center;
-}
-.mon-sum-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
-.mon-sum-lbl { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.hah-sum-val { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.hah-sum-lbl { font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+               text-transform: uppercase; letter-spacing: 0.4px; margin-top: 3px; }
 
-/* ─── Tabela de linhas ─────────────────── */
-.mon-table-wrap {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+.hah-table-wrap { background: var(--card); border: 1px solid var(--border);
+                  border-radius: 12px; overflow: hidden; }
+.hah-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.hah-table thead th {
+  padding: 10px 14px; font-size: 0.7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);
+  background: rgba(15,23,42,0.03); border-bottom: 1px solid var(--border); white-space: nowrap;
 }
-.mon-table-wrap table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-.mon-table-wrap thead th {
-  padding: 10px 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: rgba(15,23,42,0.04);
-  border-bottom: 1px solid var(--border);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-.mon-table-wrap tbody tr { border-bottom: 1px solid var(--border); }
-.mon-table-wrap tbody tr:last-child { border-bottom: none; }
-.mon-table-wrap tbody td {
-  padding: 8px 12px;
-  vertical-align: middle;
-}
-.linha-nome { font-weight: 700; font-size: 0.875rem; white-space: nowrap; }
+.hah-table tbody tr { border-bottom: 1px solid var(--border); }
+.hah-table tbody tr:last-child { border-bottom: none; }
+.hah-table td { padding: 10px 14px; vertical-align: middle; }
+.linha-nome { font-weight: 700; font-size: 0.875rem; }
 .linha-info { font-size: 0.72rem; color: var(--text-muted); }
 
-/* ─── Slots inline ─────────────────────── */
-.slots-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
+.slots-row { display: flex; gap: 4px; flex-wrap: wrap; }
 .slot-pill {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 5px 8px;
-  border-radius: 8px;
-  min-width: 60px;
-  border: 1px solid transparent;
-  font-size: 0.72rem;
-  line-height: 1.2;
-  transition: transform 0.1s;
-  cursor: default;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 5px 8px; border-radius: 8px; min-width: 58px;
+  border: 1px solid transparent; line-height: 1.2;
 }
-.slot-pill:hover { transform: translateY(-1px); }
-.slot-pill .sp-hora  { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); }
-.slot-pill .sp-prod  { font-size: 1rem; font-weight: 800; }
-.slot-pill .sp-meta  { font-size: 0.65rem; color: var(--text-muted); }
-.slot-pill .sp-pct   { font-size: 0.7rem; font-weight: 700; }
+.sp-hora { font-size: 0.62rem; font-weight: 600; color: var(--text-muted); }
+.sp-prod { font-size: 1rem; font-weight: 800; }
+.sp-meta { font-size: 0.62rem; color: var(--text-muted); }
+.sp-pct  { font-size: 0.68rem; font-weight: 700; }
 
-.sp-verde  { background: rgba(25,135,84,0.08);  border-color: rgba(25,135,84,0.25);  color: #0f5132; }
-.sp-verde .sp-pct, .sp-verde .sp-prod { color: #198754; }
-.sp-amarelo{ background: rgba(253,126,20,0.08); border-color: rgba(253,126,20,0.25); color: #6d3a1e; }
-.sp-amarelo .sp-pct, .sp-amarelo .sp-prod { color: #d86c07; }
-.sp-vermelho{ background: rgba(220,53,69,0.08);  border-color: rgba(220,53,69,0.25);  color: #6b0f19; }
-.sp-vermelho .sp-pct, .sp-vermelho .sp-prod { color: #dc3545; }
-.sp-cinza  { background: rgba(15,23,42,0.04);   border-color: var(--border);          color: var(--text-muted); }
-.sp-cinza .sp-prod { color: var(--text-muted); font-size: 0.82rem; }
+.sp-verde   { background: rgba(25,135,84,0.08);  border-color: rgba(25,135,84,0.25);  }
+.sp-verde   .sp-prod, .sp-verde   .sp-pct { color: #198754; }
+.sp-amarelo { background: rgba(253,126,20,0.08); border-color: rgba(253,126,20,0.25); }
+.sp-amarelo .sp-prod, .sp-amarelo .sp-pct { color: #d86c07; }
+.sp-vermelho{ background: rgba(220,53,69,0.08);  border-color: rgba(220,53,69,0.25);  }
+.sp-vermelho .sp-prod,.sp-vermelho .sp-pct { color: #dc3545; }
+.sp-cinza   { background: rgba(15,23,42,0.04);   border-color: var(--border);          }
+.sp-cinza   .sp-prod { color: var(--text-muted); font-size: 0.82rem; }
 
-/* ─── Eficiência geral da linha ─────────── */
-.ef-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 90px; }
-.ef-bar { flex: 1; height: 6px; background: rgba(15,23,42,0.08); border-radius: 3px; overflow: hidden; }
+.ef-bar-wrap { display: flex; align-items: center; gap: 6px; min-width: 100px; }
+.ef-bar  { flex: 1; height: 6px; background: rgba(15,23,42,0.08); border-radius: 3px; overflow: hidden; }
 .ef-fill { height: 100%; border-radius: 3px; }
 .ef-pct  { font-size: 0.82rem; font-weight: 700; min-width: 36px; text-align: right; }
 
-/* ─── Estados de carregamento ───────────── */
-.mon-empty {
-  text-align: center;
-  padding: 56px 24px;
-  color: var(--text-muted);
-}
-.mon-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.35; }
-.mon-empty p { font-size: 0.875rem; margin: 0; }
+.hah-empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+.hah-empty i { font-size: 2.5rem; display: block; margin-bottom: 12px; opacity: 0.3; }
 
-/* ─── Auto-refresh indicator ────────────── */
 .refresh-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  background: rgba(15,23,42,0.04);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 3px 10px;
+  display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem;
+  color: var(--text-muted); background: rgba(15,23,42,0.04);
+  border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px;
 }
 
-/* ─── Mobile ────────────────────────────── */
-@media (max-width: 767px) {
-  .mon-filtros { gap: 6px; }
-  .mon-filtros-field { flex: 1 1 calc(50% - 4px); }
-  .mon-filtros-field.full { flex: 1 1 100%; }
-  .mon-sum-val { font-size: 1.2rem; }
-  .mon-summary { gap: 8px; }
-  .mon-sum-card { padding: 10px 12px; }
+.hah-mobile-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 8px; padding: 12px 14px;
+}
+.hah-mobile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 
-  /* Mobile: linhas em cards verticais ao invés de tabela */
-  .mon-table-wrap { display: none; }
-  .mon-cards-mobile { display: block; }
-  .mon-line-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 8px;
-    padding: 12px 14px;
-  }
-  .mon-line-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
+@media (max-width: 767px) {
+  .hah-field { flex: 1 1 calc(50% - 4px); }
+  .hah-field.full { flex: 1 1 100%; }
+  .hah-table-wrap { display: none; }
+  .hah-summary .hah-sum-card { padding: 10px 12px; }
+  .hah-sum-val { font-size: 1.1rem; }
 }
 @media (min-width: 768px) {
-  .mon-cards-mobile { display: none; }
+  .hah-cards-mobile { display: none; }
 }
 </style>
 {% endblock %}
@@ -185,279 +110,222 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- ── Filtros ── -->
-  <div class="mon-filtros">
-    <div class="mon-filtros-field">
-      <label class="form-label">Data</label>
-      <input type="date" class="form-control form-control-sm" id="fData" style="min-width:130px;">
+  <form method="GET" action="{{ url_for('pages.funcionalidades_pci_hub_hora_a_hora') }}">
+    <div class="hah-filtros">
+      <div class="hah-field">
+        <label>Data</label>
+        <input type="date" name="data" class="form-control form-control-sm"
+               value="{{ f_data }}" style="min-width:130px;">
+      </div>
+      <div class="hah-field">
+        <label>Turno</label>
+        <select name="turno" class="form-select form-select-sm" style="min-width:110px;">
+          <option value="">Todos</option>
+          {% for t in turnos %}
+          <option value="{{ t }}" {% if t == f_turno %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="hah-field">
+        <label>Filial</label>
+        <select name="filial" class="form-select form-select-sm" style="min-width:90px;">
+          <option value="">Todas</option>
+          <option value="VTE" {% if f_filial == 'VTE' %}selected{% endif %}>VTE</option>
+          <option value="VTT" {% if f_filial == 'VTT' %}selected{% endif %}>VTT</option>
+        </select>
+      </div>
+      <div class="hah-field">
+        <label>Setor</label>
+        <select name="setor" class="form-select form-select-sm" style="min-width:90px;">
+          <option value="">Todos</option>
+          {% for s in setores %}
+          <option value="{{ s }}" {% if s == f_setor %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="hah-field" style="justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary btn-sm fw-600"
+                style="border-radius:8px;height:34px;min-width:100px;">
+          <i class="bi bi-funnel me-1"></i>Filtrar
+        </button>
+      </div>
+      <div class="hah-field d-none d-md-flex" style="justify-content:flex-end;align-items:center;">
+        <span class="refresh-badge"><i class="bi bi-clock"></i><span id="nextRefresh">—</span></span>
+      </div>
     </div>
-    <div class="mon-filtros-field">
-      <label class="form-label">Turno</label>
-      <select class="form-select form-select-sm" id="fTurno" style="min-width:110px;">
-        <option value="">Todos</option>
-        {% for t in turnos %}
-        <option value="{{ t }}">{{ t }}</option>
-        {% endfor %}
-      </select>
+  </form>
+
+  {% if linhas %}
+  <div class="hah-summary">
+    <div class="hah-sum-card">
+      <div class="hah-sum-val">{{ total_prod }}</div>
+      <div class="hah-sum-lbl">Produzido</div>
     </div>
-    <div class="mon-filtros-field">
-      <label class="form-label">Filial</label>
-      <select class="form-select form-select-sm" id="fFilial" style="min-width:90px;">
-        <option value="">Todas</option>
-        <option value="VTE">VTE</option>
-        <option value="VTT">VTT</option>
-      </select>
+    <div class="hah-sum-card">
+      <div class="hah-sum-val">{{ total_meta }}</div>
+      <div class="hah-sum-lbl">Meta</div>
     </div>
-    <div class="mon-filtros-field">
-      <label class="form-label">Setor</label>
-      <select class="form-select form-select-sm" id="fSetor" style="min-width:90px;">
-        <option value="">Todos</option>
-        {% for s in setores %}
-        <option value="{{ s }}">{{ s }}</option>
-        {% endfor %}
-      </select>
+    <div class="hah-sum-card">
+      <div class="hah-sum-val"
+        style="color:{% if ef_global is not none %}{% if ef_global >= 95 %}#198754{% elif ef_global >= 80 %}#d86c07{% else %}#dc3545{% endif %}{% else %}var(--text-muted){% endif %};">
+        {{ ef_global ~ '%' if ef_global is not none else '—' }}
+      </div>
+      <div class="hah-sum-lbl">Eficiência</div>
     </div>
-    <div class="mon-filtros-field" style="justify-content:flex-end;">
-      <button class="btn btn-primary btn-sm fw-600" style="border-radius:8px;height:34px;min-width:100px;" onclick="carregar()">
-        <i class="bi bi-play-fill me-1"></i>Carregar
-      </button>
-    </div>
-    <div class="mon-filtros-field d-none d-md-flex" style="justify-content:flex-end;align-items:center;">
-      <span class="refresh-badge"><i class="bi bi-clock"></i><span id="nextRefresh">—</span></span>
+    <div class="hah-sum-card">
+      <div class="hah-sum-val">{{ linhas|length }}</div>
+      <div class="hah-sum-lbl">Linhas</div>
     </div>
   </div>
 
-  <!-- ── Sumário ── -->
-  <div class="mon-summary" id="monSummary" style="display:none!important;"></div>
-
-  <!-- ── Tabela desktop ── -->
-  <div class="mon-table-wrap" id="monTable">
-    <div class="mon-empty">
-      <i class="bi bi-table"></i>
-      <p>Selecione os filtros e clique em <strong>Carregar</strong> para visualizar o plano hora a hora.</p>
-    </div>
+  <div class="hah-table-wrap">
+    <table class="hah-table">
+      <thead>
+        <tr>
+          <th>Linha</th>
+          <th>Slots Hora a Hora</th>
+          <th style="min-width:130px;">Eficiência</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in linhas %}
+        {% set ns = namespace(lprod=0, lmeta=0) %}
+        {% for s in l.slots %}
+          {% set ns.lprod = ns.lprod + (s.producao_real or 0) %}
+          {% set ns.lmeta = ns.lmeta + (s.meta_hora or 0) %}
+        {% endfor %}
+        {% set lef = (ns.lprod / ns.lmeta * 100)|round|int if ns.lmeta > 0 else none %}
+        {% if lef is not none %}
+          {% if lef >= 95 %}{% set lcor = '#198754' %}
+          {% elif lef >= 80 %}{% set lcor = '#d86c07' %}
+          {% else %}{% set lcor = '#dc3545' %}{% endif %}
+        {% else %}{% set lcor = 'var(--text-muted)' %}{% endif %}
+        <tr>
+          <td>
+            <div class="linha-nome">{{ l.linha }}</div>
+            <div class="linha-info">{{ l.filial }} · {{ l.setor }}</div>
+          </td>
+          <td>
+            <div class="slots-row">
+              {% for s in l.slots|sort(attribute='hora_inicio') %}
+              {% set prod = s.producao_real or 0 %}
+              {% set meta = s.meta_hora or 0 %}
+              {% if meta > 0 %}
+                {% set pct = (prod / meta * 100)|round|int %}
+                {% if pct >= 95 %}{% set css = 'sp-verde' %}
+                {% elif pct >= 80 %}{% set css = 'sp-amarelo' %}
+                {% else %}{% set css = 'sp-vermelho' %}{% endif %}
+              {% else %}
+                {% set pct = none %}
+                {% set css = 'sp-cinza' %}
+              {% endif %}
+              <div class="slot-pill {{ css }}" title="{{ (s.hora_inicio or '')[:5] }}–{{ (s.hora_fim or '')[:5] }} · {{ prod }} pcs{% if meta %} / meta {{ meta }}{% endif %}">
+                <span class="sp-hora">{{ (s.hora_inicio or '')[:5] }}</span>
+                <span class="sp-prod">{{ prod }}</span>
+                {% if meta %}<span class="sp-meta">/{{ meta }}</span>{% endif %}
+                {% if pct is not none %}<span class="sp-pct">{{ pct }}%</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </td>
+          <td>
+            <div class="ef-bar-wrap">
+              <div class="ef-bar">
+                <div class="ef-fill" style="width:{{ [lef, 100]|min if lef is not none else 0 }}%;background:{{ lcor }};"></div>
+              </div>
+              <span class="ef-pct" style="color:{{ lcor }};">{{ lef ~ '%' if lef is not none else '—' }}</span>
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">{{ ns.lprod }} / {{ ns.lmeta or '—' }}</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
-  <!-- ── Cards mobile ── -->
-  <div id="monCards" class="mon-cards-mobile"></div>
+  <div class="hah-cards-mobile">
+    {% for l in linhas %}
+    {% set ns2 = namespace(lprod=0, lmeta=0) %}
+    {% for s in l.slots %}
+      {% set ns2.lprod = ns2.lprod + (s.producao_real or 0) %}
+      {% set ns2.lmeta = ns2.lmeta + (s.meta_hora or 0) %}
+    {% endfor %}
+    {% set lef2 = (ns2.lprod / ns2.lmeta * 100)|round|int if ns2.lmeta > 0 else none %}
+    {% if lef2 is not none %}
+      {% if lef2 >= 95 %}{% set lcor2 = '#198754' %}
+      {% elif lef2 >= 80 %}{% set lcor2 = '#d86c07' %}
+      {% else %}{% set lcor2 = '#dc3545' %}{% endif %}
+    {% else %}{% set lcor2 = 'var(--text-muted)' %}{% endif %}
+    <div class="hah-mobile-card">
+      <div class="hah-mobile-header">
+        <div>
+          <div class="linha-nome">{{ l.linha }}</div>
+          <div class="linha-info">{{ l.filial }} · {{ l.setor }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.1rem;font-weight:800;color:{{ lcor2 }};">{{ lef2 ~ '%' if lef2 is not none else '—' }}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);">{{ ns2.lprod }}/{{ ns2.lmeta or '—' }}</div>
+        </div>
+      </div>
+      <div style="height:4px;background:rgba(15,23,42,0.08);border-radius:3px;margin-bottom:10px;overflow:hidden;">
+        <div style="height:100%;width:{{ [lef2, 100]|min if lef2 is not none else 0 }}%;background:{{ lcor2 }};border-radius:3px;"></div>
+      </div>
+      <div class="slots-row">
+        {% for s in l.slots|sort(attribute='hora_inicio') %}
+        {% set prod = s.producao_real or 0 %}
+        {% set meta = s.meta_hora or 0 %}
+        {% if meta > 0 %}
+          {% set pct = (prod / meta * 100)|round|int %}
+          {% if pct >= 95 %}{% set css = 'sp-verde' %}
+          {% elif pct >= 80 %}{% set css = 'sp-amarelo' %}
+          {% else %}{% set css = 'sp-vermelho' %}{% endif %}
+        {% else %}
+          {% set pct = none %}
+          {% set css = 'sp-cinza' %}
+        {% endif %}
+        <div class="slot-pill {{ css }}">
+          <span class="sp-hora">{{ (s.hora_inicio or '')[:5] }}</span>
+          <span class="sp-prod">{{ prod }}</span>
+          {% if meta %}<span class="sp-meta">/{{ meta }}</span>{% endif %}
+          {% if pct is not none %}<span class="sp-pct">{{ pct }}%</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="hah-table-wrap">
+    <div class="hah-empty">
+      <i class="bi bi-inbox"></i>
+      <p>Nenhum lançamento encontrado para os filtros selecionados.<br>
+         Verifique a data e o turno e clique em <strong>Filtrar</strong>.</p>
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 
 <script>
-const URL_HIST = "{{ url_for('pages.funcionalidades_sistema_input_historico') }}";
-
-let _timer = null;
-let _countdown = 0;
-
-document.addEventListener('DOMContentLoaded', () => {
-  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
-  document.getElementById('fData').value = hoje;
-
-  const t = detectarTurnoAtual();
-  if (t) document.getElementById('fTurno').value = t;
-
-  carregar();
-});
-
-function detectarTurnoAtual() {
-  const agora = new Date();
-  const h = agora.getHours();
-  const opts = document.querySelectorAll('#fTurno option');
-  for (const o of opts) {
-    if (!o.value) continue;
-    const txt = o.value.toLowerCase();
-    if ((txt.includes('1') || txt.includes('i')) && h >= 6 && h < 14) return o.value;
-    if ((txt.includes('2') || txt.includes('ii')) && h >= 14 && h < 22) return o.value;
-    if ((txt.includes('3') || txt.includes('iii')) && (h >= 22 || h < 6)) return o.value;
+(function () {
+  var REFRESH = 120;
+  var el = document.getElementById('nextRefresh');
+  var cnt = REFRESH;
+  var params = new URLSearchParams(window.location.search);
+  if (!params.get('data')) {
+    var hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Manaus' });
+    params.set('data', hoje);
+    history.replaceState(null, '', window.location.pathname + '?' + params.toString());
   }
-  return '';
-}
-
-function carregar() {
-  const data  = document.getElementById('fData').value;
-  const turno = document.getElementById('fTurno').value;
-  const filial = document.getElementById('fFilial').value;
-  const setor  = document.getElementById('fSetor').value;
-
-  if (!data) { return; }
-
-  setLoading();
-
-  const params = new URLSearchParams({ data_inicial: data, data_final: data });
-  if (turno)  params.set('turno', turno);
-  if (filial) params.set('filial', filial);
-  if (setor)  params.set('setor', setor);
-
-  fetch(URL_HIST + '?' + params)
-    .then(r => r.json())
-    .then(d => {
-      if (!d.registros?.length) {
-        setVazio('Nenhum lançamento encontrado para os filtros selecionados.');
-        return;
-      }
-      renderizar(d.registros);
-      iniciarAutoRefresh(120);
-    })
-    .catch(() => setVazio('Erro de conexão. Tente novamente.'));
-}
-
-function setLoading() {
-  document.getElementById('monTable').innerHTML = `
-    <div class="mon-empty"><div class="spinner-border spinner-border-sm mb-3"></div><p>Carregando...</p></div>`;
-  document.getElementById('monCards').innerHTML = '';
-  document.getElementById('monSummary').style.setProperty('display', 'none', 'important');
-}
-
-function setVazio(msg) {
-  document.getElementById('monTable').innerHTML = `
-    <div class="mon-empty"><i class="bi bi-inbox"></i><p>${msg}</p></div>`;
-  document.getElementById('monCards').innerHTML = `
-    <div class="mon-empty d-md-none"><i class="bi bi-inbox"></i><p>${msg}</p></div>`;
-  document.getElementById('monSummary').style.setProperty('display', 'none', 'important');
-}
-
-function renderizar(registros) {
-  const linhaMap = {};
-  registros.forEach(r => {
-    const key = `${r.filial}|${r.setor}|${r.linha}`;
-    if (!linhaMap[key]) linhaMap[key] = { filial: r.filial, setor: r.setor, linha: r.linha, slots: [] };
-    linhaMap[key].slots.push(r);
-  });
-
-  const linhas = Object.values(linhaMap).sort((a, b) => {
-    if (a.filial !== b.filial) return a.filial.localeCompare(b.filial);
-    if (a.setor !== b.setor) return a.setor.localeCompare(b.setor);
-    return a.linha.localeCompare(b.linha);
-  });
-
-  let totalProd = 0, totalMeta = 0;
-  linhas.forEach(l => l.slots.forEach(s => {
-    totalProd += s.producao_real || 0;
-    totalMeta += s.meta_hora || 0;
-  }));
-  const efGlobal = totalMeta > 0 ? Math.min(100, Math.round(totalProd / totalMeta * 100)) : null;
-  const corGlobal = efGlobal == null ? 'var(--text-muted)' : efGlobal >= 95 ? '#198754' : efGlobal >= 80 ? '#fd7e14' : '#dc3545';
-
-  const sumEl = document.getElementById('monSummary');
-  sumEl.innerHTML = `
-    <div class="mon-sum-card"><div class="mon-sum-val">${totalProd}</div><div class="mon-sum-lbl">Produzido</div></div>
-    <div class="mon-sum-card"><div class="mon-sum-val">${totalMeta}</div><div class="mon-sum-lbl">Meta</div></div>
-    <div class="mon-sum-card"><div class="mon-sum-val" style="color:${corGlobal};">${efGlobal != null ? efGlobal + '%' : '—'}</div><div class="mon-sum-lbl">Eficiência</div></div>
-    <div class="mon-sum-card"><div class="mon-sum-val">${linhas.length}</div><div class="mon-sum-lbl">Linhas</div></div>
-    <div class="mon-sum-card"><div class="mon-sum-val">${registros.length}</div><div class="mon-sum-lbl">Slots</div></div>`;
-  sumEl.style.removeProperty('display');
-
-  renderizarDesktop(linhas);
-  renderizarMobile(linhas);
-}
-
-function slotCor(prod, meta) {
-  if (!meta) return 'cinza';
-  const pct = Math.min(100, prod / meta * 100);
-  if (pct >= 95) return 'verde';
-  if (pct >= 80) return 'amarelo';
-  return 'vermelho';
-}
-
-function buildSlotPill(s) {
-  const prod  = s.producao_real || 0;
-  const meta  = s.meta_hora || 0;
-  const cor   = slotCor(prod, meta);
-  const pct   = meta > 0 ? Math.min(100, Math.round(prod / meta * 100)) : null;
-  const hi    = (s.hora_inicio || '').substring(0, 5);
-  const hf    = (s.hora_fim    || '').substring(0, 5);
-  return `<div class="slot-pill sp-${cor}" title="${hi}→${hf} · ${prod} pcs${meta?' / meta '+meta:''}">
-    <span class="sp-hora">${hi}</span>
-    <span class="sp-prod">${prod}</span>
-    ${meta ? `<span class="sp-meta">/${meta}</span>` : ''}
-    ${pct != null ? `<span class="sp-pct">${pct}%</span>` : ''}
-  </div>`;
-}
-
-function eficienciaLinha(slots) {
-  let p = 0, m = 0;
-  slots.forEach(s => { p += s.producao_real || 0; m += s.meta_hora || 0; });
-  if (!m) return { pct: null, prod: p, meta: m };
-  return { pct: Math.min(100, Math.round(p / m * 100)), prod: p, meta: m };
-}
-
-function renderizarDesktop(linhas) {
-  let html = `<table>
-    <thead><tr>
-      <th style="padding:10px 16px;">Linha</th>
-      <th>Slots Hora a Hora</th>
-      <th style="min-width:120px;">Eficiência</th>
-    </tr></thead><tbody>`;
-
-  linhas.forEach(l => {
-    const ef = eficienciaLinha(l.slots);
-    const cor = ef.pct == null ? 'var(--text-muted)' : ef.pct >= 95 ? '#198754' : ef.pct >= 80 ? '#fd7e14' : '#dc3545';
-    const pillsHtml = l.slots
-      .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
-      .map(buildSlotPill).join('');
-
-    html += `<tr>
-      <td>
-        <div class="linha-nome">${l.linha}</div>
-        <div class="linha-info">${l.filial} · ${l.setor}</div>
-      </td>
-      <td><div class="slots-row">${pillsHtml}</div></td>
-      <td>
-        <div class="ef-bar-wrap">
-          <div class="ef-bar"><div class="ef-fill" style="width:${ef.pct ?? 0}%;background:${cor};"></div></div>
-          <span class="ef-pct" style="color:${cor};">${ef.pct != null ? ef.pct + '%' : '—'}</span>
-        </div>
-        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">${ef.prod} / ${ef.meta || '—'}</div>
-      </td>
-    </tr>`;
-  });
-
-  html += '</tbody></table>';
-  document.getElementById('monTable').innerHTML = html;
-}
-
-function renderizarMobile(linhas) {
-  let html = '';
-  linhas.forEach(l => {
-    const ef  = eficienciaLinha(l.slots);
-    const cor = ef.pct == null ? 'var(--text-muted)' : ef.pct >= 95 ? '#198754' : ef.pct >= 80 ? '#fd7e14' : '#dc3545';
-    const pillsHtml = l.slots
-      .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
-      .map(buildSlotPill).join('');
-
-    html += `<div class="mon-line-card">
-      <div class="mon-line-card-header">
-        <div>
-          <div class="linha-nome">${l.linha}</div>
-          <div class="linha-info">${l.filial} · ${l.setor}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:1.1rem;font-weight:800;color:${cor};">${ef.pct != null ? ef.pct + '%' : '—'}</div>
-          <div style="font-size:0.7rem;color:var(--text-muted);">${ef.prod}/${ef.meta || '—'}</div>
-        </div>
-      </div>
-      <div style="height:4px;background:rgba(15,23,42,0.08);border-radius:3px;margin-bottom:10px;overflow:hidden;">
-        <div style="height:100%;width:${ef.pct ?? 0}%;background:${cor};border-radius:3px;"></div>
-      </div>
-      <div class="slots-row">${pillsHtml}</div>
-    </div>`;
-  });
-  document.getElementById('monCards').innerHTML = html;
-}
-
-function iniciarAutoRefresh(segundos) {
-  clearInterval(_timer);
-  _countdown = segundos;
-  const el = document.getElementById('nextRefresh');
-  _timer = setInterval(() => {
-    _countdown--;
+  var iv = setInterval(function () {
+    cnt--;
     if (el) {
-      const m = Math.floor(_countdown / 60);
-      const s = _countdown % 60;
-      el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+      var m = Math.floor(cnt / 60), s = cnt % 60;
+      el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
     }
-    if (_countdown <= 0) { clearInterval(_timer); carregar(); }
+    if (cnt <= 0) { clearInterval(iv); window.location.reload(); }
   }, 1000);
-}
+})();
 </script>
 {% endblock %}
