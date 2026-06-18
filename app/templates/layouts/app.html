@@ -35,7 +35,7 @@
 
 {% set _func_vte_menus = ['funcionalidades_im_pa','smt_modelos','funcionalidades_pth'] %}
 {% set _func_vtt_menus = ['funcionalidades_vtt'] %}
-{% set _func_sistemas_menus = ['funcionalidades_sistema_input', 'funcionalidades_pci_hub', 'rh_ops_hub'] %}
+{% set _func_sistemas_menus = ['funcionalidades_sistema_input', 'funcionalidades_pci_hub', 'funcionalidades_reparo_hub', 'rh_ops_hub'] %}
 {% set _func_menus = [
   'smt_cadastro','smt_calcular',
   'funcionalidades_im_pa','smt_modelos','funcionalidades_pth',
@@ -43,6 +43,7 @@
   'pcp_etiquetas_manuais',
   'funcionalidades_sistema_input',
   'funcionalidades_pci_hub',
+  'funcionalidades_reparo_hub',
   'rh_ops_hub'
 ] %}
 {% set _rh_colaboradores_menus = ['rh_colaboradores_lista','rh_colaboradores_cadastrar','rh_colaboradores_documentos','rh_colaboradores_historico'] %}
@@ -214,6 +215,10 @@
                   <a href="{{ url_for('pages.funcionalidades_pci_hub') }}"
                      class="{% if active_menu == 'funcionalidades_pci_hub' %}active{% endif %}">
                     <i class="bi bi-cpu"></i> PCI Hub
+                  </a>
+                  <a href="{{ url_for('pages.funcionalidades_reparo_hub') }}"
+                     class="{% if active_menu == 'funcionalidades_reparo_hub' %}active{% endif %}">
+                    <i class="bi bi-tools"></i> Reparo Hub
                   </a>
                   <a href="{{ url_for('pages.rh_ops_hub') }}"
                      class="{% if active_menu == 'rh_ops_hub' %}active{% endif %}">
