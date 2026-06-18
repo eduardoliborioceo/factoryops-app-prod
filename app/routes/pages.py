@@ -2784,6 +2784,20 @@ def funcionalidades_pci_hub_relatorio_rastreabilidade():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# REPARO HUB
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@bp.route("/funcionalidades/sistemas/reparo-hub", methods=["GET"])
+@login_required
+def funcionalidades_reparo_hub():
+    return render_template(
+        "funcionalidades/reparo_hub.html",
+        active_menu="funcionalidades_reparo_hub",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # RH OPS
 # ─────────────────────────────────────────────────────────────────────────────
 
