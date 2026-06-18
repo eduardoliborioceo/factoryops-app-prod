@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% block title %}Acervo de Componentes — PCI Studio{% endblock %}
 
 {% block page_title %}
 <div class="page-header">
@@ -7,6 +8,12 @@
     <h1 class="page-header-name">Acervo de Componentes</h1>
   </div>
   <div class="page-header-actions">
+    <button class="btn-header-icon" id="btnViewGrid"  onclick="setView('grid')"  title="Visão em grid">
+      <i class="bi bi-grid-3x3-gap"></i>
+    </button>
+    <button class="btn-header-icon" id="btnViewTable" onclick="setView('table')" title="Visão em tabela" style="background:rgba(99,102,241,0.12);color:#6366f1;">
+      <i class="bi bi-table"></i>
+    </button>
     <button class="btn-header-icon" onclick="abrirModalNovoComp()" title="Novo Componente">
       <i class="bi bi-plus-lg"></i>
     </button>
@@ -17,27 +24,29 @@
 </div>
 {% endblock %}
 
-{% block content %}
+{% block styles %}
 <style>
-.lib-stats { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+/* ─── Stats ──────────────────────────────── */
+.lib-stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
 .lib-stat  { background:var(--card); border:1px solid var(--border); border-radius:12px;
-             padding:12px 18px; display:flex; align-items:center; gap:10px; }
+             padding:11px 16px; display:flex; align-items:center; gap:10px; }
 .lib-stat-icon { width:34px; height:34px; border-radius:8px; display:flex; align-items:center;
                  justify-content:center; font-size:1rem; flex-shrink:0; }
 .lib-stat-val  { font-size:1.15rem; font-weight:700; color:var(--text); line-height:1; }
 .lib-stat-lbl  { font-size:0.72rem; color:var(--text-muted); font-weight:600;
                  text-transform:uppercase; letter-spacing:0.4px; }
 
-.lib-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
-.lib-search  { flex:1; min-width:180px; border:1px solid var(--border); border-radius:8px;
-               padding:7px 12px; font-size:0.85rem; color:var(--text); background:var(--bg); outline:none; }
+/* ─── Toolbar ────────────────────────────── */
+.lib-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.lib-search  { flex:1; min-width:160px; border:1px solid var(--border); border-radius:8px;
+               padding:7px 12px; font-size:0.85rem; color:var(--text); background:var(--card); outline:none; }
 .lib-search:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
 .tipo-chip { font-size:0.72rem; font-weight:600; padding:4px 12px; border-radius:20px; cursor:pointer;
              border:1px solid var(--border); background:transparent; color:var(--text-muted);
-             transition:all 0.12s; }
+             transition:all 0.12s; white-space:nowrap; }
 .tipo-chip.active { background:rgba(99,102,241,0.15); color:#6366f1; border-color:rgba(99,102,241,0.3); }
 
-/* Tabela */
+/* ─── TABLE VIEW ─────────────────────────── */
 .comp-table-wrap { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
 .comp-table { width:100%; border-collapse:collapse; }
 .comp-table thead th { font-size:0.72rem; font-weight:700; text-transform:uppercase;
@@ -49,42 +58,128 @@
 .comp-table td { font-size:0.82rem; color:var(--text); padding:9px 14px; vertical-align:middle; }
 .comp-table td.muted { color:var(--text-muted); }
 
+/* ─── GRID VIEW ──────────────────────────── */
+.comp-grid { display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap:12px; }
+
+.comp-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  position: relative;
+}
+.comp-card:hover {
+  box-shadow: 0 4px 18px rgba(15,23,42,0.10);
+  border-color: rgba(99,102,241,0.3);
+  transform: translateY(-2px);
+}
+.comp-card-preview {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(15,23,42,0.03);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.comp-card-shape {
+  border-radius: 2px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+}
+.comp-card-shape::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+  border-radius: 2px;
+}
+.comp-card-name { font-size:0.82rem; font-weight:700; text-align:center; color:var(--text); width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.comp-card-pkg  { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
+.comp-card-actions {
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.comp-card:hover .comp-card-actions { opacity: 1; }
+.cc-btn { width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; border:1px solid var(--border); background:var(--card);
+  font-size:0.72rem; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
+.cc-btn:hover { background:var(--bg); color:var(--text); }
+.cc-btn.danger:hover { background:rgba(220,53,69,0.08); color:#dc3545; border-color:rgba(220,53,69,0.2); }
+
+/* ─── Badges / shared ─────────────────────── */
 .tipo-badge { font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
 .tipo-smd       { background:rgba(100,116,139,0.12); color:#475569; }
 .tipo-pth       { background:rgba(220,53,69,0.10);   color:#dc3545; }
 .tipo-conector  { background:rgba(15,23,42,0.08);    color:#334155; }
 .tipo-outro     { background:rgba(107,114,128,0.10); color:#6b7280; }
-
-.color-dot { width:16px; height:16px; border-radius:4px; display:inline-block;
-             border:1px solid rgba(0,0,0,0.1); vertical-align:middle; }
-
+.color-dot { width:14px; height:14px; border-radius:3px; display:inline-block;
+             border:1px solid rgba(0,0,0,0.1); vertical-align:middle; margin-right:4px; }
 .tbl-actions { display:flex; gap:4px; }
 .tbl-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:transparent;
            font-size:0.75rem; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
 .tbl-btn:hover { background:var(--bg); color:var(--text); }
 .tbl-btn.danger:hover { background:rgba(220,53,69,0.08); color:#dc3545; border-color:rgba(220,53,69,0.2); }
-
 .empty-state { text-align:center; padding:48px 20px; color:var(--text-muted); }
 
-/* Mobile: hide less important cols */
-@media (max-width:767px) {
-  .col-fab, .col-dim, .col-ds { display:none; }
-}
-
-/* Modal */
+/* ─── Modal form ─────────────────────────── */
 .form-label-sm { font-size:0.8rem; font-weight:600; color:var(--text); margin-bottom:4px; }
 .color-row { display:flex; gap:8px; flex-wrap:wrap; }
 .color-opt { width:26px; height:26px; border-radius:5px; cursor:pointer;
              border:2px solid transparent; transition:border-color 0.12s; }
-.color-opt.active, .color-opt:hover { border-color:var(--text); }
-</style>
+.color-opt.active, .color-opt:hover { border-color:#6366f1; }
 
-<div class="mb-3 no-print">
-  <a href="{{ url_for('pages.eng_hub') }}#teste" class="btn btn-sm btn-outline-secondary">
+/* Live shape preview in modal */
+.shape-preview-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 90px;
+  background: rgba(15,23,42,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+#liveShape {
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: all 0.2s;
+}
+
+/* ─── Mobile ─────────────────────────────── */
+@media (max-width:767px) {
+  .col-fab, .col-dim, .col-ds { display:none; }
+  .comp-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .comp-card-preview { height:60px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+<div class="mb-3">
+  <a href="{{ url_for('pages.eng_hub') }}#teste" class="btn btn-sm btn-outline-secondary" style="border-radius:6px;">
     <i class="bi bi-arrow-left me-1"></i>Voltar ao Engenharia Hub
   </a>
 </div>
 
+<!-- Stats -->
 <div class="lib-stats">
   <div class="lib-stat">
     <div class="lib-stat-icon" style="background:rgba(99,102,241,0.12);color:#6366f1;"><i class="bi bi-collection"></i></div>
@@ -104,8 +199,9 @@
   </div>
 </div>
 
+<!-- Toolbar -->
 <div class="lib-toolbar">
-  <input class="lib-search" id="compSearch" placeholder="Buscar part number, package..." oninput="filtrarTabela()">
+  <input class="lib-search" id="compSearch" placeholder="Buscar part number, package, fabricante..." oninput="filtrar()">
   <button class="tipo-chip active" data-tipo="all"      onclick="setTipo('all',this)">Todos</button>
   <button class="tipo-chip"        data-tipo="smd"      onclick="setTipo('smd',this)">SMD</button>
   <button class="tipo-chip"        data-tipo="pth"      onclick="setTipo('pth',this)">PTH</button>
@@ -113,63 +209,97 @@
   <button class="tipo-chip"        data-tipo="outro"    onclick="setTipo('outro',this)">Outro</button>
 </div>
 
-<div class="comp-table-wrap">
-  <table class="comp-table">
-    <thead>
-      <tr>
-        <th style="width:16px;"></th>
-        <th>Part Number</th>
-        <th>Package</th>
-        <th>Tipo</th>
-        <th class="col-fab">Fabricante</th>
-        <th class="col-dim">Dim. (mm)</th>
-        <th class="col-dim">Alt. (mm)</th>
-        <th class="col-ds">Datasheet</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="compTbody">
-      {% for c in componentes %}
-      <tr data-tipo="{{ c.tipo }}"
-          data-pn="{{ c.part_number|lower }}"
-          data-pkg="{{ (c.package or '')|lower }}"
-          data-desc="{{ (c.descricao or '')|lower }}">
-        <td><span class="color-dot" style="background:{{ c.cor_hex }};"></span></td>
-        <td>
-          <div style="font-weight:600;">{{ c.part_number }}</div>
-          {% if c.descricao %}<div style="font-size:0.75rem;color:var(--text-muted);">{{ c.descricao }}</div>{% endif %}
-        </td>
-        <td class="muted">{{ c.package }}</td>
-        <td><span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span></td>
-        <td class="muted col-fab">{{ c.fabricante or '—' }}</td>
-        <td class="muted col-dim">
-          {% if c.comp_mm %}{{ c.comp_mm }}×{{ c.larg_mm }}{% else %}—{% endif %}
-        </td>
-        <td class="muted col-dim">{{ c.alt_mm or '—' }}</td>
-        <td class="col-ds">
-          {% if c.datasheet_url %}
-          <a href="{{ c.datasheet_url }}" target="_blank" class="tbl-btn" style="text-decoration:none;">
-            <i class="bi bi-box-arrow-up-right"></i>
-          </a>
-          {% else %}—{% endif %}
-        </td>
-        <td>
-          <div class="tbl-actions">
-            <button class="tbl-btn" onclick="editarComp({{ c|tojson }})"><i class="bi bi-pencil"></i></button>
-            <button class="tbl-btn danger" onclick="deletarComp({{ c.id }}, '{{ c.part_number|e }}')">
-              <i class="bi bi-trash3"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="9"><div class="empty-state"><i class="bi bi-collection" style="font-size:2rem;opacity:.3;"></i><p>Nenhum componente cadastrado.</p></div></td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<!-- TABLE VIEW -->
+<div id="viewTable">
+  <div class="comp-table-wrap">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th style="width:18px;"></th>
+          <th>Part Number</th>
+          <th>Package</th>
+          <th>Tipo</th>
+          <th class="col-fab">Fabricante</th>
+          <th class="col-dim">Dim. (mm)</th>
+          <th class="col-dim">Alt. (mm)</th>
+          <th class="col-ds">Datasheet</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="compTbody">
+        {% for c in componentes %}
+        <tr data-tipo="{{ c.tipo }}"
+            data-pn="{{ c.part_number|lower }}"
+            data-pkg="{{ (c.package or '')|lower }}"
+            data-fab="{{ (c.fabricante or '')|lower }}"
+            data-desc="{{ (c.descricao or '')|lower }}">
+          <td><span class="color-dot" style="background:{{ c.cor_hex }};"></span></td>
+          <td>
+            <div style="font-weight:600;">{{ c.part_number }}</div>
+            {% if c.descricao %}<div style="font-size:0.75rem;color:var(--text-muted);">{{ c.descricao }}</div>{% endif %}
+          </td>
+          <td class="muted">{{ c.package }}</td>
+          <td><span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span></td>
+          <td class="muted col-fab">{{ c.fabricante or '—' }}</td>
+          <td class="muted col-dim">{% if c.comp_mm %}{{ c.comp_mm }}×{{ c.larg_mm }}{% else %}—{% endif %}</td>
+          <td class="muted col-dim">{{ c.alt_mm or '—' }}</td>
+          <td class="col-ds">
+            {% if c.datasheet_url %}
+            <a href="{{ c.datasheet_url }}" target="_blank" class="tbl-btn" style="text-decoration:none;">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <div class="tbl-actions">
+              <button class="tbl-btn" onclick="editarComp({{ c|tojson }})"><i class="bi bi-pencil"></i></button>
+              <button class="tbl-btn danger" onclick="deletarComp({{ c.id }}, '{{ c.part_number|e }}')">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9"><div class="empty-state"><i class="bi bi-collection" style="font-size:2rem;opacity:.3;"></i><p>Nenhum componente cadastrado. Clique em <strong>+</strong> para adicionar.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<!-- Modal Componente -->
+<!-- GRID VIEW -->
+<div id="viewGrid" class="d-none">
+  <div class="comp-grid" id="compGrid">
+    {% for c in componentes %}
+    <div class="comp-card"
+         data-tipo="{{ c.tipo }}"
+         data-pn="{{ c.part_number|lower }}"
+         data-pkg="{{ (c.package or '')|lower }}"
+         data-fab="{{ (c.fabricante or '')|lower }}"
+         data-desc="{{ (c.descricao or '')|lower }}"
+         ondblclick="editarComp({{ c|tojson }})">
+      <div class="comp-card-actions">
+        <button class="cc-btn" onclick="editarComp({{ c|tojson }});event.stopPropagation();" title="Editar"><i class="bi bi-pencil"></i></button>
+        <button class="cc-btn danger" onclick="deletarComp({{ c.id }}, '{{ c.part_number|e }}');event.stopPropagation();" title="Excluir"><i class="bi bi-trash3"></i></button>
+      </div>
+      <div class="comp-card-preview">
+        {{ renderShape(c.comp_mm, c.larg_mm, c.cor_hex, c.tipo) }}
+      </div>
+      <div class="comp-card-name" title="{{ c.part_number }}">{{ c.part_number }}</div>
+      <div class="comp-card-pkg">{{ c.package }}</div>
+      <span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span>
+    </div>
+    {% else %}
+    <div style="grid-column:1/-1;">
+      <div class="empty-state"><i class="bi bi-collection" style="font-size:2.5rem;opacity:.3;"></i><p>Nenhum componente. Clique em <strong>+</strong> para adicionar.</p></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+</div>
+
+<!-- ─── Modal Componente ─── -->
 <div class="modal fade" id="modalComp" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
@@ -180,17 +310,26 @@
       <div class="modal-body">
         <input type="hidden" id="compId">
         <div class="row g-3">
+
+          <!-- Live preview -->
+          <div class="col-12">
+            <label class="form-label-sm">Preview do Package</label>
+            <div class="shape-preview-wrap">
+              <div id="liveShape" style="width:48px;height:24px;background:#64748b;border-radius:2px;"></div>
+            </div>
+          </div>
+
           <div class="col-md-6">
             <label class="form-label-sm">Part Number *</label>
-            <input type="text" class="form-control form-control-sm" id="cPN" placeholder="Ex: RES-0402">
+            <input type="text" class="form-control form-control-sm" id="cPN" placeholder="Ex: RES-0402" style="border-radius:8px;">
           </div>
           <div class="col-md-6">
             <label class="form-label-sm">Package *</label>
-            <input type="text" class="form-control form-control-sm" id="cPkg" placeholder="Ex: 0402, SOIC-8">
+            <input type="text" class="form-control form-control-sm" id="cPkg" placeholder="Ex: 0402, SOIC-8, TO-220" style="border-radius:8px;">
           </div>
           <div class="col-md-6">
             <label class="form-label-sm">Tipo *</label>
-            <select class="form-select form-select-sm" id="cTipo">
+            <select class="form-select form-select-sm" id="cTipo" style="border-radius:8px;">
               <option value="smd">SMD</option>
               <option value="pth">PTH</option>
               <option value="conector">Conector</option>
@@ -199,40 +338,46 @@
           </div>
           <div class="col-md-6">
             <label class="form-label-sm">Fabricante</label>
-            <input type="text" class="form-control form-control-sm" id="cFab" placeholder="Ex: Vishay, Murata">
+            <input type="text" class="form-control form-control-sm" id="cFab" placeholder="Ex: Vishay, Murata, TI" style="border-radius:8px;">
           </div>
           <div class="col-12">
             <label class="form-label-sm">Descrição</label>
-            <input type="text" class="form-control form-control-sm" id="cDesc" placeholder="Ex: Resistor SMD 0402">
+            <input type="text" class="form-control form-control-sm" id="cDesc" placeholder="Ex: Resistor SMD 10kΩ 5%" style="border-radius:8px;">
           </div>
+
+          <!-- Dimensões com preview ao vivo -->
           <div class="col-md-4">
             <label class="form-label-sm">Comprimento (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="cCompMm" step="0.001" min="0" placeholder="1.0">
+            <input type="number" class="form-control form-control-sm" id="cCompMm" step="0.001" min="0" placeholder="1.0" style="border-radius:8px;" oninput="atualizarPreview()">
           </div>
           <div class="col-md-4">
             <label class="form-label-sm">Largura (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="cLargMm" step="0.001" min="0" placeholder="0.5">
+            <input type="number" class="form-control form-control-sm" id="cLargMm" step="0.001" min="0" placeholder="0.5" style="border-radius:8px;" oninput="atualizarPreview()">
           </div>
           <div class="col-md-4">
             <label class="form-label-sm">Altura (mm)</label>
-            <input type="number" class="form-control form-control-sm" id="cAltMm" step="0.001" min="0" placeholder="0.35">
+            <input type="number" class="form-control form-control-sm" id="cAltMm" step="0.001" min="0" placeholder="0.35" style="border-radius:8px;">
           </div>
+
           <div class="col-12">
             <label class="form-label-sm">URL Datasheet</label>
-            <input type="url" class="form-control form-control-sm" id="cDS" placeholder="https://...">
+            <input type="url" class="form-control form-control-sm" id="cDS" placeholder="https://..." style="border-radius:8px;">
           </div>
+
+          <!-- Cor -->
           <div class="col-12">
-            <label class="form-label-sm">Cor no Viewer 3D</label>
+            <label class="form-label-sm">Cor no Viewer</label>
             <div class="color-row mt-1" id="compColorRow"></div>
             <input type="hidden" id="cCor" value="#64748b">
           </div>
+
         </div>
       </div>
       <div class="modal-footer" style="border-top:1px solid var(--border);">
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" class="btn btn-sm text-white fw-600" id="btnSalvarComp"
                 style="background:#6366f1;border-color:#6366f1;border-radius:8px;"
-                onclick="salvarComp()">Salvar</button>
+                onclick="salvarComp()">Salvar Componente</button>
       </div>
     </div>
   </div>
@@ -240,25 +385,59 @@
 
 <script>
 const COMP_COLORS = ['#f97316','#3b82f6','#a855f7','#22c55e','#0ea5e9','#6366f1',
-                     '#dc2626','#854d0e','#64748b','#374151','#0f172a','#9ca3af'];
-
+                     '#dc2626','#854d0e','#64748b','#374151','#0f172a','#f59e0b'];
 let tipoFiltro = 'all';
+let viewAtual  = 'table';
+
+function setView(v) {
+  viewAtual = v;
+  document.getElementById('viewTable').classList.toggle('d-none', v !== 'table');
+  document.getElementById('viewGrid').classList.toggle('d-none',  v !== 'grid');
+  const btnT = document.getElementById('btnViewTable');
+  const btnG = document.getElementById('btnViewGrid');
+  btnT.style.cssText = v === 'table' ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
+  btnG.style.cssText = v === 'grid'  ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
+}
 
 function setTipo(t, btn) {
   tipoFiltro = t;
   document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
-  filtrarTabela();
+  filtrar();
 }
 
-function filtrarTabela() {
+function filtrar() {
   const q = document.getElementById('compSearch').value.trim().toLowerCase();
-  document.querySelectorAll('#compTbody tr[data-tipo]').forEach(tr => {
-    const tipo  = tr.dataset.tipo;
-    const texto = (tr.dataset.pn + ' ' + tr.dataset.pkg + ' ' + tr.dataset.desc);
-    const ok = (tipoFiltro === 'all' || tipo === tipoFiltro) && (!q || texto.includes(q));
-    tr.style.display = ok ? '' : 'none';
+  const allRows  = document.querySelectorAll('#compTbody tr[data-tipo]');
+  const allCards = document.querySelectorAll('#compGrid .comp-card');
+
+  [...allRows, ...allCards].forEach(el => {
+    const tipo = el.dataset.tipo;
+    const text = (el.dataset.pn||'')+' '+(el.dataset.pkg||'')+' '+(el.dataset.fab||'')+' '+(el.dataset.desc||'');
+    const ok   = (tipoFiltro === 'all' || tipo === tipoFiltro) && (!q || text.includes(q));
+    el.style.display = ok ? '' : 'none';
   });
+}
+
+/* ─── Shape preview ─── */
+function calcShape(compMm, largMm, cor) {
+  const c = parseFloat(compMm) || 1;
+  const l = parseFloat(largMm) || 0.5;
+  const maxW = 100, maxH = 60;
+  const scale = Math.min(maxW / c, maxH / l, 40);
+  const w = Math.max(8,  Math.round(c * scale));
+  const h = Math.max(6,  Math.round(l * scale));
+  return { w, h, cor: cor || '#64748b' };
+}
+
+function atualizarPreview() {
+  const c = calcShape(
+    document.getElementById('cCompMm').value,
+    document.getElementById('cLargMm').value,
+    document.getElementById('cCor').value
+  );
+  const el = document.getElementById('liveShape');
+  if (el) { el.style.width = c.w + 'px'; el.style.height = c.h + 'px'; el.style.background = c.cor; }
 }
 
 function buildCompColorRow(selected) {
@@ -273,6 +452,7 @@ function selectCompColor(c) {
   document.getElementById('cCor').value = c;
   document.querySelectorAll('#compColorRow .color-opt').forEach(el =>
     el.classList.toggle('active', el.dataset.color === c));
+  atualizarPreview();
 }
 
 function abrirModalNovoComp() {
@@ -281,42 +461,44 @@ function abrirModalNovoComp() {
   ['cPN','cPkg','cFab','cDesc','cDS','cCompMm','cLargMm','cAltMm'].forEach(id =>
     document.getElementById(id).value = '');
   document.getElementById('cTipo').value = 'smd';
-  document.getElementById('cCor').value = '#64748b';
+  document.getElementById('cCor').value  = '#64748b';
   buildCompColorRow('#64748b');
+  atualizarPreview();
   new bootstrap.Modal(document.getElementById('modalComp')).show();
 }
 
 function editarComp(c) {
-  document.getElementById('compId').value = c.id;
+  document.getElementById('compId').value  = c.id;
   document.getElementById('modalCompTitulo').textContent = 'Editar Componente';
-  document.getElementById('cPN').value    = c.part_number || '';
-  document.getElementById('cPkg').value   = c.package     || '';
-  document.getElementById('cTipo').value  = c.tipo        || 'smd';
-  document.getElementById('cFab').value   = c.fabricante  || '';
-  document.getElementById('cDesc').value  = c.descricao   || '';
-  document.getElementById('cCompMm').value= c.comp_mm != null ? c.comp_mm : '';
-  document.getElementById('cLargMm').value= c.larg_mm != null ? c.larg_mm : '';
-  document.getElementById('cAltMm').value = c.alt_mm  != null ? c.alt_mm  : '';
-  document.getElementById('cDS').value    = c.datasheet_url || '';
+  document.getElementById('cPN').value     = c.part_number    || '';
+  document.getElementById('cPkg').value    = c.package        || '';
+  document.getElementById('cTipo').value   = c.tipo           || 'smd';
+  document.getElementById('cFab').value    = c.fabricante     || '';
+  document.getElementById('cDesc').value   = c.descricao      || '';
+  document.getElementById('cCompMm').value = c.comp_mm != null ? c.comp_mm : '';
+  document.getElementById('cLargMm').value = c.larg_mm != null ? c.larg_mm : '';
+  document.getElementById('cAltMm').value  = c.alt_mm  != null ? c.alt_mm  : '';
+  document.getElementById('cDS').value     = c.datasheet_url  || '';
   const cor = c.cor_hex || '#64748b';
   document.getElementById('cCor').value = cor;
   buildCompColorRow(cor);
+  atualizarPreview();
   new bootstrap.Modal(document.getElementById('modalComp')).show();
 }
 
 async function salvarComp() {
-  const id = document.getElementById('compId').value;
+  const id  = document.getElementById('compId').value;
   const toNum = v => v === '' ? null : parseFloat(v);
-  const body = {
+  const body  = {
     part_number:   document.getElementById('cPN').value.trim(),
     package:       document.getElementById('cPkg').value.trim(),
     tipo:          document.getElementById('cTipo').value,
-    fabricante:    document.getElementById('cFab').value.trim() || null,
+    fabricante:    document.getElementById('cFab').value.trim()  || null,
     descricao:     document.getElementById('cDesc').value.trim() || null,
     comp_mm:       toNum(document.getElementById('cCompMm').value),
     larg_mm:       toNum(document.getElementById('cLargMm').value),
     alt_mm:        toNum(document.getElementById('cAltMm').value),
-    datasheet_url: document.getElementById('cDS').value.trim() || null,
+    datasheet_url: document.getElementById('cDS').value.trim()  || null,
     cor_hex:       document.getElementById('cCor').value,
   };
   if (!body.part_number || !body.package) {
@@ -332,12 +514,34 @@ async function salvarComp() {
 
 async function deletarComp(id, nome) {
   if (!confirm(`Deletar componente "${nome}"?`)) return;
-  const res = await fetch(`/engenharia/api/pci-studio/componentes/${id}`, { method:'DELETE' });
+  const res  = await fetch(`/engenharia/api/pci-studio/componentes/${id}`, { method:'DELETE' });
   const data = await res.json();
   if (data.ok) window.location.reload();
   else alert('Erro ao deletar');
 }
 
-document.addEventListener('DOMContentLoaded', () => buildCompColorRow('#64748b'));
+document.addEventListener('DOMContentLoaded', () => {
+  buildCompColorRow('#64748b');
+  const saved = localStorage.getItem('acervo_view');
+  if (saved === 'grid') setView('grid');
+});
+
+/* persist view preference */
+['btnViewGrid','btnViewTable'].forEach(id => {
+  document.getElementById(id)?.addEventListener('click', () => {
+    localStorage.setItem('acervo_view', viewAtual);
+  });
+});
 </script>
 {% endblock %}
+
+{# ─── Jinja macro for shape rendering (server-side) ─── #}
+{% macro renderShape(comp_mm, larg_mm, cor_hex, tipo) %}
+  {% set c = comp_mm|float if comp_mm else 1.0 %}
+  {% set l = larg_mm|float if larg_mm else 0.5 %}
+  {% set scale = [100 / c, 60 / l, 28]|min %}
+  {% set w = [8, (c * scale)|round|int]|max %}
+  {% set h = [6, (l * scale)|round|int]|max %}
+  <div class="comp-card-shape"
+       style="width:{{ w }}px;height:{{ h }}px;background:{{ cor_hex or '#64748b' }};"></div>
+{% endmacro %}
