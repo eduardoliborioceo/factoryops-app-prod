@@ -8,9 +8,6 @@
     <h1 class="page-header-name">Empresa</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.config_turnos') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -117,6 +114,67 @@
                        placeholder="00.000.000/0000-00">
               </div>
             </div>
+
+            <!-- Endereço -->
+            <hr class="my-4" style="border-color:var(--border);">
+            <h6 class="fw-700 mb-3" style="font-size:0.875rem;">
+              <i class="bi bi-geo-alt me-2 text-primary"></i>Endereço da Empresa
+            </h6>
+            {% set end = config.endereco or {} %}
+            <div class="row g-3">
+              <div class="col-12 col-md-3">
+                <label class="form-label fw-600" style="font-size:0.8rem;">CEP</label>
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control" name="end_cep" id="endCep"
+                         value="{{ end.cep or '' }}" maxlength="9" style="border-radius:8px 0 0 8px;"
+                         placeholder="00000-000">
+                  <button class="btn btn-outline-secondary" type="button" id="btnBuscarCep"
+                          style="border-radius:0 8px 8px 0;font-size:0.75rem;">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+                <div class="form-text" id="cepStatus"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Logradouro</label>
+                <input type="text" class="form-control form-control-sm" name="end_logradouro" id="endLogradouro"
+                       value="{{ end.logradouro or '' }}" maxlength="200" style="border-radius:8px;"
+                       placeholder="Rua, Avenida, etc.">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Número</label>
+                <input type="text" class="form-control form-control-sm" name="end_numero"
+                       value="{{ end.numero or '' }}" maxlength="20" style="border-radius:8px;"
+                       placeholder="S/N">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Complemento</label>
+                <input type="text" class="form-control form-control-sm" name="end_complemento"
+                       value="{{ end.complemento or '' }}" maxlength="100" style="border-radius:8px;"
+                       placeholder="Bloco, Sala, etc.">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Bairro</label>
+                <input type="text" class="form-control form-control-sm" name="end_bairro" id="endBairro"
+                       value="{{ end.bairro or '' }}" maxlength="100" style="border-radius:8px;">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Cidade</label>
+                <input type="text" class="form-control form-control-sm" name="end_cidade" id="endCidade"
+                       value="{{ end.cidade or '' }}" maxlength="100" style="border-radius:8px;">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label fw-600" style="font-size:0.8rem;">Estado</label>
+                <input type="text" class="form-control form-control-sm" name="end_estado" id="endEstado"
+                       value="{{ end.estado or '' }}" maxlength="2" style="border-radius:8px;"
+                       placeholder="UF" style="text-transform:uppercase;">
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label fw-600" style="font-size:0.8rem;">País</label>
+                <input type="text" class="form-control form-control-sm" name="end_pais"
+                       value="{{ end.pais or 'Brasil' }}" maxlength="50" style="border-radius:8px;">
+              </div>
+            </div>
           </div>
         </div>
 
@@ -127,8 +185,8 @@
               <i class="bi bi-diagram-2 me-2 text-primary"></i>Filiais Ativas
             </h6>
             <p class="text-muted mb-3" style="font-size:0.8rem;">Filiais que esta instalação do sistema utiliza.</p>
-            <div class="d-flex gap-3 flex-wrap">
-              {% for filial in ['VTE', 'VTT', 'SMD'] %}
+            <div class="d-flex gap-3 flex-wrap align-items-start">
+              {% for filial in ['VTE', 'VTT'] %}
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="filiais" value="{{ filial }}"
                        id="filial{{ filial }}"
@@ -138,6 +196,14 @@
                 </label>
               </div>
               {% endfor %}
+            </div>
+            <div class="mt-3">
+              <label class="form-label fw-600" style="font-size:0.8rem;">Outra filial</label>
+              <input type="text" class="form-control form-control-sm" name="filiais_extra"
+                     value="{{ config.filiais_extra or '' }}" maxlength="200"
+                     style="border-radius:8px;max-width:360px;"
+                     placeholder="Ex: VTP, VTG (separe por vírgula se houver mais de uma)">
+              <div class="form-text">Use se houver filial que o sistema ainda não reconhece.</div>
             </div>
           </div>
         </div>
@@ -150,7 +216,8 @@
             </h6>
             <p class="text-muted mb-3" style="font-size:0.8rem;">Quais setores de produção cada filial utiliza.</p>
             <div class="row g-3">
-              {% for filial in ['VTE', 'VTT', 'SMD'] %}
+              {% set filiais_list = config.filiais | reject("in", ["VTE","VTT"]) | list %}
+              {% for filial in ['VTE', 'VTT'] + filiais_list if filial in config.filiais %}
               <div class="col-12 col-md-4">
                 <div class="p-3 rounded" style="background:rgba(15,23,42,0.03);border:1px solid var(--border);">
                   <div class="fw-700 mb-2" style="font-size:0.8rem;">{{ filial }}</div>
@@ -214,4 +281,48 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const cepInput  = document.getElementById('endCep');
+  const btnBuscar = document.getElementById('btnBuscarCep');
+  const status    = document.getElementById('cepStatus');
+
+  function preencherCep(cep) {
+    const limpo = cep.replace(/\D/g, '');
+    if (limpo.length !== 8) {
+      status.textContent = 'CEP inválido.';
+      status.className = 'form-text text-danger';
+      return;
+    }
+    status.textContent = 'Buscando…';
+    status.className = 'form-text text-muted';
+    fetch('https://viacep.com.br/ws/' + limpo + '/json/')
+      .then(r => r.json())
+      .then(d => {
+        if (d.erro) {
+          status.textContent = 'CEP não encontrado.';
+          status.className = 'form-text text-danger';
+          return;
+        }
+        document.getElementById('endLogradouro').value = d.logradouro || '';
+        document.getElementById('endBairro').value     = d.bairro     || '';
+        document.getElementById('endCidade').value     = d.localidade || '';
+        document.getElementById('endEstado').value     = d.uf         || '';
+        cepInput.value = limpo.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+        status.textContent = 'Endereço preenchido automaticamente.';
+        status.className = 'form-text text-success';
+      })
+      .catch(() => {
+        status.textContent = 'Falha ao buscar CEP. Preencha manualmente.';
+        status.className = 'form-text text-danger';
+      });
+  }
+
+  if (btnBuscar) btnBuscar.addEventListener('click', () => preencherCep(cepInput.value));
+  if (cepInput)  cepInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); preencherCep(cepInput.value); } });
+})();
+</script>
 {% endblock %}

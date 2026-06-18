@@ -1,7 +1,8 @@
+import re
 from app.repositories import empresa_config_repository as repo
 
-_GRUPOS_VALIDOS = {"funcionalidades", "producao", "engenharia", "pcp", "logistica", "configuracoes"}
-_FILIAIS_VALIDAS = {"VTE", "VTT", "SMD"}
+_GRUPOS_VALIDOS  = {"funcionalidades", "producao", "engenharia", "pcp", "logistica", "configuracoes"}
+_FILIAIS_PADRAO  = {"VTE", "VTT"}
 _SETORES_VALIDOS = {"SMD", "PTH", "IM/PA"}
 
 
@@ -19,7 +20,15 @@ def update_config(form: dict) -> None:
     if len(nome_empresa) > 200:
         raise ValueError("Nome da empresa muito longo (máx. 200 caracteres).")
 
-    filiais = [f for f in form.getlist("filiais") if f in _FILIAIS_VALIDAS]
+    filiais = [f for f in form.getlist("filiais") if f in _FILIAIS_PADRAO]
+
+    extras_raw = (form.get("filiais_extra") or "").strip()
+    if extras_raw:
+        for parte in re.split(r"[,;]+", extras_raw):
+            nome = re.sub(r"[^A-Za-z0-9_\-]", "", parte.strip()).upper()
+            if nome and nome not in filiais:
+                filiais.append(nome)
+
     if not filiais:
         raise ValueError("Selecione ao menos uma filial ativa.")
 
@@ -30,13 +39,31 @@ def update_config(form: dict) -> None:
         setores = [s for s in form.getlist(f"setores_{filial}") if s in _SETORES_VALIDOS]
         setores_por_filial[filial] = setores
 
+    endereco = {
+        "cep":          (form.get("end_cep")          or "").strip(),
+        "logradouro":   (form.get("end_logradouro")   or "").strip(),
+        "numero":       (form.get("end_numero")        or "").strip(),
+        "complemento":  (form.get("end_complemento")  or "").strip(),
+        "bairro":       (form.get("end_bairro")        or "").strip(),
+        "cidade":       (form.get("end_cidade")        or "").strip(),
+        "estado":       (form.get("end_estado")        or "").strip().upper(),
+        "pais":         (form.get("end_pais")          or "Brasil").strip(),
+    }
+    endereco = {k: v for k, v in endereco.items() if v}
+
+    extras_para_salvar = ", ".join(
+        p.strip() for p in re.split(r"[,;]+", extras_raw) if p.strip()
+    ) if extras_raw else ""
+
     repo.update_config({
-        "nome_empresa": nome_empresa,
-        "nome_exibicao": (form.get("nome_exibicao") or "").strip() or None,
-        "cnpj": (form.get("cnpj") or "").strip() or None,
-        "filiais": filiais,
-        "menu_visivel": menu_visivel,
+        "nome_empresa":       nome_empresa,
+        "nome_exibicao":      (form.get("nome_exibicao") or "").strip() or None,
+        "cnpj":               (form.get("cnpj") or "").strip() or None,
+        "filiais":            filiais,
+        "filiais_extra":      extras_para_salvar,
+        "menu_visivel":       menu_visivel,
         "setores_por_filial": setores_por_filial,
+        "endereco":           endereco,
     })
 
 
