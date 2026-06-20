@@ -230,6 +230,36 @@
 .inspect-btn.danger{background:rgba(220,53,69,0.2);border-color:rgba(220,53,69,0.4);color:#ff5252}
 .inspect-btn.green{background:rgba(25,135,84,0.2);border-color:rgba(25,135,84,0.4);color:#00e676}
 
+/* ── Forno de Refusão panel ── */
+.panel-forno{background:linear-gradient(160deg,#1c1008 0%,#12090002 50%,#0a0500 100%);
+  border-radius:16px;border:3px solid #0a0500;
+  box-shadow:inset 0 1px 0 rgba(255,100,0,0.08),0 20px 50px rgba(0,0,0,0.55);
+  padding:16px 14px 12px;width:100%;max-width:460px}
+.forno-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.forno-logo{color:#ff6600;font-size:0.95rem;font-weight:900;letter-spacing:2px;text-shadow:0 0 16px rgba(255,100,0,0.45)}
+.forno-model{color:rgba(255,120,0,0.65);font-size:0.6rem;font-weight:700;background:rgba(255,100,0,0.08);
+  border:1px solid rgba(255,100,0,0.16);border-radius:4px;padding:2px 7px;letter-spacing:0.5px}
+.forno-screen-bezel{background:#060200;border:3px solid #030100;border-radius:5px;
+  box-shadow:inset 0 3px 10px rgba(0,0,0,0.9);padding:3px}
+.forno-screen{min-height:190px;border-radius:3px;overflow:hidden;background:#0d0700;display:flex;flex-direction:column}
+.fsc-forno-zones{padding:8px 10px;display:flex;flex-direction:column;gap:3px;flex:1}
+.fsc-zone-row{display:flex;align-items:center;gap:6px}
+.fsc-zone-label{color:rgba(255,100,0,0.5);font-weight:700;width:28px;font-size:0.58rem;text-align:right;font-family:monospace;flex-shrink:0}
+.fsc-zone-bar{flex:1;height:9px;border-radius:2px;background:rgba(255,255,255,0.05);overflow:hidden}
+.fsc-zone-fill{height:100%;border-radius:2px;transition:width 0.5s}
+.fsc-zone-temp{color:#ff8833;font-family:monospace;font-size:0.6rem;font-weight:700;width:40px;text-align:right;flex-shrink:0}
+.fsc-forno-footer{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;
+  border-top:1px solid rgba(255,100,0,0.1)}
+.fsc-forno-running{color:#ff6600;font-size:0.62rem;font-weight:800;display:flex;align-items:center;gap:4px}
+.fsc-forno-profile{color:rgba(255,120,0,0.5);font-size:0.58rem;font-weight:700;letter-spacing:0.3px}
+.forno-btns{margin-top:10px;display:flex;gap:5px;flex-wrap:wrap}
+.forno-btn{background:rgba(255,100,0,0.1);border:1px solid rgba(255,100,0,0.18);color:rgba(255,120,0,0.65);
+  border-radius:5px;font-size:0.6rem;font-weight:700;padding:5px 10px;cursor:pointer;transition:filter 0.08s,transform 0.08s}
+.forno-btn:active{filter:brightness(0.7);transform:scale(0.94)}
+.forno-btn.primary{background:rgba(255,100,0,0.18);border-color:rgba(255,100,0,0.38);color:#ff8833}
+.forno-btn.danger{background:rgba(220,53,69,0.18);border-color:rgba(220,53,69,0.38);color:#ff5252}
+.forno-btn.green{background:rgba(25,135,84,0.18);border-color:rgba(25,135,84,0.38);color:#00e676}
+
 /* ── Solution panel ── */
 .mv-solution{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .mv-sol-hdr{padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -382,7 +412,58 @@
 
 /* ─── Error database ─── */
 const MACHINES = {
-  nxt:{label:"Fuji NXT",subtipo:"NXT II / NXT III",tipo:"Pick & Place",color:"#f60",rgb:"255,102,0",panelStyle:"fuji",modelBadge:"NXT II",
+  dek:{label:"DEK",subtipo:"Horizon / Infinity",tipo:"Screen Printer",color:"#003399",rgb:"0,51,153",panelStyle:"dek",modelBadge:"Horizon",
+    erros:[
+      {id:1,codigo:"E-0123",cat:"Visão",sev:"alta",titulo:"Camera — Fiducial Not Found",
+       display:{header:"Vision Error",main:"E-0123",sub:"Fiducial Not Found",errcode:"E-0123"},
+       causa:"Câmera não localizou o fiducial na PCB. Causas: iluminação insuficiente, placa oxidada, PCB mal posicionada, câmera descalibrada.",
+       passos:["Rejeite a placa atual.","Limpe a câmera com microfibra seco.","Verifique iluminação — LEDs funcionando.","Posicione nova PCB e execute reconhecimento manual via menu Vision.","Ajuste contraste e threshold de reconhecimento.","Se persistir com placa nova, recalibre (Camera Calibration Wizard)."],
+       pecas:"—",imagem:""},
+      {id:2,codigo:"E-0215",cat:"Mecânico",sev:"media",titulo:"Squeegee Pressure Out of Range",
+       display:{header:"Process Error",main:"E-0215",sub:"Squeegee Pressure",errcode:"E-0215"},
+       causa:"Pressão do squeegee fora da faixa configurada. Causas: regulador com desgaste, variação na linha de ar, parâmetro fora do spec.",
+       passos:["Verifique o manômetro — compare com valor de processo.","Ajuste o regulador de pressão (tipicamente 3–8 N).","Verifique linha de ar: mínimo 5 bar de alimentação.","Se regulador não responder, substitua.","Revalide com placa de teste e inspecione deposição de pasta."],
+       pecas:"Regulador de pressão do squeegee",imagem:""},
+      {id:3,codigo:"E-0301",cat:"Pneumático",sev:"media",titulo:"Paste Dispense Error",
+       display:{header:"Paste Error",main:"E-0301",sub:"Dispense Failed",errcode:"E-0301"},
+       causa:"Sistema de dispensação falhou. Causas: cartucho vazio, pasta curada no bico, pressão insuficiente.",
+       passos:["Verifique o nível de pasta no cartucho.","Troque o cartucho se vazio.","Verifique data de validade da pasta.","Inspecione o bico — limpe com espátula e solvente.","Purgue o sistema (Purge → Dispense 5x em placa de descarte).","Reteste com PCB de produção."],
+       pecas:"Cartucho de pasta, kit de limpeza",imagem:""},
+      {id:4,codigo:"E-0412",cat:"Conveyor",sev:"alta",titulo:"Board Not Detected",
+       display:{header:"Conveyor Error",main:"E-0412",sub:"Board Not Detected",errcode:"E-0412"},
+       causa:"Sensor de entrada não detectou PCB no tempo esperado. Causas: sensor sujo, PCB não carregada, problema upstream.",
+       passos:["Verifique se há PCB disponível no buffer upstream.","Limpe o sensor de entrada com ar comprimido.","Verifique tensão do sensor (normalmente 24V DC).","Teste via diagnóstico de I/O.","Inspecione correia do conveyor.","Substitua sensor se não reagir a nenhuma placa."],
+       pecas:"Sensor de presença PCB",imagem:""},
+      {id:5,codigo:"E-0520",cat:"Mecânico",sev:"alta",titulo:"Print Head Stall",
+       display:{header:"Mechanical Error",main:"E-0520",sub:"Print Head Stall",errcode:"E-0520"},
+       causa:"Cabeçote de impressão travou. Causas: PCB fora do posicionamento, trilhos sujos, motor com desgaste.",
+       passos:["Pressione EMERGENCY STOP.","Verifique se há PCB fora do posicionamento — remova com cuidado.","Limpe os trilhos com pano sem fiapos e álcool.","Verifique cintos de transmissão.","Lubrifique guias lineares.","Mova o cabeçote manualmente para verificar obstáculos.","Ligue, execute Home e reteste."],
+       pecas:"Lubrificante de guias, correia (se danificada)",imagem:""}
+    ]},
+  spi:{label:"SPI",subtipo:"Koh Young / Parmi",tipo:"Inspeção de Pasta",color:"#0dcaf0",rgb:"13,202,240",panelStyle:"inspect",modelBadge:"KY-8030",
+    erros:[
+      {id:1,codigo:"SPI-H01",cat:"Calibração",sev:"alta",titulo:"Height Reference Error",
+       display:{header:"Height Ref",main:"SPI-H01",sub:"Calibration Required",errcode:"SPI-H01"},
+       causa:"Sistema de referência de altura perdeu a calibração. Causas: choque mecânico, temperatura fora do spec, calibração expirada.",
+       passos:["Acesse menu de Calibração no software SPI.","Execute Height Reference Calibration com a placa de referência certificada.","Temperatura ambiente deve estar entre 20–25°C.","Execute medição de validação após calibração.","Documente data e hora no registro de calibrações.","Se persistir, contate suporte Koh Young."],
+       pecas:"Placa de referência certificada",imagem:""},
+      {id:2,codigo:"SPI-F02",cat:"Visão",sev:"media",titulo:"Board Fiducial Not Found",
+       display:{header:"Vision",main:"SPI-F02",sub:"Fiducial Not Found",errcode:"SPI-F02"},
+       causa:"Sistema de visão não encontrou fiduciais da PCB. Causas: placa fora do posicionamento, iluminação com problema, parâmetros desatualizados.",
+       passos:["Verifique posicionamento da PCB no conveyor.","Execute teste de fiducial em modo manual.","Ajuste limite de contraste para o tipo de acabamento.","Limpe a câmera com microfibra.","Atualize template de fiducial se placa mudou de fornecedor.","Limpe o alarme."],
+       pecas:"—",imagem:""},
+      {id:3,codigo:"SPI-C03",cat:"Calibração",sev:"media",titulo:"Calibration Interval Expired",
+       display:{header:"Calibração",main:"SPI-C03",sub:"Interval Expired",errcode:"SPI-C03"},
+       causa:"Intervalo de calibração configurado expirou. Recalibração periódica necessária para garantir precisão.",
+       passos:["Execute rotina completa de calibração (Full Calibration).","Use apenas placas de referência certificadas.","Registre no sistema de gestão de qualidade.","Ajuste intervalo de calibração se necessário."],
+       pecas:"Placa de calibração certificada",imagem:""},
+      {id:4,codigo:"SPI-T04",cat:"Conveyor",sev:"alta",titulo:"Conveyor Sensor Error",
+       display:{header:"Conveyor",main:"SPI-T04",sub:"Sensor Fault",errcode:"SPI-T04"},
+       causa:"Sensor do conveyor não respondeu. Causas: sensor sujo com pasta, falha elétrica, cabo solto.",
+       passos:["Limpe o sensor com álcool isopropílico e ar comprimido.","Verifique tensão de alimentação (24V DC).","Teste via diagnóstico de I/O.","Inspecione cabo do sensor — dobras e conexões.","Substitua o sensor se não responder após limpeza."],
+       pecas:"Sensor de conveyor",imagem:""}
+    ]},
+  nxt:{label:"Fuji NXT",subtipo:"M3 II · M6 II · M6 II SP",tipo:"Pick & Place",color:"#f60",rgb:"255,102,0",panelStyle:"fuji",model3D:"nxt",modelBadge:"NXT II M6",
     erros:[
       {id:1,codigo:"1062",cat:"Servo / Encoder",sev:"alta",titulo:"Axis:ZA — Encoder Battery",
        display:{header:"Servo",main:"Axis:ZA",sub:"Encoder Battery",soak:"00003A21",subcode:"00000002",errcode:"1062",modulo:"9"},
@@ -453,34 +534,6 @@ const MACHINES = {
        passos:["Pressione STOP.","Não force a placa manualmente.","Verifique obstáculos nos trilhos.","Remova a PCB com cuidado pelo painel lateral.","Limpe e lubrifique os trilhos.","Verifique sensores de posição.","Limpe o alarme e reteste com placa de teste."],
        pecas:"—",imagem:""}
     ]},
-  dek:{label:"DEK",subtipo:"Horizon / Infinity",tipo:"Screen Printer",color:"#003399",rgb:"0,51,153",panelStyle:"dek",modelBadge:"Horizon",
-    erros:[
-      {id:1,codigo:"E-0123",cat:"Visão",sev:"alta",titulo:"Camera — Fiducial Not Found",
-       display:{header:"Vision Error",main:"E-0123",sub:"Fiducial Not Found",errcode:"E-0123"},
-       causa:"Câmera não localizou o fiducial na PCB. Causas: iluminação insuficiente, placa oxidada, PCB mal posicionada, câmera descalibrada.",
-       passos:["Rejeite a placa atual.","Limpe a câmera com microfibra seco.","Verifique iluminação — LEDs funcionando.","Posicione nova PCB e execute reconhecimento manual via menu Vision.","Ajuste contraste e threshold de reconhecimento.","Se persistir com placa nova, recalibre (Camera Calibration Wizard)."],
-       pecas:"—",imagem:""},
-      {id:2,codigo:"E-0215",cat:"Mecânico",sev:"media",titulo:"Squeegee Pressure Out of Range",
-       display:{header:"Process Error",main:"E-0215",sub:"Squeegee Pressure",errcode:"E-0215"},
-       causa:"Pressão do squeegee fora da faixa configurada. Causas: regulador com desgaste, variação na linha de ar, parâmetro fora do spec.",
-       passos:["Verifique o manômetro — compare com valor de processo.","Ajuste o regulador de pressão (tipicamente 3–8 N).","Verifique linha de ar: mínimo 5 bar de alimentação.","Se regulador não responder, substitua.","Revalide com placa de teste e inspecione deposição de pasta."],
-       pecas:"Regulador de pressão do squeegee",imagem:""},
-      {id:3,codigo:"E-0301",cat:"Pneumático",sev:"media",titulo:"Paste Dispense Error",
-       display:{header:"Paste Error",main:"E-0301",sub:"Dispense Failed",errcode:"E-0301"},
-       causa:"Sistema de dispensação falhou. Causas: cartucho vazio, pasta curada no bico, pressão insuficiente.",
-       passos:["Verifique o nível de pasta no cartucho.","Troque o cartucho se vazio.","Verifique data de validade da pasta.","Inspecione o bico — limpe com espátula e solvente.","Purgue o sistema (Purge → Dispense 5x em placa de descarte).","Reteste com PCB de produção."],
-       pecas:"Cartucho de pasta, kit de limpeza",imagem:""},
-      {id:4,codigo:"E-0412",cat:"Conveyor",sev:"alta",titulo:"Board Not Detected",
-       display:{header:"Conveyor Error",main:"E-0412",sub:"Board Not Detected",errcode:"E-0412"},
-       causa:"Sensor de entrada não detectou PCB no tempo esperado. Causas: sensor sujo, PCB não carregada, problema upstream.",
-       passos:["Verifique se há PCB disponível no buffer upstream.","Limpe o sensor de entrada com ar comprimido.","Verifique tensão do sensor (normalmente 24V DC).","Teste via diagnóstico de I/O.","Inspecione correia do conveyor.","Substitua sensor se não reagir a nenhuma placa."],
-       pecas:"Sensor de presença PCB",imagem:""},
-      {id:5,codigo:"E-0520",cat:"Mecânico",sev:"alta",titulo:"Print Head Stall",
-       display:{header:"Mechanical Error",main:"E-0520",sub:"Print Head Stall",errcode:"E-0520"},
-       causa:"Cabeçote de impressão travou. Causas: PCB fora do posicionamento, trilhos sujos, motor com desgaste.",
-       passos:["Pressione EMERGENCY STOP.","Verifique se há PCB fora do posicionamento — remova com cuidado.","Limpe os trilhos com pano sem fiapos e álcool.","Verifique cintos de transmissão.","Lubrifique guias lineares.","Mova o cabeçote manualmente para verificar obstáculos.","Ligue, execute Home e reteste."],
-       pecas:"Lubrificante de guias, correia (se danificada)",imagem:""}
-    ]},
   xp:{label:"Fuji XP",subtipo:"XPF / XP**",tipo:"Pick & Place",color:"#6f42c1",rgb:"111,66,193",panelStyle:"fuji",modelBadge:"XPF",
     erros:[
       {id:1,codigo:"A021",cat:"Servo / Encoder",sev:"alta",titulo:"Z-Axis Servo Error",
@@ -504,28 +557,33 @@ const MACHINES = {
        passos:["Identifique qual botão de emergência está acionado.","Verifique se todas as tampas estão fechadas.","Gire o botão no sentido horário para destravar.","Pressione RESET no painel.","Execute Home antes de reiniciar.","Documente e verifique se houve colisão."],
        pecas:"—",imagem:""}
     ]},
-  spi:{label:"SPI",subtipo:"Koh Young / Parmi",tipo:"Inspeção de Pasta",color:"#0dcaf0",rgb:"13,202,240",panelStyle:"inspect",modelBadge:"KY-8030",
+  forno:{label:"Forno de Refusão",subtipo:"BTU / Heller",tipo:"Reflow Oven",color:"#dc3545",rgb:"220,53,69",panelStyle:"forno",model3D:"forno",modelBadge:"Pyramax 125N",
     erros:[
-      {id:1,codigo:"SPI-H01",cat:"Calibração",sev:"alta",titulo:"Height Reference Error",
-       display:{header:"Height Ref",main:"SPI-H01",sub:"Calibration Required",errcode:"SPI-H01"},
-       causa:"Sistema de referência de altura perdeu a calibração. Causas: choque mecânico, temperatura fora do spec, calibração expirada.",
-       passos:["Acesse menu de Calibração no software SPI.","Execute Height Reference Calibration com a placa de referência certificada.","Temperatura ambiente deve estar entre 20–25°C.","Execute medição de validação após calibração.","Documente data e hora no registro de calibrações.","Se persistir, contate suporte Koh Young."],
-       pecas:"Placa de referência certificada",imagem:""},
-      {id:2,codigo:"SPI-F02",cat:"Visão",sev:"media",titulo:"Board Fiducial Not Found",
-       display:{header:"Vision",main:"SPI-F02",sub:"Fiducial Not Found",errcode:"SPI-F02"},
-       causa:"Sistema de visão não encontrou fiduciais da PCB. Causas: placa fora do posicionamento, iluminação com problema, parâmetros desatualizados.",
-       passos:["Verifique posicionamento da PCB no conveyor.","Execute teste de fiducial em modo manual.","Ajuste limite de contraste para o tipo de acabamento.","Limpe a câmera com microfibra.","Atualize template de fiducial se placa mudou de fornecedor.","Limpe o alarme."],
-       pecas:"—",imagem:""},
-      {id:3,codigo:"SPI-C03",cat:"Calibração",sev:"media",titulo:"Calibration Interval Expired",
-       display:{header:"Calibração",main:"SPI-C03",sub:"Interval Expired",errcode:"SPI-C03"},
-       causa:"Intervalo de calibração configurado expirou. Recalibração periódica necessária para garantir precisão.",
-       passos:["Execute rotina completa de calibração (Full Calibration).","Use apenas placas de referência certificadas.","Registre no sistema de gestão de qualidade.","Ajuste intervalo de calibração se necessário."],
-       pecas:"Placa de calibração certificada",imagem:""},
-      {id:4,codigo:"SPI-T04",cat:"Conveyor",sev:"alta",titulo:"Conveyor Sensor Error",
-       display:{header:"Conveyor",main:"SPI-T04",sub:"Sensor Fault",errcode:"SPI-T04"},
-       causa:"Sensor do conveyor não respondeu. Causas: sensor sujo com pasta, falha elétrica, cabo solto.",
-       passos:["Limpe o sensor com álcool isopropílico e ar comprimido.","Verifique tensão de alimentação (24V DC).","Teste via diagnóstico de I/O.","Inspecione cabo do sensor — dobras e conexões.","Substitua o sensor se não responder após limpeza."],
-       pecas:"Sensor de conveyor",imagem:""}
+      {id:1,codigo:"RF-T01",cat:"Temperatura",sev:"alta",titulo:"Zone Temperature Out of Range",
+       display:{header:"Temp. Error",main:"RF-T01",sub:"Zone Over Temp",errcode:"RF-T01",modulo:"Z7"},
+       causa:"Temperatura de uma zona de aquecimento fora da faixa do perfil de solda. Pode causar soldas frias (temperatura baixa) ou dano a componentes e PCB (temperatura alta).",
+       passos:["Pare a linha de produção imediatamente.","Identifique a zona com desvio no software de processo.","Verifique o controlador PID da zona.","Inspecione o termocupla — leituras corretas e dentro do spec?","Verifique o elemento resistivo da zona (resistência elétrica).","Se sobrecarga térmica, aguarde 20 min de resfriamento antes de religar.","Registre o desvio e atualize o perfil após correção."],
+       pecas:"Termocupla tipo K, controlador PID",imagem:""},
+      {id:2,codigo:"RF-C02",cat:"Conveyor",sev:"alta",titulo:"Conveyor Speed Error",
+       display:{header:"Conveyor",main:"RF-C02",sub:"Speed Fault",errcode:"RF-C02",modulo:"—"},
+       causa:"Velocidade do conveyor fora da faixa configurada. Altera o tempo de exposição térmica, podendo causar soldas frias ou tombamento de componentes.",
+       passos:["Pare a linha.","Verifique parâmetro de velocidade no painel de controle.","Inspecione correia e roletes — desgaste ou folga?","Verifique motor do conveyor e encoder de velocidade.","Limpe e realinhe sensor de velocidade.","Ajuste a velocidade e valide com cronômetro e placa padrão."],
+       pecas:"Correias conveyor, encoder de velocidade",imagem:""},
+      {id:3,codigo:"RF-N03",cat:"Nitrogênio",sev:"media",titulo:"N2 Pressure Low",
+       display:{header:"N2 Error",main:"RF-N03",sub:"Pressure Low",errcode:"RF-N03",modulo:"—"},
+       causa:"Pressão de nitrogênio abaixo do mínimo. O N2 previne oxidação durante a soldagem — sem ele, a qualidade das soldas degrada e o nível de escória aumenta.",
+       passos:["Verifique nível do cilindro de N2.","Troque o cilindro se vazio ou abaixo do mínimo.","Inspecione mangueiras e conexões — presença de vazamentos?","Verifique regulador de pressão (tipicamente 0.5–2 bar).","Realize purge do sistema antes de retornar à produção.","Confirme O2 residual abaixo do spec do processo."],
+       pecas:"Cilindro N2, regulador de pressão",imagem:""},
+      {id:4,codigo:"RF-F04",cat:"Filtro",sev:"media",titulo:"Flux Filter Saturated",
+       display:{header:"Filter",main:"RF-F04",sub:"Flux Saturated",errcode:"RF-F04",modulo:"—"},
+       causa:"Filtro de resíduo de flux saturado. Flux acumulado pode bloquear a exaustão e contaminar o túnel e as placas.",
+       passos:["Desligue o forno e aguarde resfriamento (modo cooling).","Localize o conjunto de filtros — normalmente no topo ou laterais.","Substitua filtros conforme intervalo de manutenção preventiva.","Limpe o interior do túnel se houver acúmulo visível.","Ligue e verifique pressão de exaustão normalizada."],
+       pecas:"Kit de filtros de flux",imagem:""},
+      {id:5,codigo:"RF-P05",cat:"Perfil",sev:"media",titulo:"Profile Verification Required",
+       display:{header:"Profile",main:"RF-P05",sub:"Verification Needed",errcode:"RF-P05",modulo:"—"},
+       causa:"Perfil térmico não verificado para o produto em produção ou versão desatualizada no sistema.",
+       passos:["Obtenha o perfil aprovado do produto no sistema de qualidade.","Conecte a placa de perfil (thermocouple board) com os termopares fixados.","Execute ciclo de validação completo.","Verifique picos de temperatura em todas as zonas — especial atenção às zonas de reflow.","Ajuste parâmetros se necessário e documente no relatório de perfil.","Aprove o perfil no sistema antes de iniciar a produção."],
+       pecas:"Placa de perfil térmico (termopares tipo K)",imagem:""}
     ]},
   aoi:{label:"AOI",subtipo:"Saki / Koh Young",tipo:"Inspeção Óptica",color:"#198754",rgb:"25,135,84",panelStyle:"inspect",modelBadge:"BR-X",
     erros:[
@@ -753,6 +811,7 @@ function renderPanel(erro){
   const wrap=document.getElementById("mvPanelWrap");
   if(m.panelStyle==="fuji") wrap.innerHTML=renderFujiPanel(m,erro);
   else if(m.panelStyle==="dek") wrap.innerHTML=renderDekPanel(m,erro);
+  else if(m.panelStyle==="forno") wrap.innerHTML=renderFornoPanel(m,erro);
   else wrap.innerHTML=renderInspectPanel(m,erro);
 }
 
@@ -809,8 +868,19 @@ function renderFujiPanel(m,erro){
       </div>
     </div>`;
 }
-function fujiScreenIdle(m){return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div><div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;}
-function fujiScreenRunning(m){return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px"><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 1 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 2 — OK</div><div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>MOD 3 — OK</div></div></div>`;}
+function fujiScreenIdle(m){
+  const isNXT=m.model3D==="nxt";
+  const sub=isNXT?`<div style="color:rgba(255,102,0,0.55);font-size:0.58rem;font-weight:700;margin-top:2px;letter-spacing:1px">H12HS · H08 · H04S · H02</div>`:"";
+  return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div>${sub}<div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;
+}
+function fujiScreenRunning(m){
+  const isNXT=m.model3D==="nxt";
+  const mods=isNXT
+    ?["M6 II — H12HS OK","M6 II — H08 OK","M3 II — H04S OK"]
+    :["MOD 1 — OK","MOD 2 — OK","MOD 3 — OK"];
+  const cph=isNXT?"26,000 cph":"—";
+  return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">${isNXT?"CPH":"Program"}</div><div class="fsc-run-val" style="font-size:0.72rem">${isNXT?cph:"PROG-01"}</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">${mods.map(s=>`<div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>${s}</div>`).join("")}</div></div>`;
+}
 function fujiScreenManual(){return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;}
 function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
 function fujiScreenEstop(){return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Todos os servos desligados</div><div class="fsc-estop-msg" style="margin-top:4px;cursor:pointer;text-decoration:underline" onclick="handleBtn('ok')">Clique em OK para resetar</div></div>`;}
@@ -879,6 +949,70 @@ function renderInspectPanel(m,erro){
         <div class="inspect-btn green"   onclick="handleBtn('insp_run')"   title="Iniciar inspeção">RUN</div>
       </div>
     </div>`;
+}
+
+/* ─── Forno de Refusão panel ─── */
+function renderFornoPanel(m,erro){
+  const MAX=260;
+  let screenContent;
+  if(machineState==="error"&&erro){
+    const d=erro.display;
+    screenContent=`<div class="isc-body"><div class="isc-err-banner" style="border-color:rgba(255,100,0,0.4);background:rgba(255,100,0,0.12)">
+      <div class="isc-err-banner-icon" style="color:#ff8833"><i class="bi bi-thermometer-high"></i></div>
+      <div class="isc-err-banner-text">
+        <div class="isc-err-banner-cat" style="color:#ff8833">${d.header||"Error"}</div>
+        <div class="isc-err-banner-main">${d.main||""}</div>
+        <div class="isc-err-banner-sub">${d.sub||""}</div>
+      </div></div>
+      <div class="isc-err-code" style="border-color:rgba(255,100,0,0.1)">
+        <span class="isc-err-code-lbl">FAULT CODE</span>
+        <span class="isc-err-code-val" style="color:#ff8833">${d.errcode||""}</span>
+      </div></div>`;
+  } else if(machineState==="estop"){
+    screenContent=`<div class="isc-body"><div class="isc-estop"><div class="isc-estop-title">⊗ E-STOP</div><div class="isc-estop-msg">Desbloqueie o botão<br>e pressione RUN para resetar</div></div></div>`;
+  } else {
+    const zRows=[
+      {t:150,lbl:"Z1"},{t:175,lbl:"Z2"},{t:200,lbl:"Z3"},{t:220,lbl:"Z4"},
+      {t:240,lbl:"Z5"},{t:250,lbl:"Z6"},{t:255,lbl:"Z7"},{t:250,lbl:"Z8"},
+      {t:235,lbl:"Z9"},{t:190,lbl:"Z10"},{t:110,lbl:"Z11"},{t:55,lbl:"Z12"}
+    ];
+    const isRunning=machineState==="running";
+    const noise=isRunning?()=>Math.round((Math.random()-0.5)*4):()=>0;
+    const zones=zRows.map(z=>{
+      const tv=z.t+noise();
+      const pct=Math.min(100,Math.round((tv/MAX)*100));
+      const c=tv>230?"#ff4400":tv>180?"#ff8800":tv>100?"#ffcc00":"#4488ff";
+      return `<div class="fsc-zone-row">
+        <span class="fsc-zone-label">${z.lbl}</span>
+        <div class="fsc-zone-bar"><div class="fsc-zone-fill" style="width:${pct}%;background:${c}"></div></div>
+        <span class="fsc-zone-temp">${tv}°C</span>
+      </div>`;
+    }).join("");
+    const statusDot=isRunning
+      ?`<span style="width:7px;height:7px;border-radius:50%;background:#ff6600;display:inline-block;animation:pulse-dot 1s infinite;margin-right:4px"></span>RUNNING`
+      :`<span style="width:7px;height:7px;border-radius:50%;background:rgba(255,100,0,0.35);display:inline-block;margin-right:4px"></span>READY`;
+    const boards=isRunning?`· ${String(cycleCount).padStart(4,"0")} PCBs`:"";
+    screenContent=`<div class="fsc-forno-zones">${zones}</div>
+      <div class="fsc-forno-footer">
+        <span class="fsc-forno-running">${statusDot}${boards}</span>
+        <span class="fsc-forno-profile">LEAD-FREE · 255°C</span>
+      </div>`;
+  }
+  return `<div class="panel-forno">
+    <div class="forno-top">
+      <span class="forno-logo">♨ REFLOW</span>
+      <span class="forno-model">${m.modelBadge}</span>
+    </div>
+    <div class="forno-screen-bezel">
+      <div class="forno-screen">${screenContent}</div>
+    </div>
+    <div class="forno-btns">
+      <div class="forno-btn danger" onclick="handleBtn('insp_estop')" title="Parada de emergência">E-STOP</div>
+      <div class="forno-btn" onclick="handleBtn('insp_stop')" title="Parar forno">STOP</div>
+      <div class="forno-btn" onclick="handleBtn('ok')" title="OK / Limpar alarme">OK</div>
+      <div class="forno-btn green" onclick="handleBtn('insp_run')" title="Iniciar forno">RUN</div>
+    </div>
+  </div>`;
 }
 
 /* ─── Solution with checklist ─── */
@@ -1043,10 +1177,11 @@ function _edges(mesh,c=0x000000,op=0.18){mesh.add(new THREE.LineSegments(new THR
 
 function _errPos(maq,id){
   const P={
-    nxt: {1:[-3,-1.5],2:[-3,1.5],3:[2.5,-1],4:[0.5,0],5:[3.5,2],6:[-0.5,0.5],7:[-2.5,-2],8:[2,1.5]},
+    nxt:  {1:[-3,-1.5],2:[-3,1.5],3:[2.5,-1],4:[0.5,0],5:[3.5,2],6:[-0.5,0.5],7:[-2.5,-2],8:[2,1.5]},
     aimex:{1:[-2.5,-1.5],2:[3,-1],3:[1.5,1.5],4:[0,2.5],5:[-2,-2.5]},
     dek:  {1:[-1.5,0],2:[3,0.5],3:[0.5,-1.5],4:[-3,1],5:[1.5,-2.5]},
     xp:   {1:[-2.5,-1],2:[0.5,1.5],3:[3,-1.5],4:[0,-2.5]},
+    forno:{1:[0,0.5],2:[2,-0.5],3:[-2,0.5],4:[1,1.5],5:[-1,-0.5]},
     spi:  {1:[-2,0],2:[0.5,0.5],3:[2,1],4:[-3,-1.5]},
     aoi:  {1:[0.5,0],2:[-1.5,1.5],3:[3,-1],4:[-2,-1.5]}
   };
@@ -1075,6 +1210,178 @@ function _buildPCB(g,maq,errId,pw=10,pd=6){
   pg.position.set(0,-7.7,0);
   s3.pcbObj=pg;
   g.add(pg);
+}
+
+function buildNXTMachine(g){
+  const mBody=_m(0x2b3040,0.55,0.45);
+  const mDark=_m(0x1a1e2a,0.4,0.6);
+  const mAccent=_m(0x3a4050,0.5,0.4);
+  const mOrange=new THREE.MeshStandardMaterial({color:0xf56600,roughness:0.3,metalness:0.2,emissive:new THREE.Color(0.18,0.05,0)});
+  const mGlassY=new THREE.MeshStandardMaterial({color:0xffe066,transparent:true,opacity:0.1,roughness:0.05,side:THREE.DoubleSide});
+  const mAlum=_m(0x8a8f9a,0.22,0.78);
+  const mRail=_m(0xaaaaaa,0.18,0.88);
+
+  // Base platform
+  const base=_b(38,2.5,22,mDark); base.position.set(0,-12.5,0); g.add(base);
+
+  // Back structural wall
+  const bw=_b(38,28,1.2,mBody); bw.position.set(0,0.5,-11); g.add(bw);
+
+  // Side walls
+  const lw=_b(1.8,28,22,mBody); lw.position.set(-18,0.5,-0.5); g.add(lw);
+  const rw=_b(1.8,28,22,mBody); rw.position.set(18,0.5,-0.5); g.add(rw);
+
+  // Gantry hood (top housing — NXT's most distinctive feature)
+  const hood=_b(38,5,22,mBody); hood.position.set(0,14,-0.5);
+  _edges(hood,0x4a556a,0.18); g.add(hood);
+
+  // Orange stripe (Fuji brand) — dominant on NXT front
+  const os=_b(38,2.4,0.6,mOrange); os.position.set(0,11.5,11.0); g.add(os);
+  const osGlow=new THREE.Mesh(new THREE.BoxGeometry(37,1.8,0.3),
+    new THREE.MeshStandardMaterial({color:0xff8800,roughness:0.3,emissive:new THREE.Color(0.35,0.1,0)}));
+  osGlow.position.set(0,11.5,11.3); g.add(osGlow);
+
+  // Front yellow-tinted safety cover (NXT signature look)
+  const fg=_b(34,22,0.4,mGlassY); fg.position.set(0,0.5,11); g.add(fg);
+  // Front frame
+  const ff=[
+    _b(38,0.9,0.8,mDark), _b(38,0.9,0.8,mDark),
+    _b(0.9,24,0.8,mDark),  _b(0.9,24,0.8,mDark)
+  ];
+  ff[0].position.set(0,11.9,10.9); ff[1].position.set(0,-10.6,10.9);
+  ff[2].position.set(-17.5,0.5,10.9); ff[3].position.set(17.5,0.5,10.9);
+  ff.forEach(f=>g.add(f));
+  // Module dividers visible through front glass
+  [-6,6].forEach(x=>{
+    const div=_b(0.7,24,0.8,mDark); div.position.set(x,0.5,10.9); g.add(div);
+  });
+
+  // === M-SERIES MODULE SLOTS (3 modules for M6 II config) ===
+  [-10.5,0,10.5].forEach((mx,idx)=>{
+    // Module body
+    const mod=_b(9,20,9,_m(0x1e2535,0.5,0.45)); mod.position.set(mx,-0.5,-4.5);
+    _edges(mod,0x3050aa,0.22); g.add(mod);
+    // Module electronics panel
+    const fp=_b(8,16,0.8,_m(0x171e2e,0.55,0.4)); fp.position.set(mx,-0.5,0.3); g.add(fp);
+    // PCB cards inside module (stacked circuit boards visible)
+    for(let ci=0;ci<3;ci++){
+      const card=_b(6.5,0.25,7,_m(0x1a4a2a,0.75,0)); card.position.set(mx,-6+ci*4,-4); g.add(card);
+    }
+    // Module connector block (bottom left corner)
+    const conn=_b(3,1.8,1.5,_m(0x1a3a6a,0.4,0.3)); conn.position.set(mx-2.5,-9,0.8); g.add(conn);
+    // Green status LED
+    const ledC=idx===1?0x0088ff:0x00ff44;
+    const led=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.25),
+      new THREE.MeshStandardMaterial({color:ledC,roughness:0.2,emissive:new THREE.Color(ledC).multiplyScalar(0.55)}));
+    led.position.set(mx-3.5,7.5,0.8); g.add(led);
+    // Module type label bar
+    const lbar=_b(4,0.7,0.3,_m(0x888888,0.5,0.3)); lbar.position.set(mx,7.5,0.95); g.add(lbar);
+  });
+
+  // === X-GANTRY BEAM (precision linear axis) ===
+  const xBeam=_b(32,1.4,1.4,mRail); xBeam.position.set(0,5,2.5);
+  _edges(xBeam,0x888888,0.35); g.add(xBeam);
+  // Beam end columns
+  [-15,15].forEach(x=>{
+    const col=_b(0.9,14,0.9,mAlum); col.position.set(x,-1.5,2.5); g.add(col);
+  });
+  // Linear guide rails (two parallel)
+  const rA=_b(32,0.45,0.45,mRail); rA.position.set(0,6,1.8); g.add(rA);
+  const rB=_b(32,0.45,0.45,mRail); rB.position.set(0,4,1.8); g.add(rB);
+
+  // === PLACEMENT HEAD (H12HS or H08 assembly) ===
+  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(3,5,2.5); g.add(zCarriage);
+  const head=_b(2.8,5,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(3,1.5,2.5);
+  _edges(head,0xaaaaaa,0.28); g.add(head);
+  s3.headObj=head;
+  // H12HS nozzle cluster (3×4 = 12 nozzles)
+  for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
+    const noz=_cyl(0.09,0.09,1.5,_m(0x707070,0.2,0.9));
+    noz.position.set(3+(nx-1)*0.72,-1.2,2.5+(nz-1.5)*0.6); g.add(noz);
+  }
+  // Z-axis ballscrew visible
+  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(4.5,2.5,3.8); g.add(screw);
+
+  // === UPWARD-LOOKING VISION CAMERA ===
+  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,3.5,3.5); g.add(vcam);
+  const vlens=_cyl(0.6,0.6,0.55,_m(0x102244,0.2,0.5));
+  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,3.5,5.1); g.add(vlens);
+  const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
+  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,3.5,4.9); g.add(ledRing);
+
+  // === INTELLIGENT FEEDER BANK (right side) ===
+  for(let row=0;row<11;row++){
+    const fd=_b(5.8,1.0,7,_m(0x1c2430,0.65,0.4));
+    fd.position.set(15.2,-7.4+row*1.75,-5.5); g.add(fd);
+    _edges(fd,0x000000,0.10);
+    // Component reel
+    const reel=_cyl(0.85,0.85,0.3,_m(0x404550,0.5,0.35));
+    reel.position.set(15.2,-7.4+row*1.75,-1.2); g.add(reel);
+    // Tape strip
+    const ts=_b(4.5,0.08,0.3,_m(0x886644,0.7,0.1));
+    ts.position.set(14.8,-7.3+row*1.75,1); g.add(ts);
+    // iFeeder status LED
+    if(row%2===0){
+      const fLed=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.2),
+        new THREE.MeshStandardMaterial({color:0x00aaff,roughness:0.2,emissive:new THREE.Color(0,0.08,0.28)}));
+      fLed.position.set(12.5,-7.4+row*1.75,1.2); g.add(fLed);
+    }
+  }
+
+  // === DOUBLE CONVEYOR SYSTEM ===
+  const rl=_m(0x7a7a80,0.25,0.85);
+  // Conveyor rails (double track)
+  const railL=_b(34,0.6,0.6,rl); railL.position.set(0,-7.5,-2.8); g.add(railL);
+  const railR=_b(34,0.6,0.6,rl); railR.position.set(0,-7.5,2.8); g.add(railR);
+  const belt=_b(34,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  s3.conveyorBelt=belt;
+  // Guide panels
+  const cgL=_b(34,3,0.38,mDark); cgL.position.set(0,-7,-3.3); g.add(cgL);
+  const cgR=_b(34,3,0.38,mDark); cgR.position.set(0,-7,3.3); g.add(cgR);
+  // Drive rollers (precision knurled)
+  [-16,16].forEach(x=>{
+    const dr=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
+    dr.rotation.z=Math.PI/2; dr.position.set(x,-7.7,0); g.add(dr);
+  });
+
+  // === MONITOR ON ARTICULATED ARM (top right) ===
+  const armV=_b(0.55,5,0.55,mAlum); armV.position.set(15,14,7.5); g.add(armV);
+  const armH=_b(6,0.55,0.55,mAlum); armH.position.set(12,16.5,7.5); g.add(armH);
+  // Monitor housing
+  const mon=_b(7,5.5,0.8,_m(0x181818,0.65,0.4)); mon.position.set(9,16.5,8.0); g.add(mon);
+  // Screen (NXT dark-navy UI)
+  const scr=new THREE.Mesh(new THREE.BoxGeometry(6,4.5,0.18),
+    new THREE.MeshStandardMaterial({color:0x071528,roughness:0.8,emissive:new THREE.Color(0.02,0.05,0.14)}));
+  scr.position.set(9,16.5,8.45); g.add(scr);
+  // Orange header bar on screen (NXT UI color)
+  const hbar=new THREE.Mesh(new THREE.BoxGeometry(5.8,0.55,0.12),
+    new THREE.MeshStandardMaterial({color:0xf56600,roughness:0.4,emissive:new THREE.Color(0.28,0.06,0)}));
+  hbar.position.set(9,18.5,8.55); g.add(hbar);
+  // Green ready indicators on screen
+  [0,1,2].forEach(i=>{
+    const dot=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.32,0.1),
+      new THREE.MeshStandardMaterial({color:0x00ff44,roughness:0.2,emissive:new THREE.Color(0,0.4,0.1)}));
+    dot.position.set(7.4+i*0.65,17.5,8.55); g.add(dot);
+  });
+
+  // === SIGNAL TOWER (Andon light — 3 colors) ===
+  const tBase=_b(0.9,1.1,0.9,mAccent); tBase.position.set(-16,13.8,7); g.add(tBase);
+  const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-16,16.5,7); g.add(tPole);
+  [[0xff2200,false],[0xffcc00,false],[0x00cc44,true]].forEach(([c,on],i)=>{
+    const lt=_cyl(0.6,0.6,0.95,
+      new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:on?new THREE.Color(c).multiplyScalar(0.45):new THREE.Color(0,0,0)}));
+    lt.position.set(-16,14.4+i*1.1,7); g.add(lt);
+  });
+
+  // === FRONT STATUS LEDS (top area, front panel) ===
+  [0x00ff44,0x00ff44,0xffcc00,0xff4400,0x4488ff].forEach((c,i)=>{
+    const lt=_b(0.6,0.6,0.3,
+      new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:new THREE.Color(c).multiplyScalar(0.42)}));
+    lt.position.set(-8+i*4,11.5,11.2); g.add(lt);
+  });
+
+  // PCB on conveyor
+  _buildPCB(g,currentMaq,currentErroId,10,5.8);
 }
 
 function buildPickPlaceMachine(g){
@@ -1282,6 +1589,105 @@ function buildInspectionMachine(g){
   _buildPCB(g,currentMaq,currentErroId,9,5.5);
 }
 
+function buildFornoMachine(g){
+  const mBody=_m(0x2e3540,0.62,0.35);
+  const mDark=_m(0x1a1e28,0.5,0.4);
+  const mPanel=_m(0x252b38,0.55,0.32);
+  const mAlum=_m(0x888898,0.28,0.72);
+
+  // Main tunnel body (horizontal reflow oven)
+  const tunnel=_b(46,10,20,mDark); tunnel.position.set(0,0,0);
+  _edges(tunnel,0x3a4050,0.18); g.add(tunnel);
+
+  // Top cover panels (segmented lid, removable zones)
+  for(let i=0;i<7;i++){
+    const lid=_b(5.8,1.1,18,mBody); lid.position.set(-15+i*5.8,5.7,0);
+    _edges(lid,0x4a5060,0.22); g.add(lid);
+    // Zone label
+    const tag=_b(1.5,0.4,0.3,_m(0x888888,0.5,0.3)); tag.position.set(-15+i*5.8,6.4,6); g.add(tag);
+  }
+
+  // Side access panels (left)
+  for(let i=0;i<5;i++){
+    const sp=_b(0.7,7,3.5,_m(0x333a4a,0.55,0.32)); sp.position.set(-22,0,-5+i*2.5); g.add(sp);
+    _edges(sp,0x4a5568,0.2);
+    const hdl=_b(0.5,0.35,0.8,_m(0x888aaa,0.3,0.72)); hdl.position.set(-22.7,0.5,-5+i*2.5); g.add(hdl);
+  }
+  // Side access panels (right)
+  for(let i=0;i<5;i++){
+    const sp=_b(0.7,7,3.5,_m(0x333a4a,0.55,0.32)); sp.position.set(22,0,-5+i*2.5); g.add(sp);
+    const hdl=_b(0.5,0.35,0.8,_m(0x888aaa,0.3,0.72)); hdl.position.set(22.7,0.5,-5+i*2.5); g.add(hdl);
+  }
+
+  // Entrance and exit openings
+  const openL=_b(1.2,3.8,8,_m(0x050810,1.0,0)); openL.position.set(-23.5,-1,0); g.add(openL);
+  const openR=_b(1.2,3.8,8,_m(0x050810,1.0,0)); openR.position.set(23.5,-1,0); g.add(openR);
+
+  // Heating zone glow windows (front side — 10 heat zones)
+  for(let i=0;i<10;i++){
+    const intensity=i<7?Math.min(1,(i+3)/8):Math.max(0.05,(10-i)/4);
+    const zwin=new THREE.Mesh(new THREE.BoxGeometry(3.8,2.2,0.3),
+      new THREE.MeshStandardMaterial({color:0xff4400,roughness:0.3,
+        emissive:new THREE.Color(0.6*intensity,0.08*intensity,0)}));
+    zwin.position.set(-20+i*4.5,0,10.3); g.add(zwin);
+  }
+  // Cooling zone windows (blue — last 2 zones)
+  for(let i=0;i<2;i++){
+    const cwin=new THREE.Mesh(new THREE.BoxGeometry(3.8,2.2,0.3),
+      new THREE.MeshStandardMaterial({color:0x2266cc,roughness:0.3,emissive:new THREE.Color(0,0.04,0.28)}));
+    cwin.position.set(17+i*4.5,0,10.3); g.add(cwin);
+  }
+
+  // Control panel (left side front)
+  const cp=_b(9,13,0.9,mPanel); cp.position.set(-19.5,0,10.9); g.add(cp);
+  // Touch screen
+  const scr=new THREE.Mesh(new THREE.BoxGeometry(7,5.5,0.2),
+    new THREE.MeshStandardMaterial({color:0x001428,roughness:0.8,emissive:new THREE.Color(0.01,0.04,0.16)}));
+  scr.position.set(-19.5,1.5,11.4); g.add(scr);
+  // Status LEDs on control panel
+  [[0x00cc44,true],[0xffcc00,false],[0xff2200,false]].forEach(([c,on],i)=>{
+    const led=new THREE.Mesh(new THREE.SphereGeometry(0.32,8,8),
+      new THREE.MeshStandardMaterial({color:c,roughness:0.2,emissive:on?new THREE.Color(c).multiplyScalar(0.5):new THREE.Color(0,0,0)}));
+    led.position.set(-16.8,4-i*1.0,11.4); g.add(led);
+  });
+  // Zone temp display bars (simulated on screen)
+  for(let z=0;z<6;z++){
+    const bar=new THREE.Mesh(new THREE.BoxGeometry(5.5,0.28,0.12),
+      new THREE.MeshStandardMaterial({color:z<5?0xff6600:0x2266cc,roughness:0.4,
+        emissive:new THREE.Color(z<5?0.2:0,z<5?0.02:0.02,z<5?0:0.15)}));
+    bar.position.set(-19.5,-0.8+z*0.7,11.5); g.add(bar);
+  }
+
+  // N2 supply pipes (right side top)
+  [0,-3.5].forEach(z=>{
+    const pipe=_cyl(0.38,0.38,6,mAlum);
+    pipe.rotation.z=Math.PI/2; pipe.position.set(20.5,2.5,9+z); g.add(pipe);
+    const cap=_cyl(0.55,0.55,0.5,_m(0xffcc00,0.4,0.6));
+    cap.rotation.z=Math.PI/2; cap.position.set(23.7,2.5,9+z); g.add(cap);
+  });
+
+  // Exhaust cooling fans (top, exit side)
+  for(let i=0;i<3;i++){
+    const fbody=_cyl(1.3,1.3,1.1,mPanel);
+    fbody.rotation.x=Math.PI/2; fbody.position.set(15+i*4.5,5.5,10.8); g.add(fbody);
+    const fblade=_cyl(1.0,1.0,0.25,mAlum);
+    fblade.rotation.x=Math.PI/2; fblade.position.set(15+i*4.5,5.5,11.3); g.add(fblade);
+  }
+
+  // Conveyor rails through tunnel
+  const rl=_m(0x787882,0.28,0.78);
+  const railL=_b(46,0.45,0.45,rl); railL.position.set(0,-2.5,-2); g.add(railL);
+  const railR=_b(46,0.45,0.45,rl); railR.position.set(0,-2.5,2); g.add(railR);
+  const belt=_b(46,0.16,3.6,_m(0x0a0a0a,0.95,0.05)); belt.position.set(0,-2.7,0); g.add(belt);
+
+  // Machine base / legs
+  const mbase=_b(48,2.2,22,_m(0x181c24,0.72,0.32)); mbase.position.set(0,-6,0);
+  _edges(mbase,0x3a4050,0.18); g.add(mbase);
+  [-20,0,20].forEach(x=>{
+    const leg=_b(3,2,3,mDark); leg.position.set(x,-7.5,0); g.add(leg);
+  });
+}
+
 function rebuild3DScene(){
   if(!s3.scene)return;
   if(s3.machineGroup){s3.scene.remove(s3.machineGroup);}
@@ -1289,7 +1695,9 @@ function rebuild3DScene(){
   s3.errorComp=null; s3.pcbObj=null; s3.headObj=null;
   const g=new THREE.Group();
   const m=MACHINES[currentMaq];
-  if(m.panelStyle==="fuji") buildPickPlaceMachine(g);
+  if(m.model3D==="nxt") buildNXTMachine(g);
+  else if(m.model3D==="forno") buildFornoMachine(g);
+  else if(m.panelStyle==="fuji") buildPickPlaceMachine(g);
   else if(m.panelStyle==="dek") buildScreenPrinterMachine(g);
   else buildInspectionMachine(g);
   s3.machineGroup=g;
