@@ -230,6 +230,102 @@
 .inspect-btn.danger{background:rgba(220,53,69,0.2);border-color:rgba(220,53,69,0.4);color:#ff5252}
 .inspect-btn.green{background:rgba(25,135,84,0.2);border-color:rgba(25,135,84,0.4);color:#00e676}
 
+/* ── NXT Physical Panel (faithful to real machine) ── */
+.panel-nxt{background:linear-gradient(180deg,#2e2e2e 0%,#1e1e1e 100%);
+  border-radius:14px;border:3px solid #0d0d0d;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 22px 55px rgba(0,0,0,0.65);
+  padding:14px 14px 12px;width:100%;max-width:430px}
+.nxt-screen-bezel{background:#000;border:3px solid #080808;border-radius:4px;
+  box-shadow:inset 0 4px 14px rgba(0,0,0,0.98);padding:2px;margin-bottom:10px}
+.nxt-screen{min-height:170px;border-radius:2px;overflow:hidden;position:relative;
+  display:flex;flex-direction:column;transition:background 0.3s}
+/* re-use s-idle/s-running/s-error/s-estop/s-stopping/s-standby/s-manual from .fuji-screen */
+.nxt-btn-panel{display:flex;flex-direction:column;gap:7px}
+/* Row 1: 6 hardware buttons */
+.nxt-row-main{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+/* Generic hardware button */
+.nxt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:6px 2px 5px;border-radius:4px;cursor:pointer;position:relative;
+  border:1px solid #0d0d0d;min-height:42px;
+  background:linear-gradient(180deg,#616161 0%,#3e3e3e 100%);
+  box-shadow:0 2px 0 #1a1a1a,inset 0 1px 0 rgba(255,255,255,0.12);
+  transition:filter 0.06s,transform 0.06s}
+.nxt-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #1a1a1a;filter:brightness(0.82)}
+.nxt-bi{font-size:0.88rem;line-height:1;color:#d0d0d0}
+.nxt-lbl{font-size:0.40rem;font-weight:700;color:#aaa;text-align:center;
+  letter-spacing:0.2px;line-height:1.25;text-transform:uppercase}
+/* READY ON — green LED indicator on top */
+.nxt-btn-ready{padding-top:10px}
+.nxt-led{position:absolute;top:3px;left:50%;transform:translateX(-50%);
+  width:7px;height:7px;border-radius:50%;background:#00e040;
+  box-shadow:0 0 5px #00e040}
+.nxt-led.off{background:#1a3a1a;box-shadow:none}
+/* START — green */
+.nxt-btn-start{background:linear-gradient(180deg,#2fa340 0%,#1a6e28 100%);
+  border-color:#155a20;box-shadow:0 2px 0 #0a3010,inset 0 1px 0 rgba(255,255,255,0.14)}
+.nxt-btn-start .nxt-bi{color:#b0ffb8;font-size:1rem}
+.nxt-btn-start .nxt-lbl{color:#c8ffcc}
+/* STOP — gray with red symbol */
+.nxt-btn-stop .nxt-bi{color:#ff8080}
+/* MANUAL — amber */
+.nxt-btn-manual{background:linear-gradient(180deg,#c07000 0%,#884a00 100%);
+  border-color:#6a3800;box-shadow:0 2px 0 #3a1e00,inset 0 1px 0 rgba(255,255,255,0.1)}
+.nxt-btn-manual .nxt-bi{color:#ffd090;font-size:1rem}
+.nxt-btn-manual .nxt-lbl{color:#ffcc88}
+/* Lower section layout */
+.nxt-lower{display:flex;gap:8px;align-items:flex-start}
+/* Left column: MANUAL + EMERGENCY */
+.nxt-col-left{display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;width:52px}
+/* Emergency mushroom */
+.nxt-emg-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:2px}
+.nxt-emg-txt{font-size:0.37rem;font-weight:800;color:#cc4444;text-transform:uppercase;
+  letter-spacing:0.3px;text-align:center;line-height:1.3}
+.nxt-emg{width:42px;height:42px;border-radius:50%;cursor:pointer;
+  background:radial-gradient(circle at 36% 34%,#ff5555,#aa0000);
+  border:3px solid #770000;
+  box-shadow:0 3px 0 #440000,0 0 0 2.5px #cc0000,inset 0 2px 5px rgba(255,255,255,0.12);
+  transition:transform 0.07s,box-shadow 0.07s}
+.nxt-emg:active{transform:translateY(2px);
+  box-shadow:0 1px 0 #440000,0 0 0 5px rgba(200,0,0,0.35),inset 0 3px 5px rgba(0,0,0,0.3)}
+/* Right column: monitor + nav + ok/cancel + standby */
+.nxt-col-right{flex:1;display:flex;flex-direction:column;gap:5px}
+/* Monitor row */
+.nxt-monitor-row{display:flex;align-items:center}
+.nxt-btn-monitor{flex-direction:row;gap:5px;padding:5px 10px;min-height:28px;width:auto}
+.nxt-btn-monitor .nxt-bi{font-size:0.7rem}
+.nxt-btn-monitor .nxt-lbl{font-size:0.44rem}
+/* Nav + OK/Cancel area */
+.nxt-nav-area{display:flex;gap:10px;align-items:center}
+.nxt-cross{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nxt-cross-mid{display:flex;gap:2px;align-items:center}
+.nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
+  background:linear-gradient(180deg,#555 0%,#333 100%);
+  border:1px solid #1a1a1a;box-shadow:0 2px 0 #111,inset 0 1px 0 rgba(255,255,255,0.1);
+  color:#ccc;font-size:0.8rem;display:flex;align-items:center;justify-content:center;
+  transition:filter 0.06s,transform 0.06s}
+.nxt-nav:active{transform:translateY(1px);filter:brightness(0.8)}
+.nxt-nav-c{width:22px;height:22px;border-radius:50%;cursor:pointer;
+  background:linear-gradient(180deg,#555 0%,#333 100%);
+  border:1px solid #1a1a1a;box-shadow:0 2px 0 #111;
+  color:#bbb;font-size:0.6rem;display:flex;align-items:center;justify-content:center}
+.nxt-nav-c:active{transform:translateY(1px);filter:brightness(0.8)}
+.nxt-ok-col{display:flex;flex-direction:column;gap:4px}
+.nxt-ok{padding:5px 14px;border-radius:4px;cursor:pointer;font-size:0.62rem;font-weight:800;
+  letter-spacing:0.5px;color:#fff;background:linear-gradient(180deg,#1565c0,#0d47a1);
+  border:1px solid #0a3580;box-shadow:0 2px 0 #061a55,inset 0 1px 0 rgba(255,255,255,0.12)}
+.nxt-ok:active{transform:translateY(1px)}
+.nxt-cancel{padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.48rem;font-weight:800;
+  color:#bbb;background:linear-gradient(180deg,#555,#333);
+  border:1px solid #1a1a1a;box-shadow:0 2px 0 #111;text-align:center}
+.nxt-cancel:active{transform:translateY(1px)}
+/* Bottom row: STAND BY + FUJI logo */
+.nxt-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:2px}
+.nxt-standby{background:none;border:none;font-size:0.42rem;font-weight:700;
+  color:#666;letter-spacing:1.5px;cursor:pointer;text-transform:uppercase;padding:2px 4px}
+.nxt-standby:hover{color:#999}
+.nxt-fuji{color:#ffffff;font-size:1.05rem;font-weight:900;font-style:italic;
+  letter-spacing:3px;text-shadow:0 1px 3px rgba(0,0,0,0.5)}
+
 /* ── Forno de Refusão panel ── */
 .panel-forno{background:linear-gradient(160deg,#1c1008 0%,#12090002 50%,#0a0500 100%);
   border-radius:16px;border:3px solid #0a0500;
@@ -809,10 +905,88 @@ function selectErro(id){
 function renderPanel(erro){
   const m=MACHINES[currentMaq];
   const wrap=document.getElementById("mvPanelWrap");
-  if(m.panelStyle==="fuji") wrap.innerHTML=renderFujiPanel(m,erro);
-  else if(m.panelStyle==="dek") wrap.innerHTML=renderDekPanel(m,erro);
-  else if(m.panelStyle==="forno") wrap.innerHTML=renderFornoPanel(m,erro);
-  else wrap.innerHTML=renderInspectPanel(m,erro);
+  if(m.model3D==="nxt")          wrap.innerHTML=renderNXTPanel(m,erro);
+  else if(m.panelStyle==="fuji") wrap.innerHTML=renderFujiPanel(m,erro);
+  else if(m.panelStyle==="dek")  wrap.innerHTML=renderDekPanel(m,erro);
+  else if(m.panelStyle==="forno")wrap.innerHTML=renderFornoPanel(m,erro);
+  else                           wrap.innerHTML=renderInspectPanel(m,erro);
+}
+
+/* ─── NXT Panel (faithful to real hardware layout) ─── */
+function renderNXTPanel(m,erro){
+  let screenClass="s-idle", sc=fujiScreenIdle(m);
+  if(machineState==="running"){screenClass="s-running";sc=fujiScreenRunning(m);}
+  else if(machineState==="manual"){screenClass="s-manual";sc=fujiScreenManual();}
+  else if(machineState==="error"&&erro){screenClass="s-error";sc=fujiScreenError(m,erro);}
+  else if(machineState==="estop"){screenClass="s-estop";sc=fujiScreenEstop();}
+  else if(machineState==="stopping"){screenClass="s-stopping";sc=fujiScreenStopping();}
+  else if(machineState==="standby"){screenClass="s-standby";sc=fujiScreenStandby();}
+  const rdyLed=["idle","running","stopping","standby"].includes(machineState)?"":"off";
+  return `<div class="panel-nxt">
+    <div class="nxt-screen-bezel">
+      <div class="nxt-screen ${screenClass} fuji-screen">${sc}</div>
+    </div>
+    <div class="nxt-btn-panel">
+      <div class="nxt-row-main">
+        <button class="nxt-btn" onclick="handleBtn('inche_stop')" title="Para após o ciclo">
+          <span class="nxt-bi">⊡</span><span class="nxt-lbl">CYCLE<br>STOP</span>
+        </button>
+        <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Modo automático / sair do manual">
+          <span class="nxt-led ${rdyLed}"></span>
+          <span class="nxt-bi">◧</span><span class="nxt-lbl">READY<br>ON</span>
+        </button>
+        <button class="nxt-btn" title="Operação em grupo">
+          <span class="nxt-bi">▣</span><span class="nxt-lbl">GROUP</span>
+        </button>
+        <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Iniciar produção">
+          <span class="nxt-bi">▶</span><span class="nxt-lbl">START</span>
+        </button>
+        <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Parar produção">
+          <span class="nxt-bi">⊘</span><span class="nxt-lbl">STOP</span>
+        </button>
+        <button class="nxt-btn" title="Power">
+          <span class="nxt-bi">⏻</span><span class="nxt-lbl">POWER</span>
+        </button>
+      </div>
+      <div class="nxt-lower">
+        <div class="nxt-col-left">
+          <button class="nxt-btn nxt-btn-manual" onclick="handleBtn('manual')" title="Modo manual" style="width:100%">
+            <span class="nxt-bi">⊙</span><span class="nxt-lbl">MANUAL</span>
+          </button>
+          <div class="nxt-emg-wrap">
+            <span class="nxt-emg-txt">EMER<br>GENCY</span>
+            <button class="nxt-emg" onclick="handleBtn('estop')" title="Parada de emergência"></button>
+          </div>
+        </div>
+        <div class="nxt-col-right">
+          <div class="nxt-monitor-row">
+            <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Monitor">
+              <span class="nxt-bi">▣</span><span class="nxt-lbl">MONITOR</span>
+            </button>
+          </div>
+          <div class="nxt-nav-area">
+            <div class="nxt-cross">
+              <button class="nxt-nav" onclick="handleBtn('nav_up')" title="Y+">↑</button>
+              <div class="nxt-cross-mid">
+                <button class="nxt-nav" onclick="handleBtn('nav_left')" title="X−">←</button>
+                <button class="nxt-nav-c" title="Confirmar">○</button>
+                <button class="nxt-nav" onclick="handleBtn('nav_right')" title="X+">→</button>
+              </div>
+              <button class="nxt-nav" onclick="handleBtn('nav_down')" title="Y−">↓</button>
+            </div>
+            <div class="nxt-ok-col">
+              <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">OK</button>
+              <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar">CANCEL ×</button>
+            </div>
+          </div>
+          <div class="nxt-bottom">
+            <button class="nxt-standby" onclick="handleBtn('standby')" title="Standby">STAND BY</button>
+            <span class="nxt-fuji">FUJI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ─── Fuji panel ─── */
