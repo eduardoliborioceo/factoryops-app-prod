@@ -11,7 +11,7 @@
     <button class="btn-header-icon" id="btnViewGrid"  onclick="setView('grid')"  title="Visão em grid">
       <i class="bi bi-grid-3x3-gap"></i>
     </button>
-    <button class="btn-header-icon" id="btnViewTable" onclick="setView('table')" title="Visão em tabela" style="background:rgba(99,102,241,0.12);color:#6366f1;">
+    <button class="btn-header-icon" id="btnViewTable" onclick="setView('table')" title="Visão em tabela">
       <i class="bi bi-table"></i>
     </button>
     <button class="btn-header-icon" onclick="abrirModalNovoComp()" title="Novo Componente">
@@ -59,54 +59,99 @@
 .comp-table td.muted { color:var(--text-muted); }
 
 /* ─── GRID VIEW ──────────────────────────── */
-.comp-grid { display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap:12px; }
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
 
 .comp-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 14px 12px;
+  border-radius: 14px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
   cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
   position: relative;
+  overflow: hidden;
 }
 .comp-card:hover {
-  box-shadow: 0 4px 18px rgba(15,23,42,0.10);
-  border-color: rgba(99,102,241,0.3);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(15,23,42,0.13);
+  border-color: rgba(99,102,241,0.35);
+  transform: translateY(-3px);
 }
+
+/* ─── PCB preview area ─────────────────── */
 .comp-card-preview {
   width: 100%;
-  height: 80px;
+  height: 130px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(15,23,42,0.03);
-  border: 1px solid var(--border);
+  background: #091d11;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 10px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+  box-shadow: inset 0 -4px 12px rgba(0,0,0,0.3);
   overflow: hidden;
-}
-.comp-card-shape {
-  border-radius: 2px;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   position: relative;
 }
-.comp-card-shape::after {
+.comp-card-preview::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
-  border-radius: 2px;
+  background: radial-gradient(ellipse at 30% 30%, rgba(34,197,94,0.06) 0%, transparent 65%);
+  pointer-events: none;
 }
-.comp-card-name { font-size:0.82rem; font-weight:700; text-align:center; color:var(--text); width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.comp-card-pkg  { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
+.comp-card-preview svg {
+  display: block;
+  width: 80%;
+  height: 80%;
+  max-width: 160px;
+  max-height: 110px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+}
+
+.comp-card-info {
+  padding: 10px 12px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.comp-card-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comp-card-pkg {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comp-card-desc {
+  font-size: 0.70rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+.comp-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
 .comp-card-actions {
   position: absolute;
   top: 8px; right: 8px;
@@ -116,20 +161,20 @@
   transition: opacity 0.15s;
 }
 .comp-card:hover .comp-card-actions { opacity: 1; }
-.cc-btn { width:26px; height:26px; display:flex; align-items:center; justify-content:center;
-  border-radius:6px; border:1px solid var(--border); background:var(--card);
-  font-size:0.72rem; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
-.cc-btn:hover { background:var(--bg); color:var(--text); }
-.cc-btn.danger:hover { background:rgba(220,53,69,0.08); color:#dc3545; border-color:rgba(220,53,69,0.2); }
+.cc-btn { width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.45);
+  font-size:0.72rem; color:rgba(255,255,255,0.8); cursor:pointer; transition:all 0.12s; backdrop-filter:blur(4px); }
+.cc-btn:hover { background:rgba(0,0,0,0.65); color:#fff; }
+.cc-btn.danger:hover { background:rgba(220,53,69,0.75); color:#fff; border-color:rgba(220,53,69,0.4); }
 
 /* ─── Badges / shared ─────────────────────── */
-.tipo-badge { font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:20px; }
+.tipo-badge { font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:20px; }
 .tipo-smd       { background:rgba(100,116,139,0.12); color:#475569; }
 .tipo-pth       { background:rgba(220,53,69,0.10);   color:#dc3545; }
 .tipo-conector  { background:rgba(15,23,42,0.08);    color:#334155; }
 .tipo-outro     { background:rgba(107,114,128,0.10); color:#6b7280; }
-.color-dot { width:14px; height:14px; border-radius:3px; display:inline-block;
-             border:1px solid rgba(0,0,0,0.1); vertical-align:middle; margin-right:4px; }
+.color-dot { width:10px; height:10px; border-radius:2px; display:inline-block;
+             border:1px solid rgba(0,0,0,0.12); vertical-align:middle; margin-right:4px; flex-shrink:0; }
 .tbl-actions { display:flex; gap:4px; }
 .tbl-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:transparent;
            font-size:0.75rem; color:var(--text-muted); cursor:pointer; transition:all 0.12s; }
@@ -144,28 +189,46 @@
              border:2px solid transparent; transition:border-color 0.12s; }
 .color-opt.active, .color-opt:hover { border-color:#6366f1; }
 
-/* Live shape preview in modal */
+/* Modal live preview PCB */
 .shape-preview-wrap {
+  height: 110px;
+  background: #091d11;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 10px 10px;
+  border: 1px solid rgba(0,0,0,0.35);
+  border-radius: 8px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 90px;
-  background: rgba(15,23,42,0.03);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
+  position: relative;
 }
-#liveShape {
-  border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  transition: all 0.2s;
+.shape-preview-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 30%, rgba(34,197,94,0.06) 0%, transparent 65%);
+  pointer-events: none;
 }
+#liveShapeContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70%;
+  height: 80%;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+}
+#liveShapeContainer svg { width: 100%; height: 100%; display: block; }
+
+/* Package hint badge */
+.pkg-hint { font-size: 0.7rem; color: #6366f1; font-weight: 600; margin-top: 3px; display: none; }
+.pkg-hint.visible { display: block; }
 
 /* ─── Mobile ─────────────────────────────── */
 @media (max-width:767px) {
   .col-fab, .col-dim, .col-ds { display:none; }
-  .comp-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-  .comp-card-preview { height:60px; }
+  .comp-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px; }
+  .comp-card-preview { height: 100px; }
 }
 </style>
 {% endblock %}
@@ -283,11 +346,17 @@
         <button class="cc-btn danger" onclick="deletarComp({{ c.id }}, '{{ c.part_number|e }}');event.stopPropagation();" title="Excluir"><i class="bi bi-trash3"></i></button>
       </div>
       <div class="comp-card-preview">
-        {{ renderShape(c.comp_mm, c.larg_mm, c.cor_hex, c.tipo) }}
+        {{ renderShape(c.comp_mm, c.larg_mm, c.cor_hex, c.tipo, c.package) }}
       </div>
-      <div class="comp-card-name" title="{{ c.part_number }}">{{ c.part_number }}</div>
-      <div class="comp-card-pkg">{{ c.package }}</div>
-      <span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span>
+      <div class="comp-card-info">
+        <div class="comp-card-name" title="{{ c.part_number }}">{{ c.part_number }}</div>
+        <div class="comp-card-pkg">{{ c.package }}</div>
+        {% if c.descricao %}<div class="comp-card-desc" title="{{ c.descricao }}">{{ c.descricao }}</div>{% endif %}
+        <div class="comp-card-footer">
+          <span class="tipo-badge tipo-{{ c.tipo }}">{{ c.tipo|upper }}</span>
+          {% if c.comp_mm %}<span style="font-size:0.68rem;color:var(--text-muted);">{{ c.comp_mm }}×{{ c.larg_mm }}mm</span>{% endif %}
+        </div>
+      </div>
     </div>
     {% else %}
     <div style="grid-column:1/-1;">
@@ -311,11 +380,10 @@
         <input type="hidden" id="compId">
         <div class="row g-3">
 
-          <!-- Live preview -->
           <div class="col-12">
             <label class="form-label-sm">Preview do Package</label>
             <div class="shape-preview-wrap">
-              <div id="liveShape" style="width:48px;height:24px;background:#64748b;border-radius:2px;"></div>
+              <div id="liveShapeContainer"></div>
             </div>
           </div>
 
@@ -325,11 +393,12 @@
           </div>
           <div class="col-md-6">
             <label class="form-label-sm">Package *</label>
-            <input type="text" class="form-control form-control-sm" id="cPkg" placeholder="Ex: 0402, SOIC-8, TO-220" style="border-radius:8px;">
+            <input type="text" class="form-control form-control-sm" id="cPkg" placeholder="Ex: 0402, SOIC-8, TO-220" style="border-radius:8px;" oninput="onPkgInput()">
+            <div class="pkg-hint" id="pkgHint"></div>
           </div>
           <div class="col-md-6">
             <label class="form-label-sm">Tipo *</label>
-            <select class="form-select form-select-sm" id="cTipo" style="border-radius:8px;">
+            <select class="form-select form-select-sm" id="cTipo" style="border-radius:8px;" onchange="atualizarPreview()">
               <option value="smd">SMD</option>
               <option value="pth">PTH</option>
               <option value="conector">Conector</option>
@@ -345,7 +414,6 @@
             <input type="text" class="form-control form-control-sm" id="cDesc" placeholder="Ex: Resistor SMD 10kΩ 5%" style="border-radius:8px;">
           </div>
 
-          <!-- Dimensões com preview ao vivo -->
           <div class="col-md-4">
             <label class="form-label-sm">Comprimento (mm)</label>
             <input type="number" class="form-control form-control-sm" id="cCompMm" step="0.001" min="0" placeholder="1.0" style="border-radius:8px;" oninput="atualizarPreview()">
@@ -364,7 +432,6 @@
             <input type="url" class="form-control form-control-sm" id="cDS" placeholder="https://..." style="border-radius:8px;">
           </div>
 
-          <!-- Cor -->
           <div class="col-12">
             <label class="form-label-sm">Cor no Viewer</label>
             <div class="color-row mt-1" id="compColorRow"></div>
@@ -384,6 +451,485 @@
 </div>
 
 <script>
+/* ═══════════════════════════════════════════════
+   PACKAGE SPECS DATABASE (IPC-7351 / standard)
+   ═══════════════════════════════════════════════ */
+const PACKAGE_SPECS = {
+  '0201':     { comp:0.60, larg:0.30, alt:0.23, cat:'chip' },
+  '0402':     { comp:1.00, larg:0.50, alt:0.35, cat:'chip' },
+  '0603':     { comp:1.60, larg:0.80, alt:0.45, cat:'chip' },
+  '0805':     { comp:2.00, larg:1.25, alt:0.70, cat:'chip' },
+  '1206':     { comp:3.20, larg:1.60, alt:0.70, cat:'chip' },
+  '1210':     { comp:3.20, larg:2.50, alt:0.70, cat:'chip' },
+  '1812':     { comp:4.50, larg:3.20, alt:0.70, cat:'chip' },
+  '2010':     { comp:5.00, larg:2.50, alt:0.70, cat:'chip' },
+  '2512':     { comp:6.30, larg:3.20, alt:0.70, cat:'chip' },
+  'sot-23':   { comp:3.00, larg:1.75, alt:1.10, cat:'sot23', pins:3 },
+  'sot23':    { comp:3.00, larg:1.75, alt:1.10, cat:'sot23', pins:3 },
+  'sot-23-5': { comp:3.00, larg:1.75, alt:1.10, cat:'sot23', pins:5 },
+  'sot-23-6': { comp:3.00, larg:1.75, alt:1.10, cat:'sot23', pins:6 },
+  'sot-89':   { comp:4.50, larg:2.50, alt:1.50, cat:'sot89', pins:3 },
+  'sot-223':  { comp:6.50, larg:3.50, alt:1.80, cat:'sot223', pins:4 },
+  'soic-8':   { comp:5.00, larg:4.00, alt:1.75, cat:'soic', pins:8 },
+  'soic8':    { comp:5.00, larg:4.00, alt:1.75, cat:'soic', pins:8 },
+  'soic-14':  { comp:8.65, larg:4.00, alt:1.75, cat:'soic', pins:14 },
+  'soic-16':  { comp:10.3, larg:4.00, alt:1.75, cat:'soic', pins:16 },
+  'soic-20':  { comp:12.8, larg:4.00, alt:1.75, cat:'soic', pins:20 },
+  'soic-28':  { comp:17.9, larg:4.00, alt:1.75, cat:'soic', pins:28 },
+  'tssop-8':  { comp:3.00, larg:4.40, alt:1.20, cat:'soic', pins:8 },
+  'tssop-14': { comp:5.00, larg:4.40, alt:1.20, cat:'soic', pins:14 },
+  'tssop-16': { comp:5.00, larg:4.40, alt:1.20, cat:'soic', pins:16 },
+  'tssop-20': { comp:6.50, larg:4.40, alt:1.20, cat:'soic', pins:20 },
+  'tssop-28': { comp:9.70, larg:4.40, alt:1.20, cat:'soic', pins:28 },
+  'ssop-8':   { comp:3.90, larg:5.30, alt:2.00, cat:'soic', pins:8 },
+  'ssop-16':  { comp:5.30, larg:5.30, alt:2.00, cat:'soic', pins:16 },
+  'qfp-44':   { comp:10.0, larg:10.0, alt:1.60, cat:'qfp', pins:44 },
+  'lqfp-32':  { comp:7.00, larg:7.00, alt:1.40, cat:'qfp', pins:32 },
+  'lqfp-48':  { comp:7.00, larg:7.00, alt:1.40, cat:'qfp', pins:48 },
+  'lqfp-64':  { comp:10.0, larg:10.0, alt:1.40, cat:'qfp', pins:64 },
+  'lqfp-100': { comp:14.0, larg:14.0, alt:1.40, cat:'qfp', pins:100 },
+  'qfn-16':   { comp:4.00, larg:4.00, alt:0.90, cat:'qfn', pins:16 },
+  'qfn-20':   { comp:4.00, larg:4.00, alt:0.90, cat:'qfn', pins:20 },
+  'qfn-24':   { comp:4.00, larg:4.00, alt:0.90, cat:'qfn', pins:24 },
+  'qfn-32':   { comp:5.00, larg:5.00, alt:0.90, cat:'qfn', pins:32 },
+  'qfn-40':   { comp:6.00, larg:6.00, alt:0.90, cat:'qfn', pins:40 },
+  'dfn-8':    { comp:3.00, larg:3.00, alt:0.90, cat:'qfn', pins:8 },
+  'dip-8':    { comp:9.65, larg:6.35, alt:4.00, cat:'dip', pins:8 },
+  'dip-14':   { comp:19.3, larg:6.35, alt:4.00, cat:'dip', pins:14 },
+  'dip-16':   { comp:20.3, larg:6.35, alt:4.00, cat:'dip', pins:16 },
+  'dip-28':   { comp:35.6, larg:7.62, alt:4.00, cat:'dip', pins:28 },
+  'pdip-8':   { comp:9.65, larg:6.35, alt:4.00, cat:'dip', pins:8 },
+  'pdip-14':  { comp:19.3, larg:6.35, alt:4.00, cat:'dip', pins:14 },
+  'to-92':    { comp:5.00, larg:5.00, alt:5.50, cat:'to92', pins:3 },
+  'to-220':   { comp:10.0, larg:4.50, alt:9.00, cat:'to220', pins:3 },
+  'to-247':   { comp:15.0, larg:6.00, alt:20.0, cat:'to247', pins:3 },
+  'to-263':   { comp:9.40, larg:6.70, alt:4.30, cat:'soic', pins:3 },
+  'dpak':     { comp:9.40, larg:6.70, alt:4.30, cat:'soic', pins:3 },
+};
+
+/* ═══════════════════════════════════════════════
+   COLOR UTILITIES
+   ═══════════════════════════════════════════════ */
+function hexToRgb(hex) {
+  const h = hex.replace('#','');
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function rgbToHex(r,g,b) {
+  return '#'+[r,g,b].map(v=>Math.round(Math.min(255,Math.max(0,v))).toString(16).padStart(2,'0')).join('');
+}
+function darkenHex(hex, a) {
+  try { const [r,g,b]=hexToRgb(hex); return rgbToHex(r*(1-a),g*(1-a),b*(1-a)); } catch(e){ return hex; }
+}
+function lightenHex(hex, a) {
+  try { const [r,g,b]=hexToRgb(hex); return rgbToHex(r+(255-r)*a,g+(255-g)*a,b+(255-b)*a); } catch(e){ return hex; }
+}
+
+/* ═══════════════════════════════════════════════
+   PACKAGE CATEGORY DETECTION
+   ═══════════════════════════════════════════════ */
+function detectPkgCategory(pkg, tipo) {
+  const p = (pkg||'').toLowerCase().replace(/[\s_]/g,'-');
+  if (/^(01005|0201|0402|0603|0805|1206|1210|1812|2010|2512|2515|2616|3216|3225|4532|4564)$/.test(p)) return 'chip';
+  if (/sot-?23/.test(p) && !/-5|-6/.test(p)) return 'sot23';
+  if (/sot-?23-[56]/.test(p)) return 'sot23';
+  if (/sot-?89/.test(p)) return 'sot89';
+  if (/sot-?223/.test(p)) return 'sot223';
+  if (/soic|sop\b|tssop|ssop|msop|vsop/.test(p)) return 'soic';
+  if (/qfp|lqfp|tqfp|pqfp/.test(p)) return 'qfp';
+  if (/qfn|dfn|lga/.test(p)) return 'qfn';
+  if (/bga|csp/.test(p)) return 'bga';
+  if (/^(dip|pdip)/.test(p)) return 'dip';
+  if (/to-?92/.test(p)) return 'to92';
+  if (/to-?220|to-?247|to-?263|to-?3p|d2pak|dpak/.test(p)) return 'to220';
+  if (tipo==='conector' || /conn|jst|molex|header|plug|socket|rj\d|usb|hdmi|xh|ph|zh|sma|bnc|kf|kph/.test(p)) return 'connector';
+  if (tipo==='pth' || /axial|radial|through/.test(p)) return 'axial';
+  if (tipo==='smd') return 'chip';
+  if (tipo==='pth') return 'axial';
+  if (tipo==='conector') return 'connector';
+  return 'chip';
+}
+
+/* ═══════════════════════════════════════════════
+   SVG COMPONENT RENDERERS
+   ═══════════════════════════════════════════════ */
+let _sid = 0;
+
+function buildChipSVG(id, color, compMm, largMm) {
+  const ratio = Math.min(Math.max((parseFloat(compMm)||1.6)/(parseFloat(largMm)||0.8),0.6),5);
+  const VW=120, VH=80;
+  const bodyH=40, bodyW=Math.min(Math.round(bodyH*ratio),78);
+  const padW=16, padH=28;
+  const bx=(VW-bodyW)/2, by=(VH-bodyH)/2;
+  const px1=bx-padW+4, px2=bx+bodyW-4, py=by+(bodyH-padH)/2;
+  const light=lightenHex(color,0.30), dark=darkenHex(color,0.40);
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="cb${id}" x1="0.08" y1="0" x2="0.65" y2="1">
+    <stop offset="0%" stop-color="${light}"/>
+    <stop offset="100%" stop-color="${dark}"/>
+  </linearGradient>
+  <linearGradient id="cp${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#d2cfc7"/>
+    <stop offset="45%" stop-color="#9e9a92"/>
+    <stop offset="100%" stop-color="#6c6a62"/>
+  </linearGradient>
+  <filter id="cs${id}" x="-25%" y="-30%" width="150%" height="160%">
+    <feDropShadow dx="0.5" dy="2.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.55"/>
+  </filter>
+</defs>
+<rect x="${px1}" y="${py}" width="${padW}" height="${padH}" rx="2" fill="url(#cp${id})"/>
+<rect x="${px2}" y="${py}" width="${padW}" height="${padH}" rx="2" fill="url(#cp${id})"/>
+<rect x="${bx}" y="${by}" width="${bodyW}" height="${bodyH}" rx="3" fill="url(#cb${id})" filter="url(#cs${id})"/>
+<rect x="${bx+3}" y="${by+3}" width="${bodyW-6}" height="${Math.round(bodyH*0.36)}" rx="2" fill="rgba(255,255,255,0.22)"/>
+<rect x="${bx+3}" y="${by+3}" width="9" height="${bodyH-6}" rx="2" fill="rgba(255,255,255,0.12)"/>
+<rect x="${bx}" y="${by+bodyH-4}" width="${bodyW}" height="4" rx="1.5" fill="rgba(0,0,0,0.18)"/>
+</svg>`;
+}
+
+function buildSOICSVG(id, color, pkg) {
+  const pinCount = parseInt((pkg||'').match(/\d+/)?.[0])||8;
+  const pps = Math.min(Math.floor(pinCount/2), 8);
+  const VW=120, VH=80;
+  const LW=14, LH=7, LG=3;
+  const totalLH = pps*LH+(pps-1)*LG;
+  const bodyH = Math.min(totalLH+18, 70), bodyW=52;
+  const bx=(VW-bodyW)/2, by=(VH-bodyH)/2;
+  const leads=[];
+  for(let i=0;i<pps;i++){
+    const ly=by+9+i*(LH+LG);
+    leads.push(`<rect x="${bx-LW+3}" y="${ly}" width="${LW}" height="${LH}" rx="1.5" fill="url(#lp${id})"/>`);
+    leads.push(`<rect x="${bx+bodyW-3}" y="${ly}" width="${LW}" height="${LH}" rx="1.5" fill="url(#lp${id})"/>`);
+  }
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="#2e2e3c"/>
+    <stop offset="100%" stop-color="#14141c"/>
+  </linearGradient>
+  <linearGradient id="lp${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c8c4bc"/>
+    <stop offset="45%" stop-color="#9e9a92"/>
+    <stop offset="100%" stop-color="#6c6a62"/>
+  </linearGradient>
+  <filter id="is${id}" x="-25%" y="-20%" width="150%" height="140%">
+    <feDropShadow dx="0" dy="2.5" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+  </filter>
+</defs>
+${leads.join('\n')}
+<rect x="${bx}" y="${by}" width="${bodyW}" height="${bodyH}" rx="3" fill="url(#ib${id})" filter="url(#is${id})"/>
+<rect x="${bx+4}" y="${by+4}" width="${bodyW-8}" height="${Math.round(bodyH*0.28)}" rx="2" fill="rgba(255,255,255,0.10)"/>
+<rect x="${bx+4}" y="${by+4}" width="7" height="${bodyH-8}" rx="2" fill="rgba(255,255,255,0.06)"/>
+<circle cx="${bx+8}" cy="${by+8}" r="3" fill="rgba(255,255,255,0.55)"/>
+<path d="M${bx+bodyW/2-8},${by} Q${bx+bodyW/2},${by+6} ${bx+bodyW/2+8},${by}" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+</svg>`;
+}
+
+function buildQFPSVG(id, color, pkg) {
+  const pinCount = parseInt((pkg||'').match(/\d+/)?.[0])||44;
+  const pps = Math.max(Math.floor(pinCount/4), 4);
+  const VW=120, VH=80;
+  const LW=10, LH=4, LG=2;
+  const totalL = pps*LH+(pps-1)*LG;
+  const bodySize = Math.min(totalL+12, 58);
+  const bx=(VW-bodySize)/2, by=(VH-bodySize)/2;
+  const leads=[];
+  for(let i=0;i<pps;i++){
+    const vp=by+6+i*(LH+LG), hp=bx+6+i*(LH+LG);
+    leads.push(`<rect x="${bx-LW+2}" y="${vp}" width="${LW}" height="${LH}" rx="1" fill="url(#lp${id})"/>`);
+    leads.push(`<rect x="${bx+bodySize-2}" y="${vp}" width="${LW}" height="${LH}" rx="1" fill="url(#lp${id})"/>`);
+    leads.push(`<rect x="${hp}" y="${by-LW+2}" width="${LH}" height="${LW}" rx="1" fill="url(#lp${id})"/>`);
+    leads.push(`<rect x="${hp}" y="${by+bodySize-2}" width="${LH}" height="${LW}" rx="1" fill="url(#lp${id})"/>`);
+  }
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="#2e2e3c"/><stop offset="100%" stop-color="#14141c"/>
+  </linearGradient>
+  <linearGradient id="lp${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c8c4bc"/><stop offset="40%" stop-color="#9e9a92"/><stop offset="100%" stop-color="#6c6a62"/>
+  </linearGradient>
+  <filter id="is${id}" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+  </filter>
+</defs>
+${leads.join('\n')}
+<rect x="${bx}" y="${by}" width="${bodySize}" height="${bodySize}" rx="2" fill="url(#ib${id})" filter="url(#is${id})"/>
+<rect x="${bx+3}" y="${by+3}" width="${bodySize-6}" height="${Math.round(bodySize*0.25)}" rx="1.5" fill="rgba(255,255,255,0.09)"/>
+<circle cx="${bx+7}" cy="${by+7}" r="2.5" fill="rgba(255,255,255,0.55)"/>
+</svg>`;
+}
+
+function buildQFNSVG(id, color, pkg) {
+  const pinCount = parseInt((pkg||'').match(/\d+/)?.[0])||16;
+  const pps = Math.max(Math.floor(pinCount/4), 3);
+  const VW=120, VH=80;
+  const bodySize=56;
+  const bx=(VW-bodySize)/2, by=(VH-bodySize)/2;
+  const PW=5, PH=4, step=(bodySize-2)/(pps+1);
+  const pads=[];
+  for(let i=0;i<pps;i++){
+    const o=step*(i+1);
+    pads.push(`<rect x="${bx+o}" y="${by}" width="${PW}" height="${PH}" rx="0.5" fill="#9a9890"/>`);
+    pads.push(`<rect x="${bx+o}" y="${by+bodySize-PH}" width="${PW}" height="${PH}" rx="0.5" fill="#9a9890"/>`);
+    pads.push(`<rect x="${bx}" y="${by+o}" width="${PH}" height="${PW}" rx="0.5" fill="#9a9890"/>`);
+    pads.push(`<rect x="${bx+bodySize-PH}" y="${by+o}" width="${PH}" height="${PW}" rx="0.5" fill="#9a9890"/>`);
+  }
+  const eps=bodySize*0.44, epx=bx+(bodySize-eps)/2, epy=by+(bodySize-eps)/2;
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="#2e2e3c"/><stop offset="100%" stop-color="#14141c"/>
+  </linearGradient>
+  <filter id="is${id}" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+  </filter>
+</defs>
+<rect x="${bx}" y="${by}" width="${bodySize}" height="${bodySize}" rx="2" fill="url(#ib${id})" filter="url(#is${id})"/>
+${pads.join('\n')}
+<rect x="${epx}" y="${epy}" width="${eps}" height="${eps}" rx="1" fill="#8a8880" opacity="0.55"/>
+<rect x="${bx+3}" y="${by+3}" width="${bodySize-6}" height="${Math.round(bodySize*0.24)}" rx="1.5" fill="rgba(255,255,255,0.09)"/>
+<circle cx="${bx+7}" cy="${by+7}" r="2.5" fill="rgba(255,255,255,0.55)"/>
+</svg>`;
+}
+
+function buildDIPSVG(id, color, pkg) {
+  const pinCount = parseInt((pkg||'').match(/\d+/)?.[0])||8;
+  const pps = Math.min(Math.floor(pinCount/2), 7);
+  const VW=120, VH=80;
+  const bodyW=44, pinStep=8;
+  const bodyH=Math.min((pps-1)*pinStep+20, 68);
+  const bx=(VW-bodyW)/2, by=(VH-bodyH)/2;
+  const pins=[];
+  for(let i=0;i<pps;i++){
+    const py=by+10+i*((bodyH-20)/(Math.max(pps-1,1)));
+    pins.push(`<circle cx="${bx+9}" cy="${py}" r="3" fill="#1e1e1e" stroke="#787878" stroke-width="1.5"/>`);
+    pins.push(`<circle cx="${bx+bodyW-9}" cy="${py}" r="3" fill="#1e1e1e" stroke="#787878" stroke-width="1.5"/>`);
+  }
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.4" y2="1">
+    <stop offset="0%" stop-color="#303030"/><stop offset="100%" stop-color="#1a1a1a"/>
+  </linearGradient>
+  <filter id="is${id}" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.6"/>
+  </filter>
+</defs>
+<rect x="${bx}" y="${by}" width="${bodyW}" height="${bodyH}" rx="3" fill="url(#ib${id})" filter="url(#is${id})"/>
+<path d="M${bx+bodyW/2-7},${by} A7,5 0 0,0 ${bx+bodyW/2+7},${by}" fill="#1a1a1a"/>
+${pins.join('\n')}
+<rect x="${bx+3}" y="${by+3}" width="${bodyW-6}" height="${Math.round(bodyH*0.2)}" rx="2" fill="rgba(255,255,255,0.08)"/>
+<circle cx="${bx+9}" cy="${by+10}" r="1.5" fill="rgba(255,255,255,0.65)"/>
+</svg>`;
+}
+
+function buildSOT23SVG(id, color) {
+  const VW=120, VH=80;
+  const bW=40, bH=28;
+  const bx=(VW-bW)/2, by=(VH-bH)/2;
+  const LW=13, LH=7;
+  const light=lightenHex(color,0.15), dark=darkenHex(color,0.35);
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.08" y1="0" x2="0.6" y2="1">
+    <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+  </linearGradient>
+  <linearGradient id="lp${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c8c4bc"/><stop offset="45%" stop-color="#9e9a92"/><stop offset="100%" stop-color="#6c6a62"/>
+  </linearGradient>
+  <filter id="is${id}" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.55"/>
+  </filter>
+</defs>
+<rect x="${bx-LW+3}" y="${by+2}" width="${LW}" height="${LH}" rx="1.5" fill="url(#lp${id})"/>
+<rect x="${bx-LW+3}" y="${by+bH-LH-2}" width="${LW}" height="${LH}" rx="1.5" fill="url(#lp${id})"/>
+<rect x="${bx+bW-3}" y="${by+(bH-LH)/2}" width="${LW}" height="${LH}" rx="1.5" fill="url(#lp${id})"/>
+<rect x="${bx}" y="${by}" width="${bW}" height="${bH}" rx="3" fill="url(#ib${id})" filter="url(#is${id})"/>
+<rect x="${bx+3}" y="${by+3}" width="${bW-6}" height="${Math.round(bH*0.35)}" rx="2" fill="rgba(255,255,255,0.20)"/>
+<circle cx="${bx+7}" cy="${by+6}" r="2.5" fill="rgba(255,255,255,0.5)"/>
+</svg>`;
+}
+
+function buildAxialSVG(id, color) {
+  const VW=120, VH=80;
+  const bW=50, bH=22, wL=22;
+  const bx=(VW-bW)/2, by=(VH-bH)/2, wY=by+bH/2;
+  const light=lightenHex(color,0.28), dark=darkenHex(color,0.38);
+  const bands=[bx+10,bx+18,bx+26,bx+bW-13].map((p,i)=>{
+    const bc=['#1a1a1a','#8b4513',darkenHex(color,0.55),'#d4a017'][i];
+    return `<rect x="${p}" y="${by+2}" width="5" height="${bH-4}" fill="${bc}" opacity="0.80"/>`;
+  }).join('\n');
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ab${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="${light}"/><stop offset="50%" stop-color="${color}"/><stop offset="100%" stop-color="${dark}"/>
+  </linearGradient>
+  <linearGradient id="aw${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c0bdb8"/><stop offset="50%" stop-color="#8a8880"/><stop offset="100%" stop-color="#5a5855"/>
+  </linearGradient>
+  <filter id="as${id}" x="-10%" y="-30%" width="120%" height="160%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.45"/>
+  </filter>
+</defs>
+<rect x="${bx-wL}" y="${wY-2}" width="${wL+4}" height="4" rx="2" fill="url(#aw${id})"/>
+<rect x="${bx+bW-4}" y="${wY-2}" width="${wL+4}" height="4" rx="2" fill="url(#aw${id})"/>
+<rect x="${bx}" y="${by}" width="${bW}" height="${bH}" rx="${bH/2}" fill="url(#ab${id})" filter="url(#as${id})"/>
+${bands}
+<rect x="${bx+5}" y="${by+2}" width="${bW-10}" height="${Math.round(bH*0.32)}" rx="${bH*0.16}" fill="rgba(255,255,255,0.32)"/>
+</svg>`;
+}
+
+function buildConnectorSVG(id, color, pkg) {
+  const pinCount = Math.min(Math.max(parseInt((pkg||'').replace(/[^0-9]+/g,' ').trim().split(' ').filter(n=>n)[0])||4, 2), 14);
+  const VW=120, VH=80;
+  const PW=8, PH=9, PG=4;
+  const hPad=10, totalW=pinCount*(PW+PG)-PG+hPad*2;
+  const hW=Math.min(totalW,108), hH=36;
+  const hx=(VW-hW)/2, hy=(VH-hH)/2;
+  const step=hW/pinCount;
+  const light=lightenHex(color,0.22), dark=darkenHex(color,0.30);
+  const holes=Array.from({length:pinCount},(_,i)=>{
+    const px=hx+(i+0.5)*step-PW/2, py=hy+(hH-PH)/2;
+    return `<rect x="${px}" y="${py}" width="${PW}" height="${PH}" rx="1.5" fill="#060e08" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+<rect x="${px+1.5}" y="${py+1.5}" width="${PW-3}" height="${PH-3}" rx="0.5" fill="#8a8880"/>`;
+  }).join('\n');
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="hb${id}" x1="0.05" y1="0" x2="0.4" y2="1">
+    <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+  </linearGradient>
+  <filter id="hs${id}" x="-15%" y="-25%" width="130%" height="150%">
+    <feDropShadow dx="0" dy="2.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.55"/>
+  </filter>
+</defs>
+<rect x="${hx}" y="${hy}" width="${hW}" height="${hH}" rx="4" fill="url(#hb${id})" filter="url(#hs${id})"/>
+${holes}
+<rect x="${hx+2}" y="${hy+2}" width="${hW-4}" height="8" rx="2" fill="rgba(255,255,255,0.18)"/>
+<rect x="${hx+2}" y="${hy+2}" width="6" height="${hH-4}" rx="2" fill="rgba(255,255,255,0.10)"/>
+</svg>`;
+}
+
+function buildBGASVG(id, color, pkg) {
+  const VW=120, VH=80;
+  const bodySize=56;
+  const bx=(VW-bodySize)/2, by=(VH-bodySize)/2;
+  const rows=4, cols=4, bR=3, bG=6;
+  const startX=bx+(bodySize-(cols-1)*(bR*2+bG)-bR*2)/2+bR;
+  const startY=by+(bodySize-(rows-1)*(bR*2+bG)-bR*2)/2+bR;
+  const balls=[];
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const cx=startX+c*(bR*2+bG), cy=startY+r*(bR*2+bG);
+    balls.push(`<circle cx="${cx}" cy="${cy}" r="${bR}" fill="#9a9890" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>`);
+    balls.push(`<circle cx="${cx-0.8}" cy="${cy-0.8}" r="${bR*0.4}" fill="rgba(255,255,255,0.4)"/>`);
+  }
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="#2e2e3c"/><stop offset="100%" stop-color="#14141c"/>
+  </linearGradient>
+  <filter id="is${id}" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+  </filter>
+</defs>
+<rect x="${bx}" y="${by}" width="${bodySize}" height="${bodySize}" rx="3" fill="url(#ib${id})" filter="url(#is${id})"/>
+${balls.join('\n')}
+<rect x="${bx+3}" y="${by+3}" width="${bodySize-6}" height="${Math.round(bodySize*0.22)}" rx="1.5" fill="rgba(255,255,255,0.08)"/>
+</svg>`;
+}
+
+function buildTO220SVG(id, color) {
+  const VW=120, VH=80;
+  const bW=38, bH=28;
+  const bx=(VW-bW)/2, by=(VH-bH)/2+4;
+  const light=lightenHex(color,0.20), dark=darkenHex(color,0.40);
+  return `<svg viewBox="0 0 ${VW} ${VH}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="ib${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="#d0cfc8"/><stop offset="100%" stop-color="#8a8880"/>
+  </linearGradient>
+  <linearGradient id="bb${id}" x1="0.05" y1="0" x2="0.5" y2="1">
+    <stop offset="0%" stop-color="${light}"/><stop offset="100%" stop-color="${dark}"/>
+  </linearGradient>
+  <filter id="is${id}" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.5"/>
+  </filter>
+</defs>
+<rect x="${bx+3}" y="${by-10}" width="10" height="12" rx="1" fill="url(#ib${id})"/>
+<rect x="${bx+bW/2-5}" y="${by-10}" width="10" height="12" rx="1" fill="url(#ib${id})"/>
+<rect x="${bx+bW-13}" y="${by-10}" width="10" height="12" rx="1" fill="url(#ib${id})"/>
+<rect x="${bx}" y="${by}" width="${bW}" height="${bH}" rx="2" fill="url(#bb${id})" filter="url(#is${id})"/>
+<circle cx="${bx+bW/2}" cy="${by+bH/2}" r="5" fill="rgba(0,0,0,0.25)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+<rect x="${bx+3}" y="${by+3}" width="${bW-6}" height="${Math.round(bH*0.3)}" rx="2" fill="rgba(255,255,255,0.20)"/>
+</svg>`;
+}
+
+function renderComponentSVG(tipo, pkg, cor, compMm, largMm) {
+  const id = ++_sid;
+  const color = cor || '#64748b';
+  const cat = detectPkgCategory(pkg, tipo);
+  if (cat==='chip')      return buildChipSVG(id, color, compMm, largMm);
+  if (cat==='soic')      return buildSOICSVG(id, color, pkg);
+  if (cat==='qfp')       return buildQFPSVG(id, color, pkg);
+  if (cat==='qfn')       return buildQFNSVG(id, color, pkg);
+  if (cat==='dip')       return buildDIPSVG(id, color, pkg);
+  if (cat==='sot23')     return buildSOT23SVG(id, color);
+  if (cat==='sot89')     return buildSOT23SVG(id, color);
+  if (cat==='sot223')    return buildSOT23SVG(id, color);
+  if (cat==='connector') return buildConnectorSVG(id, color, pkg);
+  if (cat==='axial')     return buildAxialSVG(id, color);
+  if (cat==='bga')       return buildBGASVG(id, color, pkg);
+  if (cat==='to220')     return buildTO220SVG(id, color);
+  if (cat==='to92')      return buildSOT23SVG(id, color);
+  return buildChipSVG(id, color, compMm, largMm);
+}
+
+/* ═══════════════════════════════════════════════
+   INIT — replace placeholder divs with SVG
+   ═══════════════════════════════════════════════ */
+function initComponentPreviews() {
+  document.querySelectorAll('.comp-shape-placeholder').forEach(el => {
+    const svg = renderComponentSVG(el.dataset.tipo, el.dataset.pkg, el.dataset.cor, el.dataset.comp, el.dataset.larg);
+    el.outerHTML = svg;
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   PACKAGE AUTO-FILL (IPC specs)
+   ═══════════════════════════════════════════════ */
+function onPkgInput() {
+  const pkg = document.getElementById('cPkg').value.trim().toLowerCase();
+  const spec = PACKAGE_SPECS[pkg];
+  const hint = document.getElementById('pkgHint');
+  if (spec) {
+    if (!document.getElementById('cCompMm').value) document.getElementById('cCompMm').value = spec.comp;
+    if (!document.getElementById('cLargMm').value) document.getElementById('cLargMm').value = spec.larg;
+    if (!document.getElementById('cAltMm').value)  document.getElementById('cAltMm').value  = spec.alt;
+    hint.textContent = `IPC: ${spec.comp}×${spec.larg}×${spec.alt} mm — ${(spec.cat||'').toUpperCase()}`;
+    hint.classList.add('visible');
+  } else {
+    hint.classList.remove('visible');
+  }
+  atualizarPreview();
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL LIVE PREVIEW
+   ═══════════════════════════════════════════════ */
+function atualizarPreview() {
+  const container = document.getElementById('liveShapeContainer');
+  if (!container) return;
+  const svg = renderComponentSVG(
+    document.getElementById('cTipo').value,
+    document.getElementById('cPkg').value,
+    document.getElementById('cCor').value,
+    document.getElementById('cCompMm').value,
+    document.getElementById('cLargMm').value
+  );
+  container.innerHTML = svg;
+}
+
+/* ═══════════════════════════════════════════════
+   EXISTING FUNCTIONALITY
+   ═══════════════════════════════════════════════ */
 const COMP_COLORS = ['#f97316','#3b82f6','#a855f7','#22c55e','#0ea5e9','#6366f1',
                      '#dc2626','#854d0e','#64748b','#374151','#0f172a','#f59e0b'];
 let tipoFiltro = 'all';
@@ -395,8 +941,9 @@ function setView(v) {
   document.getElementById('viewGrid').classList.toggle('d-none',  v !== 'grid');
   const btnT = document.getElementById('btnViewTable');
   const btnG = document.getElementById('btnViewGrid');
-  btnT.style.cssText = v === 'table' ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
-  btnG.style.cssText = v === 'grid'  ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
+  btnT.style.cssText = v==='table' ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
+  btnG.style.cssText = v==='grid'  ? 'background:rgba(99,102,241,0.12);color:#6366f1;' : '';
+  localStorage.setItem('acervo_view', v);
 }
 
 function setTipo(t, btn) {
@@ -410,34 +957,12 @@ function filtrar() {
   const q = document.getElementById('compSearch').value.trim().toLowerCase();
   const allRows  = document.querySelectorAll('#compTbody tr[data-tipo]');
   const allCards = document.querySelectorAll('#compGrid .comp-card');
-
   [...allRows, ...allCards].forEach(el => {
     const tipo = el.dataset.tipo;
     const text = (el.dataset.pn||'')+' '+(el.dataset.pkg||'')+' '+(el.dataset.fab||'')+' '+(el.dataset.desc||'');
-    const ok   = (tipoFiltro === 'all' || tipo === tipoFiltro) && (!q || text.includes(q));
+    const ok   = (tipoFiltro==='all' || tipo===tipoFiltro) && (!q || text.includes(q));
     el.style.display = ok ? '' : 'none';
   });
-}
-
-/* ─── Shape preview ─── */
-function calcShape(compMm, largMm, cor) {
-  const c = parseFloat(compMm) || 1;
-  const l = parseFloat(largMm) || 0.5;
-  const maxW = 100, maxH = 60;
-  const scale = Math.min(maxW / c, maxH / l, 40);
-  const w = Math.max(8,  Math.round(c * scale));
-  const h = Math.max(6,  Math.round(l * scale));
-  return { w, h, cor: cor || '#64748b' };
-}
-
-function atualizarPreview() {
-  const c = calcShape(
-    document.getElementById('cCompMm').value,
-    document.getElementById('cLargMm').value,
-    document.getElementById('cCor').value
-  );
-  const el = document.getElementById('liveShape');
-  if (el) { el.style.width = c.w + 'px'; el.style.height = c.h + 'px'; el.style.background = c.cor; }
 }
 
 function buildCompColorRow(selected) {
@@ -451,7 +976,7 @@ function buildCompColorRow(selected) {
 function selectCompColor(c) {
   document.getElementById('cCor').value = c;
   document.querySelectorAll('#compColorRow .color-opt').forEach(el =>
-    el.classList.toggle('active', el.dataset.color === c));
+    el.classList.toggle('active', el.dataset.color===c));
   atualizarPreview();
 }
 
@@ -462,6 +987,7 @@ function abrirModalNovoComp() {
     document.getElementById(id).value = '');
   document.getElementById('cTipo').value = 'smd';
   document.getElementById('cCor').value  = '#64748b';
+  document.getElementById('pkgHint').classList.remove('visible');
   buildCompColorRow('#64748b');
   atualizarPreview();
   new bootstrap.Modal(document.getElementById('modalComp')).show();
@@ -475,20 +1001,21 @@ function editarComp(c) {
   document.getElementById('cTipo').value   = c.tipo           || 'smd';
   document.getElementById('cFab').value    = c.fabricante     || '';
   document.getElementById('cDesc').value   = c.descricao      || '';
-  document.getElementById('cCompMm').value = c.comp_mm != null ? c.comp_mm : '';
-  document.getElementById('cLargMm').value = c.larg_mm != null ? c.larg_mm : '';
-  document.getElementById('cAltMm').value  = c.alt_mm  != null ? c.alt_mm  : '';
+  document.getElementById('cCompMm').value = c.comp_mm!=null ? c.comp_mm : '';
+  document.getElementById('cLargMm').value = c.larg_mm!=null ? c.larg_mm : '';
+  document.getElementById('cAltMm').value  = c.alt_mm!=null  ? c.alt_mm  : '';
   document.getElementById('cDS').value     = c.datasheet_url  || '';
   const cor = c.cor_hex || '#64748b';
   document.getElementById('cCor').value = cor;
+  document.getElementById('pkgHint').classList.remove('visible');
   buildCompColorRow(cor);
   atualizarPreview();
   new bootstrap.Modal(document.getElementById('modalComp')).show();
 }
 
 async function salvarComp() {
-  const id  = document.getElementById('compId').value;
-  const toNum = v => v === '' ? null : parseFloat(v);
+  const id    = document.getElementById('compId').value;
+  const toNum = v => v==='' ? null : parseFloat(v);
   const body  = {
     part_number:   document.getElementById('cPN').value.trim(),
     package:       document.getElementById('cPkg').value.trim(),
@@ -498,18 +1025,16 @@ async function salvarComp() {
     comp_mm:       toNum(document.getElementById('cCompMm').value),
     larg_mm:       toNum(document.getElementById('cLargMm').value),
     alt_mm:        toNum(document.getElementById('cAltMm').value),
-    datasheet_url: document.getElementById('cDS').value.trim()  || null,
+    datasheet_url: document.getElementById('cDS').value.trim()   || null,
     cor_hex:       document.getElementById('cCor').value,
   };
-  if (!body.part_number || !body.package) {
-    alert('Part Number e Package são obrigatórios'); return;
-  }
+  if (!body.part_number || !body.package) { alert('Part Number e Package são obrigatórios'); return; }
   const url    = id ? `/engenharia/api/pci-studio/componentes/${id}` : '/engenharia/api/pci-studio/componentes';
   const method = id ? 'PUT' : 'POST';
   const res  = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const data = await res.json();
   if (data.ok) window.location.reload();
-  else alert('Erro: ' + (data.erro || 'desconhecido'));
+  else alert('Erro: '+(data.erro||'desconhecido'));
 }
 
 async function deletarComp(id, nome) {
@@ -524,24 +1049,18 @@ document.addEventListener('DOMContentLoaded', () => {
   buildCompColorRow('#64748b');
   const saved = localStorage.getItem('acervo_view');
   if (saved === 'grid') setView('grid');
-});
-
-/* persist view preference */
-['btnViewGrid','btnViewTable'].forEach(id => {
-  document.getElementById(id)?.addEventListener('click', () => {
-    localStorage.setItem('acervo_view', viewAtual);
-  });
+  else setView('table');
+  initComponentPreviews();
 });
 </script>
 {% endblock %}
 
-{# ─── Jinja macro for shape rendering (server-side) ─── #}
-{% macro renderShape(comp_mm, larg_mm, cor_hex, tipo) %}
-  {% set c = comp_mm|float if comp_mm else 1.0 %}
-  {% set l = larg_mm|float if larg_mm else 0.5 %}
-  {% set scale = [100 / c, 60 / l, 28]|min %}
-  {% set w = [8, (c * scale)|round|int]|max %}
-  {% set h = [6, (l * scale)|round|int]|max %}
-  <div class="comp-card-shape"
-       style="width:{{ w }}px;height:{{ h }}px;background:{{ cor_hex or '#64748b' }};"></div>
+{# ─── Jinja macro — outputs data-attribute placeholder for JS enhancement ─── #}
+{% macro renderShape(comp_mm, larg_mm, cor_hex, tipo, pkg) %}
+<div class="comp-shape-placeholder"
+     data-tipo="{{ tipo }}"
+     data-pkg="{{ pkg or '' }}"
+     data-cor="{{ cor_hex or '#64748b' }}"
+     data-comp="{{ comp_mm or '' }}"
+     data-larg="{{ larg_mm or '' }}"></div>
 {% endmacro %}
