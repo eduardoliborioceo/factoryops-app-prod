@@ -271,10 +271,10 @@
   border-color:#6a3800;box-shadow:0 2px 0 #3a1e00,inset 0 1px 0 rgba(255,255,255,0.1)}
 .nxt-btn-manual .nxt-bi{color:#ffd090;font-size:1rem}
 .nxt-btn-manual .nxt-lbl{color:#ffcc88}
-/* Lower section layout */
-.nxt-lower{display:flex;gap:8px;align-items:flex-start}
+/* Lower section layout — same grid as row-main so MANUAL aligns with CYCLE STOP */
+.nxt-lower{display:grid;grid-template-columns:repeat(6,1fr);column-gap:4px;align-items:start}
 /* Left column: MANUAL + EMERGENCY */
-.nxt-col-left{display:flex;flex-direction:column;gap:6px;align-items:center;flex-shrink:0;width:52px}
+.nxt-col-left{grid-column:1;display:flex;flex-direction:column;gap:6px;align-items:center}
 /* Emergency mushroom */
 .nxt-emg-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:2px}
 .nxt-emg-txt{font-size:0.37rem;font-weight:800;color:#cc4444;text-transform:uppercase;
@@ -287,7 +287,7 @@
 .nxt-emg:active{transform:translateY(2px);
   box-shadow:0 1px 0 #440000,0 0 0 5px rgba(200,0,0,0.35),inset 0 3px 5px rgba(0,0,0,0.3)}
 /* Right column: nav + ok/cancel + standby */
-.nxt-col-right{flex:1;display:flex;flex-direction:column;gap:5px}
+.nxt-col-right{grid-column:2 / 7;display:flex;flex-direction:column;gap:5px}
 .nxt-btn-monitor{width:32px;height:32px;padding:0;min-height:auto;flex-direction:column;gap:0}
 .nxt-btn-monitor .nxt-bi{font-size:0.7rem}
 /* Nav + OK/Cancel area pushed to the right (below POWER) */
@@ -310,12 +310,12 @@
 .nxt-btn-lbl{font-size:0.42rem;font-weight:700;color:rgba(255,255,255,0.5);
   letter-spacing:0.5px;text-transform:uppercase;line-height:1;text-align:center}
 .nxt-ok{width:32px;height:32px;border-radius:4px;cursor:pointer;padding:0;
-  font-size:0.6rem;font-weight:800;letter-spacing:0.5px;color:#fff;
+  font-size:1rem;font-weight:400;color:#fff;
   background:linear-gradient(180deg,#1565c0,#0d47a1);display:flex;align-items:center;justify-content:center;
   border:1px solid #0a3580;box-shadow:0 2px 0 #061a55,inset 0 1px 0 rgba(255,255,255,0.12)}
 .nxt-ok:active{transform:translateY(1px)}
 .nxt-cancel{width:32px;height:32px;border-radius:4px;cursor:pointer;padding:0;
-  font-size:1rem;font-weight:700;color:#bbb;background:linear-gradient(180deg,#555,#333);
+  font-size:1.4rem;font-weight:700;color:#bbb;background:linear-gradient(180deg,#555,#333);
   display:flex;align-items:center;justify-content:center;
   border:1px solid #1a1a1a;box-shadow:0 2px 0 #111}
 .nxt-cancel:active{transform:translateY(1px)}
@@ -982,7 +982,7 @@ function renderNXTPanel(m,erro){
         </div>
         <div class="nxt-col-right">
           <div class="nxt-nav-area">
-            <div class="nxt-ok-item">
+            <div class="nxt-ok-item" style="margin-bottom:19px">
               <span class="nxt-btn-lbl">MONITOR</span>
               <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Monitor">
                 <span class="nxt-bi">▣</span>
@@ -1000,7 +1000,7 @@ function renderNXTPanel(m,erro){
             <div class="nxt-ok-col">
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">OK</span>
-                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">OK</button>
+                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">○</button>
               </div>
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">CANCEL</span>
