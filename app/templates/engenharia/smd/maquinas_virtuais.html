@@ -242,7 +242,7 @@
 /* re-use s-idle/s-running/s-error/s-estop/s-stopping/s-standby/s-manual from .fuji-screen */
 .nxt-btn-panel{display:flex;flex-direction:column;gap:7px}
 /* Row 1: 6 hardware buttons */
-.nxt-row-main{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.nxt-row-main{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;align-items:end}
 /* Generic hardware button */
 .nxt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;padding:6px 2px 5px;border-radius:4px;cursor:pointer;position:relative;
@@ -251,9 +251,8 @@
   box-shadow:0 2px 0 #1a1a1a,inset 0 1px 0 rgba(255,255,255,0.12);
   transition:filter 0.06s,transform 0.06s}
 .nxt-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #1a1a1a;filter:brightness(0.82)}
+.nxt-btn-sm{width:32px;height:32px;padding:0;min-height:auto}
 .nxt-bi{font-size:0.88rem;line-height:1;color:#d0d0d0}
-.nxt-lbl{font-size:0.40rem;font-weight:700;color:#aaa;text-align:center;
-  letter-spacing:0.2px;line-height:1.25;text-transform:uppercase}
 /* READY ON — green LED indicator on top */
 .nxt-btn-ready{padding-top:10px}
 .nxt-led{position:absolute;top:3px;left:50%;transform:translateX(-50%);
@@ -930,31 +929,52 @@ function renderNXTPanel(m,erro){
     </div>
     <div class="nxt-btn-panel">
       <div class="nxt-row-main">
-        <button class="nxt-btn" onclick="handleBtn('inche_stop')" title="Para após o ciclo">
-          <span class="nxt-bi">⊡</span><span class="nxt-lbl">CYCLE<br>STOP</span>
-        </button>
-        <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Modo automático / sair do manual">
-          <span class="nxt-led ${rdyLed}"></span>
-          <span class="nxt-bi">◧</span><span class="nxt-lbl">READY<br>ON</span>
-        </button>
-        <button class="nxt-btn" title="Operação em grupo">
-          <span class="nxt-bi">▣</span><span class="nxt-lbl">GROUP</span>
-        </button>
-        <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Iniciar produção">
-          <span class="nxt-bi">▶</span><span class="nxt-lbl">START</span>
-        </button>
-        <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Parar produção">
-          <span class="nxt-bi">⊘</span><span class="nxt-lbl">STOP</span>
-        </button>
-        <button class="nxt-btn" title="Power">
-          <span class="nxt-bi">⏻</span><span class="nxt-lbl">POWER</span>
-        </button>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">CYCLE<br>STOP</span>
+          <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('inche_stop')" title="Para após o ciclo">
+            <span class="nxt-bi">⊡</span>
+          </button>
+        </div>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">READY<br>ON</span>
+          <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Modo automático / sair do manual">
+            <span class="nxt-led ${rdyLed}"></span>
+            <span class="nxt-bi">◧</span>
+          </button>
+        </div>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">GROUP</span>
+          <button class="nxt-btn nxt-btn-sm" title="Operação em grupo">
+            <span class="nxt-bi">▣</span>
+          </button>
+        </div>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">START</span>
+          <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Iniciar produção">
+            <span class="nxt-bi">▶</span>
+          </button>
+        </div>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">STOP</span>
+          <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Parar produção">
+            <span class="nxt-bi">⊘</span>
+          </button>
+        </div>
+        <div class="nxt-ok-item">
+          <span class="nxt-btn-lbl">POWER</span>
+          <button class="nxt-btn" title="Power">
+            <span class="nxt-bi">⏻</span>
+          </button>
+        </div>
       </div>
       <div class="nxt-lower">
         <div class="nxt-col-left">
-          <button class="nxt-btn nxt-btn-manual" onclick="handleBtn('manual')" title="Modo manual" style="width:100%">
-            <span class="nxt-bi">⊙</span><span class="nxt-lbl">MANUAL</span>
-          </button>
+          <div class="nxt-ok-item">
+            <span class="nxt-btn-lbl">MANUAL</span>
+            <button class="nxt-btn nxt-btn-manual nxt-btn-sm" onclick="handleBtn('manual')" title="Modo manual">
+              <span class="nxt-bi">⊙</span>
+            </button>
+          </div>
           <div class="nxt-emg-wrap">
             <span class="nxt-emg-txt">EMER<br>GENCY</span>
             <button class="nxt-emg" onclick="handleBtn('estop')" title="Parada de emergência"></button>
