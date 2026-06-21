@@ -287,15 +287,12 @@
   transition:transform 0.07s,box-shadow 0.07s}
 .nxt-emg:active{transform:translateY(2px);
   box-shadow:0 1px 0 #440000,0 0 0 5px rgba(200,0,0,0.35),inset 0 3px 5px rgba(0,0,0,0.3)}
-/* Right column: monitor + nav + ok/cancel + standby */
+/* Right column: nav + ok/cancel + standby */
 .nxt-col-right{flex:1;display:flex;flex-direction:column;gap:5px}
-/* Monitor row */
-.nxt-monitor-row{display:flex;align-items:center}
-.nxt-btn-monitor{flex-direction:row;gap:5px;padding:5px 10px;min-height:28px;width:auto}
+.nxt-btn-monitor{width:32px;height:32px;padding:0;min-height:auto;flex-direction:column;gap:0}
 .nxt-btn-monitor .nxt-bi{font-size:0.7rem}
-.nxt-btn-monitor .nxt-lbl{font-size:0.44rem}
-/* Nav + OK/Cancel area */
-.nxt-nav-area{display:flex;gap:10px;align-items:flex-end}
+/* Nav + OK/Cancel area pushed to the right (below POWER) */
+.nxt-nav-area{display:flex;gap:6px;align-items:flex-end;margin-left:auto}
 .nxt-cross{display:flex;flex-direction:column;align-items:center;gap:2px}
 .nxt-cross-mid{display:flex;gap:2px;align-items:center}
 .nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
@@ -964,12 +961,13 @@ function renderNXTPanel(m,erro){
           </div>
         </div>
         <div class="nxt-col-right">
-          <div class="nxt-monitor-row">
-            <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Monitor">
-              <span class="nxt-bi">▣</span><span class="nxt-lbl">MONITOR</span>
-            </button>
-          </div>
           <div class="nxt-nav-area">
+            <div class="nxt-ok-item">
+              <span class="nxt-btn-lbl">MONITOR</span>
+              <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Monitor">
+                <span class="nxt-bi">▣</span>
+              </button>
+            </div>
             <div class="nxt-cross">
               <button class="nxt-nav" onclick="handleBtn('nav_up')" title="Y+">↑</button>
               <div class="nxt-cross-mid">
