@@ -295,7 +295,7 @@
 .nxt-btn-monitor .nxt-bi{font-size:0.7rem}
 .nxt-btn-monitor .nxt-lbl{font-size:0.44rem}
 /* Nav + OK/Cancel area */
-.nxt-nav-area{display:flex;gap:10px;align-items:center}
+.nxt-nav-area{display:flex;gap:10px;align-items:flex-end}
 .nxt-cross{display:flex;flex-direction:column;align-items:center;gap:2px}
 .nxt-cross-mid{display:flex;gap:2px;align-items:center}
 .nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
@@ -309,14 +309,19 @@
   border:1px solid #1a1a1a;box-shadow:0 2px 0 #111;
   color:#bbb;font-size:0.6rem;display:flex;align-items:center;justify-content:center}
 .nxt-nav-c:active{transform:translateY(1px);filter:brightness(0.8)}
-.nxt-ok-col{display:flex;flex-direction:column;gap:4px}
-.nxt-ok{padding:5px 14px;border-radius:4px;cursor:pointer;font-size:0.62rem;font-weight:800;
-  letter-spacing:0.5px;color:#fff;background:linear-gradient(180deg,#1565c0,#0d47a1);
+.nxt-ok-col{display:flex;flex-direction:column;gap:6px}
+.nxt-ok-item{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nxt-btn-lbl{font-size:0.42rem;font-weight:700;color:rgba(255,255,255,0.5);
+  letter-spacing:0.5px;text-transform:uppercase;line-height:1}
+.nxt-ok{width:32px;height:32px;border-radius:4px;cursor:pointer;padding:0;
+  font-size:0.6rem;font-weight:800;letter-spacing:0.5px;color:#fff;
+  background:linear-gradient(180deg,#1565c0,#0d47a1);display:flex;align-items:center;justify-content:center;
   border:1px solid #0a3580;box-shadow:0 2px 0 #061a55,inset 0 1px 0 rgba(255,255,255,0.12)}
 .nxt-ok:active{transform:translateY(1px)}
-.nxt-cancel{padding:4px 8px;border-radius:4px;cursor:pointer;font-size:0.48rem;font-weight:800;
-  color:#bbb;background:linear-gradient(180deg,#555,#333);
-  border:1px solid #1a1a1a;box-shadow:0 2px 0 #111;text-align:center}
+.nxt-cancel{width:32px;height:32px;border-radius:4px;cursor:pointer;padding:0;
+  font-size:1rem;font-weight:700;color:#bbb;background:linear-gradient(180deg,#555,#333);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid #1a1a1a;box-shadow:0 2px 0 #111}
 .nxt-cancel:active{transform:translateY(1px)}
 /* Bottom row: STAND BY + FUJI logo */
 .nxt-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:2px}
@@ -975,8 +980,14 @@ function renderNXTPanel(m,erro){
               <button class="nxt-nav" onclick="handleBtn('nav_down')" title="Y−">↓</button>
             </div>
             <div class="nxt-ok-col">
-              <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">OK</button>
-              <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar">CANCEL ×</button>
+              <div class="nxt-ok-item">
+                <span class="nxt-btn-lbl">OK</span>
+                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">OK</button>
+              </div>
+              <div class="nxt-ok-item">
+                <span class="nxt-btn-lbl">CANCEL</span>
+                <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar">×</button>
+              </div>
             </div>
           </div>
           <div class="nxt-bottom">
