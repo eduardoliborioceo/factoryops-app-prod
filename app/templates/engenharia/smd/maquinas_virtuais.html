@@ -278,14 +278,28 @@
 /* Emergency mushroom */
 .nxt-emg-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:2px}
 .nxt-emg-txt{font-size:0.37rem;font-weight:800;color:#cc4444;text-transform:uppercase;
-  letter-spacing:0.3px;text-align:center;line-height:1.3}
+  letter-spacing:0.3px;text-align:center;line-height:1.3;white-space:nowrap}
 .nxt-emg{width:42px;height:42px;border-radius:50%;cursor:pointer;
   background:radial-gradient(circle at 36% 34%,#ff5555,#aa0000);
   border:3px solid #770000;
   box-shadow:0 3px 0 #440000,0 0 0 2.5px #cc0000,inset 0 2px 5px rgba(255,255,255,0.12);
-  transition:transform 0.07s,box-shadow 0.07s}
-.nxt-emg:active{transform:translateY(2px);
-  box-shadow:0 1px 0 #440000,0 0 0 5px rgba(200,0,0,0.35),inset 0 3px 5px rgba(0,0,0,0.3)}
+  display:flex;align-items:center;justify-content:center;
+  transition:box-shadow 0.1s}
+.nxt-emg-icon{font-size:1rem;color:rgba(255,255,255,0.3);pointer-events:none;
+  user-select:none;line-height:1;transition:transform 0.5s ease}
+.nxt-emg.locked{transform:translateY(3px) rotate(90deg);
+  box-shadow:0 0 0 #440000,0 0 0 6px rgba(200,0,0,0.5),inset 0 4px 8px rgba(0,0,0,0.45)}
+@keyframes nxt-emg-lock{
+  0%  {transform:translateY(0) rotate(0deg)}
+  35% {transform:translateY(2px) rotate(40deg)}
+  100%{transform:translateY(3px) rotate(90deg)}
+}
+@keyframes nxt-emg-unlock{
+  0%  {transform:translateY(3px) rotate(90deg)}
+  100%{transform:translateY(0) rotate(0deg)}
+}
+.nxt-emg.locking  {animation:nxt-emg-lock   0.5s ease forwards}
+.nxt-emg.unlocking{animation:nxt-emg-unlock  0.5s ease forwards}
 /* Right column: nav + ok/cancel + standby */
 .nxt-col-right{grid-column:2 / 7;display:flex;flex-direction:column;gap:5px}
 .nxt-btn-monitor{width:32px;height:32px;padding:0;min-height:auto;flex-direction:column;gap:0}
@@ -746,7 +760,7 @@ function updateStateHint(){
     running:"Em produção — pressione STOP para parar",
     manual:"Modo manual — use as setas para mover o cabeçote · READY para sair",
     error:"Erro ativo — siga o passo a passo · pressione OK no painel para limpar",
-    estop:"EMERGENCY STOP ativo — destrave o botão e pressione OK para resetar",
+    estop:"EMERGENCY STOP ativo — clique no botão vermelho para girar e destravar",
     stopping:"Parando produção…",
     standby:"Standby — pressione qualquer botão para ativar"};
   document.getElementById("mvStateHint").textContent = hints[machineState]||"";
@@ -798,6 +812,31 @@ function handleBtn(action){
       if(["running","error"].includes(machineState)) setMachineState("stopping");
       break;
     case"insp_estop": setMachineState("estop"); break;
+  }
+}
+
+function handleEmergency(){
+  const btn = document.getElementById("nxtEmgBtn");
+  if(!btn) return;
+  if(machineState === "estop"){
+    btn.classList.remove("locked","locking");
+    btn.classList.add("unlocking");
+    setTimeout(()=>{
+      btn.classList.remove("unlocking");
+      const icon = btn.querySelector(".nxt-emg-icon");
+      if(icon) icon.textContent = "↻";
+      setMachineState("idle");
+    }, 500);
+  } else {
+    btn.classList.remove("unlocking","locked");
+    btn.classList.add("locking");
+    setTimeout(()=>{
+      btn.classList.remove("locking");
+      btn.classList.add("locked");
+      const icon = btn.querySelector(".nxt-emg-icon");
+      if(icon) icon.textContent = "↺";
+      setMachineState("estop");
+    }, 500);
   }
 }
 
@@ -976,8 +1015,10 @@ function renderNXTPanel(m,erro){
             </button>
           </div>
           <div class="nxt-emg-wrap">
-            <span class="nxt-emg-txt">EMER<br>GENCY</span>
-            <button class="nxt-emg" onclick="handleBtn('estop')" title="Parada de emergência"></button>
+            <span class="nxt-emg-txt">EMERGENCY</span>
+            <button class="nxt-emg${machineState==="estop"?" locked":""}" id="nxtEmgBtn" onclick="handleEmergency()" title="Girar para travar / girar para destravar">
+              <span class="nxt-emg-icon">${machineState==="estop"?"↺":"↻"}</span>
+            </button>
           </div>
         </div>
         <div class="nxt-col-right">
