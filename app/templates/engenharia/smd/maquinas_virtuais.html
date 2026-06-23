@@ -273,8 +273,9 @@
 .nxt-btn-manual .nxt-lbl{color:#ffcc88}
 /* Lower section layout — same grid as row-main so MANUAL aligns with CYCLE STOP */
 .nxt-lower{display:grid;grid-template-columns:repeat(6,1fr);column-gap:4px;align-items:start}
-/* Left column: MANUAL + EMERGENCY */
-.nxt-col-left{grid-column:1;display:flex;flex-direction:column;gap:6px;align-items:center}
+/* Left column: MANUAL+HOME row + EMERGENCY — spans 2 of the 6 columns */
+.nxt-col-left{grid-column:1/3;display:flex;flex-direction:column;gap:5px;align-items:stretch}
+.nxt-row2-btns{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 /* Emergency mushroom */
 .nxt-emg-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:2px}
 .nxt-emg-txt{font-size:0.37rem;font-weight:800;color:#cc4444;text-transform:uppercase;
@@ -300,12 +301,20 @@
 }
 .nxt-emg.locking  {animation:nxt-emg-lock   0.5s ease forwards}
 .nxt-emg.unlocking{animation:nxt-emg-unlock  0.5s ease forwards}
-/* Right column: nav + ok/cancel + standby */
-.nxt-col-right{grid-column:2 / 7;display:flex;flex-direction:column;gap:5px}
+/* Right column: nav + ok/cancel + standby — spans remaining 4 columns */
+.nxt-col-right{grid-column:3/7;display:flex;flex-direction:column;gap:5px}
 .nxt-btn-monitor{width:32px;height:32px;padding:0;min-height:auto;flex-direction:column;gap:0}
 .nxt-btn-monitor .nxt-bi{font-size:0.7rem}
-/* Nav + OK/Cancel area pushed to the right (below POWER) */
+/* Nav + OK/Cancel area pushed to the right (below STOP+POWER) */
 .nxt-nav-area{display:flex;gap:6px;align-items:flex-end;margin-left:auto}
+/* PDF manual links bar */
+.nxt-manual-bar{display:flex;gap:6px;justify-content:flex-end;margin-bottom:7px;flex-wrap:wrap}
+.nxt-manual-link{
+  display:inline-flex;align-items:center;gap:4px;font-size:0.6rem;font-weight:700;
+  color:#ff8833;background:rgba(255,102,0,0.09);border:1px solid rgba(255,102,0,0.22);
+  border-radius:6px;padding:3px 9px;text-decoration:none;transition:background 0.12s,color 0.12s;
+  white-space:nowrap}
+.nxt-manual-link:hover{background:rgba(255,102,0,0.18);color:#ffaa55}
 .nxt-cross{display:flex;flex-direction:column;align-items:center;gap:2px}
 .nxt-cross-mid{display:flex;gap:2px;align-items:center}
 .nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
@@ -963,6 +972,14 @@ function renderNXTPanel(m,erro){
   else if(machineState==="standby"){screenClass="s-standby";sc=fujiScreenStandby();}
   const rdyLed=["idle","running","stopping","standby"].includes(machineState)?"":"off";
   return `<div class="panel-nxt">
+    <div class="nxt-manual-bar">
+      <a href="/static/files-external/Fuji-NXT-Setup-07.pdf" target="_blank" rel="noopener" class="nxt-manual-link" title="Fuji NXT Setup Manual 07">
+        <i class="bi bi-file-earmark-pdf-fill"></i>Setup Manual
+      </a>
+      <a href="/static/files-external/681224291-NXT2-quick-reference-basic-operation.pdf" target="_blank" rel="noopener" class="nxt-manual-link" title="NXT Quick Reference — Basic Operation">
+        <i class="bi bi-lightning-charge-fill"></i>Quick Ref
+      </a>
+    </div>
     <div class="nxt-screen-bezel">
       <div class="nxt-screen ${screenClass} fuji-screen">${sc}</div>
     </div>
@@ -970,53 +987,61 @@ function renderNXTPanel(m,erro){
       <div class="nxt-row-main">
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">CYCLE<br>STOP</span>
-          <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('inche_stop')" title="Para após o ciclo">
+          <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('inche_stop')" title="Para após completar o ciclo atual — não interrompe imediatamente">
             <span class="nxt-bi">⊡</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">READY<br>ON</span>
-          <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Modo automático / sair do manual">
+          <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Coloca a máquina em modo automático / sai do modo manual">
             <span class="nxt-led ${rdyLed}"></span>
             <span class="nxt-bi">◧</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">GROUP</span>
-          <button class="nxt-btn nxt-btn-sm" title="Operação em grupo">
+          <button class="nxt-btn nxt-btn-sm" title="Habilita operação em grupo com outras NXT na linha">
             <span class="nxt-bi">▣</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">START</span>
-          <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Iniciar produção">
+          <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Inicia produção — máquina deve estar em READY ON">
             <span class="nxt-bi">▶</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">STOP</span>
-          <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Parar produção">
+          <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Para a produção ao final do ciclo em andamento">
             <span class="nxt-bi">⊘</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">POWER</span>
-          <button class="nxt-btn" title="Power">
+          <button class="nxt-btn" title="Chave de energia principal">
             <span class="nxt-bi">⏻</span>
           </button>
         </div>
       </div>
       <div class="nxt-lower">
         <div class="nxt-col-left">
-          <div class="nxt-ok-item">
-            <span class="nxt-btn-lbl">MANUAL</span>
-            <button class="nxt-btn nxt-btn-manual nxt-btn-sm" onclick="handleBtn('manual')" title="Modo manual">
-              <span class="nxt-bi">⊙</span>
-            </button>
+          <div class="nxt-row2-btns">
+            <div class="nxt-ok-item">
+              <span class="nxt-btn-lbl">MANUAL</span>
+              <button class="nxt-btn nxt-btn-manual nxt-btn-sm" onclick="handleBtn('manual')" title="Ativa modo manual — permite mover cabeçote com as setas">
+                <span class="nxt-bi">⊙</span>
+              </button>
+            </div>
+            <div class="nxt-ok-item">
+              <span class="nxt-btn-lbl">HOME</span>
+              <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('ready')" title="Retorna todos os eixos à posição de origem">
+                <span class="nxt-bi">⌂</span>
+              </button>
+            </div>
           </div>
           <div class="nxt-emg-wrap">
             <span class="nxt-emg-txt">EMERGENCY</span>
-            <button class="nxt-emg${machineState==="estop"?" locked":""}" id="nxtEmgBtn" onclick="handleEmergency()" title="Girar para travar / girar para destravar">
+            <button class="nxt-emg${machineState==="estop"?" locked":""}" id="nxtEmgBtn" onclick="handleEmergency()" title="Gire para travar (E-STOP) · Gire novamente para destravar e resetar">
               <span class="nxt-emg-icon">${machineState==="estop"?"↺":"↻"}</span>
             </button>
           </div>
@@ -1025,32 +1050,32 @@ function renderNXTPanel(m,erro){
           <div class="nxt-nav-area">
             <div class="nxt-ok-item" style="margin-bottom:19px">
               <span class="nxt-btn-lbl">MONITOR</span>
-              <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Monitor">
+              <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Abre tela de monitoramento de produção">
                 <span class="nxt-bi">▣</span>
               </button>
             </div>
             <div class="nxt-cross">
-              <button class="nxt-nav" onclick="handleBtn('nav_up')" title="Y+">↑</button>
+              <button class="nxt-nav" onclick="handleBtn('nav_up')" title="Mover cabeçote Y+ (modo manual)">↑</button>
               <div class="nxt-cross-mid">
-                <button class="nxt-nav" onclick="handleBtn('nav_left')" title="X−">←</button>
-                <button class="nxt-nav-c" title="Confirmar">○</button>
-                <button class="nxt-nav" onclick="handleBtn('nav_right')" title="X+">→</button>
+                <button class="nxt-nav" onclick="handleBtn('nav_left')" title="Mover cabeçote X− (modo manual)">←</button>
+                <button class="nxt-nav-c" title="Confirmar seleção">○</button>
+                <button class="nxt-nav" onclick="handleBtn('nav_right')" title="Mover cabeçote X+ (modo manual)">→</button>
               </div>
-              <button class="nxt-nav" onclick="handleBtn('nav_down')" title="Y−">↓</button>
+              <button class="nxt-nav" onclick="handleBtn('nav_down')" title="Mover cabeçote Y− (modo manual)">↓</button>
             </div>
             <div class="nxt-ok-col">
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">OK</span>
-                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme">○</button>
+                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme ativo">○</button>
               </div>
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">CANCEL</span>
-                <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar">×</button>
+                <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar / Voltar à tela anterior">×</button>
               </div>
             </div>
           </div>
           <div class="nxt-bottom">
-            <button class="nxt-standby" onclick="handleBtn('standby')" title="Standby">STAND BY</button>
+            <button class="nxt-standby" onclick="handleBtn('standby')" title="Modo standby — reduz consumo mantendo servos ligados">STAND BY</button>
             <span class="nxt-fuji">FUJI</span>
           </div>
         </div>
@@ -1114,20 +1139,70 @@ function renderFujiPanel(m,erro){
 }
 function fujiScreenIdle(m){
   const isNXT=m.model3D==="nxt";
-  const sub=isNXT?`<div style="color:rgba(255,102,0,0.55);font-size:0.58rem;font-weight:700;margin-top:2px;letter-spacing:1px">H12HS · H08 · H04S · H02</div>`:"";
-  return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div>${sub}<div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;
+  if(isNXT){
+    return`<div class="fsc-idle" style="padding:10px 12px;gap:6px;justify-content:flex-start;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,102,0,0.1);border-radius:3px;padding:3px 7px">
+        <span style="color:rgba(255,102,0,0.75);font-size:0.5rem;font-weight:800;letter-spacing:0.8px">FUJI NXT · SCALABLE PLACEMENT PLATFORM</span>
+        <span style="color:rgba(255,255,255,0.25);font-size:0.46rem;font-family:monospace">v07</span>
+      </div>
+      <div style="text-align:center;margin:4px 0 2px"><div class="fsc-idle-ready" style="font-size:1.2rem">READY</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
+          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M6 II ·1</div>
+          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H12HS · H08</div>
+          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
+        </div>
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
+          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M6 II ·2</div>
+          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H08 · H04S</div>
+          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
+        </div>
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
+          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M3 II ·3</div>
+          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H04S · H02</div>
+          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:0.5rem;color:rgba(255,255,255,0.28);font-weight:600;padding-top:2px">
+        <span>PROGRAM: <strong style="color:rgba(255,255,255,0.45)">NO PROGRAM</strong></span>
+        <span>BOARDS: <strong style="color:rgba(255,255,255,0.45)">0</strong></span>
+      </div>
+      <div class="fsc-idle-dots" style="justify-content:center"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div>
+    </div>`;
+  }
+  return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div><div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;
 }
 function fujiScreenRunning(m){
   const isNXT=m.model3D==="nxt";
-  const mods=isNXT
-    ?["M6 II — H12HS OK","M6 II — H08 OK","M3 II — H04S OK"]
-    :["MOD 1 — OK","MOD 2 — OK","MOD 3 — OK"];
-  const cph=isNXT?"26,000 cph":"—";
-  return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">${isNXT?"CPH":"Program"}</div><div class="fsc-run-val" style="font-size:0.72rem">${isNXT?cph:"PROG-01"}</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">${mods.map(s=>`<div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>${s}</div>`).join("")}</div></div>`;
+  if(isNXT){
+    return`<div class="fsc-running" style="padding:10px 12px;gap:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div>
+        <span style="font-size:0.48rem;color:rgba(255,102,0,0.55);font-weight:700;font-family:monospace">PCBA-001</span>
+      </div>
+      <div class="fsc-run-grid">
+        <div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div>
+        <div class="fsc-run-cell"><div class="fsc-run-label">CPH Total</div><div class="fsc-run-val" style="font-size:0.7rem">26,000</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-top:2px">
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·1 — H12HS &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">12,000 cph</span></div>
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·2 — H08 &nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">8,000 cph</span></div>
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M3 II ·3 — H04S &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">6,000 cph</span></div>
+      </div>
+    </div>`;
+  }
+  const mods=["MOD 1 — OK","MOD 2 — OK","MOD 3 — OK"];
+  return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">${mods.map(s=>`<div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>${s}</div>`).join("")}</div></div>`;
 }
 function fujiScreenManual(){return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;}
 function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
-function fujiScreenEstop(){return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Todos os servos desligados</div><div class="fsc-estop-msg" style="margin-top:4px;cursor:pointer;text-decoration:underline" onclick="handleBtn('ok')">Clique em OK para resetar</div></div>`;}
+function fujiScreenEstop(){
+  const isNXT=currentMaq==="nxt";
+  const resetMsg=isNXT
+    ?`<div class="fsc-estop-msg" style="margin-top:6px;font-size:0.58rem">Gire o botão EMERGENCY no sentido <strong style="color:#ff8888">horário ↺</strong> para destravar</div>`
+    :`<div class="fsc-estop-msg" style="margin-top:4px;cursor:pointer;text-decoration:underline" onclick="handleBtn('ok')">Clique em OK para resetar</div>`;
+  return`<div class="fsc-estop"><div class="fsc-estop-icon"><i class="bi bi-octagon-fill"></i></div><div class="fsc-estop-title">EMERGENCY STOP</div><div class="fsc-estop-msg">Todos os servos desligados</div>${resetMsg}</div>`;
+}
 function fujiScreenStopping(){return`<div class="fsc-stopping"><div class="fsc-stopping-txt">STOPPING…</div><div class="fsc-stopping-bar"><div class="fsc-stopping-fill"></div></div></div>`;}
 function fujiScreenStandby(){return`<div class="fsc-standby"><div class="fsc-standby-txt">STANDBY</div><div class="fsc-standby-sub">Sistema em espera<br>Pressione qualquer botão para ativar</div></div>`;}
 
@@ -1278,6 +1353,16 @@ function renderSolution(erro){
   }).join("");
   const complete=done===total&&total>0?`<div class="mv-complete-banner"><i class="bi bi-check-circle-fill"></i>Todos os ${total} passos concluídos — máquina pronta para retornar à produção.</div>`:"";
   const imgBtn=erro.imagem?`<div class="mv-sol-img-btn" onclick="openLightbox('/static/${erro.imagem.split('/').map(encodeURIComponent).join('/')}')"><i class="bi bi-image"></i>Ver foto real da ocorrência</div>`:"";
+  const nxtManuais=currentMaq==="nxt"?`
+    <div class="mv-sol-section">Manuais de Referência</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <a href="/static/files-external/Fuji-NXT-Setup-07.pdf" target="_blank" rel="noopener" class="mv-sol-img-btn" style="color:#f60;background:rgba(255,102,0,0.08);border-color:rgba(255,102,0,0.22);text-decoration:none">
+        <i class="bi bi-file-earmark-pdf-fill"></i>Setup Manual (PDF)
+      </a>
+      <a href="/static/files-external/681224291-NXT2-quick-reference-basic-operation.pdf" target="_blank" rel="noopener" class="mv-sol-img-btn" style="color:#f60;background:rgba(255,102,0,0.08);border-color:rgba(255,102,0,0.22);text-decoration:none">
+        <i class="bi bi-lightning-charge-fill"></i>Quick Reference (PDF)
+      </a>
+    </div>`:"";
   document.getElementById("mvSolution").innerHTML=`
     <div class="mv-sol-hdr">
       <div>
@@ -1300,6 +1385,7 @@ function renderSolution(erro){
       <ul class="mv-sol-steps">${steps}</ul>
       ${erro.pecas?`<div class="mv-sol-section">Peças / Componentes</div><div class="mv-sol-pecas"><i class="bi bi-box-seam"></i>${erro.pecas}</div>`:""}
       ${imgBtn}
+      ${nxtManuais}
       ${complete}
     </div>`;
 }
