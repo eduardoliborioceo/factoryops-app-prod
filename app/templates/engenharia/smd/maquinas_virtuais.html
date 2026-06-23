@@ -765,7 +765,16 @@ function setMachineState(s){
 }
 
 function updateStateHint(){
-  const hints={idle:"Máquina pronta — selecione um erro à esquerda ou pressione START",
+  const isNXT=currentMaq==="nxt";
+  const hints=isNXT?{
+    idle:"Aguardando START — após pressionar, a máquina faz calibração automática e verifica os bicos antes de iniciar",
+    running:"Em produção — STOP: conclui e descarrega o painel atual · CYCLE STOP: para após o ciclo atual",
+    manual:"Modo manual ativo (tela marrom) — use ←→↑↓ para mover o cabeçote · READY ON para retornar ao modo automático",
+    error:"Erro ativo — siga o procedimento exibido na tela · pressione READY ON para limpar o status de erro",
+    estop:"EMERGENCY STOP — gire o botão EMERGENCY no sentido horário ↺ para destravar · depois pressione START",
+    stopping:"Concluindo o painel atual e descarregando… aguarde",
+    standby:"Standby — energia fornecida ao módulo · pressione qualquer botão para ativar"}:{
+    idle:"Máquina pronta — selecione um erro à esquerda ou pressione START",
     running:"Em produção — pressione STOP para parar",
     manual:"Modo manual — use as setas para mover o cabeçote · READY para sair",
     error:"Erro ativo — siga o passo a passo · pressione OK no painel para limpar",
@@ -789,6 +798,7 @@ function handleBtn(action){
       break;
     case"ready":
       if(machineState==="manual") setMachineState("idle");
+      else if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
       break;
     case"ok":
       if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
@@ -987,38 +997,38 @@ function renderNXTPanel(m,erro){
       <div class="nxt-row-main">
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">CYCLE<br>STOP</span>
-          <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('inche_stop')" title="Para após completar o ciclo atual — não interrompe imediatamente">
+          <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('inche_stop')" title="Para o módulo após completar o ciclo atual. Use para trocar componentes sem interromper a produção abruptamente. Pressione START para retomar.">
             <span class="nxt-bi">⊡</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">READY<br>ON</span>
-          <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Coloca a máquina em modo automático / sai do modo manual">
+          <button class="nxt-btn nxt-btn-ready" onclick="handleBtn('ready')" title="Pressione após limpar um erro para retornar ao modo automático. Se pressionado na tela de guia de erro, o status de erro é limpo. Também sai do modo manual.">
             <span class="nxt-led ${rdyLed}"></span>
             <span class="nxt-bi">◧</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">GROUP</span>
-          <button class="nxt-btn nxt-btn-sm" title="Habilita operação em grupo com outras NXT na linha">
+          <button class="nxt-btn nxt-btn-sm" title="Pressione simultaneamente com START para iniciar todos os módulos da linha como um grupo. A operação é realizada em todos os módulos ao mesmo tempo.">
             <span class="nxt-bi">▣</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">START</span>
-          <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Inicia produção — máquina deve estar em READY ON">
+          <button class="nxt-btn nxt-btn-start" onclick="handleBtn('start')" title="Inicia produção. A máquina realiza calibração automática e verifica os bicos. Se necessário, o menu de changeover é exibido antes de iniciar.">
             <span class="nxt-bi">▶</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">STOP</span>
-          <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Para a produção ao final do ciclo em andamento">
+          <button class="nxt-btn nxt-btn-stop" onclick="handleBtn('stop')" title="Para após concluir e descarregar o painel atual. Se STOP for pressionado novamente, o comando é cancelado e a produção retoma. Pressione START para reiniciar.">
             <span class="nxt-bi">⊘</span>
           </button>
         </div>
         <div class="nxt-ok-item">
           <span class="nxt-btn-lbl">POWER</span>
-          <button class="nxt-btn" title="Chave de energia principal">
+          <button class="nxt-btn" title="Acorda os módulos (SLEEP → AWAKE). Segure por 4 segundos para colocar os módulos em SLEEP. Em seguida, desligue o interruptor principal.">
             <span class="nxt-bi">⏻</span>
           </button>
         </div>
@@ -1028,20 +1038,20 @@ function renderNXTPanel(m,erro){
           <div class="nxt-row2-btns">
             <div class="nxt-ok-item">
               <span class="nxt-btn-lbl">MANUAL</span>
-              <button class="nxt-btn nxt-btn-manual nxt-btn-sm" onclick="handleBtn('manual')" title="Ativa modo manual — permite mover cabeçote com as setas">
+              <button class="nxt-btn nxt-btn-manual nxt-btn-sm" onclick="handleBtn('manual')" title="Ativa modo manual (tela marrom). Menu: Limpeza · Posicionamento de cabeça · Diagnóstico · Teste de job · Troca de peças (bicos, palheta, cabeças, backup plates) · Remoção de painel · Ajuste de cabeça. Pressione MANUAL novamente para sair.">
                 <span class="nxt-bi">⊙</span>
               </button>
             </div>
             <div class="nxt-ok-item">
               <span class="nxt-btn-lbl">HOME</span>
-              <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('ready')" title="Retorna todos os eixos à posição de origem">
+              <button class="nxt-btn nxt-btn-sm" onclick="handleBtn('ready')" title="Retorna todos os eixos à posição de origem (Home Position). Também sai do modo manual e retorna ao modo automático.">
                 <span class="nxt-bi">⌂</span>
               </button>
             </div>
           </div>
           <div class="nxt-emg-wrap">
             <span class="nxt-emg-txt">EMERGENCY</span>
-            <button class="nxt-emg${machineState==="estop"?" locked":""}" id="nxtEmgBtn" onclick="handleEmergency()" title="Gire para travar (E-STOP) · Gire novamente para destravar e resetar">
+            <button class="nxt-emg${machineState==="estop"?" locked":""}" id="nxtEmgBtn" onclick="handleEmergency()" title="Corta 200V dos módulos imediatamente e para todos os eixos. Para liberar: gire no sentido horário ↺ para destravar, depois limpe a causa do erro e pressione START.">
               <span class="nxt-emg-icon">${machineState==="estop"?"↺":"↻"}</span>
             </button>
           </div>
@@ -1050,32 +1060,32 @@ function renderNXTPanel(m,erro){
           <div class="nxt-nav-area">
             <div class="nxt-ok-item" style="margin-bottom:19px">
               <span class="nxt-btn-lbl">MONITOR</span>
-              <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Abre tela de monitoramento de produção">
+              <button class="nxt-btn nxt-btn-monitor" onclick="handleBtn('monitor')" title="Exibe o monitor de imagem. ATENÇÃO: durante a produção, não pressione MONITOR e saia sem pressionar MONITOR novamente — o Cycle Time aumenta enquanto o monitor estiver ativo.">
                 <span class="nxt-bi">▣</span>
               </button>
             </div>
             <div class="nxt-cross">
-              <button class="nxt-nav" onclick="handleBtn('nav_up')" title="Mover cabeçote Y+ (modo manual)">↑</button>
+              <button class="nxt-nav" onclick="handleBtn('nav_up')" title="No menu: seleciona item acima · No modo manual: move o cabeçote Y+ · Aumenta valor numérico">↑</button>
               <div class="nxt-cross-mid">
-                <button class="nxt-nav" onclick="handleBtn('nav_left')" title="Mover cabeçote X− (modo manual)">←</button>
+                <button class="nxt-nav" onclick="handleBtn('nav_left')" title="No menu: seleciona item à esquerda ou alterna tela de guia · No modo manual: move o cabeçote X−">←</button>
                 <button class="nxt-nav-c" title="Confirmar seleção">○</button>
-                <button class="nxt-nav" onclick="handleBtn('nav_right')" title="Mover cabeçote X+ (modo manual)">→</button>
+                <button class="nxt-nav" onclick="handleBtn('nav_right')" title="No menu: seleciona item à direita ou exibe detalhes · No modo manual: move o cabeçote X+">→</button>
               </div>
-              <button class="nxt-nav" onclick="handleBtn('nav_down')" title="Mover cabeçote Y− (modo manual)">↓</button>
+              <button class="nxt-nav" onclick="handleBtn('nav_down')" title="No menu: seleciona item abaixo · No modo manual: move o cabeçote Y− · Diminui valor numérico">↓</button>
             </div>
             <div class="nxt-ok-col">
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">OK</span>
-                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirmar / Limpar alarme ativo">○</button>
+                <button class="nxt-ok" onclick="handleBtn('ok')" title="Confirma seleções de menu e valores numéricos. Inicia o comando selecionado. Também confirma troca de palheta (feeder pallet) e outras operações de manutenção.">○</button>
               </div>
               <div class="nxt-ok-item">
                 <span class="nxt-btn-lbl">CANCEL</span>
-                <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancelar / Voltar à tela anterior">×</button>
+                <button class="nxt-cancel" onclick="handleBtn('cancel')" title="Cancela seleção de menu e retorna à tela anterior. Pressione junto com START para trocar o job em execução (job changeover).">×</button>
               </div>
             </div>
           </div>
           <div class="nxt-bottom">
-            <button class="nxt-standby" onclick="handleBtn('standby')" title="Modo standby — reduz consumo mantendo servos ligados">STAND BY</button>
+            <button class="nxt-standby" onclick="handleBtn('standby')" title="Indica que energia está sendo fornecida ao módulo (LED aceso = módulo energizado). Pressione para entrar em modo standby — mantém os servos prontos com consumo reduzido.">STAND BY</button>
             <span class="nxt-fuji">FUJI</span>
           </div>
         </div>
@@ -1140,34 +1150,48 @@ function renderFujiPanel(m,erro){
 function fujiScreenIdle(m){
   const isNXT=m.model3D==="nxt";
   if(isNXT){
-    return`<div class="fsc-idle" style="padding:10px 12px;gap:6px;justify-content:flex-start;align-items:stretch">
+    return`<div class="fsc-idle" style="padding:8px 10px;gap:4px;justify-content:flex-start;align-items:stretch">
       <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,102,0,0.1);border-radius:3px;padding:3px 7px">
-        <span style="color:rgba(255,102,0,0.75);font-size:0.5rem;font-weight:800;letter-spacing:0.8px">FUJI NXT · SCALABLE PLACEMENT PLATFORM</span>
-        <span style="color:rgba(255,255,255,0.25);font-size:0.46rem;font-family:monospace">v07</span>
+        <span style="color:rgba(255,102,0,0.75);font-size:0.46rem;font-weight:800;letter-spacing:0.8px">FUJI NXT · SCALABLE PLACEMENT PLATFORM</span>
+        <span style="color:rgba(255,255,255,0.25);font-size:0.44rem;font-family:monospace">v07</span>
       </div>
-      <div style="text-align:center;margin:4px 0 2px"><div class="fsc-idle-ready" style="font-size:1.2rem">READY</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
-          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M6 II ·1</div>
-          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H12HS · H08</div>
-          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
-        </div>
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
-          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M6 II ·2</div>
-          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H08 · H04S</div>
-          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
-        </div>
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:4px 6px;text-align:center">
-          <div style="color:#00e676;font-size:0.58rem;font-weight:800">M3 II ·3</div>
-          <div style="color:rgba(255,255,255,0.3);font-size:0.44rem;margin-top:1px">H04S · H02</div>
-          <div style="color:#00e676;font-size:0.4rem;margin-top:2px">● READY</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0">
+        <div class="fsc-idle-ready" style="font-size:1.1rem">READY</div>
+        <div style="text-align:right">
+          <div style="color:rgba(0,230,118,0.65);font-size:0.4rem;font-weight:700">● Waiting for START</div>
+          <div style="color:rgba(255,255,255,0.2);font-size:0.37rem;margin-top:1px">Press START to begin production</div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;font-size:0.5rem;color:rgba(255,255,255,0.28);font-weight:600;padding-top:2px">
-        <span>PROGRAM: <strong style="color:rgba(255,255,255,0.45)">NO PROGRAM</strong></span>
-        <span>BOARDS: <strong style="color:rgba(255,255,255,0.45)">0</strong></span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px">
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
+          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M6 II ·1</div>
+          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H12HS · H08</div>
+          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
+        </div>
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
+          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M6 II ·2</div>
+          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H08 · H04S</div>
+          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
+        </div>
+        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
+          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M3 II ·3</div>
+          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H04S · H02</div>
+          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
+        </div>
       </div>
-      <div class="fsc-idle-dots" style="justify-content:center"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div>
+      <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;margin-top:1px">
+        <div style="display:flex;gap:3px">
+          <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;padding:2px 5px">
+            <div style="color:rgba(0,230,118,0.4);font-size:0.34rem;font-weight:700">Lane 1</div>
+            <div style="color:rgba(255,255,255,0.22);font-size:0.38rem;font-family:monospace;margin-top:1px">NO JOB &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+          </div>
+          <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;padding:2px 5px">
+            <div style="color:rgba(0,230,118,0.4);font-size:0.34rem;font-weight:700">Lane 2</div>
+            <div style="color:rgba(255,255,255,0.22);font-size:0.38rem;font-family:monospace;margin-top:1px">NO JOB &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
+          </div>
+        </div>
+      </div>
+      <div class="fsc-idle-dots" style="justify-content:center;margin-top:1px"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div>
     </div>`;
   }
   return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div><div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;
@@ -1175,26 +1199,67 @@ function fujiScreenIdle(m){
 function fujiScreenRunning(m){
   const isNXT=m.model3D==="nxt";
   if(isNXT){
-    return`<div class="fsc-running" style="padding:10px 12px;gap:6px">
+    return`<div class="fsc-running" style="padding:8px 10px;gap:4px">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div>
-        <span style="font-size:0.48rem;color:rgba(255,102,0,0.55);font-weight:700;font-family:monospace">PCBA-001</span>
+        <span style="font-size:0.46rem;color:rgba(255,102,0,0.55);font-weight:700;font-family:monospace">PCBA-001</span>
       </div>
       <div class="fsc-run-grid">
         <div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div>
         <div class="fsc-run-cell"><div class="fsc-run-label">CPH Total</div><div class="fsc-run-val" style="font-size:0.7rem">26,000</div></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px;margin-top:2px">
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·1 — H12HS &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">12,000 cph</span></div>
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·2 — H08 &nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">8,000 cph</span></div>
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M3 II ·3 — H04S &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.55rem">6,000 cph</span></div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·1 — H12HS &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">12,000 cph</span></div>
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·2 — H08 &nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">8,000 cph</span></div>
+        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M3 II ·3 — H04S &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">6,000 cph</span></div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.07);padding-top:4px;margin-top:1px;display:flex;gap:3px">
+        <div style="flex:1;background:rgba(0,200,80,0.09);border-radius:3px;padding:2px 5px">
+          <div style="color:rgba(0,200,80,0.5);font-size:0.33rem;font-weight:700">Lane 1 ■</div>
+          <div style="color:rgba(255,255,255,0.45);font-size:0.37rem;font-family:monospace">PCBA-001 &nbsp;<span id="fscCycleCountL1">${String(cycleCount).padStart(4,"0")}</span></div>
+        </div>
+        <div style="flex:1;background:rgba(0,200,80,0.09);border-radius:3px;padding:2px 5px">
+          <div style="color:rgba(0,200,80,0.5);font-size:0.33rem;font-weight:700">Lane 2 ■</div>
+          <div style="color:rgba(255,255,255,0.45);font-size:0.37rem;font-family:monospace">PCBA-001 &nbsp;<span>${String(Math.max(0,cycleCount-1)).padStart(4,"0")}</span></div>
+        </div>
       </div>
     </div>`;
   }
   const mods=["MOD 1 — OK","MOD 2 — OK","MOD 3 — OK"];
   return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">${mods.map(s=>`<div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>${s}</div>`).join("")}</div></div>`;
 }
-function fujiScreenManual(){return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;}
+function fujiScreenManual(){
+  const isNXT=currentMaq==="nxt";
+  if(isNXT){
+    const items=[
+      {label:"Cleaning",desc:"Limpar bicos e marcas"},
+      {label:"Head Pos",desc:"Posicionar cabeçote"},
+      {label:"Diagnosis",desc:"Diagnóstico do módulo"},
+      {label:"Job Test",desc:"Testar job sem produzir"},
+      {label:"Exchange",desc:"Trocar bicos/palheta/cabeças"},
+      {label:"Info",desc:"Informações do módulo"},
+      {label:"Panel Out",desc:"Remover painel manualmente"},
+      {label:"Head Adj",desc:"Ajuste fino do cabeçote"},
+    ];
+    return`<div class="fsc-manual" style="background:linear-gradient(180deg,#3a2100 0%,#251500 100%);padding:8px 10px;gap:4px;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#ffb74d;font-size:0.52rem;font-weight:800;letter-spacing:0.8px">MANUAL MODE</span>
+        <span style="color:rgba(255,180,80,0.4);font-size:0.42rem;font-family:monospace">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin:2px 0">
+        ${items.map((item,i)=>`<div title="${item.desc}" style="background:rgba(255,180,50,${i===0?'0.22':'0.07'});border:1px solid rgba(255,180,50,${i===0?'0.5':'0.18'});border-radius:3px;padding:4px 2px;text-align:center;cursor:default"><div style="color:rgba(255,215,130,${i===0?'1':'0.78'});font-size:0.37rem;font-weight:700;line-height:1.3">${item.label}</div></div>`).join("")}
+      </div>
+      <div style="border-top:1px solid rgba(255,180,50,0.15);padding-top:4px;margin-top:1px">
+        <div style="display:flex;gap:14px;justify-content:center">
+          <span style="font-size:0.42rem;color:rgba(255,180,50,0.55)">X <span id="fscPosX">${headPos.x.toFixed(2)}</span> mm</span>
+          <span style="font-size:0.42rem;color:rgba(255,180,50,0.55)">Y <span id="fscPosY">${headPos.y.toFixed(2)}</span> mm</span>
+        </div>
+        <div style="color:rgba(255,180,50,0.38);font-size:0.37rem;text-align:center;margin-top:3px">← → ↑ ↓ selecionar · OK confirmar · READY ON para sair</div>
+      </div>
+    </div>`;
+  }
+  return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;
+}
 function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
 function fujiScreenEstop(){
   const isNXT=currentMaq==="nxt";
