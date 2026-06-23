@@ -1901,174 +1901,159 @@ function _buildPCB(g,maq,errId,pw=10,pd=6){
 }
 
 function buildNXTMachine(g){
-  const mBody=_m(0x2b3040,0.55,0.45);
-  const mDark=_m(0x1a1e2a,0.4,0.6);
-  const mAccent=_m(0x3a4050,0.5,0.4);
-  const mOrange=new THREE.MeshStandardMaterial({color:0xf56600,roughness:0.3,metalness:0.2,emissive:new THREE.Color(0.18,0.05,0)});
-  const mGlassY=new THREE.MeshStandardMaterial({color:0xffe066,transparent:true,opacity:0.1,roughness:0.05,side:THREE.DoubleSide});
-  const mAlum=_m(0x8a8f9a,0.22,0.78);
-  const mRail=_m(0xaaaaaa,0.18,0.88);
+  const mWhite =new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10});
+  const mWhite2=new THREE.MeshStandardMaterial({color:0xc8cdd6,roughness:0.38,metalness:0.08});
+  const mBase  =_m(0x141416,0.72,0.30);
+  const mPurple=new THREE.MeshStandardMaterial({color:0x2c3082,roughness:0.42,metalness:0.22});
+  const mBlue  =new THREE.MeshStandardMaterial({color:0x0044a8,roughness:0.40,metalness:0.15});
+  const mEstop =new THREE.MeshStandardMaterial({color:0xff3300,roughness:0.24,metalness:0.10,emissive:new THREE.Color(0.15,0.02,0)});
+  const mDkGrey=_m(0x282c32,0.65,0.35);
+  const mAlum  =_m(0x8a8f9a,0.22,0.78);
+  const mRail  =_m(0xaaaaaa,0.18,0.88);
+  const mGlass =new THREE.MeshStandardMaterial({color:0xc4daf0,transparent:true,opacity:0.06,roughness:0.04,side:THREE.DoubleSide});
+  const mScreen=new THREE.MeshStandardMaterial({color:0x071528,roughness:0.80,emissive:new THREE.Color(0.02,0.05,0.14)});
 
-  // Base platform
-  const base=_b(38,2.5,22,mDark); base.position.set(0,-12.5,0); g.add(base);
-
-  // Back structural wall
-  const bw=_b(38,28,1.2,mBody); bw.position.set(0,0.5,-11); g.add(bw);
-
-  // Side walls
-  const lw=_b(1.8,28,22,mBody); lw.position.set(-18,0.5,-0.5); g.add(lw);
-  const rw=_b(1.8,28,22,mBody); rw.position.set(18,0.5,-0.5); g.add(rw);
-
-  // Gantry hood (top housing — NXT's most distinctive feature)
-  const hood=_b(38,5,22,mBody); hood.position.set(0,14,-0.5);
-  _edges(hood,0x4a556a,0.18); g.add(hood);
-
-  // Orange stripe (Fuji brand) — dominant on NXT front
-  const os=_b(38,2.4,0.6,mOrange); os.position.set(0,11.5,11.0); g.add(os);
-  const osGlow=new THREE.Mesh(new THREE.BoxGeometry(37,1.8,0.3),
-    new THREE.MeshStandardMaterial({color:0xff8800,roughness:0.3,emissive:new THREE.Color(0.35,0.1,0)}));
-  osGlow.position.set(0,11.5,11.3); g.add(osGlow);
-
-  // Front yellow-tinted safety cover (NXT signature look)
-  const fg=_b(34,22,0.4,mGlassY); fg.position.set(0,0.5,11); g.add(fg);
-  // Front frame
-  const ff=[
-    _b(38,0.9,0.8,mDark), _b(38,0.9,0.8,mDark),
-    _b(0.9,24,0.8,mDark),  _b(0.9,24,0.8,mDark)
-  ];
-  ff[0].position.set(0,11.9,10.9); ff[1].position.set(0,-10.6,10.9);
-  ff[2].position.set(-17.5,0.5,10.9); ff[3].position.set(17.5,0.5,10.9);
-  ff.forEach(f=>g.add(f));
-  // Module dividers visible through front glass
-  [-6,6].forEach(x=>{
-    const div=_b(0.7,24,0.8,mDark); div.position.set(x,0.5,10.9); g.add(div);
+  const base=_b(40,2.8,22,mBase); base.position.set(0,-12.4,0); g.add(base);
+  [[-17,-9],[-17,9],[17,-9],[17,9]].forEach(([x,z])=>{
+    const ft=_b(2.4,1.5,2.4,mBase); ft.position.set(x,-13.85,z); g.add(ft);
   });
 
-  // === M-SERIES MODULE SLOTS (3 modules for M6 II config) ===
-  [-10.5,0,10.5].forEach((mx,idx)=>{
-    // Module body
-    const mod=_b(9,20,9,_m(0x1e2535,0.5,0.45)); mod.position.set(mx,-0.5,-4.5);
-    _edges(mod,0x3050aa,0.22); g.add(mod);
-    // Module electronics panel
-    const fp=_b(8,16,0.8,_m(0x171e2e,0.55,0.4)); fp.position.set(mx,-0.5,0.3); g.add(fp);
-    // PCB cards inside module (stacked circuit boards visible)
-    for(let ci=0;ci<3;ci++){
-      const card=_b(6.5,0.25,7,_m(0x1a4a2a,0.75,0)); card.position.set(mx,-6+ci*4,-4); g.add(card);
-    }
-    // Module connector block (bottom left corner)
-    const conn=_b(3,1.8,1.5,_m(0x1a3a6a,0.4,0.3)); conn.position.set(mx-2.5,-9,0.8); g.add(conn);
-    // Green status LED
+  const bw=_b(40,26,1.5,mWhite2); bw.position.set(0,0,-11.2); g.add(bw);
+  const bwS=_b(40,2.6,0.5,mPurple); bwS.position.set(0,11.3,-11.0); g.add(bwS);
+
+  const lEnd=_b(2.5,26,22,mWhite2); lEnd.position.set(-19.5,0,0); g.add(lEnd);
+  const rEnd=_b(2.5,26,22,mWhite2); rEnd.position.set(19.5,0,0); g.add(rEnd);
+  const nxtBar=_b(0.4,18,4,mPurple); nxtBar.position.set(20.6,0,0); g.add(nxtBar);
+  const nxtBox=_b(0.4,4,5,mBlue); nxtBox.position.set(20.6,3,3); g.add(nxtBox);
+
+  const modXs=[-11,0,11];
+  modXs.forEach((mx,idx)=>{
+    const body=_b(10.5,26,20,mWhite); body.position.set(mx,0,0);
+    _edges(body,0xb0b4bc,0.10); g.add(body);
+
+    const stripe=_b(10.5,2.6,20.4,mPurple); stripe.position.set(mx,11.3,0); g.add(stripe);
+
+    const panH=_b(5.8,3.6,0.7,mDkGrey); panH.position.set(mx-0.8,11.3,10.45); g.add(panH);
+    const panScr=new THREE.Mesh(new THREE.BoxGeometry(5.0,2.8,0.2),mScreen);
+    panScr.position.set(mx-0.8,11.3,10.82); g.add(panScr);
+    const dot=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.12),
+      new THREE.MeshStandardMaterial({color:0x00ff44,roughness:0.2,emissive:new THREE.Color(0,0.42,0.12)}));
+    dot.position.set(mx-2.8,12.3,10.95); g.add(dot);
+
+    const esBase=_cyl(0.82,0.92,0.6,mDkGrey); esBase.position.set(mx+3.4,11.4,10.5); g.add(esBase);
+    const esBtn=new THREE.Mesh(new THREE.CylinderGeometry(0.66,0.66,0.5,16),mEstop);
+    esBtn.position.set(mx+3.4,11.4,10.88); g.add(esBtn);
+
+    const badge=_b(3.4,0.9,0.4,mBlue); badge.position.set(mx,9.0,10.45); g.add(badge);
+
     const ledC=idx===1?0x0088ff:0x00ff44;
-    const led=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.45,0.25),
-      new THREE.MeshStandardMaterial({color:ledC,roughness:0.2,emissive:new THREE.Color(ledC).multiplyScalar(0.55)}));
-    led.position.set(mx-3.5,7.5,0.8); g.add(led);
-    // Module type label bar
-    const lbar=_b(4,0.7,0.3,_m(0x888888,0.5,0.3)); lbar.position.set(mx,7.5,0.95); g.add(lbar);
+    const led=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.22),
+      new THREE.MeshStandardMaterial({color:ledC,roughness:0.2,emissive:new THREE.Color(ledC).multiplyScalar(0.5)}));
+    led.position.set(mx-4,9.0,10.46); g.add(led);
+
+    [-1,1].forEach(sx=>{
+      for(let vi=0;vi<5;vi++){
+        const vt=_b(0.15,0.85,14,_m(0xb4b8c0,0.5,0.08));
+        vt.position.set(mx+sx*5.42,1.5-vi*2.2,-1.5); g.add(vt);
+      }
+    });
+
+    for(let ri=0;ri<3;ri++){
+      const guide=_b(9.8,0.22,0.3,_m(0x909098,0.3,0.7));
+      guide.position.set(mx,-3+ri*3.8,9.6); g.add(guide);
+    }
   });
 
-  // === X-GANTRY BEAM (precision linear axis) ===
-  const xBeam=_b(32,1.4,1.4,mRail); xBeam.position.set(0,5,2.5);
+  [-5.5,5.5].forEach(dx=>{
+    const div=_b(0.6,26,20,mWhite2); div.position.set(dx,0,0); g.add(div);
+  });
+
+  const fg=_b(37,24,0.45,mGlass); fg.position.set(0,-0.5,10.48); g.add(fg);
+  const ffT=_b(40,0.8,0.8,mWhite2); ffT.position.set(0,12.5,10.3); g.add(ffT);
+  const ffB=_b(40,0.8,0.8,mWhite2); ffB.position.set(0,-12.5,10.3); g.add(ffB);
+  const ffL=_b(0.8,28,0.8,mWhite2); ffL.position.set(-18.5,0,10.3); g.add(ffL);
+  const ffR=_b(0.8,28,0.8,mWhite2); ffR.position.set(18.5,0,10.3); g.add(ffR);
+
+  const xBeam=_b(33,1.4,1.4,mRail); xBeam.position.set(0,5,3);
   _edges(xBeam,0x888888,0.35); g.add(xBeam);
-  // Beam end columns
-  [-15,15].forEach(x=>{
-    const col=_b(0.9,14,0.9,mAlum); col.position.set(x,-1.5,2.5); g.add(col);
+  [-15.5,15.5].forEach(x=>{
+    const col=_b(0.9,14,0.9,mAlum); col.position.set(x,-1.5,3); g.add(col);
   });
-  // Linear guide rails (two parallel)
-  const rA=_b(32,0.45,0.45,mRail); rA.position.set(0,6,1.8); g.add(rA);
-  const rB=_b(32,0.45,0.45,mRail); rB.position.set(0,4,1.8); g.add(rB);
+  const rA=_b(33,0.45,0.45,mRail); rA.position.set(0,5.8,2.2); g.add(rA);
+  const rB=_b(33,0.45,0.45,mRail); rB.position.set(0,4.2,2.2); g.add(rB);
 
-  // === PLACEMENT HEAD (H12HS or H08 assembly) ===
-  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(3,5,2.5); g.add(zCarriage);
-  const head=_b(2.8,5,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(3,1.5,2.5);
+  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(3,5,3); g.add(zCarriage);
+  const head=_b(2.8,5.2,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(3,1.5,3);
   _edges(head,0xaaaaaa,0.28); g.add(head);
   s3.headObj=head;
-  // H12HS nozzle cluster (3×4 = 12 nozzles)
   for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
     const noz=_cyl(0.09,0.09,1.5,_m(0x707070,0.2,0.9));
-    noz.position.set(3+(nx-1)*0.72,-1.2,2.5+(nz-1.5)*0.6); g.add(noz);
+    noz.position.set(3+(nx-1)*0.72,-1.2,3+(nz-1.5)*0.6); g.add(noz);
   }
-  // Z-axis ballscrew visible
-  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(4.5,2.5,3.8); g.add(screw);
+  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(4.5,2.5,4.2); g.add(screw);
 
-  // === UPWARD-LOOKING VISION CAMERA ===
-  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,3.5,3.5); g.add(vcam);
+  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,3.5,4); g.add(vcam);
   const vlens=_cyl(0.6,0.6,0.55,_m(0x102244,0.2,0.5));
-  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,3.5,5.1); g.add(vlens);
+  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,3.5,5.6); g.add(vlens);
   const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
-  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,3.5,4.9); g.add(ledRing);
+  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,3.5,5.3); g.add(ledRing);
 
-  // === INTELLIGENT FEEDER BANK (right side) ===
-  for(let row=0;row<11;row++){
-    const fd=_b(5.8,1.0,7,_m(0x1c2430,0.65,0.4));
-    fd.position.set(15.2,-7.4+row*1.75,-5.5); g.add(fd);
-    _edges(fd,0x000000,0.10);
-    // Component reel
-    const reel=_cyl(0.85,0.85,0.3,_m(0x404550,0.5,0.35));
-    reel.position.set(15.2,-7.4+row*1.75,-1.2); g.add(reel);
-    // Tape strip
-    const ts=_b(4.5,0.08,0.3,_m(0x886644,0.7,0.1));
-    ts.position.set(14.8,-7.3+row*1.75,1); g.add(ts);
-    // iFeeder status LED
-    if(row%2===0){
-      const fLed=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,0.2),
-        new THREE.MeshStandardMaterial({color:0x00aaff,roughness:0.2,emissive:new THREE.Color(0,0.08,0.28)}));
-      fLed.position.set(12.5,-7.4+row*1.75,1.2); g.add(fLed);
+  modXs.forEach(mx=>{
+    const palFrm=_b(10,1.2,5.5,mDkGrey); palFrm.position.set(mx,-9.8,14.0); g.add(palFrm);
+    const palBack=_b(10,13,1.2,mDkGrey); palBack.position.set(mx,-4.2,11.2); g.add(palBack);
+    for(let fi=0;fi<7;fi++){
+      const slot=_b(0.12,10,0.5,_m(0x454a52,0.5,0.5));
+      slot.position.set(mx-3+fi*1.1,-4.5,11.8); g.add(slot);
     }
-  }
+    for(let row=0;row<2;row++){
+      for(let col=0;col<4;col++){
+        const rr=1.5+(col*0.15+row*0.2)%0.65;
+        const reel=_cyl(rr,rr,0.72,_m(0x2a2e34,0.65,0.4));
+        reel.rotation.x=Math.PI/2;
+        reel.position.set(mx-3.5+col*2.4,-5.5-row*4.2,14.2); g.add(reel);
+        const hub=_cyl(0.42,0.42,0.78,_m(0x7a7a7a,0.3,0.6));
+        hub.rotation.x=Math.PI/2;
+        hub.position.set(mx-3.5+col*2.4,-5.5-row*4.2,14.2); g.add(hub);
+        const tape=_b(0.26,0.1,2.2,_m(0x7a6040,0.75,0.05));
+        tape.position.set(mx-3.5+col*2.4,-5.5-row*4.2+rr-0.25,12.5); g.add(tape);
+      }
+    }
+  });
 
-  // === DOUBLE CONVEYOR SYSTEM ===
   const rl=_m(0x7a7a80,0.25,0.85);
-  // Conveyor rails (double track)
-  const railL=_b(34,0.6,0.6,rl); railL.position.set(0,-7.5,-2.8); g.add(railL);
-  const railR=_b(34,0.6,0.6,rl); railR.position.set(0,-7.5,2.8); g.add(railR);
-  const belt=_b(34,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  const railL=_b(36,0.6,0.6,rl); railL.position.set(0,-7.5,-2.8); g.add(railL);
+  const railR=_b(36,0.6,0.6,rl); railR.position.set(0,-7.5,2.8); g.add(railR);
+  const belt=_b(36,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
   s3.conveyorBelt=belt;
-  // Guide panels
-  const cgL=_b(34,3,0.38,mDark); cgL.position.set(0,-7,-3.3); g.add(cgL);
-  const cgR=_b(34,3,0.38,mDark); cgR.position.set(0,-7,3.3); g.add(cgR);
-  // Drive rollers (precision knurled)
-  [-16,16].forEach(x=>{
+  const cgL=_b(36,3,0.38,mWhite2); cgL.position.set(0,-7,-3.3); g.add(cgL);
+  const cgR=_b(36,3,0.38,mWhite2); cgR.position.set(0,-7,3.3); g.add(cgR);
+  [-16.5,16.5].forEach(x=>{
     const dr=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
     dr.rotation.z=Math.PI/2; dr.position.set(x,-7.7,0); g.add(dr);
   });
 
-  // === MONITOR ON ARTICULATED ARM (top right) ===
-  const armV=_b(0.55,5,0.55,mAlum); armV.position.set(15,14,7.5); g.add(armV);
-  const armH=_b(6,0.55,0.55,mAlum); armH.position.set(12,16.5,7.5); g.add(armH);
-  // Monitor housing
-  const mon=_b(7,5.5,0.8,_m(0x181818,0.65,0.4)); mon.position.set(9,16.5,8.0); g.add(mon);
-  // Screen (NXT dark-navy UI)
-  const scr=new THREE.Mesh(new THREE.BoxGeometry(6,4.5,0.18),
-    new THREE.MeshStandardMaterial({color:0x071528,roughness:0.8,emissive:new THREE.Color(0.02,0.05,0.14)}));
-  scr.position.set(9,16.5,8.45); g.add(scr);
-  // Orange header bar on screen (NXT UI color)
+  const armV=_b(0.55,5,0.55,mAlum); armV.position.set(16,14,8); g.add(armV);
+  const armH=_b(6,0.55,0.55,mAlum); armH.position.set(13,16.5,8); g.add(armH);
+  const mon=_b(7,5.5,0.8,_m(0xd8dce4,0.38,0.2)); mon.position.set(10,16.5,8.5); g.add(mon);
+  const scr=new THREE.Mesh(new THREE.BoxGeometry(6,4.5,0.18),mScreen);
+  scr.position.set(10,16.5,8.95); g.add(scr);
   const hbar=new THREE.Mesh(new THREE.BoxGeometry(5.8,0.55,0.12),
-    new THREE.MeshStandardMaterial({color:0xf56600,roughness:0.4,emissive:new THREE.Color(0.28,0.06,0)}));
-  hbar.position.set(9,18.5,8.55); g.add(hbar);
-  // Green ready indicators on screen
+    new THREE.MeshStandardMaterial({color:0x2c3082,roughness:0.4,emissive:new THREE.Color(0.05,0.05,0.18)}));
+  hbar.position.set(10,18.5,9.05); g.add(hbar);
   [0,1,2].forEach(i=>{
-    const dot=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.32,0.1),
+    const d=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.32,0.1),
       new THREE.MeshStandardMaterial({color:0x00ff44,roughness:0.2,emissive:new THREE.Color(0,0.4,0.1)}));
-    dot.position.set(7.4+i*0.65,17.5,8.55); g.add(dot);
+    d.position.set(8.4+i*0.65,17.5,9.05); g.add(d);
   });
 
-  // === SIGNAL TOWER (Andon light — 3 colors) ===
-  const tBase=_b(0.9,1.1,0.9,mAccent); tBase.position.set(-16,13.8,7); g.add(tBase);
-  const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-16,16.5,7); g.add(tPole);
+  const tBase=_b(0.9,1.1,0.9,mDkGrey); tBase.position.set(-18,13.8,6); g.add(tBase);
+  const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-18,16.5,6); g.add(tPole);
   [[0xff2200,false],[0xffcc00,false],[0x00cc44,true]].forEach(([c,on],i)=>{
     const lt=_cyl(0.6,0.6,0.95,
       new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:on?new THREE.Color(c).multiplyScalar(0.45):new THREE.Color(0,0,0)}));
-    lt.position.set(-16,14.4+i*1.1,7); g.add(lt);
+    lt.position.set(-18,14.4+i*1.1,6); g.add(lt);
   });
 
-  // === FRONT STATUS LEDS (top area, front panel) ===
-  [0x00ff44,0x00ff44,0xffcc00,0xff4400,0x4488ff].forEach((c,i)=>{
-    const lt=_b(0.6,0.6,0.3,
-      new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:new THREE.Color(c).multiplyScalar(0.42)}));
-    lt.position.set(-8+i*4,11.5,11.2); g.add(lt);
-  });
-
-  // PCB on conveyor
   _buildPCB(g,currentMaq,currentErroId,10,5.8);
 }
 
