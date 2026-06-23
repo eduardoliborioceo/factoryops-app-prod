@@ -410,6 +410,30 @@
 .nxt-g-man-item.sel{background:rgba(255,180,50,0.2);border-color:rgba(255,180,50,0.45)}
 .nxt-g-man-lbl{color:rgba(255,210,120,0.78);font-size:0.31rem;font-weight:700;line-height:1.25}
 .nxt-g-man-hint{color:rgba(255,180,50,0.3);font-size:0.3rem;text-align:center}
+/* sub-screen shared */
+.nxt-g-man-sub-back{color:rgba(255,180,50,0.28);font-size:0.27rem;font-weight:600}
+.nxt-g-man-sub{display:flex;flex-direction:column;flex:1;gap:2px;padding-top:2px;overflow:hidden}
+.nxt-g-man-sub-row{border:1px solid rgba(255,180,50,0.12);border-radius:2px;padding:2px 4px;font-size:0.31rem;font-weight:700;color:rgba(255,210,120,0.6);background:rgba(255,180,50,0.03)}
+.nxt-g-man-sub-row.sel{background:rgba(255,180,50,0.18);border-color:rgba(255,180,50,0.4);color:rgba(255,225,140,0.95)}
+.nxt-g-man-sub-info{font-size:0.31rem;font-weight:700;color:rgba(255,210,120,0.65);padding:1px 3px;font-family:monospace}
+/* Head Pos */
+.nxt-g-man-sub-pos{justify-content:center;gap:4px}
+.nxt-g-man-sub-axis{display:flex;align-items:baseline;gap:3px;padding:2px 4px;background:rgba(255,180,50,0.06);border-radius:2px;border:1px solid rgba(255,180,50,0.1)}
+.nxt-g-man-sub-ax-lbl{color:#ffb74d;font-size:0.34rem;font-weight:900;width:8px}
+.nxt-g-man-sub-ax-val{color:#fff;font-family:monospace;font-size:0.62rem;font-weight:800;flex:1;text-align:right}
+.nxt-g-man-sub-ax-unit{color:rgba(255,180,50,0.35);font-size:0.27rem}
+/* Diagnosis */
+.nxt-g-man-diag-row{display:flex;justify-content:space-between;align-items:center;padding:2px 4px;font-size:0.3rem;font-weight:700;color:rgba(255,210,120,0.55);border-bottom:1px solid rgba(255,180,50,0.07)}
+.nxt-g-man-diag-ok{color:#00e676;font-size:0.3rem;font-weight:900}
+/* Panel Out centered */
+.nxt-g-man-sub-center{align-items:center;justify-content:center;gap:4px}
+.nxt-g-man-sub-icon{color:rgba(255,180,50,0.4);font-size:0.95rem;line-height:1}
+.nxt-g-man-sub-msg{color:#ffb74d;font-size:0.38rem;font-weight:800;letter-spacing:0.3px}
+.nxt-g-man-sub-detail{color:rgba(255,210,120,0.45);font-size:0.29rem;font-weight:600}
+/* Head Adj */
+.nxt-g-man-sub-adj-row{display:flex;align-items:baseline;gap:3px;padding:2px 4px;font-size:0.3rem;font-weight:700;color:rgba(255,210,120,0.55);border-bottom:1px solid rgba(255,180,50,0.07)}
+.nxt-g-man-sub-adj-val{font-family:monospace;color:#fff;font-size:0.4rem;font-weight:800;flex:1;text-align:right}
+.nxt-g-man-sub-adj-unit{color:rgba(255,180,50,0.35);font-size:0.27rem;width:14px}
 /* error state */
 .nxt-g-err{display:flex;flex-direction:column;flex:1}
 .nxt-g-err-top{display:flex;justify-content:space-between;align-items:center;padding:2px 5px;background:rgba(0,0,0,0.25);flex-shrink:0}
@@ -832,6 +856,9 @@ let headPos      = {x:150.00,y:200.00,z:0.00};
 let cycleCount   = 0;
 let cycleTimer   = null;
 let stepChecks   = {};
+let manualMenuIdx   = 0;
+let manualSubScreen = null;
+const MANUAL_MENU = ["Cleaning","Head Pos","Diagnosis","Job Test","Exchange","Info","Panel Out","Head Adj"];
 
 function stepKey(){ return currentMaq+"-"+(currentErroId||"none"); }
 
@@ -839,6 +866,7 @@ function stepKey(){ return currentMaq+"-"+(currentErroId||"none"); }
 function setMachineState(s){
   if(cycleTimer){ clearInterval(cycleTimer); cycleTimer=null; }
   machineState = s;
+  if(s !== "manual"){ manualMenuIdx=0; manualSubScreen=null; }
   if(s==="running"){
     cycleTimer = setInterval(()=>{
       cycleCount++;
@@ -863,7 +891,7 @@ function updateStateHint(){
   const hints=isNXT?{
     idle:"Aguardando START — após pressionar, a máquina faz calibração automática e verifica os bicos antes de iniciar",
     running:"Em produção — STOP: conclui e descarrega o painel atual · CYCLE STOP: para após o ciclo atual",
-    manual:"Modo manual ativo (tela marrom) — use ←→↑↓ para mover o cabeçote · READY ON para retornar ao modo automático",
+    manual:"Modo manual ativo — use ←→↑↓ para navegar no menu · OK para entrar · CANCEL para voltar · READY ON para sair",
     error:"Erro ativo — siga o procedimento exibido na tela · pressione READY ON para limpar o status de erro",
     estop:"EMERGENCY STOP — gire o botão EMERGENCY no sentido horário ↺ para destravar · depois pressione START",
     stopping:"Concluindo o painel atual e descarregando… aguarde",
@@ -895,11 +923,16 @@ function handleBtn(action){
       else if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
       break;
     case"ok":
-      if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
+      if(machineState==="manual"){
+        if(!manualSubScreen){ manualSubScreen=MANUAL_MENU[manualMenuIdx]; updateManualGuidance(); }
+      } else if(machineState==="error"){ currentErroId=null; setMachineState("idle"); }
       else if(machineState==="estop") setMachineState("idle");
       break;
     case"cancel":
-      if(["manual","error"].includes(machineState)) setMachineState("idle");
+      if(machineState==="manual"){
+        if(manualSubScreen){ manualSubScreen=null; updateManualGuidance(); }
+        else setMachineState("idle");
+      } else if(machineState==="error") setMachineState("idle");
       break;
     case"estop":
       setMachineState("estop");
@@ -907,10 +940,26 @@ function handleBtn(action){
     case"standby":
       if(machineState==="idle") setMachineState("standby");
       break;
-    case"nav_up":    jog("y",+5); break;
-    case"nav_down":  jog("y",-5); break;
-    case"nav_left":  jog("x",-5); break;
-    case"nav_right": jog("x",+5); break;
+    case"nav_up":
+      if(machineState==="manual"){
+        if(manualSubScreen==="Head Pos") jog("y",+5);
+        else if(!manualSubScreen && manualMenuIdx>=4){ manualMenuIdx-=4; updateManualMenu(); }
+      } break;
+    case"nav_down":
+      if(machineState==="manual"){
+        if(manualSubScreen==="Head Pos") jog("y",-5);
+        else if(!manualSubScreen && manualMenuIdx<=3){ manualMenuIdx+=4; updateManualMenu(); }
+      } break;
+    case"nav_left":
+      if(machineState==="manual"){
+        if(manualSubScreen==="Head Pos") jog("x",-5);
+        else if(!manualSubScreen && manualMenuIdx>0){ manualMenuIdx--; updateManualMenu(); }
+      } break;
+    case"nav_right":
+      if(machineState==="manual"){
+        if(manualSubScreen==="Head Pos") jog("x",+5);
+        else if(!manualSubScreen && manualMenuIdx<7){ manualMenuIdx++; updateManualMenu(); }
+      } break;
     case"dek_run":
       if(["idle","standby"].includes(machineState)){ cycleCount=0; setMachineState("running"); }
       break;
@@ -953,12 +1002,29 @@ function handleEmergency(){
   }
 }
 
+function updateManualMenu(){
+  const items=document.querySelectorAll(".nxt-g-man-item");
+  items.forEach((el,i)=>el.classList.toggle("sel",i===manualMenuIdx));
+}
+
+function updateManualGuidance(){
+  const gd=document.querySelector(".nxt-mon-guidance");
+  if(!gd) return;
+  const m=MACHINES[currentMaq];
+  const erro=currentErroId?MACHINES[currentMaq].erros.find(e=>e.id===currentErroId):null;
+  gd.innerHTML=nxtMonGuidance(m,erro,"manual");
+}
+
 function jog(axis, delta){
   if(machineState!=="manual") return;
   headPos[axis]=Math.max(0,Math.min(600,headPos[axis]+delta));
   if(currentMaq==="nxt"){
     const ep=document.getElementById("nxtManPos");
     if(ep) ep.textContent=`X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}`;
+    const sx=document.getElementById("nxtSubPosX");
+    const sy=document.getElementById("nxtSubPosY");
+    if(sx) sx.textContent=headPos.x.toFixed(2);
+    if(sy) sy.textContent=headPos.y.toFixed(2);
   } else {
     const ex=document.getElementById("fscPosX");
     const ey=document.getElementById("fscPosY");
@@ -982,7 +1048,7 @@ function renderTabs(){
 function selectMaq(key){
   currentMaq=key; currentErroId=null;
   if(cycleTimer){clearInterval(cycleTimer);cycleTimer=null;}
-  machineState="idle";
+  machineState="idle"; manualMenuIdx=0; manualSubScreen=null;
   document.getElementById("mvFilterCat").value="";
   document.getElementById("mvSearch").value="";
   renderTabs(); renderKpis(); buildCatFilter(); renderErrList();
@@ -1139,17 +1205,19 @@ function nxtMonGuidance(m, erro, st){
     </div>
   </div>`;
 
-  if(st==="manual") return `<div class="nxt-g-man">
-    <div class="nxt-g-man-hdr">
-      <div class="nxt-g-man-title">MANUAL MODE</div>
-      <div class="nxt-g-man-pos" id="nxtManPos">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</div>
-    </div>
-    <div class="nxt-g-man-grid">
-      ${["Cleaning","Head Pos","Diagnosis","Job Test","Exchange","Info","Panel Out","Head Adj"]
-        .map((l,i)=>`<div class="nxt-g-man-item${i===0?" sel":""}"><div class="nxt-g-man-lbl">${l}</div></div>`).join("")}
-    </div>
-    <div class="nxt-g-man-hint">← → ↑ ↓ · OK confirmar · READY ON para sair</div>
-  </div>`;
+  if(st==="manual"){
+    if(manualSubScreen) return nxtManSubScreen(manualSubScreen);
+    return `<div class="nxt-g-man">
+      <div class="nxt-g-man-hdr">
+        <div class="nxt-g-man-title">MANUAL MODE</div>
+        <div class="nxt-g-man-pos" id="nxtManPos">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</div>
+      </div>
+      <div class="nxt-g-man-grid">
+        ${MANUAL_MENU.map((l,i)=>`<div class="nxt-g-man-item${i===manualMenuIdx?" sel":""}"><div class="nxt-g-man-lbl">${l}</div></div>`).join("")}
+      </div>
+      <div class="nxt-g-man-hint">←→↑↓ navegar · OK entrar · CANCEL sair</div>
+    </div>`;
+  }
 
   if(st==="error"&&erro){
     const d=erro.display||{};
@@ -1207,6 +1275,66 @@ function nxtMonGuidance(m, erro, st){
       <div class="nxt-g-idle-mod"><div class="nxt-g-idle-mod-n">M3 II·3</div><div class="nxt-g-idle-mod-h">H04S H02</div><div class="nxt-g-idle-mod-s">● RDY</div></div>
     </div>
   </div>`;
+}
+
+/* ─── NXT Manual sub-screens ─── */
+function nxtManSubScreen(name){
+  const hdr=`<div class="nxt-g-man-hdr"><div class="nxt-g-man-title">${name.toUpperCase()}</div><div class="nxt-g-man-sub-back">CANCEL ← voltar</div></div>`;
+  if(name==="Cleaning") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-sub-row sel">All Heads</div>
+    <div class="nxt-g-man-sub-row">Head 1 — H12HS</div>
+    <div class="nxt-g-man-sub-row">Head 2 — H08</div>
+    <div class="nxt-g-man-sub-row">Head 3 — H04S</div>
+    <div class="nxt-g-man-hint">OK → iniciar limpeza dos bicos</div>
+  </div></div>`;
+  if(name==="Head Pos") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub nxt-g-man-sub-pos">
+    <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">X</span><span class="nxt-g-man-sub-ax-val" id="nxtSubPosX">${headPos.x.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
+    <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">Y</span><span class="nxt-g-man-sub-ax-val" id="nxtSubPosY">${headPos.y.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
+    <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">Z</span><span class="nxt-g-man-sub-ax-val">${headPos.z.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
+    <div class="nxt-g-man-hint">← → X · ↑ ↓ Y · OK → home</div>
+  </div></div>`;
+  if(name==="Diagnosis") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-diag-row"><span>Module 1 · M6 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-diag-row"><span>Module 2 · M6 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-diag-row"><span>Module 3 · M3 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-diag-row"><span>Conveyor</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-diag-row"><span>Vision</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-hint">OK → diagnóstico completo</div>
+  </div></div>`;
+  if(name==="Job Test") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-sub-info">Job: PCBA-001</div>
+    <div class="nxt-g-man-sub-info">Board: 200 × 150 mm</div>
+    <div class="nxt-g-man-sub-info">Comp: 156 pontos</div>
+    <div class="nxt-g-man-sub-info">Speed: 80%</div>
+    <div class="nxt-g-man-hint">OK → executar 1 ciclo de teste</div>
+  </div></div>`;
+  if(name==="Exchange") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-sub-row sel">Nozzle</div>
+    <div class="nxt-g-man-sub-row">Feeder</div>
+    <div class="nxt-g-man-sub-row">Head Unit</div>
+    <div class="nxt-g-man-sub-row">Backup Plate</div>
+    <div class="nxt-g-man-hint">↑ ↓ selecionar · OK confirmar</div>
+  </div></div>`;
+  if(name==="Info") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-sub-info">Model: Fuji NXT M6 II</div>
+    <div class="nxt-g-man-sub-info">S/N: NXT-2601-0042</div>
+    <div class="nxt-g-man-sub-info">SW: v3.1.2-R04</div>
+    <div class="nxt-g-man-sub-info">Hours: 12,450 h</div>
+    <div class="nxt-g-man-sub-info">Modules: 3</div>
+  </div></div>`;
+  if(name==="Panel Out") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub nxt-g-man-sub-center">
+    <div class="nxt-g-man-sub-icon">⊡</div>
+    <div class="nxt-g-man-sub-msg">Pronto para descarregar</div>
+    <div class="nxt-g-man-sub-detail">Lane 1 · PCBA-001</div>
+    <div class="nxt-g-man-hint">OK → descarregar painel</div>
+  </div></div>`;
+  if(name==="Head Adj") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-sub-adj-row"><span>Offset X</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-sub-adj-row"><span>Offset Y</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-sub-adj-row"><span>Theta</span><span class="nxt-g-man-sub-adj-val">+0.00°</span><span class="nxt-g-man-sub-adj-unit"></span></div>
+    <div class="nxt-g-man-hint">OK → iniciar calibração</div>
+  </div></div>`;
+  return `<div class="nxt-g-man">${hdr}</div>`;
 }
 
 /* ─── NXT Panel (faithful to real hardware layout) ─── */
@@ -1299,7 +1427,7 @@ function renderNXTPanel(m,erro){
               <button class="nxt-nav" onclick="handleBtn('nav_up')" title="No menu: seleciona item acima · No modo manual: move o cabeçote Y+ · Aumenta valor numérico">↑</button>
               <div class="nxt-cross-mid">
                 <button class="nxt-nav" onclick="handleBtn('nav_left')" title="No menu: seleciona item à esquerda ou alterna tela de guia · No modo manual: move o cabeçote X−">←</button>
-                <button class="nxt-nav-c" title="Confirmar seleção">○</button>
+                <button class="nxt-nav-c" onclick="handleBtn('ok')" title="Confirmar seleção atual no menu">○</button>
                 <button class="nxt-nav" onclick="handleBtn('nav_right')" title="No menu: seleciona item à direita ou exibe detalhes · No modo manual: move o cabeçote X+">→</button>
               </div>
               <button class="nxt-nav" onclick="handleBtn('nav_down')" title="No menu: seleciona item abaixo · No modo manual: move o cabeçote Y− · Diminui valor numérico">↓</button>
