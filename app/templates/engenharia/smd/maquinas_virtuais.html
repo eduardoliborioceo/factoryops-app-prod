@@ -350,6 +350,100 @@
 .nxt-fuji{color:#ffffff;font-size:1.05rem;font-weight:900;font-style:italic;
   letter-spacing:3px;text-shadow:0 1px 3px rgba(0,0,0,0.5)}
 
+/* ── NXT Monitor 3-zone layout (faithful to real machine screen) ── */
+.nxt-screen{background:#000}
+.nxt-mon{display:flex;flex-direction:column;flex:1;min-height:0;font-family:'Courier New',monospace}
+.nxt-mon-body{display:flex;flex:1;min-height:0}
+.nxt-mon-strip{width:20px;flex-shrink:0;background:#080810;display:flex;flex-direction:column;align-items:center;padding:3px 2px;gap:3px;border-right:1px solid rgba(255,255,255,0.05)}
+.nxt-mon-mod{width:14px;height:14px;border-radius:2px;background:#1a3275;display:flex;align-items:center;justify-content:center;font-size:0.4rem;font-weight:900;color:#7eb2ff;font-family:monospace}
+.nxt-mon-sicon{width:13px;height:11px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:0.32rem;transition:background 0.2s}
+.nxt-mon-guidance{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:background 0.25s}
+.nxt-mon-guidance.g-idle,.nxt-mon-guidance.g-standby{background:#0b2010}
+.nxt-mon-guidance.g-running{background:#081809}
+.nxt-mon-guidance.g-manual{background:#261400}
+.nxt-mon-guidance.g-error{background:#7a5800}
+.nxt-mon-guidance.g-estop{background:#180000;animation:nxt-estop-bg 1.2s ease-in-out infinite}
+@keyframes nxt-estop-bg{0%,100%{background:#180000}50%{background:#260000}}
+.nxt-mon-guidance.g-stopping{background:#121200}
+.nxt-mon-job-bar{background:#020206;border-top:1px solid rgba(255,255,255,0.04);padding:3px 5px;display:flex;flex-direction:column;gap:1.5px;flex-shrink:0}
+.nxt-mon-lane{display:flex;align-items:center;gap:4px}
+.nxt-mon-li{width:4px;height:4px;border-radius:1px;flex-shrink:0;transition:background 0.3s}
+.nxt-mon-lname{color:rgba(255,255,255,0.35);font-size:0.33rem;font-family:monospace;font-weight:700;flex:1;overflow:hidden;white-space:nowrap}
+.nxt-mon-lpanels{display:flex;gap:1px}
+.nxt-mon-lp{width:7px;height:4px;border-radius:1px;background:rgba(255,255,255,0.06)}
+.nxt-mon-lp.lp-on{background:#155a1a}
+.nxt-mon-lp.lp-act{background:#00c836}
+.nxt-mon-lcount{color:rgba(255,255,255,0.32);font-size:0.33rem;font-family:monospace;min-width:20px;text-align:right}
+/* idle state */
+.nxt-g-idle{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:6px;gap:4px}
+.nxt-g-idle-circle{width:28px;height:28px;border-radius:50%;background:#1a3275;display:flex;align-items:center;justify-content:center;animation:nxt-idle-pulse 2.5s ease-in-out infinite}
+@keyframes nxt-idle-pulse{0%,100%{background:#1a3275;box-shadow:0 0 0 0 rgba(59,130,246,0)}50%{background:#1d4ed8;box-shadow:0 0 0 5px rgba(59,130,246,0.12)}}
+.nxt-g-idle-arrow{color:#7eb2ff;font-size:0.85rem;line-height:1;font-style:normal}
+.nxt-g-idle-ready{color:#00e676;font-size:0.55rem;font-weight:800;letter-spacing:2px;text-shadow:0 0 10px rgba(0,230,118,0.35)}
+.nxt-g-idle-sub{color:rgba(255,255,255,0.25);font-size:0.34rem;font-weight:600}
+.nxt-g-idle-mods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;width:100%;margin-top:2px}
+.nxt-g-idle-mod{background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.12);border-radius:3px;padding:2px;text-align:center}
+.nxt-g-idle-mod-n{color:#00e676;font-size:0.4rem;font-weight:800;font-family:monospace}
+.nxt-g-idle-mod-h{color:rgba(255,255,255,0.18);font-size:0.3rem;font-family:monospace;margin-top:1px}
+.nxt-g-idle-mod-s{color:#00e676;font-size:0.29rem;margin-top:1px}
+/* running state */
+.nxt-g-run{display:flex;flex-direction:column;flex:1;padding:5px 6px;gap:3px}
+.nxt-g-run-hdr{display:flex;justify-content:space-between;align-items:center}
+.nxt-g-run-status{color:#00e676;font-size:0.46rem;font-weight:800;letter-spacing:1.2px;display:flex;align-items:center;gap:3px}
+.nxt-g-run-dot{width:5px;height:5px;border-radius:50%;background:#00e676;animation:pulse-dot 1s infinite}
+.nxt-g-run-job{color:rgba(255,110,0,0.5);font-size:0.34rem;font-weight:700;font-family:monospace}
+.nxt-g-run-kpis{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.nxt-g-run-kpi{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:3px;padding:2px 4px}
+.nxt-g-run-kl{color:rgba(255,255,255,0.25);font-size:0.3rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.nxt-g-run-kv{color:#fff;font-size:0.7rem;font-weight:800;font-family:monospace;margin-top:1px}
+.nxt-g-run-mods{display:flex;flex-direction:column;gap:2px}
+.nxt-g-run-mod{display:flex;align-items:center;gap:3px;font-size:0.34rem;color:rgba(255,255,255,0.42);font-weight:700}
+.nxt-g-run-md{width:4px;height:4px;border-radius:50%;background:#00e676;flex-shrink:0}
+.nxt-g-run-cph{color:rgba(255,255,255,0.2);font-size:0.32rem;margin-left:auto}
+/* manual state */
+.nxt-g-man{display:flex;flex-direction:column;flex:1;padding:4px 5px;gap:2px}
+.nxt-g-man-hdr{display:flex;justify-content:space-between;align-items:center}
+.nxt-g-man-title{color:#ffb74d;font-size:0.42rem;font-weight:800;letter-spacing:0.6px}
+.nxt-g-man-pos{color:rgba(255,180,80,0.32);font-size:0.32rem;font-family:monospace}
+.nxt-g-man-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;flex:1}
+.nxt-g-man-item{border:1px solid rgba(255,180,50,0.15);border-radius:3px;padding:2px;text-align:center;display:flex;align-items:center;justify-content:center;background:rgba(255,180,50,0.05)}
+.nxt-g-man-item.sel{background:rgba(255,180,50,0.2);border-color:rgba(255,180,50,0.45)}
+.nxt-g-man-lbl{color:rgba(255,210,120,0.78);font-size:0.31rem;font-weight:700;line-height:1.25}
+.nxt-g-man-hint{color:rgba(255,180,50,0.3);font-size:0.3rem;text-align:center}
+/* error state */
+.nxt-g-err{display:flex;flex-direction:column;flex:1}
+.nxt-g-err-top{display:flex;justify-content:space-between;align-items:center;padding:2px 5px;background:rgba(0,0,0,0.25);flex-shrink:0}
+.nxt-g-err-mod{color:#fff;font-size:0.4rem;font-weight:800;font-family:monospace}
+.nxt-g-err-codes{text-align:right;line-height:1.3}
+.nxt-g-err-code{color:rgba(255,255,255,0.6);font-size:0.34rem;font-family:monospace}
+.nxt-g-err-body{flex:1;padding:4px 6px;display:flex;flex-direction:column;gap:1px;overflow:hidden}
+.nxt-g-err-clbl{color:rgba(0,0,0,0.5);font-size:0.31rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.nxt-g-err-main{color:#1a1a00;font-size:0.65rem;font-weight:900;line-height:1.15}
+.nxt-g-err-sub{color:#2a2200;font-size:0.42rem;font-weight:700;line-height:1.35}
+.nxt-g-err-ecode{color:#000;font-family:monospace;font-size:0.5rem;font-weight:900;background:rgba(0,0,0,0.1);border-radius:2px;padding:0 3px;display:inline-block}
+.nxt-g-err-proc{border-top:1px solid rgba(0,0,0,0.1);padding-top:2px;margin-top:2px}
+.nxt-g-err-plbl{color:rgba(0,0,0,0.45);font-size:0.3rem;font-weight:700;text-transform:uppercase}
+.nxt-g-err-step{color:#1a1a00;font-size:0.36rem;font-weight:700;display:flex;align-items:baseline;gap:2px;margin-top:1px}
+.nxt-g-err-snum{background:rgba(0,0,0,0.13);border-radius:50%;width:9px;height:9px;font-size:0.27rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:900}
+.nxt-g-err-foot{background:rgba(0,0,0,0.14);padding:2px 5px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.nxt-g-err-frdy{color:rgba(0,0,0,0.4);font-size:0.32rem;font-weight:700}
+/* estop state */
+.nxt-g-estop{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:8px;gap:4px}
+.nxt-g-estop-icon{color:#ff1a1a;font-size:1.4rem;line-height:1;animation:pulse-dot 1.2s ease-in-out infinite}
+.nxt-g-estop-title{color:#ff1a1a;font-size:0.6rem;font-weight:900;letter-spacing:1.5px;text-align:center}
+.nxt-g-estop-msg{color:rgba(255,70,70,0.55);font-size:0.38rem;font-weight:700;text-align:center}
+.nxt-g-estop-inst{color:rgba(255,70,70,0.42);font-size:0.35rem;font-weight:600;text-align:center;line-height:1.5;margin-top:1px}
+/* stopping state */
+.nxt-g-stop{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:8px;gap:5px}
+.nxt-g-stop-txt{color:#ffee00;font-size:0.55rem;font-weight:800;letter-spacing:2px}
+.nxt-g-stop-sub{color:rgba(255,238,0,0.4);font-size:0.36rem;font-weight:600;text-align:center}
+.nxt-g-stop-bar{width:65%;height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.nxt-g-stop-fill{height:100%;background:#ffee00;border-radius:2px;animation:stop-fill 1.5s linear forwards}
+/* standby state */
+.nxt-g-standby{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:8px;gap:4px}
+.nxt-g-standby-txt{color:rgba(80,100,255,0.42);font-size:0.6rem;font-weight:800;letter-spacing:3px}
+.nxt-g-standby-sub{color:rgba(255,255,255,0.14);font-size:0.36rem;font-weight:600;text-align:center;line-height:1.5}
+
 /* ── Forno de Refusão panel ── */
 .panel-forno{background:linear-gradient(160deg,#1c1008 0%,#12090002 50%,#0a0500 100%);
   border-radius:16px;border:3px solid #0a0500;
@@ -862,10 +956,15 @@ function handleEmergency(){
 function jog(axis, delta){
   if(machineState!=="manual") return;
   headPos[axis]=Math.max(0,Math.min(600,headPos[axis]+delta));
-  const ex=document.getElementById("fscPosX");
-  const ey=document.getElementById("fscPosY");
-  if(ex) ex.textContent=headPos.x.toFixed(2);
-  if(ey) ey.textContent=headPos.y.toFixed(2);
+  if(currentMaq==="nxt"){
+    const ep=document.getElementById("nxtManPos");
+    if(ep) ep.textContent=`X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}`;
+  } else {
+    const ex=document.getElementById("fscPosX");
+    const ey=document.getElementById("fscPosY");
+    if(ex) ex.textContent=headPos.x.toFixed(2);
+    if(ey) ey.textContent=headPos.y.toFixed(2);
+  }
 }
 
 /* ─── Tabs ─── */
@@ -971,15 +1070,147 @@ function renderPanel(erro){
   else                           wrap.innerHTML=renderInspectPanel(m,erro);
 }
 
+/* ─── NXT Monitor 3-zone screen builder ─── */
+function buildNXTMonitor(m, erro){
+  const st = machineState;
+  const gcls = {
+    idle:"g-idle", running:"g-running", manual:"g-manual", error:"g-error",
+    estop:"g-estop", stopping:"g-stopping", standby:"g-standby"
+  }[st] || "g-idle";
+  return `<div class="nxt-mon">
+    <div class="nxt-mon-body">
+      <div class="nxt-mon-strip">${nxtMonStrip(st)}</div>
+      <div class="nxt-mon-guidance ${gcls}">${nxtMonGuidance(m,erro,st)}</div>
+    </div>
+    <div class="nxt-mon-job-bar">
+      ${nxtMonLane(1,st)}
+      ${nxtMonLane(2,st)}
+    </div>
+  </div>`;
+}
+
+function nxtMonStrip(st){
+  const run=st==="running", err=st==="error", man=st==="manual";
+  const ri=run?"0.28":"0.05", rb=run?"0.5":"0.08", rc=run?"0.9":"0.2";
+  const mi=man?"0.28":"0.05", mb=man?"0.5":"0.08", mc=man?"0.9":"0.2";
+  const ei=err?"0.28":"0.05", eb=err?"0.5":"0.08", ec=err?"0.9":"0.2";
+  return `<div class="nxt-mon-mod">2</div>
+    <div class="nxt-mon-sicon" style="background:rgba(0,200,80,${ri});border:1px solid rgba(0,200,80,${rb})">
+      <span style="color:rgba(0,200,80,${rc})">▶</span>
+    </div>
+    <div class="nxt-mon-sicon" style="background:rgba(255,160,0,${mi});border:1px solid rgba(255,160,0,${mb})">
+      <span style="color:rgba(255,160,0,${mc})">M</span>
+    </div>
+    <div class="nxt-mon-sicon" style="background:rgba(255,70,70,${ei});border:1px solid rgba(255,70,70,${eb})">
+      <span style="color:rgba(255,70,70,${ec})">!</span>
+    </div>`;
+}
+
+function nxtMonLane(lane, st){
+  const run=st==="running", noJob=["idle","standby","estop"].includes(st);
+  const job=noJob?"NO JOB":"PCBA-001";
+  const cnt=run?(lane===1?String(cycleCount).padStart(4,"0"):String(Math.max(0,cycleCount-1)).padStart(4,"0")):"0000";
+  const ind=run?"#00c836":(noJob?"rgba(255,255,255,0.08)":"rgba(0,200,80,0.35)");
+  const panels=run
+    ?`<div class="nxt-mon-lp lp-act"></div><div class="nxt-mon-lp lp-on"></div><div class="nxt-mon-lp"></div>`
+    :`<div class="nxt-mon-lp"></div><div class="nxt-mon-lp"></div><div class="nxt-mon-lp"></div>`;
+  return `<div class="nxt-mon-lane">
+    <div class="nxt-mon-li" style="background:${ind}"></div>
+    <div class="nxt-mon-lname">${job}</div>
+    <div class="nxt-mon-lpanels">${panels}</div>
+    <div class="nxt-mon-lcount">${cnt}</div>
+  </div>`;
+}
+
+function nxtMonGuidance(m, erro, st){
+  if(st==="running") return `<div class="nxt-g-run">
+    <div class="nxt-g-run-hdr">
+      <div class="nxt-g-run-status"><div class="nxt-g-run-dot"></div>AUTO RUNNING</div>
+      <div class="nxt-g-run-job">PCBA-001</div>
+    </div>
+    <div class="nxt-g-run-kpis">
+      <div class="nxt-g-run-kpi"><div class="nxt-g-run-kl">Ciclos</div><div class="nxt-g-run-kv" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div>
+      <div class="nxt-g-run-kpi"><div class="nxt-g-run-kl">CPH Total</div><div class="nxt-g-run-kv" style="font-size:0.58rem">26,000</div></div>
+    </div>
+    <div class="nxt-g-run-mods">
+      <div class="nxt-g-run-mod"><div class="nxt-g-run-md"></div>M6 II ·1 — H12HS<span class="nxt-g-run-cph">12,000</span></div>
+      <div class="nxt-g-run-mod"><div class="nxt-g-run-md"></div>M6 II ·2 — H08<span class="nxt-g-run-cph">8,000</span></div>
+      <div class="nxt-g-run-mod"><div class="nxt-g-run-md"></div>M3 II ·3 — H04S<span class="nxt-g-run-cph">6,000</span></div>
+    </div>
+  </div>`;
+
+  if(st==="manual") return `<div class="nxt-g-man">
+    <div class="nxt-g-man-hdr">
+      <div class="nxt-g-man-title">MANUAL MODE</div>
+      <div class="nxt-g-man-pos" id="nxtManPos">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</div>
+    </div>
+    <div class="nxt-g-man-grid">
+      ${["Cleaning","Head Pos","Diagnosis","Job Test","Exchange","Info","Panel Out","Head Adj"]
+        .map((l,i)=>`<div class="nxt-g-man-item${i===0?" sel":""}"><div class="nxt-g-man-lbl">${l}</div></div>`).join("")}
+    </div>
+    <div class="nxt-g-man-hint">← → ↑ ↓ · OK confirmar · READY ON para sair</div>
+  </div>`;
+
+  if(st==="error"&&erro){
+    const d=erro.display||{};
+    return `<div class="nxt-g-err">
+      <div class="nxt-g-err-top">
+        <div class="nxt-g-err-mod">Module <strong>${d.modulo||"—"}</strong></div>
+        <div class="nxt-g-err-codes">
+          <div class="nxt-g-err-code">Soak ${d.soak||"—"}</div>
+          <div class="nxt-g-err-code">Sub ${d.subcode||"—"}</div>
+        </div>
+      </div>
+      <div class="nxt-g-err-body">
+        <div class="nxt-g-err-clbl">Cause of the error</div>
+        <div class="nxt-g-err-main">${d.main||"Error"}</div>
+        <div class="nxt-g-err-sub">${d.sub||""}</div>
+        <div><span class="nxt-g-err-ecode">${d.errcode||""}</span></div>
+        <div class="nxt-g-err-proc">
+          <div class="nxt-g-err-plbl">Procedure to clear error</div>
+          <div class="nxt-g-err-step"><div class="nxt-g-err-snum">1</div>Verifique e corrija a causa</div>
+          <div class="nxt-g-err-step"><div class="nxt-g-err-snum">2</div>Pressione READY ON para limpar</div>
+        </div>
+      </div>
+      <div class="nxt-g-err-foot">
+        <div class="nxt-g-err-frdy">↑ READY ON to clear</div>
+        <div class="nxt-g-err-ecode" style="font-size:0.42rem">${d.header||""}</div>
+      </div>
+    </div>`;
+  }
+
+  if(st==="estop") return `<div class="nxt-g-estop">
+    <div class="nxt-g-estop-icon">⊗</div>
+    <div class="nxt-g-estop-title">EMERGENCY STOP</div>
+    <div class="nxt-g-estop-msg">Servos desligados · 200V cortado</div>
+    <div class="nxt-g-estop-inst">Gire EMERGENCY horário ↺ para destravar<br>depois pressione START</div>
+  </div>`;
+
+  if(st==="stopping") return `<div class="nxt-g-stop">
+    <div class="nxt-g-stop-txt">STOPPING…</div>
+    <div class="nxt-g-stop-sub">Concluindo painel e descarregando</div>
+    <div class="nxt-g-stop-bar"><div class="nxt-g-stop-fill"></div></div>
+  </div>`;
+
+  if(st==="standby") return `<div class="nxt-g-standby">
+    <div class="nxt-g-standby-txt">STANDBY</div>
+    <div class="nxt-g-standby-sub">Energia fornecida ao módulo<br>Pressione qualquer botão para ativar</div>
+  </div>`;
+
+  return `<div class="nxt-g-idle">
+    <div class="nxt-g-idle-circle"><span class="nxt-g-idle-arrow">↑</span></div>
+    <div class="nxt-g-idle-ready">READY</div>
+    <div class="nxt-g-idle-sub">Press START to begin production</div>
+    <div class="nxt-g-idle-mods">
+      <div class="nxt-g-idle-mod"><div class="nxt-g-idle-mod-n">M6 II·1</div><div class="nxt-g-idle-mod-h">H12HS H08</div><div class="nxt-g-idle-mod-s">● RDY</div></div>
+      <div class="nxt-g-idle-mod"><div class="nxt-g-idle-mod-n">M6 II·2</div><div class="nxt-g-idle-mod-h">H08 H04S</div><div class="nxt-g-idle-mod-s">● RDY</div></div>
+      <div class="nxt-g-idle-mod"><div class="nxt-g-idle-mod-n">M3 II·3</div><div class="nxt-g-idle-mod-h">H04S H02</div><div class="nxt-g-idle-mod-s">● RDY</div></div>
+    </div>
+  </div>`;
+}
+
 /* ─── NXT Panel (faithful to real hardware layout) ─── */
 function renderNXTPanel(m,erro){
-  let screenClass="s-idle", sc=fujiScreenIdle(m);
-  if(machineState==="running"){screenClass="s-running";sc=fujiScreenRunning(m);}
-  else if(machineState==="manual"){screenClass="s-manual";sc=fujiScreenManual();}
-  else if(machineState==="error"&&erro){screenClass="s-error";sc=fujiScreenError(m,erro);}
-  else if(machineState==="estop"){screenClass="s-estop";sc=fujiScreenEstop();}
-  else if(machineState==="stopping"){screenClass="s-stopping";sc=fujiScreenStopping();}
-  else if(machineState==="standby"){screenClass="s-standby";sc=fujiScreenStandby();}
   const rdyLed=["idle","running","stopping","standby"].includes(machineState)?"":"off";
   return `<div class="panel-nxt">
     <div class="nxt-manual-bar">
@@ -991,7 +1222,7 @@ function renderNXTPanel(m,erro){
       </a>
     </div>
     <div class="nxt-screen-bezel">
-      <div class="nxt-screen ${screenClass} fuji-screen">${sc}</div>
+      <div class="nxt-screen">${buildNXTMonitor(m,erro)}</div>
     </div>
     <div class="nxt-btn-panel">
       <div class="nxt-row-main">
@@ -1148,116 +1379,13 @@ function renderFujiPanel(m,erro){
     </div>`;
 }
 function fujiScreenIdle(m){
-  const isNXT=m.model3D==="nxt";
-  if(isNXT){
-    return`<div class="fsc-idle" style="padding:8px 10px;gap:4px;justify-content:flex-start;align-items:stretch">
-      <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,102,0,0.1);border-radius:3px;padding:3px 7px">
-        <span style="color:rgba(255,102,0,0.75);font-size:0.46rem;font-weight:800;letter-spacing:0.8px">FUJI NXT · SCALABLE PLACEMENT PLATFORM</span>
-        <span style="color:rgba(255,255,255,0.25);font-size:0.44rem;font-family:monospace">v07</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0">
-        <div class="fsc-idle-ready" style="font-size:1.1rem">READY</div>
-        <div style="text-align:right">
-          <div style="color:rgba(0,230,118,0.65);font-size:0.4rem;font-weight:700">● Waiting for START</div>
-          <div style="color:rgba(255,255,255,0.2);font-size:0.37rem;margin-top:1px">Press START to begin production</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px">
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
-          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M6 II ·1</div>
-          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H12HS · H08</div>
-          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
-        </div>
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
-          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M6 II ·2</div>
-          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H08 · H04S</div>
-          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
-        </div>
-        <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.14);border-radius:4px;padding:3px 5px;text-align:center">
-          <div style="color:#00e676;font-size:0.55rem;font-weight:800">M3 II ·3</div>
-          <div style="color:rgba(255,255,255,0.28);font-size:0.4rem;margin-top:1px">H04S · H02</div>
-          <div style="color:#00e676;font-size:0.38rem;margin-top:1px">● READY</div>
-        </div>
-      </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;margin-top:1px">
-        <div style="display:flex;gap:3px">
-          <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;padding:2px 5px">
-            <div style="color:rgba(0,230,118,0.4);font-size:0.34rem;font-weight:700">Lane 1</div>
-            <div style="color:rgba(255,255,255,0.22);font-size:0.38rem;font-family:monospace;margin-top:1px">NO JOB &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
-          </div>
-          <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;padding:2px 5px">
-            <div style="color:rgba(0,230,118,0.4);font-size:0.34rem;font-weight:700">Lane 2</div>
-            <div style="color:rgba(255,255,255,0.22);font-size:0.38rem;font-family:monospace;margin-top:1px">NO JOB &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0</div>
-          </div>
-        </div>
-      </div>
-      <div class="fsc-idle-dots" style="justify-content:center;margin-top:1px"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div>
-    </div>`;
-  }
   return`<div class="fsc-idle"><div class="fsc-idle-ready">READY</div><div class="fsc-idle-model">${m.label} ${m.subtipo}</div><div class="fsc-idle-dots"><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div><div class="fsc-idle-dot"></div></div></div>`;
 }
 function fujiScreenRunning(m){
-  const isNXT=m.model3D==="nxt";
-  if(isNXT){
-    return`<div class="fsc-running" style="padding:8px 10px;gap:4px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div>
-        <span style="font-size:0.46rem;color:rgba(255,102,0,0.55);font-weight:700;font-family:monospace">PCBA-001</span>
-      </div>
-      <div class="fsc-run-grid">
-        <div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div>
-        <div class="fsc-run-cell"><div class="fsc-run-label">CPH Total</div><div class="fsc-run-val" style="font-size:0.7rem">26,000</div></div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:3px">
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·1 — H12HS &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">12,000 cph</span></div>
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M6 II ·2 — H08 &nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">8,000 cph</span></div>
-        <div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>M3 II ·3 — H04S &nbsp;<span style="color:rgba(255,255,255,0.35);font-size:0.52rem">6,000 cph</span></div>
-      </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.07);padding-top:4px;margin-top:1px;display:flex;gap:3px">
-        <div style="flex:1;background:rgba(0,200,80,0.09);border-radius:3px;padding:2px 5px">
-          <div style="color:rgba(0,200,80,0.5);font-size:0.33rem;font-weight:700">Lane 1 ■</div>
-          <div style="color:rgba(255,255,255,0.45);font-size:0.37rem;font-family:monospace">PCBA-001 &nbsp;<span id="fscCycleCountL1">${String(cycleCount).padStart(4,"0")}</span></div>
-        </div>
-        <div style="flex:1;background:rgba(0,200,80,0.09);border-radius:3px;padding:2px 5px">
-          <div style="color:rgba(0,200,80,0.5);font-size:0.33rem;font-weight:700">Lane 2 ■</div>
-          <div style="color:rgba(255,255,255,0.45);font-size:0.37rem;font-family:monospace">PCBA-001 &nbsp;<span>${String(Math.max(0,cycleCount-1)).padStart(4,"0")}</span></div>
-        </div>
-      </div>
-    </div>`;
-  }
   const mods=["MOD 1 — OK","MOD 2 — OK","MOD 3 — OK"];
   return`<div class="fsc-running"><div class="fsc-run-status"><div class="fsc-run-dot"></div>AUTO RUNNING</div><div class="fsc-run-grid"><div class="fsc-run-cell"><div class="fsc-run-label">Ciclos</div><div class="fsc-run-val" id="fscCycleCount">${String(cycleCount).padStart(4,"0")}</div></div><div class="fsc-run-cell"><div class="fsc-run-label">Program</div><div class="fsc-run-val" style="font-size:0.72rem">PROG-01</div></div></div><div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">${mods.map(s=>`<div class="fsc-run-mod"><div class="fsc-run-mod-dot"></div>${s}</div>`).join("")}</div></div>`;
 }
 function fujiScreenManual(){
-  const isNXT=currentMaq==="nxt";
-  if(isNXT){
-    const items=[
-      {label:"Cleaning",desc:"Limpar bicos e marcas"},
-      {label:"Head Pos",desc:"Posicionar cabeçote"},
-      {label:"Diagnosis",desc:"Diagnóstico do módulo"},
-      {label:"Job Test",desc:"Testar job sem produzir"},
-      {label:"Exchange",desc:"Trocar bicos/palheta/cabeças"},
-      {label:"Info",desc:"Informações do módulo"},
-      {label:"Panel Out",desc:"Remover painel manualmente"},
-      {label:"Head Adj",desc:"Ajuste fino do cabeçote"},
-    ];
-    return`<div class="fsc-manual" style="background:linear-gradient(180deg,#3a2100 0%,#251500 100%);padding:8px 10px;gap:4px;align-items:stretch">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="color:#ffb74d;font-size:0.52rem;font-weight:800;letter-spacing:0.8px">MANUAL MODE</span>
-        <span style="color:rgba(255,180,80,0.4);font-size:0.42rem;font-family:monospace">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;margin:2px 0">
-        ${items.map((item,i)=>`<div title="${item.desc}" style="background:rgba(255,180,50,${i===0?'0.22':'0.07'});border:1px solid rgba(255,180,50,${i===0?'0.5':'0.18'});border-radius:3px;padding:4px 2px;text-align:center;cursor:default"><div style="color:rgba(255,215,130,${i===0?'1':'0.78'});font-size:0.37rem;font-weight:700;line-height:1.3">${item.label}</div></div>`).join("")}
-      </div>
-      <div style="border-top:1px solid rgba(255,180,50,0.15);padding-top:4px;margin-top:1px">
-        <div style="display:flex;gap:14px;justify-content:center">
-          <span style="font-size:0.42rem;color:rgba(255,180,50,0.55)">X <span id="fscPosX">${headPos.x.toFixed(2)}</span> mm</span>
-          <span style="font-size:0.42rem;color:rgba(255,180,50,0.55)">Y <span id="fscPosY">${headPos.y.toFixed(2)}</span> mm</span>
-        </div>
-        <div style="color:rgba(255,180,50,0.38);font-size:0.37rem;text-align:center;margin-top:3px">← → ↑ ↓ selecionar · OK confirmar · READY ON para sair</div>
-      </div>
-    </div>`;
-  }
   return`<div class="fsc-manual"><div class="fsc-man-title">MANUAL MODE</div><div class="fsc-man-coords"><div class="fsc-man-row"><span class="fsc-man-axis">X</span><span class="fsc-man-val" id="fscPosX">${headPos.x.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Y</span><span class="fsc-man-val" id="fscPosY">${headPos.y.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div><div class="fsc-man-row"><span class="fsc-man-axis">Z</span><span class="fsc-man-val" id="fscPosZ">${headPos.z.toFixed(2)}</span><span class="fsc-man-unit">mm</span></div></div><div class="fsc-man-hint">Use ← → △ ▽ para mover · READY para sair</div></div>`;
 }
 function fujiScreenError(m,erro){const d=erro.display;return`<div class="fsc-error"><div class="fsc-err-top"><div class="fsc-err-module">Module <strong>${d.modulo||"—"}</strong></div><div class="fsc-err-soak"><div><span>Soak Number&nbsp;</span><strong>${d.soak||"—"}</strong></div><div><span>Sub Code&nbsp;&nbsp;&nbsp;&nbsp;</span><strong>${d.subcode||"—"}</strong></div></div></div><div class="fsc-err-body"><div class="fsc-err-icons"><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#1565c0">H1</div><div class="fsc-err-icon" style="background:#0d47a1">H2</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#f57c00">FD</div><div class="fsc-err-icon" style="background:#388e3c">CV</div></div><div class="fsc-err-icon-row"><div class="fsc-err-icon" style="background:#6a1b9a">VS</div></div></div><div class="fsc-err-text"><div class="fsc-err-cat">${d.header||""}</div><div class="fsc-err-main">${d.main||""}</div><div class="fsc-err-sub">${d.sub||""}</div></div></div><div class="fsc-err-foot"><span class="fsc-err-info">${m.label} — ${m.subtipo}</span><span class="fsc-err-code">${d.errcode||""}</span></div></div>`;}
