@@ -358,13 +358,14 @@
 .nxt-mon-mod{width:14px;height:14px;border-radius:2px;background:#1a3275;display:flex;align-items:center;justify-content:center;font-size:0.4rem;font-weight:900;color:#7eb2ff;font-family:monospace}
 .nxt-mon-sicon{width:13px;height:11px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:0.32rem;transition:background 0.2s}
 .nxt-mon-guidance{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;transition:background 0.25s}
-.nxt-mon-guidance.g-idle,.nxt-mon-guidance.g-standby{background:#0b2010}
-.nxt-mon-guidance.g-running{background:#081809}
-.nxt-mon-guidance.g-manual{background:#261400}
-.nxt-mon-guidance.g-error{background:#7a5800}
-.nxt-mon-guidance.g-estop{background:#180000;animation:nxt-estop-bg 1.2s ease-in-out infinite}
-@keyframes nxt-estop-bg{0%,100%{background:#180000}50%{background:#260000}}
-.nxt-mon-guidance.g-stopping{background:#121200}
+/* screen background cores fiéis ao manual: verde=idle/run, marrom=manual, amarelo=erro (p.5) */
+.nxt-mon-guidance.g-idle,.nxt-mon-guidance.g-standby{background:#0c2218}
+.nxt-mon-guidance.g-running{background:#0a1f10}
+.nxt-mon-guidance.g-manual{background:#2c1200}
+.nxt-mon-guidance.g-error{background:#6b4a00}
+.nxt-mon-guidance.g-estop{background:#1c0000;animation:nxt-estop-bg 1.2s ease-in-out infinite}
+@keyframes nxt-estop-bg{0%,100%{background:#1c0000}50%{background:#2e0000}}
+.nxt-mon-guidance.g-stopping{background:#141400}
 .nxt-mon-job-bar{background:#020206;border-top:1px solid rgba(255,255,255,0.04);padding:3px 5px;display:flex;flex-direction:column;gap:1.5px;flex-shrink:0}
 .nxt-mon-lane{display:flex;align-items:center;gap:4px}
 .nxt-mon-li{width:4px;height:4px;border-radius:1px;flex-shrink:0;transition:background 0.3s}
@@ -400,40 +401,48 @@
 .nxt-g-run-mod{display:flex;align-items:center;gap:3px;font-size:0.34rem;color:rgba(255,255,255,0.42);font-weight:700}
 .nxt-g-run-md{width:4px;height:4px;border-radius:50%;background:#00e676;flex-shrink:0}
 .nxt-g-run-cph{color:rgba(255,255,255,0.2);font-size:0.32rem;margin-left:auto}
-/* manual state */
-.nxt-g-man{display:flex;flex-direction:column;flex:1;padding:4px 5px;gap:2px}
-.nxt-g-man-hdr{display:flex;justify-content:space-between;align-items:center}
-.nxt-g-man-title{color:#ffb74d;font-size:0.42rem;font-weight:800;letter-spacing:0.6px}
-.nxt-g-man-pos{color:rgba(255,180,80,0.32);font-size:0.32rem;font-family:monospace}
+/* manual state — cores fiéis ao manual: cinza para não selecionado, verde para selecionado */
+.nxt-g-man{display:flex;flex-direction:column;flex:1;padding:3px 4px;gap:2px}
+.nxt-g-man-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1px}
+.nxt-g-man-title{color:rgba(255,255,255,0.75);font-size:0.38rem;font-weight:700;letter-spacing:0.5px}
+.nxt-g-man-pos{color:rgba(255,255,255,0.28);font-size:0.3rem;font-family:monospace}
 .nxt-g-man-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;flex:1}
-.nxt-g-man-item{border:1px solid rgba(255,180,50,0.15);border-radius:3px;padding:2px;text-align:center;display:flex;align-items:center;justify-content:center;background:rgba(255,180,50,0.05)}
-.nxt-g-man-item.sel{background:rgba(255,180,50,0.2);border-color:rgba(255,180,50,0.45)}
-.nxt-g-man-lbl{color:rgba(255,210,120,0.78);font-size:0.31rem;font-weight:700;line-height:1.25}
-.nxt-g-man-hint{color:rgba(255,180,50,0.3);font-size:0.3rem;text-align:center}
+.nxt-g-man-item{border:1px solid rgba(255,255,255,0.12);border-radius:3px;padding:2px 1px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(200,200,200,0.11);gap:1px;cursor:pointer;transition:background 0.1s}
+.nxt-g-man-item.sel{background:rgba(0,200,70,0.30);border-color:rgba(0,230,90,0.55)}
+.nxt-g-man-icon{font-size:0.52rem;line-height:1;color:rgba(255,255,255,0.55);display:block}
+.nxt-g-man-item.sel .nxt-g-man-icon{color:#fff}
+.nxt-g-man-lbl{color:rgba(220,220,220,0.65);font-size:0.27rem;font-weight:700;line-height:1.2;white-space:nowrap}
+.nxt-g-man-item.sel .nxt-g-man-lbl{color:#fff;font-weight:800}
+.nxt-g-man-hint{color:rgba(255,255,255,0.22);font-size:0.27rem;text-align:center;margin-top:1px}
 /* sub-screen shared */
-.nxt-g-man-sub-back{color:rgba(255,180,50,0.28);font-size:0.27rem;font-weight:600}
-.nxt-g-man-sub{display:flex;flex-direction:column;flex:1;gap:2px;padding-top:2px;overflow:hidden}
-.nxt-g-man-sub-row{border:1px solid rgba(255,180,50,0.12);border-radius:2px;padding:2px 4px;font-size:0.31rem;font-weight:700;color:rgba(255,210,120,0.6);background:rgba(255,180,50,0.03)}
-.nxt-g-man-sub-row.sel{background:rgba(255,180,50,0.18);border-color:rgba(255,180,50,0.4);color:rgba(255,225,140,0.95)}
-.nxt-g-man-sub-info{font-size:0.31rem;font-weight:700;color:rgba(255,210,120,0.65);padding:1px 3px;font-family:monospace}
+.nxt-g-man-sub-back{color:rgba(255,255,255,0.28);font-size:0.26rem;font-weight:600}
+.nxt-g-man-sub{display:flex;flex-direction:column;flex:1;gap:1.5px;padding-top:2px;overflow:hidden}
+.nxt-g-man-sub-row{border:1px solid rgba(255,255,255,0.1);border-radius:2px;padding:2px 4px;font-size:0.3rem;font-weight:700;color:rgba(220,220,220,0.62);background:rgba(200,200,200,0.07)}
+.nxt-g-man-sub-row.sel{background:rgba(0,200,70,0.25);border-color:rgba(0,220,80,0.45);color:#fff}
+.nxt-g-man-sub-info{font-size:0.3rem;font-weight:700;color:rgba(200,200,200,0.7);padding:1px 3px;font-family:monospace}
+/* Procedure steps (Cleaning, Panel Out, Head Adj) */
+.nxt-g-man-proc-step{display:flex;align-items:baseline;gap:2px;padding:1.5px 3px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.nxt-g-man-proc-num{background:rgba(0,180,60,0.35);color:#fff;font-size:0.27rem;font-weight:900;border-radius:50%;width:8px;height:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.nxt-g-man-proc-txt{color:rgba(220,220,220,0.72);font-size:0.29rem;font-weight:600}
 /* Head Pos */
 .nxt-g-man-sub-pos{justify-content:center;gap:4px}
-.nxt-g-man-sub-axis{display:flex;align-items:baseline;gap:3px;padding:2px 4px;background:rgba(255,180,50,0.06);border-radius:2px;border:1px solid rgba(255,180,50,0.1)}
-.nxt-g-man-sub-ax-lbl{color:#ffb74d;font-size:0.34rem;font-weight:900;width:8px}
+.nxt-g-man-sub-axis{display:flex;align-items:baseline;gap:3px;padding:2px 4px;background:rgba(0,180,60,0.1);border-radius:2px;border:1px solid rgba(0,200,80,0.18)}
+.nxt-g-man-sub-ax-lbl{color:#6ee7a0;font-size:0.34rem;font-weight:900;width:8px}
 .nxt-g-man-sub-ax-val{color:#fff;font-family:monospace;font-size:0.62rem;font-weight:800;flex:1;text-align:right}
-.nxt-g-man-sub-ax-unit{color:rgba(255,180,50,0.35);font-size:0.27rem}
+.nxt-g-man-sub-ax-unit{color:rgba(255,255,255,0.32);font-size:0.27rem}
 /* Diagnosis */
-.nxt-g-man-diag-row{display:flex;justify-content:space-between;align-items:center;padding:2px 4px;font-size:0.3rem;font-weight:700;color:rgba(255,210,120,0.55);border-bottom:1px solid rgba(255,180,50,0.07)}
-.nxt-g-man-diag-ok{color:#00e676;font-size:0.3rem;font-weight:900}
-/* Panel Out centered */
+.nxt-g-man-diag-row{display:flex;justify-content:space-between;align-items:center;padding:2px 4px;font-size:0.29rem;font-weight:700;color:rgba(200,200,200,0.6);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nxt-g-man-diag-ok{color:#00e676;font-size:0.29rem;font-weight:900}
+.nxt-g-man-diag-warn{color:#ffc107;font-size:0.29rem;font-weight:900}
+/* Panel Out / centered */
 .nxt-g-man-sub-center{align-items:center;justify-content:center;gap:4px}
-.nxt-g-man-sub-icon{color:rgba(255,180,50,0.4);font-size:0.95rem;line-height:1}
-.nxt-g-man-sub-msg{color:#ffb74d;font-size:0.38rem;font-weight:800;letter-spacing:0.3px}
-.nxt-g-man-sub-detail{color:rgba(255,210,120,0.45);font-size:0.29rem;font-weight:600}
+.nxt-g-man-sub-icon{color:rgba(255,255,255,0.35);font-size:0.95rem;line-height:1}
+.nxt-g-man-sub-msg{color:rgba(220,220,220,0.85);font-size:0.36rem;font-weight:800;letter-spacing:0.3px}
+.nxt-g-man-sub-detail{color:rgba(200,200,200,0.45);font-size:0.28rem;font-weight:600}
 /* Head Adj */
-.nxt-g-man-sub-adj-row{display:flex;align-items:baseline;gap:3px;padding:2px 4px;font-size:0.3rem;font-weight:700;color:rgba(255,210,120,0.55);border-bottom:1px solid rgba(255,180,50,0.07)}
+.nxt-g-man-sub-adj-row{display:flex;align-items:baseline;gap:3px;padding:2px 4px;font-size:0.29rem;font-weight:700;color:rgba(200,200,200,0.58);border-bottom:1px solid rgba(255,255,255,0.07)}
 .nxt-g-man-sub-adj-val{font-family:monospace;color:#fff;font-size:0.4rem;font-weight:800;flex:1;text-align:right}
-.nxt-g-man-sub-adj-unit{color:rgba(255,180,50,0.35);font-size:0.27rem;width:14px}
+.nxt-g-man-sub-adj-unit{color:rgba(255,255,255,0.32);font-size:0.27rem;width:14px}
 /* error state */
 .nxt-g-err{display:flex;flex-direction:column;flex:1}
 .nxt-g-err-top{display:flex;justify-content:space-between;align-items:center;padding:2px 5px;background:rgba(0,0,0,0.25);flex-shrink:0}
@@ -1207,13 +1216,17 @@ function nxtMonGuidance(m, erro, st){
 
   if(st==="manual"){
     if(manualSubScreen) return nxtManSubScreen(manualSubScreen);
+    const manIcons=["⊛","✛","⚕","▷","⇄","◉","ℹ","⬆"];
     return `<div class="nxt-g-man">
       <div class="nxt-g-man-hdr">
         <div class="nxt-g-man-title">MANUAL MODE</div>
         <div class="nxt-g-man-pos" id="nxtManPos">X:${headPos.x.toFixed(0)} Y:${headPos.y.toFixed(0)}</div>
       </div>
       <div class="nxt-g-man-grid">
-        ${MANUAL_MENU.map((l,i)=>`<div class="nxt-g-man-item${i===manualMenuIdx?" sel":""}"><div class="nxt-g-man-lbl">${l}</div></div>`).join("")}
+        ${MANUAL_MENU.map((l,i)=>`<div class="nxt-g-man-item${i===manualMenuIdx?" sel":""}">
+          <span class="nxt-g-man-icon">${manIcons[i]}</span>
+          <div class="nxt-g-man-lbl">${l}</div>
+        </div>`).join("")}
       </div>
       <div class="nxt-g-man-hint">←→↑↓ navegar · OK entrar · CANCEL sair</div>
     </div>`;
@@ -1277,63 +1290,87 @@ function nxtMonGuidance(m, erro, st){
   </div>`;
 }
 
-/* ─── NXT Manual sub-screens ─── */
+/* ─── NXT Manual sub-screens — fiéis ao manual Fuji NXT ─── */
 function nxtManSubScreen(name){
-  const hdr=`<div class="nxt-g-man-hdr"><div class="nxt-g-man-title">${name.toUpperCase()}</div><div class="nxt-g-man-sub-back">CANCEL ← voltar</div></div>`;
+  const hdr=`<div class="nxt-g-man-hdr"><div class="nxt-g-man-title">${name.toUpperCase()}</div><div class="nxt-g-man-sub-back">CANCEL ← back</div></div>`;
+
+  /* Cleaning: pull module forward → head cleaning unit (p.7, p.66, p.67) */
   if(name==="Cleaning") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
-    <div class="nxt-g-man-sub-row sel">All Heads</div>
-    <div class="nxt-g-man-sub-row">Head 1 — H12HS</div>
-    <div class="nxt-g-man-sub-row">Head 2 — H08</div>
-    <div class="nxt-g-man-sub-row">Head 3 — H04S</div>
-    <div class="nxt-g-man-hint">OK → iniciar limpeza dos bicos</div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">1</span><span class="nxt-g-man-proc-txt">Press OK — module pulls forward</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">2</span><span class="nxt-g-man-proc-txt">Remove nozzle station</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">3</span><span class="nxt-g-man-proc-txt">Head cleaning unit cleans nozzles + thermal marks</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">4</span><span class="nxt-g-man-proc-txt">Reattach nozzle station</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">5</span><span class="nxt-g-man-proc-txt">Return module — press OK</span></div>
+    <div class="nxt-g-man-hint">OK → execute · CANCEL ← back</div>
   </div></div>`;
+
+  /* Head Pos: live XY jog with arrow keys (p.7) */
   if(name==="Head Pos") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub nxt-g-man-sub-pos">
     <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">X</span><span class="nxt-g-man-sub-ax-val" id="nxtSubPosX">${headPos.x.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
     <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">Y</span><span class="nxt-g-man-sub-ax-val" id="nxtSubPosY">${headPos.y.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
-    <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">Z</span><span class="nxt-g-man-sub-ax-val">${headPos.z.toFixed(2)}</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
-    <div class="nxt-g-man-hint">← → X · ↑ ↓ Y · OK → home</div>
+    <div class="nxt-g-man-sub-axis"><span class="nxt-g-man-sub-ax-lbl">Z</span><span class="nxt-g-man-sub-ax-val">0.00</span><span class="nxt-g-man-sub-ax-unit">mm</span></div>
+    <div class="nxt-g-man-hint">← → X axis · ↑ ↓ Y axis · OK → home pos</div>
   </div></div>`;
+
+  /* Diagnosis: module + system status check (p.7, p.66) */
   if(name==="Diagnosis") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
     <div class="nxt-g-man-diag-row"><span>Module 1 · M6 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
     <div class="nxt-g-man-diag-row"><span>Module 2 · M6 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
     <div class="nxt-g-man-diag-row"><span>Module 3 · M3 II</span><span class="nxt-g-man-diag-ok">OK</span></div>
     <div class="nxt-g-man-diag-row"><span>Conveyor</span><span class="nxt-g-man-diag-ok">OK</span></div>
-    <div class="nxt-g-man-diag-row"><span>Vision</span><span class="nxt-g-man-diag-ok">OK</span></div>
-    <div class="nxt-g-man-hint">OK → diagnóstico completo</div>
+    <div class="nxt-g-man-diag-row"><span>Parts Camera</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-diag-row"><span>Mark Camera</span><span class="nxt-g-man-diag-ok">OK</span></div>
+    <div class="nxt-g-man-hint">OK → run full diagnosis</div>
   </div></div>`;
+
+  /* Job Test: pickup test with current job (p.7, p.66 "Pickup test") */
   if(name==="Job Test") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
-    <div class="nxt-g-man-sub-info">Job: PCBA-001</div>
-    <div class="nxt-g-man-sub-info">Board: 200 × 150 mm</div>
-    <div class="nxt-g-man-sub-info">Comp: 156 pontos</div>
-    <div class="nxt-g-man-sub-info">Speed: 80%</div>
-    <div class="nxt-g-man-hint">OK → executar 1 ciclo de teste</div>
+    <div class="nxt-g-man-diag-row"><span>Job</span><span style="color:rgba(200,200,200,0.85);font-size:0.29rem;font-family:monospace">PCBA-001</span></div>
+    <div class="nxt-g-man-diag-row"><span>Board size</span><span style="color:rgba(200,200,200,0.85);font-size:0.29rem;font-family:monospace">200 × 150 mm</span></div>
+    <div class="nxt-g-man-diag-row"><span>Components</span><span style="color:rgba(200,200,200,0.85);font-size:0.29rem;font-family:monospace">156</span></div>
+    <div class="nxt-g-man-diag-row"><span>Test speed</span><span style="color:rgba(200,200,200,0.85);font-size:0.29rem;font-family:monospace">80%</span></div>
+    <div class="nxt-g-man-proc-step" style="margin-top:2px"><span class="nxt-g-man-proc-num">1</span><span class="nxt-g-man-proc-txt">Advance tape — parts to pickup pos</span></div>
+    <div class="nxt-g-man-hint">OK → run pickup test · CANCEL ← back</div>
   </div></div>`;
+
+  /* Exchange: 5 options exactly as shown in manual p.57 */
   if(name==="Exchange") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
-    <div class="nxt-g-man-sub-row sel">Nozzle</div>
-    <div class="nxt-g-man-sub-row">Feeder</div>
-    <div class="nxt-g-man-sub-row">Head Unit</div>
-    <div class="nxt-g-man-sub-row">Backup Plate</div>
-    <div class="nxt-g-man-hint">↑ ↓ selecionar · OK confirmar</div>
+    <div class="nxt-g-man-sub-row sel">⇄ Feeder Pallet</div>
+    <div class="nxt-g-man-sub-row">⊛ Nozzle</div>
+    <div class="nxt-g-man-sub-row">◉ Placing Head</div>
+    <div class="nxt-g-man-sub-row">⊞ Backup Plate (both lanes)</div>
+    <div class="nxt-g-man-sub-row">⊟ Backup Plate (lane sep.)</div>
+    <div class="nxt-g-man-hint">↑ ↓ select · OK confirm · CANCEL ← back</div>
   </div></div>`;
+
+  /* Info: information displays available (p.67) */
   if(name==="Info") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
-    <div class="nxt-g-man-sub-info">Model: Fuji NXT M6 II</div>
-    <div class="nxt-g-man-sub-info">S/N: NXT-2601-0042</div>
-    <div class="nxt-g-man-sub-info">SW: v3.1.2-R04</div>
-    <div class="nxt-g-man-sub-info">Hours: 12,450 h</div>
-    <div class="nxt-g-man-sub-info">Modules: 3</div>
+    <div class="nxt-g-man-sub-row sel">ℹ Module Info</div>
+    <div class="nxt-g-man-sub-row">⊟ Base Info</div>
+    <div class="nxt-g-man-sub-row">⇄ Conveyor Info</div>
+    <div class="nxt-g-man-sub-row">⊛ Nozzle Info</div>
+    <div class="nxt-g-man-sub-row">◉ Parts Camera Info</div>
+    <div class="nxt-g-man-hint">↑ ↓ select · OK view · CANCEL ← back</div>
   </div></div>`;
-  if(name==="Panel Out") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub nxt-g-man-sub-center">
-    <div class="nxt-g-man-sub-icon">⊡</div>
-    <div class="nxt-g-man-sub-msg">Pronto para descarregar</div>
-    <div class="nxt-g-man-sub-detail">Lane 1 · PCBA-001</div>
-    <div class="nxt-g-man-hint">OK → descarregar painel</div>
+
+  /* Panel Out: unload panel upward from conveyor (p.66) */
+  if(name==="Panel Out") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">1</span><span class="nxt-g-man-proc-txt">Press OK — conveyor stops</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">2</span><span class="nxt-g-man-proc-txt">Remove panel upward from conveyor</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">3</span><span class="nxt-g-man-proc-txt">Return conveyor slide to original pos</span></div>
+    <div class="nxt-g-man-proc-step"><span class="nxt-g-man-proc-num">4</span><span class="nxt-g-man-proc-txt">Press READY ON to resume</span></div>
+    <div class="nxt-g-man-hint">OK → execute · CANCEL ← back</div>
   </div></div>`;
+
+  /* Head Adj: head calibration offsets (p.66) */
   if(name==="Head Adj") return `<div class="nxt-g-man">${hdr}<div class="nxt-g-man-sub">
-    <div class="nxt-g-man-sub-adj-row"><span>Offset X</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
-    <div class="nxt-g-man-sub-adj-row"><span>Offset Y</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
-    <div class="nxt-g-man-sub-adj-row"><span>Theta</span><span class="nxt-g-man-sub-adj-val">+0.00°</span><span class="nxt-g-man-sub-adj-unit"></span></div>
-    <div class="nxt-g-man-hint">OK → iniciar calibração</div>
+    <div class="nxt-g-man-sub-adj-row"><span>Head 1 · Offset X</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-sub-adj-row"><span>Head 1 · Offset Y</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-sub-adj-row"><span>Head 2 · Offset X</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-sub-adj-row"><span>Head 2 · Offset Y</span><span class="nxt-g-man-sub-adj-val">+0.000</span><span class="nxt-g-man-sub-adj-unit">mm</span></div>
+    <div class="nxt-g-man-hint">OK → start calibration · CANCEL ← back</div>
   </div></div>`;
+
   return `<div class="nxt-g-man">${hdr}</div>`;
 }
 
