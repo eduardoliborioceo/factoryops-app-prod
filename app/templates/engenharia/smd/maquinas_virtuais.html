@@ -648,7 +648,9 @@
           </div>
         </div>
         <div class="mv3d-workflow" id="mv3dWorkflow"></div>
-        <div id="nxt3dPanelHost" class="nxt3d-panel-host"></div>
+        <div id="nxt3dPanelHostL" class="nxt3d-panel-host"></div>
+        <div id="nxt3dPanelHost"  class="nxt3d-panel-host"></div>
+        <div id="nxt3dPanelHostR" class="nxt3d-panel-host"></div>
       </div>
       <div class="mv-solution" id="mvSolution" style="display:none"></div>
     </div>
@@ -884,15 +886,20 @@ function activePanelRoot(){
 
 function syncCSSPanel(){
   if(!s3.cssScene||!s3.cssRenderer) return;
-  if(s3.cssPanelObj){ s3.cssScene.remove(s3.cssPanelObj); s3.cssPanelObj=null; }
+  s3.cssPanels.forEach(obj=>s3.cssScene.remove(obj));
+  s3.cssPanels=[];
   if(MACHINES[currentMaq]&&MACHINES[currentMaq].model3D==="nxt"){
-    const host=document.getElementById("nxt3dPanelHost");
-    if(host){
-      s3.cssPanelObj=new THREE.CSS3DObject(host);
-      s3.cssPanelObj.scale.setScalar(0.021);
-      s3.cssPanelObj.position.set(0,11.5,12.2);
-      s3.cssScene.add(s3.cssPanelObj);
-    }
+    [{id:"nxt3dPanelHostL",x:-11},{id:"nxt3dPanelHost",x:0},{id:"nxt3dPanelHostR",x:11}]
+    .forEach(({id,x})=>{
+      const host=document.getElementById(id);
+      if(host){
+        const obj=new THREE.CSS3DObject(host);
+        obj.scale.setScalar(0.021);
+        obj.position.set(x,11.5,12.2);
+        s3.cssScene.add(obj);
+        s3.cssPanels.push(obj);
+      }
+    });
   }
 }
 
@@ -1174,6 +1181,11 @@ function renderPanel(erro){
   if(m.model3D==="nxt"){
     const host=document.getElementById("nxt3dPanelHost");
     if(host) host.innerHTML=html;
+    const noId=html.replace(/\s+id="[^"]*"/g,"");
+    ["nxt3dPanelHostL","nxt3dPanelHostR"].forEach(hid=>{
+      const el=document.getElementById(hid);
+      if(el) el.innerHTML=noId;
+    });
   }
 }
 
@@ -1800,7 +1812,7 @@ const s3 = {
   orbit:null, rafId:null, machineGroup:null, pcbObj:null,
   errorComp:null, errorLight:null, headObj:null,
   pcbRemoved:false, componentFixed:false, workflowStep:0,
-  cssRenderer:null, cssScene:null, cssPanelObj:null
+  cssRenderer:null, cssScene:null, cssPanels:[]
 };
 
 function set3DView(to3D){
