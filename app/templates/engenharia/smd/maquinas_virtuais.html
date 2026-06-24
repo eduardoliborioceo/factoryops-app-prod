@@ -1870,28 +1870,65 @@ function init3D(){
   s3.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   s3.renderer.shadowMap.enabled=true;
   s3.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  s3.renderer.setClearColor(0x111827);
+  s3.renderer.setClearColor(0x3a5068);
   s3.camera=new THREE.PerspectiveCamera(40,W/H,0.1,500);
   s3.orbit=new SimpleOrbit(s3.camera,canvas);
   s3.scene=new THREE.Scene();
-  s3.scene.fog=new THREE.Fog(0x111827,80,180);
-  s3.scene.add(new THREE.AmbientLight(0x446688,0.7));
-  const sun=new THREE.DirectionalLight(0xfff8f0,0.9);
+  s3.scene.fog=new THREE.Fog(0x3a5068,110,230);
+  s3.scene.add(new THREE.AmbientLight(0x99aacc,1.3));
+  const sun=new THREE.DirectionalLight(0xfff8f0,1.1);
   sun.position.set(20,30,25); sun.castShadow=true;
-  sun.shadow.camera.left=-35; sun.shadow.camera.right=35;
-  sun.shadow.camera.top=35; sun.shadow.camera.bottom=-35;
+  sun.shadow.camera.left=-55; sun.shadow.camera.right=55;
+  sun.shadow.camera.top=55; sun.shadow.camera.bottom=-55;
   sun.shadow.mapSize.width=1024; sun.shadow.mapSize.height=1024;
   s3.scene.add(sun);
-  const fill=new THREE.DirectionalLight(0x4499cc,0.35);
+  const fill=new THREE.DirectionalLight(0x88aadd,0.55);
   fill.position.set(-10,8,-15); s3.scene.add(fill);
-  const grid=new THREE.GridHelper(120,50,0x1e3a5f,0x162032);
+  const grid=new THREE.GridHelper(150,50,0x4a6078,0x3a5060);
   grid.position.y=-13.5; s3.scene.add(grid);
   const floor=new THREE.Mesh(
-    new THREE.PlaneGeometry(120,120),
-    new THREE.MeshStandardMaterial({color:0x0d1420,roughness:1.0})
+    new THREE.PlaneGeometry(150,80),
+    new THREE.MeshStandardMaterial({color:0x949ea6,roughness:0.88,metalness:0.05})
   );
   floor.rotation.x=-Math.PI/2; floor.position.y=-13.55;
   floor.receiveShadow=true; s3.scene.add(floor);
+
+  // ─── Factory environment (SMT clean-room) ───
+  const mFWall=new THREE.MeshStandardMaterial({color:0xc4ccd4,roughness:0.90,metalness:0});
+  const mFCeil=new THREE.MeshStandardMaterial({color:0xcdd3d9,roughness:0.88,metalness:0});
+
+  // Back wall
+  const wallBk=new THREE.Mesh(new THREE.PlaneGeometry(155,58),mFWall);
+  wallBk.position.set(0,15,-23); s3.scene.add(wallBk);
+  // Left end wall
+  const wallL=new THREE.Mesh(new THREE.PlaneGeometry(62,58),mFWall);
+  wallL.rotation.y=Math.PI/2; wallL.position.set(-68,15,6); s3.scene.add(wallL);
+  // Right end wall
+  const wallR=new THREE.Mesh(new THREE.PlaneGeometry(62,58),mFWall);
+  wallR.rotation.y=-Math.PI/2; wallR.position.set(68,15,6); s3.scene.add(wallR);
+
+  // Ceiling panels
+  const ceilMesh=new THREE.Mesh(new THREE.PlaneGeometry(155,65),mFCeil);
+  ceilMesh.rotation.x=Math.PI/2; ceilMesh.position.set(0,36,5); s3.scene.add(ceilMesh);
+  // Ceiling tile grid
+  const ceilGrid=new THREE.GridHelper(155,39,0xaab2ba,0xaab2ba);
+  ceilGrid.position.set(0,35.9,5); s3.scene.add(ceilGrid);
+
+  // Ceiling LED panels (flush-mount, 5 rows)
+  const mLedPnl=new THREE.MeshStandardMaterial({color:0xfff8f2,roughness:0.15,emissive:new THREE.Color(0.95,0.93,0.88),emissiveIntensity:0.72});
+  [-40,-20,0,20,40].forEach(lx=>{
+    const pnl=new THREE.Mesh(new THREE.BoxGeometry(11,0.18,1.8),mLedPnl);
+    pnl.position.set(lx,35.5,3); s3.scene.add(pnl);
+    const pl=new THREE.PointLight(0xfff5e8,1.3,70);
+    pl.position.set(lx,33,3); s3.scene.add(pl);
+  });
+
+  // Floor safety lane markings (yellow)
+  const mYel=new THREE.MeshStandardMaterial({color:0xeebb00,roughness:0.82,metalness:0});
+  const mkFront=new THREE.Mesh(new THREE.BoxGeometry(140,0.04,0.32),mYel);
+  mkFront.position.set(0,-13.48,16); s3.scene.add(mkFront);
+  const mkBack=new THREE.Mesh(new THREE.BoxGeometry(140,0.04,0.32),mYel);
+  mkBack.position.set(0,-13.48,-16); s3.scene.add(mkBack);
   s3.errorLight=new THREE.PointLight(0xff2200,0,15);
   s3.scene.add(s3.errorLight);
   rebuild3DScene();
@@ -2149,6 +2186,52 @@ function buildNXTMachine(g){
       new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:on?new THREE.Color(c).multiplyScalar(0.45):new THREE.Color(0,0,0)}));
     lt.position.set(-18,17.4+i*1.1,6); g.add(lt);
   });
+
+  // ─── Extended conveyor (left input → machine → right output) ───
+  const mBeltExt=_m(0x0e0e10,0.95,0.05);
+  const mRailExt=_m(0x7a7a80,0.25,0.85);
+  const mLegExt =_m(0x888e96,0.38,0.60);
+  const mGuideExt=new THREE.MeshStandardMaterial({color:0xb0b8c2,roughness:0.55,metalness:0.10});
+
+  // Left input: x=-50 to x=-18 (centre x=-34, length=32)
+  const exLBelt=_b(32,0.22,5.2,mBeltExt); exLBelt.position.set(-34,-7.82,0); g.add(exLBelt);
+  const exLRlL =_b(32,0.60,0.60,mRailExt); exLRlL.position.set(-34,-7.5,-2.8); g.add(exLRlL);
+  const exLRlR =_b(32,0.60,0.60,mRailExt); exLRlR.position.set(-34,-7.5, 2.8); g.add(exLRlR);
+  const exLGdL =_b(32,3.0,0.38,mGuideExt); exLGdL.position.set(-34,-7.0,-3.3); g.add(exLGdL);
+  const exLGdR =_b(32,3.0,0.38,mGuideExt); exLGdR.position.set(-34,-7.0, 3.3); g.add(exLGdR);
+  // Left entry drum
+  const exLDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
+  exLDrum.rotation.z=Math.PI/2; exLDrum.position.set(-50,-7.7,0); g.add(exLDrum);
+  // Support legs (left side)
+  [-47,-38,-29,-21].forEach(lx=>{
+    const leg=_b(0.55,5.4,0.55,mLegExt); leg.position.set(lx,-10.5,0); g.add(leg);
+    const foot=_b(1.5,0.28,5.2,mLegExt); foot.position.set(lx,-13.28,0); g.add(foot);
+  });
+  // PCB input magazine (stack of boards at entry)
+  const magBody=_b(5.0,6.2,5.2,_m(0x3a4252,0.55,0.25)); magBody.position.set(-50,-10.5,0); g.add(magBody);
+  const magShelf=_b(4.6,0.18,4.8,_m(0xc0c8d0,0.38,0.18)); magShelf.position.set(-50,-7.35,0); g.add(magShelf);
+  for(let pi=0;pi<3;pi++){
+    const pcb=_b(4.2,0.14,4.4,_m(0x1a6828,0.65,0.05));
+    pcb.position.set(-50,-7.55-pi*0.18,0); g.add(pcb);
+  }
+
+  // Right output: x=18 to x=50 (centre x=34, length=32)
+  const exRBelt=_b(32,0.22,5.2,mBeltExt); exRBelt.position.set(34,-7.82,0); g.add(exRBelt);
+  const exRRlL =_b(32,0.60,0.60,mRailExt); exRRlL.position.set(34,-7.5,-2.8); g.add(exRRlL);
+  const exRRlR =_b(32,0.60,0.60,mRailExt); exRRlR.position.set(34,-7.5, 2.8); g.add(exRRlR);
+  const exRGdL =_b(32,3.0,0.38,mGuideExt); exRGdL.position.set(34,-7.0,-3.3); g.add(exRGdL);
+  const exRGdR =_b(32,3.0,0.38,mGuideExt); exRGdR.position.set(34,-7.0, 3.3); g.add(exRGdR);
+  // Right exit drum
+  const exRDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
+  exRDrum.rotation.z=Math.PI/2; exRDrum.position.set(50,-7.7,0); g.add(exRDrum);
+  // Support legs (right side)
+  [21,29,38,47].forEach(lx=>{
+    const leg=_b(0.55,5.4,0.55,mLegExt); leg.position.set(lx,-10.5,0); g.add(leg);
+    const foot=_b(1.5,0.28,5.2,mLegExt); foot.position.set(lx,-13.28,0); g.add(foot);
+  });
+  // Output inspection table
+  const outBody=_b(6.5,3.8,5.6,_m(0x8a9aaa,0.45,0.35)); outBody.position.set(52,-11.0,0); g.add(outBody);
+  const outTop =_b(6.2,0.20,5.4,_m(0xccd4dc,0.32,0.12)); outTop.position.set(52,-9.1,0); g.add(outTop);
 
   _buildPCB(g,currentMaq,currentErroId,10,5.8);
 }
