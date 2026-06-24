@@ -886,12 +886,21 @@ function activePanelRoot(){
 
 function syncCSSPanel(){
   if(!s3.cssScene||!s3.cssRenderer) return;
+  // Three.js r134 CSS3DObject fires 'removed' → removeChild on its element.
+  // Capture refs BEFORE removal so detached elements can be re-inserted.
+  const savedEls={};
+  ["nxt3dPanelHostL","nxt3dPanelHost","nxt3dPanelHostR"].forEach(id=>{
+    const el=document.getElementById(id); if(el) savedEls[id]=el;
+  });
   s3.cssPanels.forEach(obj=>s3.cssScene.remove(obj));
   s3.cssPanels=[];
+  // Re-insert any detached elements back into the live DOM before wrapping again
+  const anchor=document.getElementById("mv3dSection")||document.body;
+  Object.values(savedEls).forEach(el=>{if(el&&!el.isConnected) anchor.appendChild(el);});
   if(MACHINES[currentMaq]&&MACHINES[currentMaq].model3D==="nxt"){
     [{id:"nxt3dPanelHostL",x:-11},{id:"nxt3dPanelHost",x:0},{id:"nxt3dPanelHostR",x:11}]
     .forEach(({id,x})=>{
-      const host=document.getElementById(id);
+      const host=savedEls[id]||document.getElementById(id);
       if(host){
         const obj=new THREE.CSS3DObject(host);
         obj.scale.setScalar(0.021);
@@ -1971,7 +1980,7 @@ function _errPos(maq,id){
   return((P[maq]||{})[id])||[0,0];
 }
 
-function _buildPCB(g,maq,errId,pw=10,pd=6){
+function _buildPCB(g,maq,errId,pw=10,pd=6,py=-7.7){
   const pg=new THREE.Group();
   const board=_b(pw,0.2,pd,_m(0x1a4a2a,0.75,0.0));
   pg.add(board);
@@ -1990,7 +1999,7 @@ function _buildPCB(g,maq,errId,pw=10,pd=6){
   ec.position.set(ex,0.28,ez);
   pg.add(ec);
   s3.errorComp=ec;
-  pg.position.set(0,-7.7,0);
+  pg.position.set(0,py,0);
   s3.pcbObj=pg;
   g.add(pg);
 }
@@ -2068,31 +2077,31 @@ function buildNXTMachine(g){
   });
 
   // ─── X-Gantry beam (precision linear axis inside machine) ───
-  const xBeam=_b(33,1.4,1.4,mRail); xBeam.position.set(0,3,3);
+  const xBeam=_b(33,1.4,1.4,mRail); xBeam.position.set(0,8,3);
   _edges(xBeam,0x888888,0.35); g.add(xBeam);
   [-15.5,15.5].forEach(x=>{
-    const col=_b(0.9,14,0.9,mAlum); col.position.set(x,-3.5,3); g.add(col);
+    const col=_b(0.9,20,0.9,mAlum); col.position.set(x,-0.5,3); g.add(col);
   });
-  const rA=_b(33,0.45,0.45,mRail); rA.position.set(0,3.7,2.2); g.add(rA);
-  const rB=_b(33,0.45,0.45,mRail); rB.position.set(0,2.3,2.2); g.add(rB);
+  const rA=_b(33,0.45,0.45,mRail); rA.position.set(0,8.7,2.2); g.add(rA);
+  const rB=_b(33,0.45,0.45,mRail); rB.position.set(0,7.3,2.2); g.add(rB);
 
   // ─── Placement head (H12HS) ───
-  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(0,3,3); g.add(zCarriage);
-  const head=_b(2.8,5.2,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(0,-0.5,3);
+  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(0,8,3); g.add(zCarriage);
+  const head=_b(2.8,5.2,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(0,4.5,3);
   _edges(head,0xaaaaaa,0.28); g.add(head);
   s3.headObj=head;
   for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
     const noz=_cyl(0.09,0.09,1.5,_m(0x707070,0.2,0.9));
-    noz.position.set((nx-1)*0.72,-3.2,3+(nz-1.5)*0.6); g.add(noz);
+    noz.position.set((nx-1)*0.72,2.5,3+(nz-1.5)*0.6); g.add(noz);
   }
-  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(1.5,1.0,4.2); g.add(screw);
+  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(1.5,6.5,4.2); g.add(screw);
 
   // ─── Parts camera (upward-looking vision) ───
-  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,0.5,4); g.add(vcam);
+  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,5.5,4); g.add(vcam);
   const vlens=_cyl(0.6,0.6,0.55,_m(0x102244,0.2,0.5));
-  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,0.5,5.6); g.add(vlens);
+  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,5.5,5.6); g.add(vlens);
   const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
-  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,0.5,5.3); g.add(ledRing);
+  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,5.5,5.3); g.add(ledRing);
 
   // ─── Feeder pallets — flat slab feeders (correct shape per manual image 15) ───
   // When inserted, feeders are flat rectangular slabs packed side by side — NOT round.
@@ -2165,17 +2174,17 @@ function buildNXTMachine(g){
     }
   });
 
-  // ─── Conveyor (PCB transport) ───
+  // ─── Conveyor (PCB transport) — mid-machine, between feeders and monitors ───
   const rl=_m(0x7a7a80,0.25,0.85);
-  const railL=_b(36,0.6,0.6,rl); railL.position.set(0,-7.5,-2.8); g.add(railL);
-  const railR=_b(36,0.6,0.6,rl); railR.position.set(0,-7.5,2.8); g.add(railR);
-  const belt=_b(36,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,-7.82,0); g.add(belt);
+  const railL=_b(36,0.6,0.6,rl); railL.position.set(0,5,-2.8); g.add(railL);
+  const railR=_b(36,0.6,0.6,rl); railR.position.set(0,5,2.8); g.add(railR);
+  const belt=_b(36,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,4.7,0); g.add(belt);
   s3.conveyorBelt=belt;
-  const cgL=_b(36,3,0.38,mWhite2); cgL.position.set(0,-7,-3.3); g.add(cgL);
-  const cgR=_b(36,3,0.38,mWhite2); cgR.position.set(0,-7,3.3); g.add(cgR);
+  const cgL=_b(36,3,0.38,mWhite2); cgL.position.set(0,5.5,-3.3); g.add(cgL);
+  const cgR=_b(36,3,0.38,mWhite2); cgR.position.set(0,5.5,3.3); g.add(cgR);
   [-16.5,16.5].forEach(x=>{
     const dr=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
-    dr.rotation.z=Math.PI/2; dr.position.set(x,-7.7,0); g.add(dr);
+    dr.rotation.z=Math.PI/2; dr.position.set(x,4.8,0); g.add(dr);
   });
 
   // ─── Signal tower (Andon — left end) ───
@@ -2193,47 +2202,47 @@ function buildNXTMachine(g){
   const mLegExt =_m(0x888e96,0.38,0.60);
   const mGuideExt=new THREE.MeshStandardMaterial({color:0xb0b8c2,roughness:0.55,metalness:0.10});
 
-  // Left input: x=-50 to x=-18 (centre x=-34, length=32)
-  const exLBelt=_b(32,0.22,5.2,mBeltExt); exLBelt.position.set(-34,-7.82,0); g.add(exLBelt);
-  const exLRlL =_b(32,0.60,0.60,mRailExt); exLRlL.position.set(-34,-7.5,-2.8); g.add(exLRlL);
-  const exLRlR =_b(32,0.60,0.60,mRailExt); exLRlR.position.set(-34,-7.5, 2.8); g.add(exLRlR);
-  const exLGdL =_b(32,3.0,0.38,mGuideExt); exLGdL.position.set(-34,-7.0,-3.3); g.add(exLGdL);
-  const exLGdR =_b(32,3.0,0.38,mGuideExt); exLGdR.position.set(-34,-7.0, 3.3); g.add(exLGdR);
+  // Left input: x=-50 to x=-18 (centre x=-34, length=32) — matches conveyor y=5
+  const exLBelt=_b(32,0.22,5.2,mBeltExt); exLBelt.position.set(-34,4.7,0); g.add(exLBelt);
+  const exLRlL =_b(32,0.60,0.60,mRailExt); exLRlL.position.set(-34,5,-2.8); g.add(exLRlL);
+  const exLRlR =_b(32,0.60,0.60,mRailExt); exLRlR.position.set(-34,5, 2.8); g.add(exLRlR);
+  const exLGdL =_b(32,3.0,0.38,mGuideExt); exLGdL.position.set(-34,5.5,-3.3); g.add(exLGdL);
+  const exLGdR =_b(32,3.0,0.38,mGuideExt); exLGdR.position.set(-34,5.5, 3.3); g.add(exLGdR);
   // Left entry drum
   const exLDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
-  exLDrum.rotation.z=Math.PI/2; exLDrum.position.set(-50,-7.7,0); g.add(exLDrum);
-  // Support legs (left side)
+  exLDrum.rotation.z=Math.PI/2; exLDrum.position.set(-50,4.8,0); g.add(exLDrum);
+  // Support legs (left side) — floor y=-13.28 to belt y=4.7, height≈18
   [-47,-38,-29,-21].forEach(lx=>{
-    const leg=_b(0.55,5.4,0.55,mLegExt); leg.position.set(lx,-10.5,0); g.add(leg);
+    const leg=_b(0.55,18,0.55,mLegExt); leg.position.set(lx,-4.3,0); g.add(leg);
     const foot=_b(1.5,0.28,5.2,mLegExt); foot.position.set(lx,-13.28,0); g.add(foot);
   });
-  // PCB input magazine (stack of boards at entry)
-  const magBody=_b(5.0,6.2,5.2,_m(0x3a4252,0.55,0.25)); magBody.position.set(-50,-10.5,0); g.add(magBody);
-  const magShelf=_b(4.6,0.18,4.8,_m(0xc0c8d0,0.38,0.18)); magShelf.position.set(-50,-7.35,0); g.add(magShelf);
+  // PCB input magazine — tall stand from floor to conveyor height
+  const magBody=_b(5.0,18,5.2,_m(0x3a4252,0.55,0.25)); magBody.position.set(-50,-4.3,0); g.add(magBody);
+  const magShelf=_b(4.6,0.18,4.8,_m(0xc0c8d0,0.38,0.18)); magShelf.position.set(-50,4.7,0); g.add(magShelf);
   for(let pi=0;pi<3;pi++){
     const pcb=_b(4.2,0.14,4.4,_m(0x1a6828,0.65,0.05));
-    pcb.position.set(-50,-7.55-pi*0.18,0); g.add(pcb);
+    pcb.position.set(-50,4.55-pi*0.18,0); g.add(pcb);
   }
 
-  // Right output: x=18 to x=50 (centre x=34, length=32)
-  const exRBelt=_b(32,0.22,5.2,mBeltExt); exRBelt.position.set(34,-7.82,0); g.add(exRBelt);
-  const exRRlL =_b(32,0.60,0.60,mRailExt); exRRlL.position.set(34,-7.5,-2.8); g.add(exRRlL);
-  const exRRlR =_b(32,0.60,0.60,mRailExt); exRRlR.position.set(34,-7.5, 2.8); g.add(exRRlR);
-  const exRGdL =_b(32,3.0,0.38,mGuideExt); exRGdL.position.set(34,-7.0,-3.3); g.add(exRGdL);
-  const exRGdR =_b(32,3.0,0.38,mGuideExt); exRGdR.position.set(34,-7.0, 3.3); g.add(exRGdR);
+  // Right output: x=18 to x=50 (centre x=34, length=32) — matches conveyor y=5
+  const exRBelt=_b(32,0.22,5.2,mBeltExt); exRBelt.position.set(34,4.7,0); g.add(exRBelt);
+  const exRRlL =_b(32,0.60,0.60,mRailExt); exRRlL.position.set(34,5,-2.8); g.add(exRRlL);
+  const exRRlR =_b(32,0.60,0.60,mRailExt); exRRlR.position.set(34,5, 2.8); g.add(exRRlR);
+  const exRGdL =_b(32,3.0,0.38,mGuideExt); exRGdL.position.set(34,5.5,-3.3); g.add(exRGdL);
+  const exRGdR =_b(32,3.0,0.38,mGuideExt); exRGdR.position.set(34,5.5, 3.3); g.add(exRGdR);
   // Right exit drum
   const exRDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
-  exRDrum.rotation.z=Math.PI/2; exRDrum.position.set(50,-7.7,0); g.add(exRDrum);
+  exRDrum.rotation.z=Math.PI/2; exRDrum.position.set(50,4.8,0); g.add(exRDrum);
   // Support legs (right side)
   [21,29,38,47].forEach(lx=>{
-    const leg=_b(0.55,5.4,0.55,mLegExt); leg.position.set(lx,-10.5,0); g.add(leg);
+    const leg=_b(0.55,18,0.55,mLegExt); leg.position.set(lx,-4.3,0); g.add(leg);
     const foot=_b(1.5,0.28,5.2,mLegExt); foot.position.set(lx,-13.28,0); g.add(foot);
   });
-  // Output inspection table
-  const outBody=_b(6.5,3.8,5.6,_m(0x8a9aaa,0.45,0.35)); outBody.position.set(52,-11.0,0); g.add(outBody);
-  const outTop =_b(6.2,0.20,5.4,_m(0xccd4dc,0.32,0.12)); outTop.position.set(52,-9.1,0); g.add(outTop);
+  // Output inspection table — tall stand reaching conveyor height
+  const outBody=_b(6.5,18,5.6,_m(0x8a9aaa,0.45,0.35)); outBody.position.set(52,-4.3,0); g.add(outBody);
+  const outTop =_b(6.2,0.20,5.4,_m(0xccd4dc,0.32,0.12)); outTop.position.set(52,4.75,0); g.add(outTop);
 
-  _buildPCB(g,currentMaq,currentErroId,10,5.8);
+  _buildPCB(g,currentMaq,currentErroId,10,5.8,4.75);
 }
 
 function buildPickPlaceMachine(g){
