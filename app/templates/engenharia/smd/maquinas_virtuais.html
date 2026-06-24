@@ -2057,61 +2057,56 @@ function buildNXTMachine(g){
   const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
   ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,0.5,5.3); g.add(ledRing);
 
-  // ─── Feeder pallets — structural rack + individual feeders with tape reels ───
-  const mPalStr =_m(0x17191e,0.72,0.28);   // pallet structure (very dark)
-  const mFdrBody=_m(0x2a2e36,0.60,0.28);   // feeder body (dark grey rail)
-  const mReelDk =_m(0x1e2024,0.65,0.35);   // reel outer rim (near black)
-  const mTapeC  =new THREE.MeshStandardMaterial({color:0x5c4828,roughness:0.78,metalness:0.04}); // carrier tape (brown)
-  const mHubSil =_m(0x8a8e9a,0.22,0.78);   // hub / rail (aluminium)
+  // ─── Feeder pallets — flat slab feeders (correct shape per manual image 15) ───
+  // When inserted, feeders are flat rectangular slabs packed side by side — NOT round.
+  const mPalStr=_m(0x17191e,0.72,0.28);  // pallet structure (very dark)
+  const mFdr   =_m(0x28303c,0.58,0.25);  // feeder body (dark blue-grey slab)
+  const mFdrFnt=_m(0x1e252f,0.65,0.20);  // feeder front face (slightly darker)
+  const mEmpty =_m(0x0c0e12,0.82,0.05);  // empty slot (near-black void)
+  const mRail  =_m(0x8a8e9a,0.22,0.78);  // aluminium rails
 
-  // Fixed reel radii per slot (deterministic, no random)
-  const REEL_R=[2.6,2.2,2.9,2.4,2.7,2.1,2.8,2.3,2.5,2.6];
+  // 12 slots per module — 1=feeder inserted, 0=empty slot
+  const SLOTS=[1,1,1,1,1,0,1,1,1,1,1,0];
 
   modXs.forEach(mx=>{
-    // Pallet backing plate (the rack structure feeders snap into)
-    const palBk=_b(10.5,12.8,1.0,mPalStr); palBk.position.set(mx,-4.5,10.8); g.add(palBk);
-    // Top mounting / lock rail
-    const topRl=_b(10.5,0.55,1.8,mHubSil); topRl.position.set(mx,-0.0,11.1); g.add(topRl);
-    // Bottom guide rail
-    const botRl=_b(10.5,0.55,1.8,mHubSil); botRl.position.set(mx,-10.5,11.1); g.add(botRl);
+    const nF=12, fSp=10.5/nF;
 
-    // 10 feeders per module, packed side by side
-    const nF=10, fSp=10.5/nF;
+    // Pallet back plate
+    const palBk=_b(10.5,11.5,0.8,mPalStr); palBk.position.set(mx,-5.0,9.85); g.add(palBk);
+    // Top lock rail (aluminium — where feeder tabs click in)
+    const topRl=_b(10.5,0.62,2.6,mRail);   topRl.position.set(mx,-0.1,10.9); g.add(topRl);
+    // Mid structural rail
+    const midRl=_b(10.5,0.35,2.6,mPalStr); midRl.position.set(mx,-5.5,10.9); g.add(midRl);
+    // Bottom guide rail
+    const botRl=_b(10.5,0.62,2.6,mRail);   botRl.position.set(mx,-10.5,10.9); g.add(botRl);
+
     for(let fi=0;fi<nF;fi++){
       const fx=mx-5.25+(fi+0.5)*fSp;
-      const rR=REEL_R[fi];
 
-      // Feeder body — the rectangular rail that slots into the pallet
-      const fb=_b(fSp*0.70,10.5,0.78,mFdrBody); fb.position.set(fx,-4.5,11.4); g.add(fb);
+      // Slot side divider (always present, marks each slot boundary)
+      const div=_b(0.07,10.5,2.7,mPalStr);
+      div.position.set(fx-fSp*0.5,-5.0,10.9); g.add(div);
 
-      // Top pick guide (where the component tape exits toward the pick head)
-      const fg=_b(fSp*0.52,1.9,2.0,_m(0x38424c,0.52,0.22));
-      fg.position.set(fx,-0.3,12.2); g.add(fg);
-
-      // ── Large tape reel (main spool — dominant visual element) ──
-      // Brown tape body (wound carrier tape fills most of the reel face)
-      const tapCyl=_cyl(rR,rR,0.58,mTapeC);
-      tapCyl.rotation.x=Math.PI/2; tapCyl.position.set(fx,-5.4,14.5); g.add(tapCyl);
-      // Dark outer rim (the physical reel disc frame)
-      const rimMsh=new THREE.Mesh(new THREE.TorusGeometry(rR,0.10,6,28),mReelDk);
-      rimMsh.rotation.x=Math.PI/2; rimMsh.position.set(fx,-5.4,14.5); g.add(rimMsh);
-      // Silver hub (centre of reel)
-      const hub=_cyl(0.40,0.40,0.70,mHubSil);
-      hub.rotation.x=Math.PI/2; hub.position.set(fx,-5.4,14.5); g.add(hub);
-
-      // ── Small waste reel at bottom (empty / used tape collects here) ──
-      const wR=0.9+(fi%3)*0.15;
-      const wCyl=_cyl(wR,wR,0.50,mTapeC);
-      wCyl.rotation.x=Math.PI/2; wCyl.position.set(fx,-9.3,13.5); g.add(wCyl);
-      const wRim=new THREE.Mesh(new THREE.TorusGeometry(wR,0.07,6,18),mReelDk);
-      wRim.rotation.x=Math.PI/2; wRim.position.set(fx,-9.3,13.5); g.add(wRim);
-      const wHub=_cyl(0.24,0.24,0.56,mHubSil);
-      wHub.rotation.x=Math.PI/2; wHub.position.set(fx,-9.3,13.5); g.add(wHub);
-
-      // Carrier tape strip running from reel up to pick guide
-      const ts=_b(fSp*0.16,5.2,0.06,mTapeC);
-      ts.position.set(fx,-2.6,13.6); g.add(ts);
+      if(SLOTS[fi]){
+        // ── FEEDER INSERTED: flat rectangular slab ──
+        // Body — the main slab going deep into the pallet (Z direction)
+        const fb=_b(fSp*0.76,10.2,2.0,mFdr); fb.position.set(fx,-5.0,10.7); g.add(fb);
+        // Front face — the narrow face the operator sees
+        const ff=_b(fSp*0.76,10.2,0.16,mFdrFnt); ff.position.set(fx,-5.0,11.78); g.add(ff);
+        // Pick guide at top — small step where carrier tape exits toward placement head
+        const pg=_b(fSp*0.56,1.05,0.6,_m(0x353d48,0.50,0.20));
+        pg.position.set(fx,-0.38,11.58); g.add(pg);
+        // Grip tab — the handle used to pull the feeder out
+        const tab=_b(fSp*0.38,0.42,0.85,_m(0x3a4252,0.48,0.18));
+        tab.position.set(fx,0.02,11.1); g.add(tab);
+      } else {
+        // ── EMPTY SLOT: open gap showing dark void ──
+        const es=_b(fSp*0.76,10.2,2.0,mEmpty); es.position.set(fx,-5.0,10.7); g.add(es);
+      }
     }
+    // Close last divider
+    const lastDiv=_b(0.07,10.5,2.7,mPalStr);
+    lastDiv.position.set(mx+5.25,-5.0,10.9); g.add(lastDiv);
   });
 
   // ─── Conveyor (PCB transport) ───
