@@ -895,7 +895,7 @@ function syncCSSPanel(){
       if(host){
         const obj=new THREE.CSS3DObject(host);
         obj.scale.setScalar(0.021);
-        obj.position.set(x,11.5,12.2);
+        obj.position.set(x,14.5,12.2);
         s3.cssScene.add(obj);
         s3.cssPanels.push(obj);
       }
@@ -1982,32 +1982,32 @@ function buildNXTMachine(g){
   });
 
   // ─── Back wall ───
-  const bw=_b(40,28,1.5,mWhite2); bw.position.set(0,0.5,-11.2); g.add(bw);
+  const bw=_b(40,31,1.5,mWhite2); bw.position.set(0,2.0,-11.2); g.add(bw);
 
   // ─── End caps ───
-  const lEnd=_b(2.5,28,22,mWhite2); lEnd.position.set(-19.5,0.5,0); g.add(lEnd);
-  const rEnd=_b(2.5,28,22,mWhite2); rEnd.position.set(19.5,0.5,0); g.add(rEnd);
+  const lEnd=_b(2.5,31,22,mWhite2); lEnd.position.set(-19.5,2.0,0); g.add(lEnd);
+  const rEnd=_b(2.5,31,22,mWhite2); rEnd.position.set(19.5,2.0,0); g.add(rEnd);
   // NXT logo area on right end
-  const nxtBar=_b(0.4,22,4.5,mPurple); nxtBar.position.set(20.6,0.5,0); g.add(nxtBar);
-  const nxtBox=_b(0.4,4.5,5.5,mBlue); nxtBox.position.set(20.6,2,2.5); g.add(nxtBox);
+  const nxtBar=_b(0.4,25,4.5,mPurple); nxtBar.position.set(20.6,2.0,0); g.add(nxtBar);
+  const nxtBox=_b(0.4,4.5,5.5,mBlue); nxtBox.position.set(20.6,3.5,2.5); g.add(nxtBox);
 
   // ─── 3 Modules ───
   const modXs=[-11,0,11];
   modXs.forEach((mx,idx)=>{
     // Lower white body (main module body below the panel head)
-    const bodyLo=_b(10.5,21,20,mWhite); bodyLo.position.set(mx,-2.0,0);
+    const bodyLo=_b(10.5,24,20,mWhite); bodyLo.position.set(mx,-0.5,0);
     _edges(bodyLo,0xb0b4bc,0.08); g.add(bodyLo);
 
     // Purple/dark stripe separating body from panel head (Fuji NXT brand)
-    const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(mx,8.6,0); g.add(stripe);
+    const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(mx,11.6,0); g.add(stripe);
 
     // ── Operation panel head (dark grey housing — CSS3D panel renders on the face) ──
-    const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(mx,11.5,0.75);
+    const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(mx,14.5,0.75);
     _edges(panH,0x181820,0.12); g.add(panH);
 
     // Top trim strip on panel
     const panTop=_b(10.5,0.35,22.5,_m(0x1a1a22,0.7,0.2));
-    panTop.position.set(mx,14.3,0.75); g.add(panTop);
+    panTop.position.set(mx,17.3,0.75); g.add(panTop);
 
     // ── Module badge (blue "M6 II" / "M3 II") on lower body ──
     const badge=_b(3.0,0.78,0.35,mBlue); badge.position.set(mx,5.2,10.35); g.add(badge);
@@ -2027,7 +2027,7 @@ function buildNXTMachine(g){
 
   // Module dividers
   [-5.5,5.5].forEach(dx=>{
-    const div=_b(0.6,28,20,mWhite2); div.position.set(dx,0.5,0); g.add(div);
+    const div=_b(0.6,31,20,mWhite2); div.position.set(dx,2.0,0); g.add(div);
   });
 
   // ─── X-Gantry beam (precision linear axis inside machine) ───
@@ -2066,6 +2066,8 @@ function buildNXTMachine(g){
 
   // 12 slots per module — 1=feeder inserted, 0=empty slot
   const SLOTS=[1,1,1,1,1,0,1,1,1,1,1,0];
+  // Component level per slot: 0=no feeder, 1=red(sem componente), 2=orange(acabando), 3=green(ok)
+  const SLOT_LEVEL=[3,3,3,2,3,0,1,3,3,2,3,0];
 
   modXs.forEach(mx=>{
     const nF=12, fSp=10.5/nF;
@@ -2106,6 +2108,24 @@ function buildNXTMachine(g){
     // Close last divider
     const lastDiv=_b(0.07,10.5,2.7,mPalStr);
     lastDiv.position.set(mx+5.25,-5.0,10.9); g.add(lastDiv);
+
+    // ── Feeder status indicator strip — LED por slot acima dos feeders ──
+    // Background panel dark horizontal bar
+    const indPnl=_b(10.5,2.2,0.58,_m(0x12141a,0.82,0.18));
+    indPnl.position.set(mx,1.85,11.28); g.add(indPnl);
+    // Thin label groove below the LEDs
+    const indGroove=_b(10.5,0.50,0.38,_m(0x0c0d10,0.90,0.05));
+    indGroove.position.set(mx,1.05,11.30); g.add(indGroove);
+    for(let fi=0;fi<nF;fi++){
+      const fx=mx-5.25+(fi+0.5)*fSp;
+      const lv=SLOT_LEVEL[fi];
+      const lcol=lv===3?0x00cc44:lv===2?0xff8800:lv===1?0xff2200:0x0d0f12;
+      const lemit=lv===3?new THREE.Color(0,0.45,0.12):lv===2?new THREE.Color(0.42,0.20,0):lv===1?new THREE.Color(0.55,0,0):new THREE.Color(0,0,0);
+      const led=new THREE.Mesh(
+        new THREE.BoxGeometry(fSp*0.44,0.60,0.32),
+        new THREE.MeshStandardMaterial({color:lcol,roughness:0.22,emissive:lemit}));
+      led.position.set(fx,2.05,11.60); g.add(led);
+    }
   });
 
   // ─── Conveyor (PCB transport) ───
@@ -2122,12 +2142,12 @@ function buildNXTMachine(g){
   });
 
   // ─── Signal tower (Andon — left end) ───
-  const tBase=_b(0.9,1.1,0.9,mDkGrey); tBase.position.set(-18,13.8,6); g.add(tBase);
-  const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-18,16.5,6); g.add(tPole);
+  const tBase=_b(0.9,1.1,0.9,mDkGrey); tBase.position.set(-18,16.8,6); g.add(tBase);
+  const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-18,19.5,6); g.add(tPole);
   [[0xff2200,false],[0xffcc00,false],[0x00cc44,true]].forEach(([c,on],i)=>{
     const lt=_cyl(0.6,0.6,0.95,
       new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:on?new THREE.Color(c).multiplyScalar(0.45):new THREE.Color(0,0,0)}));
-    lt.position.set(-18,14.4+i*1.1,6); g.add(lt);
+    lt.position.set(-18,17.4+i*1.1,6); g.add(lt);
   });
 
   _buildPCB(g,currentMaq,currentErroId,10,5.8);
