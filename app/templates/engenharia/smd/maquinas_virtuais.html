@@ -1959,21 +1959,11 @@ function _buildPCB(g,maq,errId,pw=10,pd=6){
 }
 
 function buildNXTMachine(g){
-  // Screen color mirrors the 2D NXT monitor state (rebuilt on every state change)
-  const scrMap={
-    idle:    {c:0x0c2218,e:0x1a4a30}, running:{c:0x0a1f10,e:0x1a4a20},
-    manual:  {c:0x2c1200,e:0x5a2800}, error:  {c:0x6b4a00,e:0xaa7000},
-    estop:   {c:0x1c0000,e:0x4a0000}, stopping:{c:0x141400,e:0x303000},
-    standby: {c:0x0c2218,e:0x1a4a30}
-  }[machineState]||{c:0x0c2218,e:0x1a4a30};
-  const mScreen=new THREE.MeshStandardMaterial({color:scrMap.c,roughness:0.75,emissive:new THREE.Color(scrMap.e)});
-
   const mWhite =new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10});
   const mWhite2=new THREE.MeshStandardMaterial({color:0xc8cdd6,roughness:0.38,metalness:0.08});
   const mBase  =_m(0x141416,0.72,0.30);
   const mPurple=new THREE.MeshStandardMaterial({color:0x2c3082,roughness:0.42,metalness:0.22});
   const mBlue  =new THREE.MeshStandardMaterial({color:0x0044a8,roughness:0.40,metalness:0.15});
-  const mEstop =new THREE.MeshStandardMaterial({color:0xff2200,roughness:0.24,metalness:0.05,emissive:new THREE.Color(0.22,0.02,0)});
   const mDkGrey=_m(0x282c32,0.65,0.35);
   const mAlum  =_m(0x8a8f9a,0.22,0.78);
   const mRail  =_m(0xaaaaaa,0.18,0.88);
@@ -2011,85 +2001,13 @@ function buildNXTMachine(g){
     // Purple/dark stripe separating body from panel head (Fuji NXT brand)
     const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(mx,8.6,0); g.add(stripe);
 
-    // ── Operation panel head (dark grey, top of module, protrudes forward) ──
-    // This IS the same operation panel shown in the 2D view — screen + buttons + E-stop
+    // ── Operation panel head (dark grey housing — CSS3D panel renders on the face) ──
     const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(mx,11.5,0.75);
     _edges(panH,0x181820,0.12); g.add(panH);
 
     // Top trim strip on panel
     const panTop=_b(10.5,0.35,22.5,_m(0x1a1a22,0.7,0.2));
     panTop.position.set(mx,14.3,0.75); g.add(panTop);
-
-    // ── SCREEN (z-front face of panel, matches 2D monitor color) ──
-    const scrW=4.2, scrH=4.2;
-    const panScr=new THREE.Mesh(new THREE.BoxGeometry(scrW,scrH,0.2),mScreen);
-    panScr.position.set(mx-0.8,11.5,12.12); g.add(panScr);
-
-    // Status strip (left column like nxt-mon-strip in 2D)
-    const statSt=_b(0.68,scrH,0.18,_m(0x050508,0.9,0));
-    statSt.position.set(mx-3.28,11.5,12.12); g.add(statSt);
-    // Module number icon (blue square, like nxt-mon-mod)
-    const modN=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.12),
-      new THREE.MeshStandardMaterial({color:0x1a3275,roughness:0.4,emissive:new THREE.Color(0.03,0.06,0.32)}));
-    modN.position.set(mx-3.28,12.8,12.22); g.add(modN);
-    // Status icons on strip (green/amber/red like nxt-mon-sicon)
-    [[0x00c850,0.65],[0xffa000,0.08],[0xff3300,0.04]].forEach(([c,em],si)=>{
-      const ic=new THREE.Mesh(new THREE.BoxGeometry(0.44,0.36,0.12),
-        new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:new THREE.Color(c).multiplyScalar(em)}));
-      ic.position.set(mx-3.28,12.1-si*0.5,12.22); g.add(ic);
-    });
-    // Job bar at bottom of screen (like nxt-mon-job-bar)
-    const jobBar=_b(scrW+0.7,0.65,0.18,_m(0x030306,0.9,0));
-    jobBar.position.set(mx-0.45,9.38,12.12); g.add(jobBar);
-    // Lane indicators on job bar
-    [mx-1.8,mx-0.3].forEach(lx=>{
-      const li=new THREE.Mesh(new THREE.BoxGeometry(0.32,0.32,0.12),
-        new THREE.MeshStandardMaterial({color:0x00c836,roughness:0.3,emissive:new THREE.Color(0,0.4,0.1)}));
-      li.position.set(lx,9.38,12.22); g.add(li);
-    });
-
-    // ── Left button column (GROUP, READY ON, CYCLE STOP, MANUAL) ──
-    [0x1e3a8a,0x166534,0x1e4060,0xaa6000].forEach((c,bi)=>{
-      const b=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.58,0.2),
-        new THREE.MeshStandardMaterial({color:c,roughness:0.35,emissive:new THREE.Color(c).multiplyScalar(0.28)}));
-      b.position.set(mx-4.05,12.85-bi*0.75,12.14); g.add(b);
-    });
-
-    // ── Right button column (START, STOP, POWER, CANCEL, OK) ──
-    [0x166534,0x7a1515,0x1a502a,0x333344,0x223344].forEach((c,bi)=>{
-      const b=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.58,0.2),
-        new THREE.MeshStandardMaterial({color:c,roughness:0.35,emissive:new THREE.Color(c).multiplyScalar(0.32)}));
-      b.position.set(mx+2.5,12.85-bi*0.75,12.14); g.add(b);
-    });
-
-    // ── Arrow keys cross (bottom right, like nxt-nav in 2D) ──
-    const nC=_m(0x3a3a44,0.4,0.15);
-    [[mx+2.5,9.5],[mx+2.5,8.75],[mx+1.88,9.12],[mx+3.12,9.12],[mx+2.5,9.12]].forEach(([nx,ny])=>{
-      const nn=new THREE.Mesh(new THREE.BoxGeometry(0.62,0.5,0.2),nC);
-      nn.position.set(nx,ny,12.14); g.add(nn);
-    });
-
-    // ── Emergency stop — large red mushroom (left of panel, like nxt-emg in 2D) ──
-    const esRg=_cyl(1.0,1.1,0.5,mDkGrey);
-    esRg.rotation.x=Math.PI/2; esRg.position.set(mx-4.05,9.1,11.75); g.add(esRg);
-    const esMsh=new THREE.Mesh(new THREE.CylinderGeometry(0.88,0.88,0.46,20),mEstop);
-    esMsh.rotation.x=Math.PI/2; esMsh.position.set(mx-4.05,9.1,12.1); g.add(esMsh);
-    // Yellow safety ring
-    const esYR=new THREE.Mesh(new THREE.CylinderGeometry(1.12,1.12,0.18,20),
-      new THREE.MeshStandardMaterial({color:0xffcc00,roughness:0.4,emissive:new THREE.Color(0.18,0.12,0)}));
-    esYR.rotation.x=Math.PI/2; esYR.position.set(mx-4.05,9.1,11.7); g.add(esYR);
-
-    // ── FUJI brand strip (bottom of panel face) ──
-    const fujiSt=_b(2.8,0.38,0.2,_m(0x6a6a72,0.5,0.35));
-    fujiSt.position.set(mx-0.5,9.55,12.14); g.add(fujiSt);
-
-    // ── Blue indicator lights at panel top (2 per module, visible in photo) ──
-    [mx-3.2,mx-2.2].forEach(lx=>{
-      const lg=new THREE.Mesh(new THREE.BoxGeometry(0.65,0.32,0.28),
-        new THREE.MeshStandardMaterial({color:0x0066ff,roughness:0.2,
-          emissive:new THREE.Color(0.02,0.06,0.62),transparent:true,opacity:0.88}));
-      lg.position.set(lx,13.65,11.9); g.add(lg);
-    });
 
     // ── Module badge (blue "M6 II" / "M3 II") on lower body ──
     const badge=_b(3.0,0.78,0.35,mBlue); badge.position.set(mx,5.2,10.35); g.add(badge);
