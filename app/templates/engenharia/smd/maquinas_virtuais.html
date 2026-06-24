@@ -320,6 +320,13 @@
 .nxt3d-panel-host .nxt-manual-bar{display:none}
 .nxt3d-panel-host .nxt-screen{min-height:120px}
 .nxt-cross{display:flex;flex-direction:column;align-items:center;gap:2px}
+.nxt3d-toolbar{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:10;pointer-events:all}
+.nxt3d-tb-btn{background:rgba(15,23,42,0.82);color:#e2e8f0;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 12px;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;backdrop-filter:blur(6px);transition:background 0.15s,border-color 0.15s}
+.nxt3d-tb-btn:hover{background:rgba(30,40,60,0.92);border-color:rgba(255,255,255,0.28)}
+.nxt3d-tb-btn.placing{background:rgba(13,110,253,0.85);border-color:#3b82f6;color:#fff}
+.nxt3d-hint{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.88);color:#cbd5e1;font-size:0.72rem;font-weight:600;padding:5px 14px;border-radius:20px;white-space:nowrap;z-index:10;pointer-events:none;backdrop-filter:blur(4px)}
+.nxt3d-pcbbtn{position:absolute;bottom:10px;right:12px;background:rgba(13,110,253,0.88);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;z-index:10;backdrop-filter:blur(4px);transition:background 0.15s}
+.nxt3d-pcbbtn:hover{background:#0d6efd}
 .nxt-cross-mid{display:flex;gap:2px;align-items:center}
 .nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
   background:linear-gradient(180deg,#555 0%,#333 100%);
@@ -646,6 +653,17 @@
             <div class="mv3d-result-icon" id="mv3dResultIcon"></div>
             <div class="mv3d-result-label" id="mv3dResultLabel"></div>
           </div>
+          <div id="nxt3dToolbar" class="nxt3d-toolbar" style="display:none">
+            <button id="nxtBtnFeeder" class="nxt3d-tb-btn" onclick="window.nxtFeederMode()">
+              <i class="bi bi-grid-fill"></i> Feeder
+            </button>
+          </div>
+          <div id="nxt3dHint" class="nxt3d-hint" style="display:none">
+            Passe o mouse sobre a máquina · Clique para colocar/remover · ESC para cancelar
+          </div>
+          <button id="nxt3dPcbBtn" class="nxt3d-pcbbtn" style="display:none" onclick="window.nxtSendPCB()">
+            <i class="bi bi-send"></i> Enviar PCB
+          </button>
         </div>
         <div class="mv3d-workflow" id="mv3dWorkflow"></div>
         <div id="nxt3dPanelHostL" class="nxt3d-panel-host"></div>
@@ -1816,12 +1834,20 @@ window.closeLightbox=function(){document.getElementById("kbLightbox").classList.
 
 /* ─── 3D View ─── */
 let view3D = false;
+
+const NXT_SLOTS=[1,1,1,1,1,0,1,1,1,1,1,0];
+const NXT_SLOT_LEVEL=[3,3,3,2,3,0,1,3,3,2,3,0];
+const NXT_FSP=10.5/12;
+
 const s3 = {
   inited:false, renderer:null, scene:null, camera:null,
   orbit:null, rafId:null, machineGroup:null, pcbObj:null,
   errorComp:null, errorLight:null, headObj:null,
   pcbRemoved:false, componentFixed:false, workflowStep:0,
-  cssRenderer:null, cssScene:null, cssPanels:[]
+  cssRenderer:null, cssScene:null, cssPanels:[],
+  nxtPlacing:false, nxtSlotGrps:{}, nxtLedMeshes:{}, nxtSlotHasFeeder:null,
+  nxtGhost:null, nxtGhostMat:null, nxtHitWall:null, nxtGhostSlot:null,
+  pcbTrains:[], lastT:0
 };
 
 function set3DView(to3D){
@@ -1834,8 +1860,11 @@ function set3DView(to3D){
     if(!s3.inited) init3D();
     else{ rebuild3DScene(); syncCSSPanel(); render3DWorkflow(); }
     if(!s3.rafId) animate3D();
+    nxtUpdateToolbar();
   }else{
+    if(s3.nxtPlacing) nxtFeederMode(false);
     if(s3.rafId){cancelAnimationFrame(s3.rafId);s3.rafId=null;}
+    nxtUpdateToolbar();
   }
 }
 
@@ -1848,7 +1877,7 @@ class SimpleOrbit{
       this.sph.phi=Math.max(0.12,Math.min(1.52,this.sph.phi+dy*0.008));
       this.update();
     };
-    el.addEventListener("mousedown",e=>{drag=true;ox=e.clientX;oy=e.clientY;});
+    el.addEventListener("mousedown",e=>{if(s3.nxtPlacing)return;drag=true;ox=e.clientX;oy=e.clientY;});
     el.addEventListener("mouseup",()=>{drag=false;});
     el.addEventListener("mouseleave",()=>{drag=false;});
     el.addEventListener("mousemove",e=>{if(!drag)return;move(e.clientX-ox,e.clientY-oy);ox=e.clientX;oy=e.clientY;});
@@ -1940,8 +1969,13 @@ function init3D(){
   mkBack.position.set(0,-13.48,-16); s3.scene.add(mkBack);
   s3.errorLight=new THREE.PointLight(0xff2200,0,15);
   s3.scene.add(s3.errorLight);
+  s3.nxtRaycaster=new THREE.Raycaster();
+  canvas.addEventListener("mousemove",nxt3DMouseMove);
+  canvas.addEventListener("click",nxt3DClick);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&s3.nxtPlacing)nxtFeederMode(false);});
   rebuild3DScene();
   render3DWorkflow();
+  nxtUpdateToolbar();
   if(THREE.CSS3DRenderer){
     s3.cssRenderer=new THREE.CSS3DRenderer();
     s3.cssRenderer.setSize(W,H);
@@ -2005,6 +2039,13 @@ function _buildPCB(g,maq,errId,pw=10,pd=6,py=-7.7){
 }
 
 function buildNXTMachine(g){
+  s3.nxtSlotGrps={}; s3.nxtLedMeshes={};
+  s3.nxtGhost=null; s3.nxtGhostMat=null; s3.nxtHitWall=null;
+  if(!s3.nxtSlotHasFeeder){
+    s3.nxtSlotHasFeeder={L:[...NXT_SLOTS],C:[...NXT_SLOTS],R:[...NXT_SLOTS]};
+  }
+  const modKeys=['L','C','R'];
+
   const mWhite =new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10});
   const mWhite2=new THREE.MeshStandardMaterial({color:0xc8cdd6,roughness:0.38,metalness:0.08});
   const mBase  =_m(0x141416,0.72,0.30);
@@ -2104,73 +2145,49 @@ function buildNXTMachine(g){
   ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,5.5,5.3); g.add(ledRing);
 
   // ─── Feeder pallets — flat slab feeders (correct shape per manual image 15) ───
-  // When inserted, feeders are flat rectangular slabs packed side by side — NOT round.
-  const mPalStr=_m(0x17191e,0.72,0.28);  // pallet structure (very dark)
-  const mFdr   =_m(0x28303c,0.58,0.25);  // feeder body (dark blue-grey slab)
-  const mFdrFnt=_m(0x1e252f,0.65,0.20);  // feeder front face (slightly darker)
-  const mEmpty =_m(0x0c0e12,0.82,0.05);  // empty slot (near-black void)
+  const mPalStr=_m(0x17191e,0.72,0.28);
 
-  // 12 slots per module — 1=feeder inserted, 0=empty slot
-  const SLOTS=[1,1,1,1,1,0,1,1,1,1,1,0];
-  // Component level per slot: 0=no feeder, 1=red(sem componente), 2=orange(acabando), 3=green(ok)
-  const SLOT_LEVEL=[3,3,3,2,3,0,1,3,3,2,3,0];
+  modXs.forEach((mx,midx)=>{
+    const nF=12, fSp=NXT_FSP;
+    const mk=modKeys[midx];
 
-  modXs.forEach(mx=>{
-    const nF=12, fSp=10.5/nF;
-
-    // Pallet back plate
     const palBk=_b(10.5,11.5,0.8,mPalStr); palBk.position.set(mx,-5.0,9.85); g.add(palBk);
-    // Top lock rail (aluminium — where feeder tabs click in)
     const topRl=_b(10.5,0.62,2.6,mAlum);   topRl.position.set(mx,-0.1,10.9); g.add(topRl);
-    // Mid structural rail
     const midRl=_b(10.5,0.35,2.6,mPalStr); midRl.position.set(mx,-5.5,10.9); g.add(midRl);
-    // Bottom guide rail
     const botRl=_b(10.5,0.62,2.6,mAlum);   botRl.position.set(mx,-10.5,10.9); g.add(botRl);
 
     for(let fi=0;fi<nF;fi++){
       const fx=mx-5.25+(fi+0.5)*fSp;
+      const sk=`${mk}_${fi}`;
 
-      // Slot side divider (always present, marks each slot boundary)
       const div=_b(0.07,10.5,2.7,mPalStr);
       div.position.set(fx-fSp*0.5,-5.0,10.9); g.add(div);
 
-      if(SLOTS[fi]){
-        // ── FEEDER INSERTED: flat rectangular slab ──
-        // Body — the main slab going deep into the pallet (Z direction)
-        const fb=_b(fSp*0.76,10.2,2.0,mFdr); fb.position.set(fx,-5.0,10.7); g.add(fb);
-        // Front face — the narrow face the operator sees
-        const ff=_b(fSp*0.76,10.2,0.16,mFdrFnt); ff.position.set(fx,-5.0,11.78); g.add(ff);
-        // Pick guide at top — small step where carrier tape exits toward placement head
-        const pg=_b(fSp*0.56,1.05,0.6,_m(0x353d48,0.50,0.20));
-        pg.position.set(fx,-0.38,11.58); g.add(pg);
-        // Grip tab — the handle used to pull the feeder out
-        const tab=_b(fSp*0.38,0.42,0.85,_m(0x3a4252,0.48,0.18));
-        tab.position.set(fx,0.02,11.1); g.add(tab);
-      } else {
-        // ── EMPTY SLOT: open gap showing dark void ──
-        const es=_b(fSp*0.76,10.2,2.0,mEmpty); es.position.set(fx,-5.0,10.7); g.add(es);
-      }
+      const slotGrp=new THREE.Group();
+      slotGrp.position.set(fx,-5.0,0);
+      g.add(slotGrp);
+      s3.nxtSlotGrps[sk]=slotGrp;
+      nxtBuildSlotMesh(slotGrp,sk,fSp);
     }
-    // Close last divider
     const lastDiv=_b(0.07,10.5,2.7,mPalStr);
     lastDiv.position.set(mx+5.25,-5.0,10.9); g.add(lastDiv);
 
-    // ── Feeder status indicator strip — LED por slot acima dos feeders ──
-    // Background panel dark horizontal bar
     const indPnl=_b(10.5,2.2,0.58,_m(0x12141a,0.82,0.18));
     indPnl.position.set(mx,1.85,11.28); g.add(indPnl);
-    // Thin label groove below the LEDs
     const indGroove=_b(10.5,0.50,0.38,_m(0x0c0d10,0.90,0.05));
     indGroove.position.set(mx,1.05,11.30); g.add(indGroove);
     for(let fi=0;fi<nF;fi++){
       const fx=mx-5.25+(fi+0.5)*fSp;
-      const lv=SLOT_LEVEL[fi];
+      const sk=`${mk}_${fi}`;
+      const has=!!(s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+      const lv=has?NXT_SLOT_LEVEL[fi]:0;
       const lcol=lv===3?0x00cc44:lv===2?0xff8800:lv===1?0xff2200:0x0d0f12;
       const lemit=lv===3?new THREE.Color(0,0.45,0.12):lv===2?new THREE.Color(0.42,0.20,0):lv===1?new THREE.Color(0.55,0,0):new THREE.Color(0,0,0);
       const led=new THREE.Mesh(
         new THREE.BoxGeometry(fSp*0.44,0.60,0.32),
         new THREE.MeshStandardMaterial({color:lcol,roughness:0.22,emissive:lemit}));
       led.position.set(fx,2.05,11.60); g.add(led);
+      s3.nxtLedMeshes[sk]=led;
     }
   });
 
@@ -2186,6 +2203,31 @@ function buildNXTMachine(g){
     const dr=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
     dr.rotation.z=Math.PI/2; dr.position.set(x,4.8,0); g.add(dr);
   });
+
+  // ─── Ghost feeder for interactive placement ───
+  const ghostMat=new THREE.MeshStandardMaterial({
+    color:0x2288ff,roughness:0.38,metalness:0.28,transparent:true,opacity:0.52
+  });
+  s3.nxtGhostMat=ghostMat;
+  const ghost=new THREE.Group();
+  const gBody=new THREE.Mesh(new THREE.BoxGeometry(NXT_FSP*0.76,10.2,2.0),ghostMat);
+  gBody.castShadow=false; gBody.position.set(0,0,10.7); ghost.add(gBody);
+  const gFront=new THREE.Mesh(new THREE.BoxGeometry(NXT_FSP*0.76,10.2,0.16),ghostMat);
+  gFront.position.set(0,0,11.78); ghost.add(gFront);
+  ghost.visible=false;
+  ghost.position.set(-11,-5.0,0);
+  g.add(ghost);
+  s3.nxtGhost=ghost;
+  s3.nxtGhostSlot=null;
+
+  // ─── Invisible hit wall for feeder placement raycasting ───
+  const hitWall=new THREE.Mesh(
+    new THREE.PlaneGeometry(34,12),
+    new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide})
+  );
+  hitWall.position.set(0,-5.0,11.79);
+  g.add(hitWall);
+  s3.nxtHitWall=hitWall;
 
   // ─── Signal tower (Andon — left end) ───
   const tBase=_b(0.9,1.1,0.9,mDkGrey); tBase.position.set(-18,16.8,6); g.add(tBase);
@@ -2551,6 +2593,8 @@ function buildFornoMachine(g){
 
 function rebuild3DScene(){
   if(!s3.scene)return;
+  if(s3.nxtPlacing) nxtFeederMode(false);
+  s3.pcbTrains=[];
   if(s3.machineGroup){s3.scene.remove(s3.machineGroup);}
   s3.pcbRemoved=false; s3.componentFixed=false; s3.workflowStep=0;
   s3.errorComp=null; s3.pcbObj=null; s3.headObj=null;
@@ -2567,11 +2611,15 @@ function rebuild3DScene(){
   document.getElementById("mv3dResult").querySelector(".mv3d-result-icon").textContent="";
   document.getElementById("mv3dResult").querySelector(".mv3d-result-label").textContent="";
   update3DStatus();
+  nxtUpdateToolbar();
 }
 
 function animate3D(){
   s3.rafId=requestAnimationFrame(animate3D);
-  const t=Date.now()*0.001;
+  const now=Date.now()*0.001;
+  const dt=s3.lastT?Math.min(now-s3.lastT,0.05):0.016;
+  s3.lastT=now;
+  const t=now;
   if(s3.errorComp&&!s3.componentFixed&&currentErroId){
     const pulse=(Math.sin(t*3.5)+1)/2;
     s3.errorComp.material.emissive.setRGB(pulse*0.95,0,0);
@@ -2595,6 +2643,18 @@ function animate3D(){
   }
   if(machineState==="running"&&s3.headObj){
     s3.headObj.position.x=Math.sin(t*1.4)*5;
+  }
+  if(s3.pcbTrains.length){
+    s3.pcbTrains=s3.pcbTrains.filter(tr=>{
+      const inside=tr.x>-17&&tr.x<17;
+      tr.x+=dt*(inside?3:8);
+      tr.grp.position.x=tr.x;
+      if(tr.x>55){
+        if(tr.grp.parent)tr.grp.parent.remove(tr.grp);
+        return false;
+      }
+      return true;
+    });
   }
   s3.renderer.render(s3.scene,s3.camera);
   if(s3.cssRenderer&&s3.cssScene) s3.cssRenderer.render(s3.cssScene,s3.camera);
@@ -2679,6 +2739,149 @@ window.wf_runTest=function(){
   },2800);
 };
 
+/* ─── NXT Interactive Feeder Placement ─── */
+function nxtUpdateToolbar(){
+  const isNxt=MACHINES[currentMaq]&&MACHINES[currentMaq].model3D==="nxt"&&view3D;
+  const tb=document.getElementById("nxt3dToolbar");
+  const pcbBtn=document.getElementById("nxt3dPcbBtn");
+  if(tb) tb.style.display=isNxt?"":"none";
+  if(pcbBtn) pcbBtn.style.display=isNxt?"":"none";
+  if(!isNxt&&s3.nxtPlacing) nxtFeederMode(false);
+}
+
+function nxtFeederMode(force){
+  const entering=force!==undefined?force:!s3.nxtPlacing;
+  s3.nxtPlacing=entering;
+  const btn=document.getElementById("nxtBtnFeeder");
+  const hint=document.getElementById("nxt3dHint");
+  const canvas=document.getElementById("mv3dCanvas");
+  if(btn) btn.classList.toggle("placing",entering);
+  if(hint) hint.style.display=entering?"":"none";
+  if(canvas) canvas.style.cursor=entering?"crosshair":"";
+  if(!entering&&s3.nxtGhost) s3.nxtGhost.visible=false;
+}
+
+function nxt3DMouseMove(e){
+  if(!s3.nxtPlacing||!s3.nxtHitWall||!s3.camera||!s3.nxtRaycaster) return;
+  const canvas=document.getElementById("mv3dCanvas");
+  const rect=canvas.getBoundingClientRect();
+  const nx=((e.clientX-rect.left)/rect.width)*2-1;
+  const ny=-((e.clientY-rect.top)/rect.height)*2+1;
+  s3.nxtRaycaster.setFromCamera({x:nx,y:ny},s3.camera);
+  const hits=s3.nxtRaycaster.intersectObject(s3.nxtHitWall);
+  if(!hits.length){
+    if(s3.nxtGhost) s3.nxtGhost.visible=false;
+    s3.nxtGhostSlot=null;
+    return;
+  }
+  const info=nxtPointToSlot(hits[0].point.x);
+  if(!info){
+    if(s3.nxtGhost) s3.nxtGhost.visible=false;
+    s3.nxtGhostSlot=null;
+    return;
+  }
+  const{mk,fi,fx}=info;
+  const sk=`${mk}_${fi}`;
+  const hasFdr=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+  s3.nxtGhostSlot={mk,fi,sk,hasFdr};
+  if(s3.nxtGhost){
+    s3.nxtGhost.position.x=fx;
+    s3.nxtGhost.position.y=-5.0;
+    if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(hasFdr?0xff3333:0x2288ff);
+    s3.nxtGhost.visible=true;
+  }
+}
+
+function nxt3DClick(e){
+  if(!s3.nxtPlacing||!s3.nxtGhostSlot) return;
+  e.stopPropagation();
+  const{mk,fi,sk}=s3.nxtGhostSlot;
+  if(!s3.nxtSlotHasFeeder) return;
+  s3.nxtSlotHasFeeder[mk][fi]=!s3.nxtSlotHasFeeder[mk][fi];
+  const grp=s3.nxtSlotGrps[sk];
+  if(grp) nxtBuildSlotMesh(grp,sk,NXT_FSP);
+  nxtUpdateLed(sk);
+  if(s3.nxtGhostSlot) s3.nxtGhostSlot.hasFdr=s3.nxtSlotHasFeeder[mk][fi];
+  if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(s3.nxtSlotHasFeeder[mk][fi]?0xff3333:0x2288ff);
+}
+
+function nxtPointToSlot(wx){
+  const modDefs=[{mk:'L',mx:-11},{mk:'C',mx:0},{mk:'R',mx:11}];
+  for(const{mk,mx}of modDefs){
+    const lx=wx-mx;
+    if(lx>=-5.25&&lx<=5.25){
+      const fi=Math.max(0,Math.min(11,Math.floor((lx+5.25)/NXT_FSP)));
+      const fx=mx-5.25+(fi+0.5)*NXT_FSP;
+      return{mk,fi,fx,mx};
+    }
+  }
+  return null;
+}
+
+function nxtBuildSlotMesh(grp,sk,fSp){
+  while(grp.children.length){
+    const ch=grp.children[0];
+    if(ch.geometry) ch.geometry.dispose();
+    if(ch.material) ch.material.dispose();
+    grp.remove(ch);
+  }
+  const[mk,fiStr]=sk.split('_');
+  const fi=parseInt(fiStr);
+  const has=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+  if(has){
+    const mFdr=new THREE.MeshStandardMaterial({color:0x28303c,roughness:0.58,metalness:0.25});
+    const mFdrFnt=new THREE.MeshStandardMaterial({color:0x1e252f,roughness:0.65,metalness:0.20});
+    const fb=new THREE.Mesh(new THREE.BoxGeometry(fSp*0.76,10.2,2.0),mFdr);
+    fb.castShadow=true; fb.receiveShadow=true; fb.position.set(0,0,10.7); grp.add(fb);
+    const ff=new THREE.Mesh(new THREE.BoxGeometry(fSp*0.76,10.2,0.16),mFdrFnt);
+    ff.castShadow=true; ff.position.set(0,0,11.78); grp.add(ff);
+    const pg=new THREE.Mesh(new THREE.BoxGeometry(fSp*0.56,1.05,0.6),
+      new THREE.MeshStandardMaterial({color:0x353d48,roughness:0.50,metalness:0.20}));
+    pg.position.set(0,4.62,11.58); grp.add(pg);
+    const tab=new THREE.Mesh(new THREE.BoxGeometry(fSp*0.38,0.42,0.85),
+      new THREE.MeshStandardMaterial({color:0x3a4252,roughness:0.48,metalness:0.18}));
+    tab.position.set(0,5.02,11.1); grp.add(tab);
+  } else {
+    const mEmpty=new THREE.MeshStandardMaterial({color:0x0c0e12,roughness:0.82,metalness:0.05});
+    const es=new THREE.Mesh(new THREE.BoxGeometry(fSp*0.76,10.2,2.0),mEmpty);
+    es.castShadow=true; es.receiveShadow=true; es.position.set(0,0,10.7); grp.add(es);
+  }
+}
+
+function nxtUpdateLed(sk){
+  const led=s3.nxtLedMeshes[sk];
+  if(!led||!led.material) return;
+  const[mk,fiStr]=sk.split('_');
+  const fi=parseInt(fiStr);
+  const has=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+  const lv=has?NXT_SLOT_LEVEL[fi]:0;
+  const lcol=lv===3?0x00cc44:lv===2?0xff8800:lv===1?0xff2200:0x0d0f12;
+  const lemit=lv===3?new THREE.Color(0,0.45,0.12):lv===2?new THREE.Color(0.42,0.20,0):lv===1?new THREE.Color(0.55,0,0):new THREE.Color(0,0,0);
+  led.material.color.setHex(lcol);
+  led.material.emissive.copy(lemit);
+}
+
+function nxtSendPCB(){
+  if(!s3.machineGroup) return;
+  const brdMat=new THREE.MeshStandardMaterial({color:0x1a4a2a,roughness:0.75,metalness:0});
+  const traceMat=new THREE.MeshStandardMaterial({color:0xb8640a,roughness:0.4,metalness:0.9});
+  const compMat=new THREE.MeshStandardMaterial({color:0x2a2a2a,roughness:0.5,metalness:0.2});
+  const pg=new THREE.Group();
+  const board=new THREE.Mesh(new THREE.BoxGeometry(10,0.2,5.8),brdMat);
+  board.castShadow=true; pg.add(board);
+  [[6,0.05,0.1,-1,0.13,0.5],[4,0.05,0.1,1.5,0.13,-1.5],[0.1,0.05,4,-2,0.13,0]].forEach(([w,h,d,x,y,z])=>{
+    const tr=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),traceMat);
+    tr.position.set(x,y,z); pg.add(tr);
+  });
+  [[-1.5,0.18,-0.5],[0.5,0.18,1.2],[2.8,0.18,0.5],[-2.8,0.18,-1.5],[1.5,0.18,-1.8]].forEach(([cx,cy,cz])=>{
+    const c=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.2,0.3),compMat);
+    c.position.set(cx,cy,cz); pg.add(c);
+  });
+  pg.position.set(-52,4.95,0);
+  s3.machineGroup.add(pg);
+  s3.pcbTrains.push({grp:pg,x:-52});
+}
+
 /* ─── Expose globals ─── */
 window.selectMaq      = selectMaq;
 window.selectErro     = selectErro;
@@ -2687,6 +2890,8 @@ window.handleBtn      = handleBtn;
 window.handleEmergency= handleEmergency;
 window.toggleStep     = toggleStep;
 window.set3DView      = set3DView;
+window.nxtFeederMode  = nxtFeederMode;
+window.nxtSendPCB     = nxtSendPCB;
 
 /* ─── Init ─── */
 document.addEventListener("DOMContentLoaded",()=>{
