@@ -2063,7 +2063,6 @@ function buildNXTMachine(g){
   const mFdr   =_m(0x28303c,0.58,0.25);  // feeder body (dark blue-grey slab)
   const mFdrFnt=_m(0x1e252f,0.65,0.20);  // feeder front face (slightly darker)
   const mEmpty =_m(0x0c0e12,0.82,0.05);  // empty slot (near-black void)
-  const mRail  =_m(0x8a8e9a,0.22,0.78);  // aluminium rails
 
   // 12 slots per module — 1=feeder inserted, 0=empty slot
   const SLOTS=[1,1,1,1,1,0,1,1,1,1,1,0];
@@ -2074,11 +2073,11 @@ function buildNXTMachine(g){
     // Pallet back plate
     const palBk=_b(10.5,11.5,0.8,mPalStr); palBk.position.set(mx,-5.0,9.85); g.add(palBk);
     // Top lock rail (aluminium — where feeder tabs click in)
-    const topRl=_b(10.5,0.62,2.6,mRail);   topRl.position.set(mx,-0.1,10.9); g.add(topRl);
+    const topRl=_b(10.5,0.62,2.6,mAlum);   topRl.position.set(mx,-0.1,10.9); g.add(topRl);
     // Mid structural rail
     const midRl=_b(10.5,0.35,2.6,mPalStr); midRl.position.set(mx,-5.5,10.9); g.add(midRl);
     // Bottom guide rail
-    const botRl=_b(10.5,0.62,2.6,mRail);   botRl.position.set(mx,-10.5,10.9); g.add(botRl);
+    const botRl=_b(10.5,0.62,2.6,mAlum);   botRl.position.set(mx,-10.5,10.9); g.add(botRl);
 
     for(let fi=0;fi<nF;fi++){
       const fx=mx-5.25+(fi+0.5)*fSp;
