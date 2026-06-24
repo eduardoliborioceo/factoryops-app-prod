@@ -2197,8 +2197,6 @@ function buildNXTMachine(g){
   const railR=_b(36,0.6,0.6,rl); railR.position.set(0,5,2.8); g.add(railR);
   const belt=_b(36,0.2,5.2,_m(0x0d0d0d,0.95,0.05)); belt.position.set(0,4.7,0); g.add(belt);
   s3.conveyorBelt=belt;
-  const cgL=_b(36,3,0.38,mWhite2); cgL.position.set(0,5.5,-3.3); g.add(cgL);
-  const cgR=_b(36,3,0.38,mWhite2); cgR.position.set(0,5.5,3.3); g.add(cgR);
   [-16.5,16.5].forEach(x=>{
     const dr=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
     dr.rotation.z=Math.PI/2; dr.position.set(x,4.8,0); g.add(dr);
@@ -2248,8 +2246,6 @@ function buildNXTMachine(g){
   const exLBelt=_b(32,0.22,5.2,mBeltExt); exLBelt.position.set(-34,4.7,0); g.add(exLBelt);
   const exLRlL =_b(32,0.60,0.60,mRailExt); exLRlL.position.set(-34,5,-2.8); g.add(exLRlL);
   const exLRlR =_b(32,0.60,0.60,mRailExt); exLRlR.position.set(-34,5, 2.8); g.add(exLRlR);
-  const exLGdL =_b(32,3.0,0.38,mGuideExt); exLGdL.position.set(-34,5.5,-3.3); g.add(exLGdL);
-  const exLGdR =_b(32,3.0,0.38,mGuideExt); exLGdR.position.set(-34,5.5, 3.3); g.add(exLGdR);
   // Left entry drum
   const exLDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
   exLDrum.rotation.z=Math.PI/2; exLDrum.position.set(-50,4.8,0); g.add(exLDrum);
@@ -2270,8 +2266,6 @@ function buildNXTMachine(g){
   const exRBelt=_b(32,0.22,5.2,mBeltExt); exRBelt.position.set(34,4.7,0); g.add(exRBelt);
   const exRRlL =_b(32,0.60,0.60,mRailExt); exRRlL.position.set(34,5,-2.8); g.add(exRRlL);
   const exRRlR =_b(32,0.60,0.60,mRailExt); exRRlR.position.set(34,5, 2.8); g.add(exRRlR);
-  const exRGdL =_b(32,3.0,0.38,mGuideExt); exRGdL.position.set(34,5.5,-3.3); g.add(exRGdL);
-  const exRGdR =_b(32,3.0,0.38,mGuideExt); exRGdR.position.set(34,5.5, 3.3); g.add(exRGdR);
   // Right exit drum
   const exRDrum=_cyl(1.35,1.35,5.8,_m(0x555560,0.3,0.72));
   exRDrum.rotation.z=Math.PI/2; exRDrum.position.set(50,4.8,0); g.add(exRDrum);
