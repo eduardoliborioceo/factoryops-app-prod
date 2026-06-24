@@ -2057,26 +2057,60 @@ function buildNXTMachine(g){
   const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
   ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,0.5,5.3); g.add(ledRing);
 
-  // ─── Feeder pallets with tape reels (front of machine, dominant visual) ───
+  // ─── Feeder pallets — structural rack + individual feeders with tape reels ───
+  const mPalStr =_m(0x17191e,0.72,0.28);   // pallet structure (very dark)
+  const mFdrBody=_m(0x2a2e36,0.60,0.28);   // feeder body (dark grey rail)
+  const mReelDk =_m(0x1e2024,0.65,0.35);   // reel outer rim (near black)
+  const mTapeC  =new THREE.MeshStandardMaterial({color:0x5c4828,roughness:0.78,metalness:0.04}); // carrier tape (brown)
+  const mHubSil =_m(0x8a8e9a,0.22,0.78);   // hub / rail (aluminium)
+
+  // Fixed reel radii per slot (deterministic, no random)
+  const REEL_R=[2.6,2.2,2.9,2.4,2.7,2.1,2.8,2.3,2.5,2.6];
+
   modXs.forEach(mx=>{
-    const palBk=_b(10,11,1.2,mDkGrey); palBk.position.set(mx,-5,11.2); g.add(palBk);
-    const palRail=_b(10,0.9,0.8,mDkGrey); palRail.position.set(mx,-10.0,10.85); g.add(palRail);
-    for(let fi=0;fi<7;fi++){
-      const slot=_b(0.12,9,0.5,_m(0x454a52,0.5,0.5));
-      slot.position.set(mx-3+fi*1.1,-5,11.82); g.add(slot);
-    }
-    for(let row=0;row<2;row++){
-      for(let col=0;col<4;col++){
-        const rr=1.6+(col*0.12+row*0.18)%0.55;
-        const reel=_cyl(rr,rr,0.72,_m(0x2a2e34,0.65,0.4));
-        reel.rotation.x=Math.PI/2;
-        reel.position.set(mx-3.5+col*2.4,-4.5-row*3.8,14.2); g.add(reel);
-        const hub=_cyl(0.4,0.4,0.78,_m(0x7a7a7a,0.3,0.6));
-        hub.rotation.x=Math.PI/2;
-        hub.position.set(mx-3.5+col*2.4,-4.5-row*3.8,14.2); g.add(hub);
-        const tape=_b(0.26,0.1,2.0,_m(0x7a6040,0.75,0.05));
-        tape.position.set(mx-3.5+col*2.4,-4.5-row*3.8+rr-0.2,12.5); g.add(tape);
-      }
+    // Pallet backing plate (the rack structure feeders snap into)
+    const palBk=_b(10.5,12.8,1.0,mPalStr); palBk.position.set(mx,-4.5,10.8); g.add(palBk);
+    // Top mounting / lock rail
+    const topRl=_b(10.5,0.55,1.8,mHubSil); topRl.position.set(mx,-0.0,11.1); g.add(topRl);
+    // Bottom guide rail
+    const botRl=_b(10.5,0.55,1.8,mHubSil); botRl.position.set(mx,-10.5,11.1); g.add(botRl);
+
+    // 10 feeders per module, packed side by side
+    const nF=10, fSp=10.5/nF;
+    for(let fi=0;fi<nF;fi++){
+      const fx=mx-5.25+(fi+0.5)*fSp;
+      const rR=REEL_R[fi];
+
+      // Feeder body — the rectangular rail that slots into the pallet
+      const fb=_b(fSp*0.70,10.5,0.78,mFdrBody); fb.position.set(fx,-4.5,11.4); g.add(fb);
+
+      // Top pick guide (where the component tape exits toward the pick head)
+      const fg=_b(fSp*0.52,1.9,2.0,_m(0x38424c,0.52,0.22));
+      fg.position.set(fx,-0.3,12.2); g.add(fg);
+
+      // ── Large tape reel (main spool — dominant visual element) ──
+      // Brown tape body (wound carrier tape fills most of the reel face)
+      const tapCyl=_cyl(rR,rR,0.58,mTapeC);
+      tapCyl.rotation.x=Math.PI/2; tapCyl.position.set(fx,-5.4,14.5); g.add(tapCyl);
+      // Dark outer rim (the physical reel disc frame)
+      const rimMsh=new THREE.Mesh(new THREE.TorusGeometry(rR,0.10,6,28),mReelDk);
+      rimMsh.rotation.x=Math.PI/2; rimMsh.position.set(fx,-5.4,14.5); g.add(rimMsh);
+      // Silver hub (centre of reel)
+      const hub=_cyl(0.40,0.40,0.70,mHubSil);
+      hub.rotation.x=Math.PI/2; hub.position.set(fx,-5.4,14.5); g.add(hub);
+
+      // ── Small waste reel at bottom (empty / used tape collects here) ──
+      const wR=0.9+(fi%3)*0.15;
+      const wCyl=_cyl(wR,wR,0.50,mTapeC);
+      wCyl.rotation.x=Math.PI/2; wCyl.position.set(fx,-9.3,13.5); g.add(wCyl);
+      const wRim=new THREE.Mesh(new THREE.TorusGeometry(wR,0.07,6,18),mReelDk);
+      wRim.rotation.x=Math.PI/2; wRim.position.set(fx,-9.3,13.5); g.add(wRim);
+      const wHub=_cyl(0.24,0.24,0.56,mHubSil);
+      wHub.rotation.x=Math.PI/2; wHub.position.set(fx,-9.3,13.5); g.add(wHub);
+
+      // Carrier tape strip running from reel up to pick guide
+      const ts=_b(fSp*0.16,5.2,0.06,mTapeC);
+      ts.position.set(fx,-2.6,13.6); g.add(ts);
     }
   });
 
