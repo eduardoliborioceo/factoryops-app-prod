@@ -327,6 +327,33 @@
 .nxt3d-hint{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.88);color:#cbd5e1;font-size:0.72rem;font-weight:600;padding:5px 14px;border-radius:20px;white-space:nowrap;z-index:10;pointer-events:none;backdrop-filter:blur(4px)}
 .nxt3d-pcbbtn{position:absolute;bottom:10px;right:12px;background:rgba(13,110,253,0.88);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;z-index:10;backdrop-filter:blur(4px);transition:background 0.15s}
 .nxt3d-pcbbtn:hover{background:#0d6efd}
+.nxt-load-panel{position:absolute;top:12px;right:12px;width:280px;max-height:calc(100% - 24px);background:rgba(10,15,25,0.94);border:1px solid rgba(255,255,255,0.14);border-radius:12px;z-index:20;backdrop-filter:blur(8px);display:flex;flex-direction:column;overflow:hidden}
+.nxt-load-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.10);color:#e2e8f0;font-size:0.78rem;font-weight:700;flex-shrink:0}
+.nxt-load-close{background:none;border:none;color:#94a3b8;cursor:pointer;padding:2px 4px;border-radius:4px;transition:color 0.12s;font-size:0.8rem;line-height:1}
+.nxt-load-close:hover{color:#fff}
+.nxt-load-panel-actions{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;flex-wrap:wrap}
+.nxt-load-cap-label{color:#94a3b8;font-size:0.72rem;font-weight:600;display:flex;align-items:center;gap:5px}
+.nxt-load-cap-input{width:64px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:5px;color:#e2e8f0;padding:2px 6px;font-size:0.72rem;outline:none}
+.nxt-load-fill-all{background:rgba(13,110,253,0.78);border:1px solid rgba(59,130,246,0.6);border-radius:6px;color:#fff;font-size:0.72rem;font-weight:700;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:background 0.12s;flex-shrink:0}
+.nxt-load-fill-all:hover{background:rgba(13,110,253,0.95)}
+.nxt-load-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+.nxt-load-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:#64748b;font-size:0.72rem;font-weight:600;padding:6px 4px;cursor:pointer;transition:color 0.12s,border-color 0.12s}
+.nxt-load-tab.active{color:#3b82f6;border-bottom-color:#3b82f6}
+.nxt-load-tab:hover:not(.active){color:#94a3b8}
+.nxt-load-slots{overflow-y:auto;flex:1;padding:4px 0}
+.nxt-load-slot{display:flex;align-items:center;gap:6px;padding:4px 14px;transition:background 0.1s}
+.nxt-load-slot:hover{background:rgba(255,255,255,0.04)}
+.nxt-load-slot-led{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background 0.3s}
+.nxt-load-slot-num{color:#64748b;font-size:0.68rem;font-weight:700;width:20px;flex-shrink:0}
+.nxt-load-slot-bar-wrap{flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:5px;overflow:hidden}
+.nxt-load-slot-bar{height:100%;border-radius:3px;transition:width 0.3s,background 0.3s}
+.nxt-load-slot-qty{color:#94a3b8;font-size:0.65rem;width:54px;text-align:right;flex-shrink:0}
+.nxt-load-slot-inp{width:52px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:5px;color:#e2e8f0;padding:2px 5px;font-size:0.68rem;outline:none;-moz-appearance:textfield}
+.nxt-load-slot-inp::-webkit-inner-spin-button,.nxt-load-slot-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.nxt-load-slot-btn{background:rgba(59,130,246,0.55);border:none;border-radius:5px;color:#e2e8f0;font-size:0.65rem;font-weight:700;padding:3px 8px;cursor:pointer;transition:background 0.12s;flex-shrink:0}
+.nxt-load-slot-btn:hover{background:rgba(59,130,246,0.85)}
+.nxt-load-slot-no-feeder{color:#334155;font-size:0.65rem;font-style:italic;flex:1;text-align:center}
+@media(max-width:767px){.nxt-load-panel{width:calc(100% - 24px);left:12px;right:12px;max-height:52vh}}
 .nxt-cross-mid{display:flex;gap:2px;align-items:center}
 .nxt-nav{width:28px;height:22px;border-radius:4px;cursor:pointer;
   background:linear-gradient(180deg,#555 0%,#333 100%);
@@ -657,9 +684,28 @@
             <button id="nxtBtnFeeder" class="nxt3d-tb-btn" onclick="window.nxtFeederMode()">
               <i class="bi bi-grid-fill"></i> Feeder
             </button>
+            <button id="nxtBtnLoad" class="nxt3d-tb-btn" onclick="window.nxtOpenLoadPanel()">
+              <i class="bi bi-box-arrow-in-down"></i> Carregar
+            </button>
           </div>
           <div id="nxt3dHint" class="nxt3d-hint" style="display:none">
             Passe o mouse sobre a máquina · Clique para colocar/remover · ESC para cancelar
+          </div>
+          <div id="nxtLoadPanel" class="nxt-load-panel" style="display:none">
+            <div class="nxt-load-panel-header">
+              <span><i class="bi bi-box-arrow-in-down me-1"></i>Carregar Feeders</span>
+              <button class="nxt-load-close" onclick="window.nxtCloseLoadPanel()" title="Fechar"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="nxt-load-panel-actions">
+              <label class="nxt-load-cap-label">Cap: <input id="nxtCapInput" type="number" min="100" max="9999" value="1000" class="nxt-load-cap-input"></label>
+              <button class="nxt-load-fill-all" onclick="window.nxtFillAll()"><i class="bi bi-lightning-fill"></i>Encher Todos</button>
+            </div>
+            <div class="nxt-load-tabs">
+              <button class="nxt-load-tab active" data-mod="L" onclick="window.nxtLoadTab(this,'L')">Módulo L</button>
+              <button class="nxt-load-tab" data-mod="C" onclick="window.nxtLoadTab(this,'C')">Módulo C</button>
+              <button class="nxt-load-tab" data-mod="R" onclick="window.nxtLoadTab(this,'R')">Módulo R</button>
+            </div>
+            <div class="nxt-load-slots" id="nxtLoadSlots"></div>
           </div>
           <button id="nxt3dPcbBtn" class="nxt3d-pcbbtn" style="display:none" onclick="window.nxtSendPCB()">
             <i class="bi bi-send"></i> Enviar PCB
@@ -1847,7 +1893,8 @@ const s3 = {
   cssRenderer:null, cssScene:null, cssPanels:[],
   nxtPlacing:false, nxtSlotGrps:{}, nxtLedMeshes:{}, nxtSlotHasFeeder:null,
   nxtGhost:null, nxtGhostMat:null, nxtHitWall:null, nxtGhostSlot:null,
-  pcbTrains:[], lastT:0
+  pcbTrains:[], lastT:0,
+  nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[]
 };
 
 function set3DView(to3D){
@@ -2044,6 +2091,15 @@ function buildNXTMachine(g){
   if(!s3.nxtSlotHasFeeder){
     s3.nxtSlotHasFeeder={L:[...NXT_SLOTS],C:[...NXT_SLOTS],R:[...NXT_SLOTS]};
   }
+  if(!s3.nxtSlotQty){
+    const initQ=NXT_SLOTS.map((has,fi)=>{
+      if(!has) return 0;
+      const lv=NXT_SLOT_LEVEL[fi];
+      return lv===3?1000:lv===2?600:lv===1?150:0;
+    });
+    s3.nxtSlotQty={L:[...initQ],C:[...initQ],R:[...initQ]};
+    s3.nxtSlotCapacity={L:Array(12).fill(1000),C:Array(12).fill(1000),R:Array(12).fill(1000)};
+  }
   const modKeys=['L','C','R'];
 
   const mWhite =new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10});
@@ -2180,7 +2236,13 @@ function buildNXTMachine(g){
       const fx=mx-5.25+(fi+0.5)*fSp;
       const sk=`${mk}_${fi}`;
       const has=!!(s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
-      const lv=has?NXT_SLOT_LEVEL[fi]:0;
+      let lv=0;
+      if(has&&s3.nxtSlotQty){
+        const qty=s3.nxtSlotQty[mk][fi]||0;
+        const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+        const ratio=cap>0?qty/cap:0;
+        lv=ratio>=0.3?3:ratio>=0.1?2:qty>0?1:0;
+      }
       const lcol=lv===3?0x00cc44:lv===2?0xff8800:lv===1?0xff2200:0x0d0f12;
       const lemit=lv===3?new THREE.Color(0,0.45,0.12):lv===2?new THREE.Color(0.42,0.20,0):lv===1?new THREE.Color(0.55,0,0):new THREE.Color(0,0,0);
       const led=new THREE.Mesh(
@@ -2230,10 +2292,12 @@ function buildNXTMachine(g){
   // ─── Signal tower (Andon — left end) ───
   const tBase=_b(0.9,1.1,0.9,mDkGrey); tBase.position.set(-18,16.8,6); g.add(tBase);
   const tPole=_cyl(0.28,0.28,5.5,mAlum); tPole.position.set(-18,19.5,6); g.add(tPole);
+  s3.nxtAndonLights=[];
   [[0xff2200,false],[0xffcc00,false],[0x00cc44,true]].forEach(([c,on],i)=>{
     const lt=_cyl(0.6,0.6,0.95,
       new THREE.MeshStandardMaterial({color:c,roughness:0.3,emissive:on?new THREE.Color(c).multiplyScalar(0.45):new THREE.Color(0,0,0)}));
     lt.position.set(-18,17.4+i*1.1,6); g.add(lt);
+    s3.nxtAndonLights.push(lt);
   });
 
   // ─── Extended conveyor (left input → machine → right output) ───
@@ -2606,6 +2670,7 @@ function rebuild3DScene(){
   document.getElementById("mv3dResult").querySelector(".mv3d-result-label").textContent="";
   update3DStatus();
   nxtUpdateToolbar();
+  nxtUpdateAndon();
 }
 
 function animate3D(){
@@ -2637,6 +2702,22 @@ function animate3D(){
   }
   if(machineState==="running"&&s3.headObj){
     s3.headObj.position.x=Math.sin(t*1.4)*5;
+  }
+  if(machineState==="running"&&s3.nxtSlotQty){
+    s3.nxtConsumeAccum+=dt;
+    if(s3.nxtConsumeAccum>=0.5){
+      s3.nxtConsumeAccum=0;
+      let changed=false;
+      ['L','C','R'].forEach(mk=>{
+        for(let fi=0;fi<12;fi++){
+          if(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]&&s3.nxtSlotQty[mk][fi]>0){
+            s3.nxtSlotQty[mk][fi]=Math.max(0,s3.nxtSlotQty[mk][fi]-1);
+            changed=true;
+          }
+        }
+      });
+      if(changed) nxtRefreshAllLeds();
+    }
   }
   if(s3.pcbTrains.length){
     s3.pcbTrains=s3.pcbTrains.filter(tr=>{
@@ -2791,10 +2872,16 @@ function nxt3DClick(e){
   e.stopPropagation();
   const{mk,fi,sk}=s3.nxtGhostSlot;
   if(!s3.nxtSlotHasFeeder) return;
-  s3.nxtSlotHasFeeder[mk][fi]=!s3.nxtSlotHasFeeder[mk][fi];
+  const wasHas=!!s3.nxtSlotHasFeeder[mk][fi];
+  s3.nxtSlotHasFeeder[mk][fi]=!wasHas;
+  if(s3.nxtSlotQty){
+    const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+    s3.nxtSlotQty[mk][fi]=!wasHas?cap:0;
+  }
   const grp=s3.nxtSlotGrps[sk];
   if(grp) nxtBuildSlotMesh(grp,sk,NXT_FSP);
   nxtUpdateLed(sk);
+  nxtUpdateAndon();
   if(s3.nxtGhostSlot) s3.nxtGhostSlot.hasFdr=s3.nxtSlotHasFeeder[mk][fi];
   if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(s3.nxtSlotHasFeeder[mk][fi]?0xff3333:0x2288ff);
 }
@@ -2848,11 +2935,133 @@ function nxtUpdateLed(sk){
   const[mk,fiStr]=sk.split('_');
   const fi=parseInt(fiStr);
   const has=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
-  const lv=has?NXT_SLOT_LEVEL[fi]:0;
+  let lv=0;
+  if(has&&s3.nxtSlotQty){
+    const qty=s3.nxtSlotQty[mk][fi]||0;
+    const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+    const ratio=cap>0?qty/cap:0;
+    lv=ratio>=0.3?3:ratio>=0.1?2:qty>0?1:0;
+  }
   const lcol=lv===3?0x00cc44:lv===2?0xff8800:lv===1?0xff2200:0x0d0f12;
   const lemit=lv===3?new THREE.Color(0,0.45,0.12):lv===2?new THREE.Color(0.42,0.20,0):lv===1?new THREE.Color(0.55,0,0):new THREE.Color(0,0,0);
   led.material.color.setHex(lcol);
   led.material.emissive.copy(lemit);
+}
+
+function nxtRefreshAllLeds(){
+  Object.keys(s3.nxtLedMeshes).forEach(sk=>nxtUpdateLed(sk));
+  nxtUpdateAndon();
+}
+
+function nxtUpdateAndon(){
+  if(!s3.nxtAndonLights||s3.nxtAndonLights.length<3||!s3.nxtSlotQty) return;
+  const mods=['L','C','R'];
+  let anyEmpty=false, anyLow=false;
+  mods.forEach(mk=>{
+    for(let fi=0;fi<12;fi++){
+      if(!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi])) continue;
+      const qty=s3.nxtSlotQty[mk][fi]||0;
+      const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+      const ratio=cap>0?qty/cap:0;
+      if(qty===0||ratio<0.1) anyEmpty=true;
+      else if(ratio<0.3) anyLow=true;
+    }
+  });
+  const setAndon=(lt,hex,on)=>{
+    lt.material.color.setHex(hex);
+    lt.material.emissive.copy(on?new THREE.Color(hex).multiplyScalar(0.5):new THREE.Color(0,0,0));
+  };
+  setAndon(s3.nxtAndonLights[0],0xff2200,anyEmpty);
+  setAndon(s3.nxtAndonLights[1],0xffcc00,anyLow&&!anyEmpty);
+  setAndon(s3.nxtAndonLights[2],0x00cc44,!anyEmpty&&!anyLow);
+}
+
+function nxtOpenLoadPanel(){
+  const panel=document.getElementById("nxtLoadPanel");
+  if(!panel) return;
+  const activeTab=document.querySelector(".nxt-load-tab.active");
+  const mk=(activeTab&&activeTab.dataset.mod)||'L';
+  nxtRenderLoadSlots(mk);
+  panel.style.display="flex";
+  panel.style.flexDirection="column";
+}
+
+function nxtCloseLoadPanel(){
+  const panel=document.getElementById("nxtLoadPanel");
+  if(panel) panel.style.display="none";
+}
+
+function nxtLoadTab(btn,mk){
+  document.querySelectorAll(".nxt-load-tab").forEach(t=>t.classList.remove("active"));
+  btn.classList.add("active");
+  nxtRenderLoadSlots(mk);
+}
+
+function nxtRenderLoadSlots(mk){
+  const cont=document.getElementById("nxtLoadSlots");
+  if(!cont||!s3.nxtSlotQty) return;
+  cont.innerHTML="";
+  for(let fi=0;fi<12;fi++){
+    const has=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+    const qty=s3.nxtSlotQty[mk][fi]||0;
+    const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+    const ratio=cap>0?qty/cap:0;
+    const lv=ratio>=0.3?3:ratio>=0.1?2:qty>0?1:0;
+    const ledColor=lv===3?"#00cc44":lv===2?"#ff8800":lv===1?"#ff2200":"#1e2535";
+    const barColor=lv===3?"#00cc44":lv===2?"#ff8800":"#ff2200";
+    const row=document.createElement("div");
+    row.className="nxt-load-slot";
+    if(has){
+      row.innerHTML=`
+        <span class="nxt-load-slot-led" style="background:${ledColor};box-shadow:0 0 5px ${qty>0?ledColor:'transparent'}"></span>
+        <span class="nxt-load-slot-num">${fi+1}</span>
+        <div class="nxt-load-slot-bar-wrap">
+          <div class="nxt-load-slot-bar" style="width:${Math.round(ratio*100)}%;background:${barColor}"></div>
+        </div>
+        <span class="nxt-load-slot-qty">${qty}/${cap}</span>
+        <input class="nxt-load-slot-inp" type="number" min="0" max="9999" value="${qty}" id="nxtSlotInp_${mk}_${fi}">
+        <button class="nxt-load-slot-btn" onclick="window.nxtLoadSlot('${mk}',${fi})">OK</button>
+      `;
+    } else {
+      row.innerHTML=`
+        <span class="nxt-load-slot-led" style="background:#1e2535"></span>
+        <span class="nxt-load-slot-num">${fi+1}</span>
+        <span class="nxt-load-slot-no-feeder">sem feeder</span>
+      `;
+    }
+    cont.appendChild(row);
+  }
+}
+
+function nxtLoadSlot(mk,fi){
+  if(!s3.nxtSlotQty||!s3.nxtSlotCapacity) return;
+  const inp=document.getElementById(`nxtSlotInp_${mk}_${fi}`);
+  if(!inp) return;
+  const capEl=document.getElementById("nxtCapInput");
+  const cap=capEl?Math.max(100,Math.min(9999,parseInt(capEl.value)||1000)):1000;
+  const qty=Math.max(0,Math.min(cap,parseInt(inp.value)||0));
+  s3.nxtSlotCapacity[mk][fi]=cap;
+  s3.nxtSlotQty[mk][fi]=qty;
+  nxtUpdateLed(`${mk}_${fi}`);
+  nxtUpdateAndon();
+  nxtRenderLoadSlots(mk);
+}
+
+function nxtFillAll(){
+  if(!s3.nxtSlotQty||!s3.nxtSlotCapacity) return;
+  const capEl=document.getElementById("nxtCapInput");
+  const cap=capEl?Math.max(100,Math.min(9999,parseInt(capEl.value)||1000)):1000;
+  ['L','C','R'].forEach(mk=>{
+    for(let fi=0;fi<12;fi++){
+      if(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]){
+        s3.nxtSlotCapacity[mk][fi]=cap;
+        s3.nxtSlotQty[mk][fi]=cap;
+      }
+    }
+  });
+  nxtRefreshAllLeds();
+  const activeTab=document.querySelector(".nxt-load-tab.active");
+  if(activeTab) nxtRenderLoadSlots(activeTab.dataset.mod);
 }
 
 function nxtSendPCB(){
@@ -2886,6 +3095,12 @@ window.toggleStep     = toggleStep;
 window.set3DView      = set3DView;
 window.nxtFeederMode  = nxtFeederMode;
 window.nxtSendPCB     = nxtSendPCB;
+window.nxtOpenLoadPanel = nxtOpenLoadPanel;
+window.nxtCloseLoadPanel= nxtCloseLoadPanel;
+window.nxtLoadTab     = nxtLoadTab;
+window.nxtRenderLoadSlots=nxtRenderLoadSlots;
+window.nxtLoadSlot    = nxtLoadSlot;
+window.nxtFillAll     = nxtFillAll;
 
 /* ─── Init ─── */
 document.addEventListener("DOMContentLoaded",()=>{
