@@ -212,9 +212,6 @@
     <h1 class="page-header-name">{{ rota.nome }}</h1>
   </div>
   <div class="page-header-actions">
-    <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="btn-header-icon" title="Voltar">
-      <i class="bi bi-arrow-left"></i>
-    </a>
     <button class="btn-header-icon" onclick="toggleFullscreen()" title="Tela cheia">
       <i class="bi bi-arrows-fullscreen"></i>
     </button>
@@ -238,6 +235,12 @@
 </div>
 
 <div class="container-fluid" style="padding-bottom:16px;">
+
+  <div class="mb-3">
+    <a href="{{ url_for('pages.rh_transporte_rotas') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar às Rotas
+    </a>
+  </div>
 
   <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
     <span class="badge turno-badge turno-{{ rota.turno }}" style="font-size:0.72rem;padding:4px 10px;">
