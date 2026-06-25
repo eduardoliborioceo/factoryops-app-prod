@@ -1894,7 +1894,8 @@ const s3 = {
   nxtPlacing:false, nxtSlotGrps:{}, nxtLedMeshes:{}, nxtSlotHasFeeder:null,
   nxtGhost:null, nxtGhostMat:null, nxtHitWall:null, nxtGhostSlot:null,
   pcbTrains:[], lastT:0,
-  nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[]
+  nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[],
+  nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[]
 };
 
 function set3DView(to3D){
@@ -2134,38 +2135,15 @@ function buildNXTMachine(g){
   const nxtBar=_b(0.4,25,4.5,mPurple); nxtBar.position.set(20.6,2.0,0); g.add(nxtBar);
   const nxtBox=_b(0.4,4.5,5.5,mBlue); nxtBox.position.set(20.6,3.5,2.5); g.add(nxtBox);
 
-  // ─── 3 Modules ───
+  // ─── Fixed interior (visible through open module slot) ───
   const modXs=[-11,0,11];
-  modXs.forEach((mx,idx)=>{
-    // Lower white body (main module body below the panel head)
-    const bodyLo=_b(10.5,24,20,mWhite); bodyLo.position.set(mx,-0.5,0);
-    _edges(bodyLo,0xb0b4bc,0.08); g.add(bodyLo);
-
-    // Purple/dark stripe separating body from panel head (Fuji NXT brand)
-    const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(mx,11.6,0); g.add(stripe);
-
-    // ── Operation panel head (dark grey housing — CSS3D panel renders on the face) ──
-    const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(mx,14.5,0.75);
-    _edges(panH,0x181820,0.12); g.add(panH);
-
-    // Top trim strip on panel
-    const panTop=_b(10.5,0.35,22.5,_m(0x1a1a22,0.7,0.2));
-    panTop.position.set(mx,17.3,0.75); g.add(panTop);
-
-    // ── Module badge (blue "M6 II" / "M3 II") on lower body ──
-    const badge=_b(3.0,0.78,0.35,mBlue); badge.position.set(mx,5.2,10.35); g.add(badge);
-
-    // Safety warning triangle sticker on body front
-    const warnBg=_b(1.4,1.4,0.18,_m(0xffcc00,0.5,0));
-    warnBg.position.set(mx,7.2,10.35); g.add(warnBg);
-
-    // Vent grilles on side faces
-    [-1,1].forEach(sx=>{
-      for(let vi=0;vi<5;vi++){
-        const vt=_b(0.15,0.85,13,_m(0xb4b8c0,0.5,0.08));
-        vt.position.set(mx+sx*5.42,0.5-vi*2.2,-1.5); g.add(vt);
-      }
+  modXs.forEach(mx=>{
+    [-3.5,3.5].forEach(xOff=>{
+      const iCol=_b(0.32,22,0.32,_m(0x9ca0aa,0.42,0.38));
+      iCol.position.set(mx+xOff,-0.5,3); g.add(iCol);
     });
+    const tray=_b(7.5,0.2,1.2,_m(0x14161c,0.85,0.08));
+    tray.position.set(mx,-1.2,3); g.add(tray);
   });
 
   // Module dividers
@@ -2200,40 +2178,61 @@ function buildNXTMachine(g){
   const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
   ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,5.5,5.3); g.add(ledRing);
 
-  // ─── Feeder pallets — flat slab feeders (correct shape per manual image 15) ───
+  // ─── 3 Modules (each slides forward on click to reveal interior) ───
   const mPalStr=_m(0x17191e,0.72,0.28);
+  s3.nxtModuleGrps=[];
+  s3.nxtModuleBodyMeshes=[];
+  s3.nxtModuleOpen=[false,false,false];
+  modXs.forEach((mx,idx)=>{
+    const mk=modKeys[idx];
+    const modGrp=new THREE.Group();
+    modGrp.position.set(mx,0,0);
+    g.add(modGrp);
+    s3.nxtModuleGrps.push(modGrp);
 
-  modXs.forEach((mx,midx)=>{
+    const bodyLo=_b(10.5,24,20,mWhite); bodyLo.position.set(0,-0.5,0);
+    _edges(bodyLo,0xb0b4bc,0.08); modGrp.add(bodyLo);
+    s3.nxtModuleBodyMeshes.push(bodyLo);
+
+    const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(0,11.6,0); modGrp.add(stripe);
+    const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(0,14.5,0.75);
+    _edges(panH,0x181820,0.12); modGrp.add(panH);
+    const panTop=_b(10.5,0.35,22.5,_m(0x1a1a22,0.7,0.2));
+    panTop.position.set(0,17.3,0.75); modGrp.add(panTop);
+    const badge=_b(3.0,0.78,0.35,mBlue); badge.position.set(0,5.2,10.35); modGrp.add(badge);
+    const warnBg=_b(1.4,1.4,0.18,_m(0xffcc00,0.5,0));
+    warnBg.position.set(0,7.2,10.35); modGrp.add(warnBg);
+    [-1,1].forEach(sx=>{
+      for(let vi=0;vi<5;vi++){
+        const vt=_b(0.15,0.85,13,_m(0xb4b8c0,0.5,0.08));
+        vt.position.set(sx*5.42,0.5-vi*2.2,-1.5); modGrp.add(vt);
+      }
+    });
+
     const nF=12, fSp=NXT_FSP;
-    const mk=modKeys[midx];
-
-    const palBk=_b(10.5,11.5,0.8,mPalStr); palBk.position.set(mx,-5.0,9.85); g.add(palBk);
-    const topRl=_b(10.5,0.62,2.6,mAlum);   topRl.position.set(mx,-0.1,10.9); g.add(topRl);
-    const midRl=_b(10.5,0.35,2.6,mPalStr); midRl.position.set(mx,-5.5,10.9); g.add(midRl);
-    const botRl=_b(10.5,0.62,2.6,mAlum);   botRl.position.set(mx,-10.5,10.9); g.add(botRl);
-
+    const palBk=_b(10.5,11.5,0.8,mPalStr); palBk.position.set(0,-5.0,9.85); modGrp.add(palBk);
+    const topRl=_b(10.5,0.62,2.6,mAlum); topRl.position.set(0,-0.1,10.9); modGrp.add(topRl);
+    const midRl=_b(10.5,0.35,2.6,mPalStr); midRl.position.set(0,-5.5,10.9); modGrp.add(midRl);
+    const botRl=_b(10.5,0.62,2.6,mAlum); botRl.position.set(0,-10.5,10.9); modGrp.add(botRl);
     for(let fi=0;fi<nF;fi++){
-      const fx=mx-5.25+(fi+0.5)*fSp;
+      const fxL=-5.25+(fi+0.5)*fSp;
       const sk=`${mk}_${fi}`;
-
-      const div=_b(0.07,10.5,2.7,mPalStr);
-      div.position.set(fx-fSp*0.5,-5.0,10.9); g.add(div);
-
+      const divM=_b(0.07,10.5,2.7,mPalStr);
+      divM.position.set(fxL-fSp*0.5,-5.0,10.9); modGrp.add(divM);
       const slotGrp=new THREE.Group();
-      slotGrp.position.set(fx,-5.0,0);
-      g.add(slotGrp);
+      slotGrp.position.set(fxL,-5.0,0);
+      modGrp.add(slotGrp);
       s3.nxtSlotGrps[sk]=slotGrp;
       nxtBuildSlotMesh(slotGrp,sk,fSp);
     }
     const lastDiv=_b(0.07,10.5,2.7,mPalStr);
-    lastDiv.position.set(mx+5.25,-5.0,10.9); g.add(lastDiv);
-
+    lastDiv.position.set(5.25,-5.0,10.9); modGrp.add(lastDiv);
     const indPnl=_b(10.5,2.2,0.58,_m(0x12141a,0.82,0.18));
-    indPnl.position.set(mx,1.85,11.28); g.add(indPnl);
+    indPnl.position.set(0,1.85,11.28); modGrp.add(indPnl);
     const indGroove=_b(10.5,0.50,0.38,_m(0x0c0d10,0.90,0.05));
-    indGroove.position.set(mx,1.05,11.30); g.add(indGroove);
+    indGroove.position.set(0,1.05,11.30); modGrp.add(indGroove);
     for(let fi=0;fi<nF;fi++){
-      const fx=mx-5.25+(fi+0.5)*fSp;
+      const fxL=-5.25+(fi+0.5)*fSp;
       const sk=`${mk}_${fi}`;
       const has=!!(s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
       let lv=0;
@@ -2248,7 +2247,7 @@ function buildNXTMachine(g){
       const led=new THREE.Mesh(
         new THREE.BoxGeometry(fSp*0.44,0.60,0.32),
         new THREE.MeshStandardMaterial({color:lcol,roughness:0.22,emissive:lemit}));
-      led.position.set(fx,2.05,11.60); g.add(led);
+      led.position.set(fxL,2.05,11.60); modGrp.add(led);
       s3.nxtLedMeshes[sk]=led;
     }
   });
@@ -2703,6 +2702,13 @@ function animate3D(){
   if(machineState==="running"&&s3.headObj){
     s3.headObj.position.x=Math.sin(t*1.4)*5;
   }
+  if(s3.nxtModuleGrps.length){
+    s3.nxtModuleGrps.forEach((grp,i)=>{
+      const tz=s3.nxtModuleOpen[i]?20:0;
+      grp.position.z+=(tz-grp.position.z)*0.08;
+      if(s3.cssPanels[i]) s3.cssPanels[i].position.z=12.2+grp.position.z;
+    });
+  }
   if(machineState==="running"&&s3.nxtSlotQty){
     s3.nxtConsumeAccum+=dt;
     if(s3.nxtConsumeAccum>=0.5){
@@ -2827,6 +2833,7 @@ function nxtUpdateToolbar(){
 function nxtFeederMode(force){
   const entering=force!==undefined?force:!s3.nxtPlacing;
   s3.nxtPlacing=entering;
+  if(entering&&s3.nxtModuleGrps.length) s3.nxtModuleOpen=[false,false,false];
   const btn=document.getElementById("nxtBtnFeeder");
   const hint=document.getElementById("nxt3dHint");
   const canvas=document.getElementById("mv3dCanvas");
@@ -2837,53 +2844,75 @@ function nxtFeederMode(force){
 }
 
 function nxt3DMouseMove(e){
-  if(!s3.nxtPlacing||!s3.nxtHitWall||!s3.camera||!s3.nxtRaycaster) return;
   const canvas=document.getElementById("mv3dCanvas");
+  if(!canvas||!s3.camera||!s3.nxtRaycaster) return;
   const rect=canvas.getBoundingClientRect();
   const nx=((e.clientX-rect.left)/rect.width)*2-1;
   const ny=-((e.clientY-rect.top)/rect.height)*2+1;
   s3.nxtRaycaster.setFromCamera({x:nx,y:ny},s3.camera);
-  const hits=s3.nxtRaycaster.intersectObject(s3.nxtHitWall);
-  if(!hits.length){
-    if(s3.nxtGhost) s3.nxtGhost.visible=false;
-    s3.nxtGhostSlot=null;
+  if(s3.nxtPlacing&&s3.nxtHitWall){
+    const hits=s3.nxtRaycaster.intersectObject(s3.nxtHitWall);
+    if(!hits.length){
+      if(s3.nxtGhost) s3.nxtGhost.visible=false;
+      s3.nxtGhostSlot=null;
+      return;
+    }
+    const info=nxtPointToSlot(hits[0].point.x);
+    if(!info){
+      if(s3.nxtGhost) s3.nxtGhost.visible=false;
+      s3.nxtGhostSlot=null;
+      return;
+    }
+    const{mk,fi,fx}=info;
+    const sk=`${mk}_${fi}`;
+    const hasFdr=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
+    s3.nxtGhostSlot={mk,fi,sk,hasFdr};
+    if(s3.nxtGhost){
+      s3.nxtGhost.position.x=fx;
+      s3.nxtGhost.position.y=-5.0;
+      if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(hasFdr?0xff3333:0x2288ff);
+      s3.nxtGhost.visible=true;
+    }
     return;
   }
-  const info=nxtPointToSlot(hits[0].point.x);
-  if(!info){
-    if(s3.nxtGhost) s3.nxtGhost.visible=false;
-    s3.nxtGhostSlot=null;
-    return;
-  }
-  const{mk,fi,fx}=info;
-  const sk=`${mk}_${fi}`;
-  const hasFdr=!!(s3.nxtSlotHasFeeder&&s3.nxtSlotHasFeeder[mk]&&s3.nxtSlotHasFeeder[mk][fi]);
-  s3.nxtGhostSlot={mk,fi,sk,hasFdr};
-  if(s3.nxtGhost){
-    s3.nxtGhost.position.x=fx;
-    s3.nxtGhost.position.y=-5.0;
-    if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(hasFdr?0xff3333:0x2288ff);
-    s3.nxtGhost.visible=true;
+  if(s3.nxtModuleBodyMeshes.length){
+    const hits=s3.nxtRaycaster.intersectObjects(s3.nxtModuleBodyMeshes,false);
+    canvas.style.cursor=hits.length?'pointer':'';
   }
 }
 
 function nxt3DClick(e){
-  if(!s3.nxtPlacing||!s3.nxtGhostSlot) return;
-  e.stopPropagation();
-  const{mk,fi,sk}=s3.nxtGhostSlot;
-  if(!s3.nxtSlotHasFeeder) return;
-  const wasHas=!!s3.nxtSlotHasFeeder[mk][fi];
-  s3.nxtSlotHasFeeder[mk][fi]=!wasHas;
-  if(s3.nxtSlotQty){
-    const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
-    s3.nxtSlotQty[mk][fi]=!wasHas?cap:0;
+  if(s3.nxtPlacing){
+    if(!s3.nxtGhostSlot) return;
+    e.stopPropagation();
+    const{mk,fi,sk}=s3.nxtGhostSlot;
+    if(!s3.nxtSlotHasFeeder) return;
+    const wasHas=!!s3.nxtSlotHasFeeder[mk][fi];
+    s3.nxtSlotHasFeeder[mk][fi]=!wasHas;
+    if(s3.nxtSlotQty){
+      const cap=(s3.nxtSlotCapacity&&s3.nxtSlotCapacity[mk][fi])||1000;
+      s3.nxtSlotQty[mk][fi]=!wasHas?cap:0;
+    }
+    const grp=s3.nxtSlotGrps[sk];
+    if(grp) nxtBuildSlotMesh(grp,sk,NXT_FSP);
+    nxtUpdateLed(sk);
+    nxtUpdateAndon();
+    if(s3.nxtGhostSlot) s3.nxtGhostSlot.hasFdr=s3.nxtSlotHasFeeder[mk][fi];
+    if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(s3.nxtSlotHasFeeder[mk][fi]?0xff3333:0x2288ff);
+    return;
   }
-  const grp=s3.nxtSlotGrps[sk];
-  if(grp) nxtBuildSlotMesh(grp,sk,NXT_FSP);
-  nxtUpdateLed(sk);
-  nxtUpdateAndon();
-  if(s3.nxtGhostSlot) s3.nxtGhostSlot.hasFdr=s3.nxtSlotHasFeeder[mk][fi];
-  if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(s3.nxtSlotHasFeeder[mk][fi]?0xff3333:0x2288ff);
+  if(!s3.nxtModuleBodyMeshes.length||!s3.camera||!s3.nxtRaycaster) return;
+  const canvas=document.getElementById("mv3dCanvas");
+  if(!canvas) return;
+  const rect=canvas.getBoundingClientRect();
+  const nx=((e.clientX-rect.left)/rect.width)*2-1;
+  const ny=-((e.clientY-rect.top)/rect.height)*2+1;
+  s3.nxtRaycaster.setFromCamera({x:nx,y:ny},s3.camera);
+  const hits=s3.nxtRaycaster.intersectObjects(s3.nxtModuleBodyMeshes,false);
+  if(!hits.length) return;
+  e.stopPropagation();
+  const idx=s3.nxtModuleBodyMeshes.indexOf(hits[0].object);
+  if(idx>=0) s3.nxtModuleOpen[idx]=!s3.nxtModuleOpen[idx];
 }
 
 function nxtPointToSlot(wx){
