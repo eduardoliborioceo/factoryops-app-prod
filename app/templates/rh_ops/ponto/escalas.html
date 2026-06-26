@@ -1,6 +1,42 @@
 {% extends "layouts/app.html" %}
 {% block title %}Escalas — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.ponto-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.ponto-hdr  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);flex-wrap:wrap;gap:10px; }
+.ponto-hdr-title { font-size:0.875rem;font-weight:700;display:flex;align-items:center;gap:8px; }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar select,.filters-bar input { border:1px solid var(--border);border-radius:8px;font-size:0.8rem;
+  padding:6px 10px;background:var(--card);color:var(--text);min-width:130px; }
+.filters-bar select:focus,.filters-bar input:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.ponto-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.ponto-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:10px 16px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ponto-table td { padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ponto-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.turno-badge { display:inline-block;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:6px;
+  background:rgba(13,110,253,0.10);color:#0d6efd; }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;
+  font-size:0.75rem;color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s; }
+.action-btn:hover { background:rgba(220,53,69,0.08);color:#dc3545;border-color:rgba(220,53,69,0.3); }
+.nav-mes { display:flex;align-items:center;gap:10px; }
+.nav-mes button { background:none;border:1px solid var(--border);border-radius:8px;
+  padding:5px 12px;font-size:0.8rem;font-weight:600;cursor:pointer;transition:background 0.12s; }
+.nav-mes button:hover { background:rgba(13,110,253,0.08);color:#0d6efd;border-color:rgba(13,110,253,0.3); }
+.nav-mes-label { font-size:0.875rem;font-weight:700;min-width:130px;text-align:center; }
+@media(max-width:767px){
+  .ponto-table th:nth-child(n+4),.ponto-table td:nth-child(n+4){ display:none; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar select,.filters-bar input { width:100%;min-width:unset; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +54,203 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-calendar3" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Alocação de colaboradores por turno e período.</p>
+
+  <div class="ponto-card">
+    <div class="ponto-hdr">
+      <div class="d-flex align-items-center gap-3">
+        <div class="ponto-hdr-title"><i class="bi bi-calendar3 text-primary"></i>Escalas de Turno</div>
+        <div class="nav-mes">
+          <button onclick="navMes(-1)"><i class="bi bi-chevron-left"></i></button>
+          <span class="nav-mes-label" id="labelMes">{{ mes }}/{{ ano }}</span>
+          <button onclick="navMes(1)"><i class="bi bi-chevron-right"></i></button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">
+        <i class="bi bi-plus-circle me-1"></i>Nova Escala
+      </button>
+    </div>
+
+    <div class="filters-bar">
+      <select id="fTurno" onchange="applyFilters()">
+        <option value="">Todos os turnos</option>
+        {% for t in turnos %}
+        <option value="{{ t.id }}" {% if turno_id == t.id|string %}selected{% endif %}>{{ t.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="msgBar" style="font-size:0.8rem;padding:6px 20px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Matrícula</th>
+            <th>Turno</th>
+            <th>Horário</th>
+            <th>Vigência</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in escalas %}
+          <tr>
+            <td style="font-weight:600;">{{ e.nome_colaborador or '—' }}</td>
+            <td style="font-family:monospace;font-size:0.78rem;">{{ e.employee_code }}</td>
+            <td><span class="turno-badge">{{ e.turno_nome }}</span></td>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">
+              {{ e.hora_entrada }} – {{ e.hora_saida }}
+            </td>
+            <td style="font-size:0.8rem;color:var(--text-muted);">
+              {{ e.data_inicio | string | truncate(10, True, '') }} até {{ e.data_fim | string | truncate(10, True, '') }}
+            </td>
+            <td>
+              <button class="action-btn" onclick="deleteEscala({{ e.id }}, '{{ e.nome_colaborador or e.employee_code }}')"
+                title="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <i class="bi bi-calendar3"></i>
+                <p>Nenhuma escala para este período.<br>Clique em <strong>Nova Escala</strong> para atribuir um turno a um colaborador.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalEscala" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700">Nova Escala</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Matrícula do Colaborador</label>
+          <input type="text" id="fMatricula" class="form-control" placeholder="Ex: 001234">
+          <div id="nomeColaborador" style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;min-height:18px;"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Turno</label>
+          <select id="fTurnoModal" class="form-control">
+            <option value="">Selecione o turno…</option>
+            {% for t in turnos %}
+            <option value="{{ t.id }}">{{ t.nome }} ({{ t.hora_entrada }}–{{ t.hora_saida }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-3 mb-2">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data Início</label>
+            <input type="date" id="fDataInicio" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data Fim</label>
+            <input type="date" id="fDataFim" class="form-control">
+          </div>
+        </div>
+        <div id="errModal" class="text-danger" style="font-size:0.8rem;min-height:20px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarEscala()">
+          <i class="bi bi-check2 me-1"></i>Atribuir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+let _mes = {{ mes }}, _ano = {{ ano }};
+const MESES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+               "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+function updateLabelMes(){ document.getElementById("labelMes").textContent = MESES[_mes]+" / "+_ano; }
+updateLabelMes();
+
+window.navMes = function(dir){
+  _mes += dir;
+  if (_mes > 12){ _mes = 1; _ano++; }
+  if (_mes < 1) { _mes = 12; _ano--; }
+  updateLabelMes();
+  applyFilters();
+};
+
+window.applyFilters = function(){
+  const turno = document.getElementById("fTurno").value;
+  const params = new URLSearchParams({mes:_mes, ano:_ano});
+  if (turno) params.set("turno_id", turno);
+  window.location.href = "{{ url_for('pages.rh_ponto_escalas') }}?" + params.toString();
+};
+
+function showMsg(html, ok=true){
+  const el = document.getElementById("msgBar");
+  el.innerHTML = `<span class="${ok?'text-success fw-semibold':'text-danger'}">${html}</span>`;
+  setTimeout(()=>el.innerHTML="", 4000);
+}
+
+window.openModal = function(){
+  document.getElementById("fMatricula").value = "";
+  document.getElementById("fTurnoModal").value = "";
+  document.getElementById("fDataInicio").value = "";
+  document.getElementById("fDataFim").value = "";
+  document.getElementById("errModal").textContent = "";
+  document.getElementById("nomeColaborador").textContent = "";
+  new bootstrap.Modal(document.getElementById("modalEscala")).show();
+};
+
+window.salvarEscala = function(){
+  document.getElementById("errModal").textContent = "";
+  const body = {
+    employee_code: document.getElementById("fMatricula").value.trim(),
+    turno_id: document.getElementById("fTurnoModal").value,
+    data_inicio: document.getElementById("fDataInicio").value,
+    data_fim: document.getElementById("fDataFim").value,
+  };
+  fetch("/api/rh/ponto/escalas", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+  })
+  .then(r=>r.json())
+  .then(d => {
+    if (!d.ok){ document.getElementById("errModal").textContent = d.erro; return; }
+    bootstrap.Modal.getInstance(document.getElementById("modalEscala"))?.hide();
+    showMsg('<i class="bi bi-check-circle me-1"></i>Escala atribuída. Recarregando…');
+    setTimeout(() => location.reload(), 900);
+  })
+  .catch(() => { document.getElementById("errModal").textContent = "Erro de conexão."; });
+};
+
+window.deleteEscala = function(id, nome){
+  if (!confirm(`Remover a escala de "${nome}"?`)) return;
+  fetch(`/api/rh/ponto/escalas/${id}`, {method:"DELETE"})
+  .then(r=>r.json())
+  .then(d => {
+    if (!d.ok){ showMsg(d.erro, false); return; }
+    showMsg('<i class="bi bi-check-circle me-1"></i>Escala removida.');
+    setTimeout(() => location.reload(), 900);
+  })
+  .catch(() => showMsg("Erro de conexão.", false));
+};
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,46 @@
 {% extends "layouts/app.html" %}
 {% block title %}Faltas & Afastamentos — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.ponto-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.ponto-hdr  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);flex-wrap:wrap;gap:10px; }
+.ponto-hdr-title { font-size:0.875rem;font-weight:700;display:flex;align-items:center;gap:8px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;
+  padding:14px 20px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-top:2px; }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select,.filters-bar button { border:1px solid var(--border);border-radius:8px;
+  font-size:0.8rem;padding:6px 12px;background:var(--card);color:var(--text); }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.filters-bar button.btn-filter { background:#0d6efd;color:#fff;border-color:#0d6efd;cursor:pointer;font-weight:600; }
+.ponto-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.ponto-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:10px 16px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ponto-table td { padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ponto-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.badge-ativo     { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.badge-encerrado { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.tipo-chip { display:inline-block;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px;
+  background:rgba(13,110,253,0.10);color:#0d6efd; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;
+  font-size:0.75rem;color:var(--text-muted);cursor:pointer;transition:background 0.12s; }
+.action-btn.enc:hover { background:rgba(25,135,84,0.08);color:#198754;border-color:rgba(25,135,84,0.3); }
+.action-btn.del:hover { background:rgba(220,53,69,0.08);color:#dc3545;border-color:rgba(220,53,69,0.3); }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+@media(max-width:767px){
+  .ponto-table th:nth-child(n+4),.ponto-table td:nth-child(n+4){ display:none; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select,.filters-bar button { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +58,242 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-x-circle" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Registro de faltas, atestados e licenças por colaborador.</p>
+
+  <div class="ponto-card">
+    <div class="ponto-hdr">
+      <div class="ponto-hdr-title"><i class="bi bi-x-circle text-danger"></i>Afastamentos</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">
+        <i class="bi bi-plus-circle me-1"></i>Registrar Afastamento
+      </button>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#dc3545;">{{ kpis.ativos or 0 }}</div>
+        <div class="kpi-chip-lbl">Ativos</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:var(--text-muted);">{{ kpis.encerrados or 0 }}</div>
+        <div class="kpi-chip-lbl">Encerrados</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val">{{ kpis.por_doenca or 0 }}</div>
+        <div class="kpi-chip-lbl">Doença</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val">{{ kpis.por_acidente or 0 }}</div>
+        <div class="kpi-chip-lbl">Acidente</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#856404;">{{ kpis.dias_em_aberto or 0 }}</div>
+        <div class="kpi-chip-lbl">Dias em Aberto</div>
+      </div>
+    </div>
+
+    <form method="GET" class="filters-bar">
+      <select name="tipo">
+        <option value="" {% if not f_tipo %}selected{% endif %}>Todos os tipos</option>
+        {% for key, label in tipos.items() %}
+        <option value="{{ key }}" {% if f_tipo == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="" {% if not f_status %}selected{% endif %}>Todos os status</option>
+        <option value="ativo"     {% if f_status=='ativo'     %}selected{% endif %}>Ativo</option>
+        <option value="encerrado" {% if f_status=='encerrado' %}selected{% endif %}>Encerrado</option>
+      </select>
+      <input type="date" name="data_inicio" value="{{ f_data_inicio }}" placeholder="De…">
+      <input type="date" name="data_fim"    value="{{ f_data_fim }}"    placeholder="Até…">
+      <input type="text" name="employee_code" value="{{ f_employee_code }}" placeholder="Matrícula…" style="max-width:130px;">
+      <button type="submit" class="btn-filter">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </form>
+
+    <div id="msgBar" style="font-size:0.8rem;padding:6px 20px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Matrícula</th>
+            <th>Tipo</th>
+            <th>Início</th>
+            <th>Previsão Fim</th>
+            <th>Dias</th>
+            <th>CID</th>
+            <th>Status</th>
+            <th style="width:90px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in afastamentos %}
+          <tr>
+            <td style="font-weight:600;">{{ a.nome_colaborador or '—' }}</td>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">{{ a.employee_code }}</td>
+            <td><span class="tipo-chip">{{ a.tipo_label }}</span></td>
+            <td style="font-size:0.8rem;font-family:monospace;">{{ a.data_inicio | string | truncate(10,True,'') }}</td>
+            <td style="font-size:0.8rem;font-family:monospace;color:var(--text-muted);">
+              {{ a.data_fim | string | truncate(10,True,'') if a.data_fim else '—' }}
+            </td>
+            <td style="font-weight:700;color:{% if a.status=='ativo' %}#dc3545{% else %}var(--text-muted){% endif %};">
+              {{ a.dias_corridos or '—' }}
+            </td>
+            <td style="font-size:0.78rem;color:var(--text-muted);">{{ a.cid or '—' }}</td>
+            <td>
+              {% if a.status == 'ativo' %}
+                <span class="badge-ativo">Ativo</span>
+              {% else %}
+                <span class="badge-encerrado">Encerrado</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if a.status == 'ativo' %}
+              <button class="action-btn enc me-1" onclick="encerrar({{ a.id }})" title="Encerrar">
+                <i class="bi bi-check-circle"></i>
+              </button>
+              {% endif %}
+              <button class="action-btn del" onclick="excluir({{ a.id }}, '{{ a.nome_colaborador or a.employee_code }}')" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <i class="bi bi-x-circle"></i>
+                <p>Nenhum afastamento encontrado com os filtros aplicados.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:10px 20px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      {{ afastamentos | length }} registro(s)
+    </div>
   </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalAfastamento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700">Registrar Afastamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Matrícula</label>
+          <input type="text" id="aMatricula" class="form-control" placeholder="Ex: 001234">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Tipo de Afastamento</label>
+          <select id="aTipo" class="form-control">
+            <option value="">Selecione…</option>
+            {% for key, label in tipos.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data de Início</label>
+            <input type="date" id="aDataInicio" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Previsão de Retorno</label>
+            <input type="date" id="aDataFim" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">CID (opcional)</label>
+          <input type="text" id="aCid" class="form-control" placeholder="Ex: J06.9" maxlength="20">
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Justificativa</label>
+          <textarea id="aJustificativa" class="form-control" rows="3" maxlength="500"
+            placeholder="Descreva o motivo do afastamento…"></textarea>
+        </div>
+        <div id="errModalA" class="text-danger" style="font-size:0.8rem;min-height:20px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger btn-sm" onclick="salvar()">
+          <i class="bi bi-check2 me-1"></i>Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+function showMsg(html,ok=true){
+  const el=document.getElementById("msgBar");
+  el.innerHTML=`<span class="${ok?'text-success fw-semibold':'text-danger'}">${html}</span>`;
+  setTimeout(()=>el.innerHTML="",4000);
+}
+window.openModal=function(){
+  document.getElementById("aMatricula").value="";
+  document.getElementById("aTipo").value="";
+  document.getElementById("aDataInicio").value=new Date().toISOString().slice(0,10);
+  document.getElementById("aDataFim").value="";
+  document.getElementById("aCid").value="";
+  document.getElementById("aJustificativa").value="";
+  document.getElementById("errModalA").textContent="";
+  new bootstrap.Modal(document.getElementById("modalAfastamento")).show();
+};
+window.salvar=function(){
+  document.getElementById("errModalA").textContent="";
+  const body={
+    employee_code:document.getElementById("aMatricula").value.trim(),
+    tipo:document.getElementById("aTipo").value,
+    data_inicio:document.getElementById("aDataInicio").value,
+    data_fim:document.getElementById("aDataFim").value||null,
+    cid:document.getElementById("aCid").value.trim()||null,
+    justificativa:document.getElementById("aJustificativa").value.trim(),
+  };
+  fetch("/api/rh/ponto/afastamentos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){document.getElementById("errModalA").textContent=d.erro;return;}
+    bootstrap.Modal.getInstance(document.getElementById("modalAfastamento"))?.hide();
+    showMsg('<i class="bi bi-check-circle me-1"></i>Afastamento registrado. Recarregando…');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>{document.getElementById("errModalA").textContent="Erro de conexão.";});
+};
+window.encerrar=function(id){
+  const dataFim=prompt("Data de encerramento (AAAA-MM-DD):", new Date().toISOString().slice(0,10));
+  if(!dataFim)return;
+  fetch(`/api/rh/ponto/afastamentos/${id}/encerrar`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({data_fim_real:dataFim})
+  })
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){showMsg(d.erro,false);return;}
+    showMsg('<i class="bi bi-check-circle me-1"></i>Afastamento encerrado.');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>showMsg("Erro de conexão.",false));
+};
+window.excluir=function(id,nome){
+  if(!confirm(`Excluir o afastamento de "${nome}"?`))return;
+  fetch(`/api/rh/ponto/afastamentos/${id}`,{method:"DELETE"})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){showMsg(d.erro,false);return;}
+    showMsg('<i class="bi bi-check-circle me-1"></i>Afastamento excluído.');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>showMsg("Erro de conexão.",false));
+};
+})();
+</script>
 {% endblock %}

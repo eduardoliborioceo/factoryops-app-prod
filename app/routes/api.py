@@ -671,3 +671,250 @@ def linhas_config():
     from app.repositories import linha_config_repository as lc_repo
     data = lc_repo.listar_por_setor()
     return jsonify({setor: [r["linha"] for r in linhas] for setor, linhas in data.items()})
+
+
+# ── RH · PONTO & FREQUÊNCIA ─────────────────────────────────────────────────
+
+@bp.route("/rh/ponto/turnos", methods=["GET"])
+@login_required
+def rh_api_turnos_listar():
+    from app.services import rh_ponto_service as svc
+    return jsonify(svc.listar_turnos())
+
+
+@bp.route("/rh/ponto/turnos", methods=["POST"])
+@login_required
+def rh_api_turnos_salvar():
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    try:
+        result = svc.salvar_turno(data)
+        return jsonify({"ok": True, **result})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_turnos_salvar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/turnos/<int:turno_id>", methods=["DELETE"])
+@login_required
+def rh_api_turnos_excluir(turno_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.excluir_turno(turno_id)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_turnos_excluir")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/escalas", methods=["GET"])
+@login_required
+def rh_api_escalas_listar():
+    from app.services import rh_ponto_service as svc
+    mes = request.args.get("mes") or None
+    ano = request.args.get("ano") or None
+    turno_id = request.args.get("turno_id") or None
+    employee_code = request.args.get("employee_code") or None
+    return jsonify(svc.listar_escalas(
+        int(mes) if mes else None,
+        int(ano) if ano else None,
+        employee_code,
+        int(turno_id) if turno_id else None
+    ))
+
+
+@bp.route("/rh/ponto/escalas", methods=["POST"])
+@login_required
+def rh_api_escalas_salvar():
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    try:
+        result = svc.atribuir_escala(data)
+        return jsonify({"ok": True, **result})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_escalas_salvar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/escalas/<int:escala_id>", methods=["DELETE"])
+@login_required
+def rh_api_escalas_excluir(escala_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.remover_escala(escala_id)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_escalas_excluir")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/registros", methods=["GET"])
+@login_required
+def rh_api_registros_listar():
+    from app.services import rh_ponto_service as svc
+    data_inicio = request.args.get("data_inicio", "")
+    data_fim = request.args.get("data_fim", "")
+    employee_code = request.args.get("employee_code") or None
+    try:
+        registros = svc.listar_registros(data_inicio, data_fim, employee_code)
+        kpis = svc.kpis_registros(data_inicio, data_fim)
+        return jsonify({"ok": True, "registros": registros, "kpis": kpis})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_registros_listar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/registros", methods=["POST"])
+@login_required
+def rh_api_registros_criar():
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    try:
+        result = svc.registrar_ponto(data)
+        return jsonify({"ok": True, **result})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_registros_criar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/registros/<int:registro_id>", methods=["DELETE"])
+@login_required
+def rh_api_registros_excluir(registro_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.excluir_registro(registro_id)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_registros_excluir")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/horas-extras", methods=["GET"])
+@login_required
+def rh_api_horas_extras_listar():
+    from app.services import rh_ponto_service as svc
+    status = request.args.get("status") or None
+    data_inicio = request.args.get("data_inicio") or None
+    data_fim = request.args.get("data_fim") or None
+    employee_code = request.args.get("employee_code") or None
+    horas = svc.listar_horas_extras(status, data_inicio, data_fim, employee_code)
+    kpis = svc.kpis_horas_extras()
+    return jsonify({"ok": True, "horas_extras": horas, "kpis": kpis})
+
+
+@bp.route("/rh/ponto/horas-extras", methods=["POST"])
+@login_required
+def rh_api_horas_extras_criar():
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    try:
+        result = svc.solicitar_hora_extra(data)
+        return jsonify({"ok": True, **result})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_horas_extras_criar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/horas-extras/<int:hora_extra_id>/aprovar", methods=["POST"])
+@login_required
+def rh_api_horas_extras_aprovar(hora_extra_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.aprovar_hora_extra(hora_extra_id, current_user.username)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_horas_extras_aprovar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/horas-extras/<int:hora_extra_id>/rejeitar", methods=["POST"])
+@login_required
+def rh_api_horas_extras_rejeitar(hora_extra_id):
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    motivo = (data.get("motivo") or "").strip() or None
+    try:
+        svc.rejeitar_hora_extra(hora_extra_id, current_user.username, motivo)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_horas_extras_rejeitar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/horas-extras/<int:hora_extra_id>", methods=["DELETE"])
+@login_required
+def rh_api_horas_extras_excluir(hora_extra_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.excluir_hora_extra(hora_extra_id)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_horas_extras_excluir")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/afastamentos", methods=["GET"])
+@login_required
+def rh_api_afastamentos_listar():
+    from app.services import rh_ponto_service as svc
+    tipo = request.args.get("tipo") or None
+    status = request.args.get("status") or None
+    data_inicio = request.args.get("data_inicio") or None
+    data_fim = request.args.get("data_fim") or None
+    employee_code = request.args.get("employee_code") or None
+    afastamentos = svc.listar_afastamentos(tipo, status, data_inicio, data_fim, employee_code)
+    kpis = svc.kpis_afastamentos()
+    return jsonify({"ok": True, "afastamentos": afastamentos, "kpis": kpis})
+
+
+@bp.route("/rh/ponto/afastamentos", methods=["POST"])
+@login_required
+def rh_api_afastamentos_criar():
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    try:
+        result = svc.registrar_afastamento(data)
+        return jsonify({"ok": True, **result})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_afastamentos_criar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/afastamentos/<int:afastamento_id>/encerrar", methods=["POST"])
+@login_required
+def rh_api_afastamentos_encerrar(afastamento_id):
+    from app.services import rh_ponto_service as svc
+    data = request.get_json(silent=True) or {}
+    data_fim_real = (data.get("data_fim_real") or "").strip()
+    try:
+        svc.encerrar_afastamento(afastamento_id, data_fim_real)
+        return jsonify({"ok": True})
+    except ValueError as e:
+        return jsonify({"ok": False, "erro": str(e)}), 400
+    except Exception:
+        logger.exception("rh_api_afastamentos_encerrar")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
+
+
+@bp.route("/rh/ponto/afastamentos/<int:afastamento_id>", methods=["DELETE"])
+@login_required
+def rh_api_afastamentos_excluir(afastamento_id):
+    from app.services import rh_ponto_service as svc
+    try:
+        svc.excluir_afastamento(afastamento_id)
+        return jsonify({"ok": True})
+    except Exception:
+        logger.exception("rh_api_afastamentos_excluir")
+        return jsonify({"ok": False, "erro": "Erro interno"}), 500
