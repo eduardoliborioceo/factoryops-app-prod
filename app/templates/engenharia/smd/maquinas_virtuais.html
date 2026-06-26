@@ -2199,9 +2199,12 @@ function buildNXTMachine(g){
     _edges(panH,0x181820,0.12); modGrp.add(panH);
     const panTop=_b(10.5,0.35,22.5,_m(0x1a1a22,0.7,0.2));
     panTop.position.set(0,17.3,0.75); modGrp.add(panTop);
-    const badge=_b(3.0,0.78,0.35,mBlue); badge.position.set(0,5.2,10.35); modGrp.add(badge);
-    const warnBg=_b(1.4,1.4,0.18,_m(0xffcc00,0.5,0));
-    warnBg.position.set(0,7.2,10.35); modGrp.add(warnBg);
+    // Dark inspection window (tinted acrylic — see interior from close range)
+    const winFrame=_b(5.5,5.2,0.38,_m(0x181c24,0.72,0.12));
+    winFrame.position.set(0,7.0,10.20); modGrp.add(winFrame);
+    const winGlass=new THREE.Mesh(new THREE.BoxGeometry(4.5,4.2,0.14),
+      new THREE.MeshStandardMaterial({color:0x0c1018,roughness:0.08,metalness:0.05,transparent:true,opacity:0.72}));
+    winGlass.position.set(0,7.0,10.44); modGrp.add(winGlass);
     [-1,1].forEach(sx=>{
       for(let vi=0;vi<5;vi++){
         const vt=_b(0.15,0.85,13,_m(0xb4b8c0,0.5,0.08));
@@ -2250,6 +2253,32 @@ function buildNXTMachine(g){
       led.position.set(fxL,2.05,11.60); modGrp.add(led);
       s3.nxtLedMeshes[sk]=led;
     }
+
+    // ─ Controls panel (below feeder area) ─
+    const ctrlPnl=_b(9.5,0.92,0.22,_m(0x12141c,0.80,0.10));
+    ctrlPnl.position.set(0,-11.2,10.38); modGrp.add(ctrlPnl);
+    const cPort=_cyl(0.42,0.42,0.35,_m(0x1c1e28,0.62,0.18));
+    cPort.rotation.x=Math.PI/2; cPort.position.set(-3.2,-11.2,10.58); modGrp.add(cPort);
+    const cPortRim=_cyl(0.54,0.54,0.08,_m(0x2e3040,0.50,0.30));
+    cPortRim.rotation.x=Math.PI/2; cPortRim.position.set(-3.2,-11.2,10.42); modGrp.add(cPortRim);
+    const rotSel=_cyl(0.52,0.52,0.18,_m(0x282c38,0.50,0.10));
+    rotSel.rotation.x=Math.PI/2; rotSel.position.set(-0.8,-11.2,10.52); modGrp.add(rotSel);
+    const rotArrow=_b(0.11,0.58,0.10,_m(0x888ea0,0.50,0.10));
+    rotArrow.position.set(-0.8,-11.2,10.62); modGrp.add(rotArrow);
+    const swBase=_b(0.82,0.82,0.22,_m(0x202230,0.52,0.10));
+    swBase.position.set(1.8,-11.2,10.44); modGrp.add(swBase);
+    const swKnob=_cyl(0.26,0.26,0.28,_m(0xd0d0d8,0.28,0.65));
+    swKnob.rotation.x=Math.PI/2; swKnob.position.set(1.8,-11.2,10.64); modGrp.add(swKnob);
+
+    // ─ Scrap bin (tape waste tray at module base) ─
+    const scrapHsg=_b(9.4,1.80,8.0,_m(0x0a0c10,0.88,0.04));
+    scrapHsg.position.set(0,-11.9,5.9); modGrp.add(scrapHsg);
+    const scrapFront=_b(9.4,1.80,0.22,_m(0x0e1016,0.82,0.05));
+    scrapFront.position.set(0,-11.9,10.02); modGrp.add(scrapFront);
+    const scrapLabel=_b(4.5,0.52,0.12,_m(0xcc1111,0.65,0.00));
+    scrapLabel.position.set(0,-12.38,10.14); modGrp.add(scrapLabel);
+    const scrapHandle=_b(2.0,0.26,0.26,_m(0x282c38,0.52,0.15));
+    scrapHandle.position.set(0,-11.15,10.22); modGrp.add(scrapHandle);
   });
 
   // ─── Conveyor (PCB transport) — mid-machine, between feeders and monitors ───
