@@ -1,6 +1,46 @@
 {% extends "layouts/app.html" %}
 {% block title %}Horas Extras — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.ponto-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.ponto-hdr  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);flex-wrap:wrap;gap:10px; }
+.ponto-hdr-title { font-size:0.875rem;font-weight:700;display:flex;align-items:center;gap:8px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;
+  padding:14px 20px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-top:2px; }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select,.filters-bar button { border:1px solid var(--border);border-radius:8px;
+  font-size:0.8rem;padding:6px 12px;background:var(--card);color:var(--text); }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.filters-bar button.btn-filter { background:#0d6efd;color:#fff;border-color:#0d6efd;cursor:pointer;font-weight:600; }
+.ponto-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.ponto-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:10px 16px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ponto-table td { padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ponto-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.badge-pendente  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.badge-aprovado  { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.badge-rejeitado { background:rgba(220,53,69,0.12);color:#842029;font-size:0.68rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 9px;
+  font-size:0.75rem;color:var(--text-muted);cursor:pointer;transition:background 0.12s; }
+.action-btn.ok:hover  { background:rgba(25,135,84,0.08);color:#198754;border-color:rgba(25,135,84,0.3); }
+.action-btn.rej:hover { background:rgba(220,53,69,0.08);color:#dc3545;border-color:rgba(220,53,69,0.3); }
+.action-btn.del:hover { background:rgba(220,53,69,0.08);color:#dc3545;border-color:rgba(220,53,69,0.3); }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+@media(max-width:767px){
+  .ponto-table th:nth-child(n+4),.ponto-table td:nth-child(n+4){ display:none; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select,.filters-bar button { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +58,225 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-plus-circle" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Aprovação e histórico de horas extras por colaborador.</p>
+
+  <div class="ponto-card">
+    <div class="ponto-hdr">
+      <div class="ponto-hdr-title"><i class="bi bi-plus-circle text-warning"></i>Horas Extras</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">
+        <i class="bi bi-plus-circle me-1"></i>Nova Solicitação
+      </button>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#856404;">{{ kpis.pendentes or 0 }}</div>
+        <div class="kpi-chip-lbl">Pendentes</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#198754;">{{ kpis.aprovadas or 0 }}</div>
+        <div class="kpi-chip-lbl">Aprovadas</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#dc3545;">{{ kpis.rejeitadas or 0 }}</div>
+        <div class="kpi-chip-lbl">Rejeitadas</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#0d6efd;">{{ kpis.horas_aprovadas or 0 }}</div>
+        <div class="kpi-chip-lbl">Horas Aprovadas</div>
+      </div>
+    </div>
+
+    <form method="GET" class="filters-bar">
+      <select name="status">
+        <option value="" {% if not f_status %}selected{% endif %}>Todos os status</option>
+        <option value="pendente"  {% if f_status=='pendente'  %}selected{% endif %}>Pendente</option>
+        <option value="aprovado"  {% if f_status=='aprovado'  %}selected{% endif %}>Aprovado</option>
+        <option value="rejeitado" {% if f_status=='rejeitado' %}selected{% endif %}>Rejeitado</option>
+      </select>
+      <input type="date" name="data_inicio" value="{{ f_data_inicio }}" placeholder="De…">
+      <input type="date" name="data_fim"    value="{{ f_data_fim }}"    placeholder="Até…">
+      <input type="text" name="employee_code" value="{{ f_employee_code }}" placeholder="Matrícula…" style="max-width:130px;">
+      <button type="submit" class="btn-filter">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </form>
+
+    <div id="msgBar" style="font-size:0.8rem;padding:6px 20px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Colaborador</th>
+            <th>Matrícula</th>
+            <th>Horas</th>
+            <th>Justificativa</th>
+            <th>Status</th>
+            <th>Aprovador</th>
+            <th style="width:100px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in horas_extras %}
+          <tr>
+            <td style="font-size:0.8rem;font-family:monospace;">{{ h.data | string | truncate(10,True,'') }}</td>
+            <td style="font-weight:600;">{{ h.nome_colaborador or '—' }}</td>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">{{ h.employee_code }}</td>
+            <td style="font-weight:700;color:#856404;">{{ h.horas }}h</td>
+            <td style="font-size:0.8rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="{{ h.justificativa }}">{{ h.justificativa }}</td>
+            <td>
+              {% if h.status == 'pendente' %}
+                <span class="badge-pendente">Pendente</span>
+              {% elif h.status == 'aprovado' %}
+                <span class="badge-aprovado">Aprovado</span>
+              {% else %}
+                <span class="badge-rejeitado">Rejeitado</span>
+              {% endif %}
+            </td>
+            <td style="font-size:0.78rem;color:var(--text-muted);">{{ h.aprovado_por or '—' }}</td>
+            <td>
+              {% if h.status == 'pendente' %}
+              <button class="action-btn ok me-1" onclick="aprovar({{ h.id }})" title="Aprovar">
+                <i class="bi bi-check2"></i>
+              </button>
+              <button class="action-btn rej" onclick="rejeitar({{ h.id }})" title="Rejeitar">
+                <i class="bi bi-x"></i>
+              </button>
+              {% else %}
+              <button class="action-btn del" onclick="excluir({{ h.id }})" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i class="bi bi-plus-circle"></i>
+                <p>Nenhuma solicitação de hora extra encontrada.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:10px 20px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      {{ horas_extras | length }} registro(s)
+    </div>
   </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalHE" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700">Nova Solicitação de Hora Extra</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Matrícula</label>
+          <input type="text" id="hMatricula" class="form-control" placeholder="Ex: 001234">
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+            <input type="date" id="hData" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Horas Extras</label>
+            <input type="number" id="hHoras" class="form-control" min="0.5" max="10" step="0.5" placeholder="Ex: 2">
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Justificativa</label>
+          <textarea id="hJustificativa" class="form-control" rows="3" maxlength="500"
+            placeholder="Descreva o motivo das horas extras…"></textarea>
+        </div>
+        <div id="errModalHE" class="text-danger" style="font-size:0.8rem;min-height:20px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvar()">
+          <i class="bi bi-check2 me-1"></i>Solicitar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+function showMsg(html,ok=true){
+  const el=document.getElementById("msgBar");
+  el.innerHTML=`<span class="${ok?'text-success fw-semibold':'text-danger'}">${html}</span>`;
+  setTimeout(()=>el.innerHTML="",4000);
+}
+window.openModal=function(){
+  document.getElementById("hMatricula").value="";
+  document.getElementById("hData").value=new Date().toISOString().slice(0,10);
+  document.getElementById("hHoras").value="";
+  document.getElementById("hJustificativa").value="";
+  document.getElementById("errModalHE").textContent="";
+  new bootstrap.Modal(document.getElementById("modalHE")).show();
+};
+window.salvar=function(){
+  document.getElementById("errModalHE").textContent="";
+  const body={
+    employee_code:document.getElementById("hMatricula").value.trim(),
+    data:document.getElementById("hData").value,
+    horas:parseFloat(document.getElementById("hHoras").value)||0,
+    justificativa:document.getElementById("hJustificativa").value.trim(),
+  };
+  fetch("/api/rh/ponto/horas-extras",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){document.getElementById("errModalHE").textContent=d.erro;return;}
+    bootstrap.Modal.getInstance(document.getElementById("modalHE"))?.hide();
+    showMsg('<i class="bi bi-check-circle me-1"></i>Solicitação registrada. Recarregando…');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>{document.getElementById("errModalHE").textContent="Erro de conexão.";});
+};
+window.aprovar=function(id){
+  if(!confirm("Aprovar esta hora extra?"))return;
+  fetch(`/api/rh/ponto/horas-extras/${id}/aprovar`,{method:"POST"})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){showMsg(d.erro,false);return;}
+    showMsg('<i class="bi bi-check-circle me-1"></i>Hora extra aprovada.');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>showMsg("Erro de conexão.",false));
+};
+window.rejeitar=function(id){
+  const motivo=prompt("Motivo da rejeição (opcional):")||null;
+  fetch(`/api/rh/ponto/horas-extras/${id}/rejeitar`,{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({motivo})
+  })
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){showMsg(d.erro,false);return;}
+    showMsg('<i class="bi bi-x-circle me-1"></i>Hora extra rejeitada.');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>showMsg("Erro de conexão.",false));
+};
+window.excluir=function(id){
+  if(!confirm("Excluir este registro?"))return;
+  fetch(`/api/rh/ponto/horas-extras/${id}`,{method:"DELETE"})
+  .then(r=>r.json()).then(d=>{
+    if(!d.ok){showMsg(d.erro,false);return;}
+    showMsg('<i class="bi bi-check-circle me-1"></i>Registro excluído.');
+    setTimeout(()=>location.reload(),900);
+  }).catch(()=>showMsg("Erro de conexão.",false));
+};
+})();
+</script>
 {% endblock %}

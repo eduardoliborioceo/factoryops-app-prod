@@ -1,6 +1,45 @@
 {% extends "layouts/app.html" %}
 {% block title %}Registros de Ponto — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.ponto-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.ponto-hdr  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);flex-wrap:wrap;gap:10px; }
+.ponto-hdr-title { font-size:0.875rem;font-weight:700;display:flex;align-items:center;gap:8px; }
+.kpi-strip { display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;
+  padding:14px 20px;border-bottom:1px solid var(--border); }
+.kpi-chip { background:rgba(15,23,42,0.04);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center; }
+.kpi-chip-val { font-size:1.2rem;font-weight:800;color:var(--text); }
+.kpi-chip-lbl { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);margin-top:2px; }
+.filters-bar { display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);background:rgba(15,23,42,0.02); }
+.filters-bar input,.filters-bar select,.filters-bar button { border:1px solid var(--border);border-radius:8px;
+  font-size:0.8rem;padding:6px 12px;background:var(--card);color:var(--text); }
+.filters-bar input:focus,.filters-bar select:focus { outline:none;border-color:#0d6efd;box-shadow:0 0 0 3px rgba(13,110,253,0.12); }
+.filters-bar button.btn-filter { background:#0d6efd;color:#fff;border-color:#0d6efd;cursor:pointer;font-weight:600; }
+.ponto-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.ponto-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:10px 16px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ponto-table td { padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ponto-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.tipo-entrada { background:rgba(25,135,84,0.11);color:#0a3622;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.tipo-saida   { background:rgba(220,53,69,0.11);color:#842029;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.tipo-int_saida  { background:rgba(255,193,7,0.15);color:#664d03;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.tipo-int_ret { background:rgba(13,110,253,0.11);color:#084298;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:5px; }
+.action-btn { background:none;border:1px solid rgba(220,53,69,0.3);border-radius:7px;padding:4px 10px;
+  font-size:0.75rem;color:#dc3545;cursor:pointer;transition:background 0.12s; }
+.action-btn:hover { background:rgba(220,53,69,0.08); }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+@media(max-width:767px){
+  .ponto-table th:nth-child(n+4),.ponto-table td:nth-child(n+4){ display:none; }
+  .filters-bar { flex-direction:column; }
+  .filters-bar input,.filters-bar select,.filters-bar button { width:100%; }
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +57,210 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-clock-history" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Consulta de batidas de ponto por colaborador e período.</p>
+
+  <div class="ponto-card">
+    <div class="ponto-hdr">
+      <div class="ponto-hdr-title"><i class="bi bi-clock-history text-success"></i>Batidas de Ponto</div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">
+        <i class="bi bi-plus-circle me-1"></i>Registrar Manual
+      </button>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi-chip">
+        <div class="kpi-chip-val">{{ kpis.total_registros or 0 }}</div>
+        <div class="kpi-chip-lbl">Total</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val">{{ kpis.colaboradores or 0 }}</div>
+        <div class="kpi-chip-lbl">Colaboradores</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#198754;">{{ kpis.entradas or 0 }}</div>
+        <div class="kpi-chip-lbl">Entradas</div>
+      </div>
+      <div class="kpi-chip">
+        <div class="kpi-chip-val" style="color:#dc3545;">{{ kpis.saidas or 0 }}</div>
+        <div class="kpi-chip-lbl">Saídas</div>
+      </div>
+    </div>
+
+    <form method="GET" class="filters-bar">
+      <input type="date" name="data_inicio" value="{{ data_inicio }}" required>
+      <input type="date" name="data_fim"    value="{{ data_fim }}"    required>
+      <input type="text" name="employee_code" value="{{ employee_code }}" placeholder="Matrícula…" style="max-width:140px;">
+      <button type="submit" class="btn-filter">
+        <i class="bi bi-funnel me-1"></i>Filtrar
+      </button>
+    </form>
+
+    <div id="msgBar" style="font-size:0.8rem;padding:6px 20px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Colaborador</th>
+            <th>Matrícula</th>
+            <th>Tipo</th>
+            <th>Hora</th>
+            <th>Observação</th>
+            <th style="width:60px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set tipo_labels = {
+            'entrada': 'Entrada',
+            'saida': 'Saída',
+            'intervalo_saida': 'Intervalo S.',
+            'intervalo_retorno': 'Intervalo R.'
+          } %}
+          {% set tipo_class = {
+            'entrada': 'tipo-entrada',
+            'saida': 'tipo-saida',
+            'intervalo_saida': 'tipo-int_saida',
+            'intervalo_retorno': 'tipo-int_ret'
+          } %}
+          {% for r in registros %}
+          <tr>
+            <td style="font-size:0.8rem;font-family:monospace;">{{ r.data | string | truncate(10,True,'') }}</td>
+            <td style="font-weight:600;">{{ r.nome_colaborador or '—' }}</td>
+            <td style="font-family:monospace;font-size:0.78rem;color:var(--text-muted);">{{ r.employee_code }}</td>
+            <td>
+              <span class="{{ tipo_class.get(r.tipo, '') }}">
+                {{ tipo_labels.get(r.tipo, r.tipo) }}
+              </span>
+            </td>
+            <td style="font-family:monospace;font-weight:700;">{{ r.hora }}</td>
+            <td style="font-size:0.78rem;color:var(--text-muted);">{{ r.observacao or '—' }}</td>
+            <td>
+              <button class="action-btn" onclick="deleteRegistro({{ r.id }})" title="Excluir">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="bi bi-clock-history"></i>
+                <p>Nenhum registro encontrado para o período selecionado.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:10px 20px;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border);">
+      {{ registros | length }} registro(s) encontrado(s) no período
+    </div>
   </div>
 </div>
+
+<!-- Modal registro manual -->
+<div class="modal fade" id="modalRegistro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700">Registro Manual de Ponto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Matrícula</label>
+          <input type="text" id="rMatricula" class="form-control" placeholder="Ex: 001234">
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Data</label>
+            <input type="date" id="rData" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Hora</label>
+            <input type="time" id="rHora" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Tipo de Registro</label>
+          <select id="rTipo" class="form-control">
+            <option value="entrada">Entrada</option>
+            <option value="saida">Saída</option>
+            <option value="intervalo_saida">Saída para Intervalo</option>
+            <option value="intervalo_retorno">Retorno do Intervalo</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Observação</label>
+          <input type="text" id="rObs" class="form-control" placeholder="Opcional…" maxlength="200">
+        </div>
+        <div id="errModalR" class="text-danger" style="font-size:0.8rem;min-height:20px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarRegistro()">
+          <i class="bi bi-check2 me-1"></i>Registrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+function showMsg(html, ok=true){
+  const el = document.getElementById("msgBar");
+  el.innerHTML = `<span class="${ok?'text-success fw-semibold':'text-danger'}">${html}</span>`;
+  setTimeout(()=>el.innerHTML="",4000);
+}
+window.openModal = function(){
+  document.getElementById("rMatricula").value = "";
+  document.getElementById("rData").value = new Date().toISOString().slice(0,10);
+  document.getElementById("rHora").value = new Date().toTimeString().slice(0,5);
+  document.getElementById("rTipo").value = "entrada";
+  document.getElementById("rObs").value = "";
+  document.getElementById("errModalR").textContent = "";
+  new bootstrap.Modal(document.getElementById("modalRegistro")).show();
+};
+window.salvarRegistro = function(){
+  document.getElementById("errModalR").textContent = "";
+  const body = {
+    employee_code: document.getElementById("rMatricula").value.trim(),
+    data: document.getElementById("rData").value,
+    hora: document.getElementById("rHora").value,
+    tipo: document.getElementById("rTipo").value,
+    observacao: document.getElementById("rObs").value.trim() || null,
+  };
+  fetch("/api/rh/ponto/registros", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if (!d.ok){ document.getElementById("errModalR").textContent = d.erro; return; }
+    bootstrap.Modal.getInstance(document.getElementById("modalRegistro"))?.hide();
+    showMsg('<i class="bi bi-check-circle me-1"></i>Registro salvo. Recarregando…');
+    setTimeout(()=>location.reload(), 900);
+  })
+  .catch(()=>{ document.getElementById("errModalR").textContent = "Erro de conexão."; });
+};
+window.deleteRegistro = function(id){
+  if (!confirm("Excluir este registro de ponto?")) return;
+  fetch(`/api/rh/ponto/registros/${id}`,{method:"DELETE"})
+  .then(r=>r.json())
+  .then(d=>{
+    if (!d.ok){ showMsg(d.erro,false); return; }
+    showMsg('<i class="bi bi-check-circle me-1"></i>Registro excluído.');
+    setTimeout(()=>location.reload(), 900);
+  })
+  .catch(()=>showMsg("Erro de conexão.",false));
+};
+})();
+</script>
 {% endblock %}

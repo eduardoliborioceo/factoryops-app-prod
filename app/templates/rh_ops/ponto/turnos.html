@@ -1,6 +1,37 @@
 {% extends "layouts/app.html" %}
 {% block title %}Turnos — RH Hub{% endblock %}
 
+{% block styles %}
+<style>
+.ponto-card { background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.ponto-hdr  { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;
+  border-bottom:1px solid var(--border);background:rgba(15,23,42,0.03);flex-wrap:wrap;gap:10px; }
+.ponto-hdr-title { font-size:0.875rem;font-weight:700;display:flex;align-items:center;gap:8px; }
+.ponto-table { width:100%;border-collapse:collapse;font-size:0.83rem; }
+.ponto-table th { font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;
+  color:var(--text-muted);padding:10px 16px;border-bottom:2px solid var(--border);
+  background:rgba(15,23,42,0.04);white-space:nowrap; }
+.ponto-table td { padding:11px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.ponto-table tbody tr:hover { background:rgba(13,110,253,0.03); }
+.dia-chip { display:inline-block;font-size:0.65rem;font-weight:700;padding:2px 7px;
+  border-radius:4px;background:rgba(13,110,253,0.10);color:#0d6efd;margin:1px; }
+.badge-ativo   { background:rgba(25,135,84,0.12);color:#0a3622;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.badge-inativo { background:rgba(15,23,42,0.08);color:var(--text-muted);font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:5px; }
+.action-btn { background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;
+  font-size:0.75rem;color:var(--text-muted);cursor:pointer;transition:background 0.12s,color 0.12s; }
+.action-btn:hover { background:rgba(13,110,253,0.08);color:#0d6efd;border-color:rgba(13,110,253,0.3); }
+.empty-state { text-align:center;padding:48px 24px;color:var(--text-muted); }
+.empty-state i { font-size:2.5rem;opacity:0.2;display:block;margin-bottom:12px; }
+.dias-grid { display:flex;flex-wrap:wrap;gap:6px;margin-top:8px; }
+.dia-toggle { border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:0.78rem;
+  font-weight:600;background:var(--card);color:var(--text-muted);cursor:pointer;transition:all 0.12s;user-select:none; }
+.dia-toggle.sel { background:rgba(13,110,253,0.12);border-color:rgba(13,110,253,0.35);color:#0d6efd; }
+@media(max-width:767px){
+  .ponto-table th:nth-child(n+4),.ponto-table td:nth-child(n+4){display:none;}
+}
+</style>
+{% endblock %}
+
 {% block page_title %}
 <div class="page-header">
   <div class="page-header-title">
@@ -18,14 +49,227 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="mb-3">
+  <div class="mb-3 d-flex align-items-center gap-2">
     <a href="{{ url_for('pages.rh_ops_hub') }}#operacao" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i>Voltar ao RH Hub
     </a>
   </div>
-  <div class="text-center py-5">
-    <i class="bi bi-moon-stars" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:12px;"></i>
-    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Em desenvolvimento.<br>Cadastro dos turnos (1º, 2º, 3º turno) com horários, dias e regras de transporte.</p>
+
+  <div class="ponto-card">
+    <div class="ponto-hdr">
+      <div class="ponto-hdr-title">
+        <i class="bi bi-moon-stars text-primary"></i>
+        Turnos Cadastrados
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">
+        <i class="bi bi-plus-circle me-1"></i>Novo Turno
+      </button>
+    </div>
+
+    <div id="msgBar" style="font-size:0.8rem;padding:6px 20px;min-height:26px;"></div>
+
+    <div class="table-responsive">
+      <table class="ponto-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Entrada</th>
+            <th>Saída</th>
+            <th>Intervalo</th>
+            <th>Dias</th>
+            <th>Status</th>
+            <th style="width:90px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tBody">
+          {% for t in turnos %}
+          <tr data-id="{{ t.id }}">
+            <td style="font-weight:700;">{{ t.nome }}</td>
+            <td style="font-family:monospace;">{{ t.hora_entrada }}</td>
+            <td style="font-family:monospace;">{{ t.hora_saida }}</td>
+            <td style="color:var(--text-muted);">
+              {% if t.intervalo_min %}{{ t.intervalo_min }} min{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if t.dias_semana %}
+                {% for d in t.dias_semana %}
+                  <span class="dia-chip">{{ d }}</span>
+                {% endfor %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if t.ativo %}
+                <span class="badge-ativo">Ativo</span>
+              {% else %}
+                <span class="badge-inativo">Inativo</span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="action-btn"
+                onclick="editTurno({{ t.id }}, '{{ t.nome }}', '{{ t.hora_entrada }}', '{{ t.hora_saida }}', {{ t.intervalo_min or 0 }}, {{ t.dias_semana | tojson }}, {{ t.ativo | tojson }})">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="action-btn ms-1" onclick="deleteTurno({{ t.id }}, '{{ t.nome }}')"
+                style="border-color:rgba(220,53,69,0.3);">
+                <i class="bi bi-trash" style="color:#dc3545;"></i>
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state">
+                <i class="bi bi-moon-stars"></i>
+                <p>Nenhum turno cadastrado ainda.<br>Clique em <strong>Novo Turno</strong> para começar.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalTurno" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border);">
+      <div class="modal-header" style="border-bottom:1px solid var(--border);">
+        <h5 class="modal-title fw-700" id="modalTitle">Novo Turno</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fId">
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Nome do Turno</label>
+          <input type="text" id="fNome" class="form-control" placeholder="Ex: 1º Turno, Turno A…" maxlength="60">
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Hora de Entrada</label>
+            <input type="time" id="fEntrada" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label" style="font-size:0.8rem;font-weight:600;">Hora de Saída</label>
+            <input type="time" id="fSaida" class="form-control">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Intervalo (minutos)</label>
+          <input type="number" id="fIntervalo" class="form-control" min="0" max="120" value="60">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-size:0.8rem;font-weight:600;">Dias da Semana</label>
+          <div class="dias-grid" id="diasGrid">
+            <div class="dia-toggle" data-dia="Seg">Seg</div>
+            <div class="dia-toggle" data-dia="Ter">Ter</div>
+            <div class="dia-toggle" data-dia="Qua">Qua</div>
+            <div class="dia-toggle" data-dia="Qui">Qui</div>
+            <div class="dia-toggle" data-dia="Sex">Sex</div>
+            <div class="dia-toggle" data-dia="Sáb">Sáb</div>
+            <div class="dia-toggle" data-dia="Dom">Dom</div>
+          </div>
+        </div>
+        <div class="form-check form-switch mb-1">
+          <input class="form-check-input" type="checkbox" id="fAtivo" checked>
+          <label class="form-check-label" for="fAtivo" style="font-size:0.85rem;">Turno ativo</label>
+        </div>
+        <div id="errModal" class="text-danger" style="font-size:0.8rem;min-height:20px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border);">
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarTurno()">
+          <i class="bi bi-check2 me-1"></i>Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const API = "/api/rh/ponto/turnos";
+
+function showMsg(html, ok=true){
+  const el = document.getElementById("msgBar");
+  el.innerHTML = `<span class="${ok?'text-success fw-semibold':'text-danger'}">${html}</span>`;
+  setTimeout(()=>el.innerHTML="", 4000);
+}
+
+function showErr(msg){ document.getElementById("errModal").textContent = msg; }
+
+window.openModal = function(id=null){
+  document.getElementById("fId").value = id || "";
+  document.getElementById("fNome").value = "";
+  document.getElementById("fEntrada").value = "";
+  document.getElementById("fSaida").value = "";
+  document.getElementById("fIntervalo").value = 60;
+  document.getElementById("fAtivo").checked = true;
+  document.getElementById("errModal").textContent = "";
+  document.getElementById("modalTitle").textContent = "Novo Turno";
+  document.querySelectorAll(".dia-toggle").forEach(d => d.classList.remove("sel"));
+  new bootstrap.Modal(document.getElementById("modalTurno")).show();
+};
+
+window.editTurno = function(id, nome, entrada, saida, intervalo, dias, ativo){
+  document.getElementById("fId").value = id;
+  document.getElementById("fNome").value = nome;
+  document.getElementById("fEntrada").value = entrada;
+  document.getElementById("fSaida").value = saida;
+  document.getElementById("fIntervalo").value = intervalo;
+  document.getElementById("fAtivo").checked = ativo;
+  document.getElementById("errModal").textContent = "";
+  document.getElementById("modalTitle").textContent = "Editar Turno";
+  document.querySelectorAll(".dia-toggle").forEach(d => {
+    d.classList.toggle("sel", Array.isArray(dias) && dias.includes(d.dataset.dia));
+  });
+  new bootstrap.Modal(document.getElementById("modalTurno")).show();
+};
+
+document.querySelectorAll(".dia-toggle").forEach(d => {
+  d.addEventListener("click", () => d.classList.toggle("sel"));
+});
+
+window.salvarTurno = function(){
+  showErr("");
+  const dias = [...document.querySelectorAll(".dia-toggle.sel")].map(d => d.dataset.dia);
+  const body = {
+    id:           document.getElementById("fId").value || null,
+    nome:         document.getElementById("fNome").value.trim(),
+    hora_entrada: document.getElementById("fEntrada").value,
+    hora_saida:   document.getElementById("fSaida").value,
+    intervalo_min: parseInt(document.getElementById("fIntervalo").value) || 0,
+    dias_semana:  dias,
+    ativo:        document.getElementById("fAtivo").checked,
+  };
+  fetch(API, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.ok) { showErr(d.erro); return; }
+    bootstrap.Modal.getInstance(document.getElementById("modalTurno"))?.hide();
+    showMsg('<i class="bi bi-check-circle me-1"></i>Turno salvo com sucesso. Recarregando…');
+    setTimeout(() => location.reload(), 900);
+  })
+  .catch(() => showErr("Erro de conexão."));
+};
+
+window.deleteTurno = function(id, nome){
+  if (!confirm(`Excluir o turno "${nome}"? Esta ação não pode ser desfeita.`)) return;
+  fetch(`${API}/${id}`, {method:"DELETE"})
+  .then(r => r.json())
+  .then(d => {
+    if (!d.ok) { showMsg('<i class="bi bi-x-circle me-1"></i>'+d.erro, false); return; }
+    showMsg('<i class="bi bi-check-circle me-1"></i>Turno excluído.');
+    setTimeout(() => location.reload(), 900);
+  })
+  .catch(() => showMsg('<i class="bi bi-x-circle me-1"></i>Erro de conexão.', false));
+};
+})();
+</script>
 {% endblock %}

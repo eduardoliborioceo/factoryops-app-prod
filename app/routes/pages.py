@@ -2946,31 +2946,111 @@ def rh_org_organograma():
 @bp.route("/rh-ops/ponto/turnos", methods=["GET"])
 @login_required
 def rh_ponto_turnos():
-    return render_template("rh_ops/ponto/turnos.html", active_menu="rh_ponto_turnos")
+    from app.services import rh_ponto_service as svc
+    try:
+        turnos = svc.listar_turnos()
+    except Exception:
+        turnos = []
+    return render_template("rh_ops/ponto/turnos.html",
+                           active_menu="rh_ponto_turnos",
+                           turnos=turnos)
 
 
 @bp.route("/rh-ops/ponto/escalas", methods=["GET"])
 @login_required
 def rh_ponto_escalas():
-    return render_template("rh_ops/ponto/escalas.html", active_menu="rh_ponto_escalas")
+    import datetime
+    from app.services import rh_ponto_service as svc
+    hoje = datetime.date.today()
+    mes = int(request.args.get("mes", hoje.month))
+    ano = int(request.args.get("ano", hoje.year))
+    turno_id = request.args.get("turno_id") or None
+    try:
+        escalas = svc.listar_escalas(mes, ano, turno_id=int(turno_id) if turno_id else None)
+        turnos = svc.listar_turnos()
+        colaboradores = svc.listar_colaboradores_para_escala()
+    except Exception:
+        escalas, turnos, colaboradores = [], [], []
+    return render_template("rh_ops/ponto/escalas.html",
+                           active_menu="rh_ponto_escalas",
+                           escalas=escalas,
+                           turnos=turnos,
+                           colaboradores=colaboradores,
+                           mes=mes, ano=ano,
+                           turno_id=turno_id)
 
 
 @bp.route("/rh-ops/ponto/registros", methods=["GET"])
 @login_required
 def rh_ponto_registros():
-    return render_template("rh_ops/ponto/registros.html", active_menu="rh_ponto_registros")
+    import datetime
+    from app.services import rh_ponto_service as svc
+    hoje = datetime.date.today()
+    data_inicio = request.args.get("data_inicio", hoje.replace(day=1).isoformat())
+    data_fim = request.args.get("data_fim", hoje.isoformat())
+    employee_code = request.args.get("employee_code", "").strip() or None
+    try:
+        registros = svc.listar_registros(data_inicio, data_fim, employee_code)
+        kpis = svc.kpis_registros(data_inicio, data_fim)
+    except Exception:
+        registros, kpis = [], {}
+    return render_template("rh_ops/ponto/registros.html",
+                           active_menu="rh_ponto_registros",
+                           registros=registros,
+                           kpis=kpis,
+                           data_inicio=data_inicio,
+                           data_fim=data_fim,
+                           employee_code=employee_code or "")
 
 
 @bp.route("/rh-ops/ponto/horas-extras", methods=["GET"])
 @login_required
 def rh_ponto_horas_extras():
-    return render_template("rh_ops/ponto/horas_extras.html", active_menu="rh_ponto_horas_extras")
+    from app.services import rh_ponto_service as svc
+    status = request.args.get("status", "").strip() or None
+    data_inicio = request.args.get("data_inicio", "").strip() or None
+    data_fim = request.args.get("data_fim", "").strip() or None
+    employee_code = request.args.get("employee_code", "").strip() or None
+    try:
+        horas = svc.listar_horas_extras(status, data_inicio, data_fim, employee_code)
+        kpis = svc.kpis_horas_extras()
+    except Exception:
+        horas, kpis = [], {}
+    return render_template("rh_ops/ponto/horas_extras.html",
+                           active_menu="rh_ponto_horas_extras",
+                           horas_extras=horas,
+                           kpis=kpis,
+                           f_status=status or "",
+                           f_data_inicio=data_inicio or "",
+                           f_data_fim=data_fim or "",
+                           f_employee_code=employee_code or "")
 
 
 @bp.route("/rh-ops/ponto/afastamentos", methods=["GET"])
 @login_required
 def rh_ponto_afastamentos():
-    return render_template("rh_ops/ponto/afastamentos.html", active_menu="rh_ponto_afastamentos")
+    from app.services import rh_ponto_service as svc
+    tipo = request.args.get("tipo", "").strip() or None
+    status = request.args.get("status", "").strip() or None
+    data_inicio = request.args.get("data_inicio", "").strip() or None
+    data_fim = request.args.get("data_fim", "").strip() or None
+    employee_code = request.args.get("employee_code", "").strip() or None
+    try:
+        afastamentos = svc.listar_afastamentos(tipo, status, data_inicio, data_fim, employee_code)
+        kpis = svc.kpis_afastamentos()
+        tipos = svc.tipos_afastamento()
+    except Exception:
+        afastamentos, kpis, tipos = [], {}, {}
+    return render_template("rh_ops/ponto/afastamentos.html",
+                           active_menu="rh_ponto_afastamentos",
+                           afastamentos=afastamentos,
+                           kpis=kpis,
+                           tipos=tipos,
+                           f_tipo=tipo or "",
+                           f_status=status or "",
+                           f_data_inicio=data_inicio or "",
+                           f_data_fim=data_fim or "",
+                           f_employee_code=employee_code or "")
 
 
 # ── Recrutamento & Admissão ──
