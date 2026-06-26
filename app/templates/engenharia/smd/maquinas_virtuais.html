@@ -2127,8 +2127,32 @@ function buildNXTMachine(g){
     spLed.position.set(mx-1.5,-21.2,11.08); g.add(spLed);
   });
 
-  // ─── Back wall ───
-  const bw=_b(40,31,1.5,mWhite2); bw.position.set(0,2.0,-11.2); g.add(bw);
+  // ─── Back wall (electrical panel — servo drives, computer, circuit breakers) ───
+  const bw=_b(40,31,1.5,_m(0x181c22,0.68,0.15)); bw.position.set(0,2.0,-11.2); g.add(bw);
+  // Servo drive stacks — one rack per module (Layer 5 back panel)
+  [-11,0,11].forEach(mx=>{
+    const sdRack=_b(7.5,8.0,0.8,_m(0x0e1014,0.72,0.22)); sdRack.position.set(mx,-5.0,-10.2); g.add(sdRack);
+    for(let si=0;si<4;si++){
+      const sd=_b(6.5,1.4,0.6,_m(0x1c2030,0.45,0.42)); sd.position.set(mx,-7.5+si*2.0,-9.85); g.add(sd);
+      const sdLed=new THREE.Mesh(new THREE.BoxGeometry(0.38,0.38,0.16),
+        new THREE.MeshStandardMaterial({color:0x00aa44,roughness:0.20,emissive:new THREE.Color(0,0.28,0.10)}));
+      sdLed.position.set(mx+2.4,-7.5+si*2.0,-9.6); g.add(sdLed);
+    }
+  });
+  // Industrial computer + network switch (top of back panel)
+  const pcRack=_b(18,4.5,1.0,_m(0x0c0e14,0.60,0.28)); pcRack.position.set(0,9.0,-10.2); g.add(pcRack);
+  const pcUnit=_b(13,3.2,0.7,_m(0x181c28,0.40,0.45)); pcUnit.position.set(-1.0,9.0,-9.88); g.add(pcUnit);
+  const pcDisk=_b(2.6,0.38,0.45,_m(0x5a5e70,0.35,0.40)); pcDisk.position.set(-4.5,9.0,-9.62); g.add(pcDisk);
+  const pcDisk2=_b(2.6,0.38,0.45,_m(0x5a5e70,0.35,0.40)); pcDisk2.position.set(-4.5,8.45,-9.62); g.add(pcDisk2);
+  const netSw=_b(5.5,0.75,0.65,_m(0x1a2434,0.45,0.35)); netSw.position.set(6.0,9.0,-9.85); g.add(netSw);
+  for(let pi=0;pi<8;pi++){
+    const port=_b(0.42,0.30,0.12,_m(0x0c1018,0.80,0.10)); port.position.set(6.0-2.8+pi*0.58,8.65,-9.65); g.add(port);
+  }
+  // Circuit breakers row
+  [-17,-9,0,9,17].forEach(bx=>{
+    const brk=_b(1.4,5.0,0.6,_m(0x0e1016,0.62,0.18)); brk.position.set(bx,-0.5,-10.18); g.add(brk);
+    const brkHnd=_b(0.52,0.75,0.32,_m(0x1e3eaa,0.40,0.15)); brkHnd.position.set(bx,0.8,-9.92); g.add(brkHnd);
+  });
 
   // ─── End caps ───
   const lEnd=_b(2.5,31,22,mWhite2); lEnd.position.set(-19.5,2.0,0); g.add(lEnd);
@@ -2136,6 +2160,14 @@ function buildNXTMachine(g){
   // NXT logo area on right end
   const nxtBar=_b(0.4,25,4.5,mPurple); nxtBar.position.set(20.6,2.0,0); g.add(nxtBar);
   const nxtBox=_b(0.4,4.5,5.5,mBlue); nxtBox.position.set(20.6,3.5,2.5); g.add(nxtBox);
+  // Pneumatic entry (right side) — air inlet + filter bowl + pressure regulator
+  const pneumBase=_b(0.55,6.0,5.5,_m(0xc0c4d0,0.38,0.62)); pneumBase.position.set(20.82,-4.8,3.8); g.add(pneumBase);
+  const filtBowl=_cyl(0.78,0.78,2.0,_m(0xd0d4e0,0.30,0.55)); filtBowl.rotation.z=Math.PI/2; filtBowl.position.set(21.18,-4.4,3.0); g.add(filtBowl);
+  const filtCap=_cyl(0.80,0.80,0.22,_m(0x1a5a8a,0.38,0.42)); filtCap.rotation.z=Math.PI/2; filtCap.position.set(21.18,-4.4,1.98); g.add(filtCap);
+  const regBody=_cyl(0.62,0.62,1.45,_m(0x6878a0,0.32,0.60)); regBody.rotation.z=Math.PI/2; regBody.position.set(21.18,-4.4,5.0); g.add(regBody);
+  const regKnob=_cyl(0.55,0.55,0.52,_m(0x2244bb,0.40,0.12)); regKnob.rotation.z=Math.PI/2; regKnob.position.set(21.18,-4.4,5.88); g.add(regKnob);
+  const airInlet=_cyl(0.26,0.26,1.45,_m(0x606870,0.25,0.72)); airInlet.rotation.z=Math.PI/2; airInlet.position.set(21.18,-5.6,3.9); g.add(airInlet);
+  const airFit=_cyl(0.40,0.40,0.28,_m(0x607080,0.22,0.80)); airFit.rotation.z=Math.PI/2; airFit.position.set(21.18,-5.6,2.2); g.add(airFit);
 
   // ─── Fixed interior (visible through open module slot) ───
   const modXs=[-11,0,11];
@@ -2161,6 +2193,11 @@ function buildNXTMachine(g){
   });
   const rA=_b(33,0.45,0.45,mRail); rA.position.set(0,8.7,2.2); g.add(rA);
   const rB=_b(33,0.45,0.45,mRail); rB.position.set(0,7.3,2.2); g.add(rB);
+  // Cable chain (esteira articulada) — runs along top of gantry carrying servo + pneumatic cables
+  const chainLnkMat=_m(0x181a20,0.78,0.08);
+  for(let ci=0;ci<14;ci++){
+    const lnk=_b(2.1,0.62,0.95,chainLnkMat); lnk.position.set(-15.2+ci*2.3,9.7,1.0); g.add(lnk);
+  }
 
   // ─── Placement head (H12 — blue carriage unit, all parts grouped for animation) ───
   const headGrp=new THREE.Group(); headGrp.position.set(0,0,0); g.add(headGrp);
@@ -2182,14 +2219,22 @@ function buildNXTMachine(g){
   handleGrip.position.set(0,9.3,3); headGrp.add(handleGrip);
   const warnHead=_b(0.82,0.82,0.15,_m(0xffcc00,0.50,0.0));
   warnHead.position.set(-1.0,7.0,4.34); headGrp.add(warnHead);
-  const nozzleShaft=_b(2.0,3.5,1.8,_m(0x888898,0.30,0.70));
+  const nozzleShaft=_b(2.6,3.5,2.2,_m(0x888898,0.30,0.70));
   nozzleShaft.position.set(0,1.0,3); headGrp.add(nozzleShaft);
-  for(let nx=0;nx<2;nx++) for(let nz=0;nz<3;nz++){
+  for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
     const noz=_cyl(0.10,0.10,1.8,_m(0x606070,0.20,0.90));
-    noz.position.set((nx-0.5)*0.76,-0.5,3+(nz-1)*0.60); headGrp.add(noz);
+    noz.position.set((nx-1)*0.72,-0.5,2.25+nz*0.52); headGrp.add(noz);
   }
   const thetaMot=_cyl(0.52,0.52,1.3,_m(0x1a1c24,0.42,0.45));
   thetaMot.rotation.z=Math.PI/2; thetaMot.position.set(1.8,0.8,3); headGrp.add(thetaMot);
+  // Fiducial camera — mounted on carriage, points down at PCB for alignment correction
+  const fidCamHsg=_b(1.0,0.85,1.0,_m(0x0c0e1a,0.62,0.25));
+  fidCamHsg.position.set(2.2,7.5,1.6); headGrp.add(fidCamHsg);
+  const fidCamLens=_cyl(0.28,0.28,0.38,_m(0x050810,0.12,0.08),8);
+  fidCamLens.position.set(2.2,7.0,1.6); headGrp.add(fidCamLens);
+  const fidCamFlash=_cyl(0.56,0.56,0.12,
+    new THREE.MeshStandardMaterial({color:0xffffff,roughness:0.15,emissive:new THREE.Color(0.18,0.18,0.18),metalness:0}),6);
+  fidCamFlash.position.set(2.2,6.82,1.6); headGrp.add(fidCamFlash);
 
   // ─── Parts camera (octagonal housing, upward-looking, amber LED ring) ───
   const camBase=_b(4.6,1.5,4.6,_m(0x090e14,0.68,0.32));
@@ -2252,11 +2297,11 @@ function buildNXTMachine(g){
     _edges(intHeadBody,0x0f3090,0.18);
     const intHandle=_b(2.6,0.48,2.2,_m(0x141620,0.55,0.12));
     intHandle.position.set(0,8.8,-2.0); modGrp.add(intHandle);
-    const intNozzleShaft=_b(2.0,2.8,1.6,_m(0x888898,0.30,0.70));
+    const intNozzleShaft=_b(2.6,2.8,2.2,_m(0x888898,0.30,0.70));
     intNozzleShaft.position.set(0,1.2,-2.0); modGrp.add(intNozzleShaft);
-    for(let nx=0;nx<2;nx++) for(let nz=0;nz<3;nz++){
+    for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
       const noz=_cyl(0.10,0.10,1.6,_m(0x606070,0.20,0.90));
-      noz.position.set((nx-0.5)*0.70,-0.4,-2.0+(nz-1)*0.52); modGrp.add(noz);
+      noz.position.set((nx-1)*0.72,-0.4,-2.78+nz*0.52); modGrp.add(noz);
     }
     const intCamBase=_b(3.6,1.2,3.6,_m(0x090e14,0.68,0.32));
     intCamBase.position.set(-3.2,5.2,-1.5); modGrp.add(intCamBase);
@@ -2267,6 +2312,23 @@ function buildNXTMachine(g){
     intCamLed.rotation.x=Math.PI/2; intCamLed.position.set(-3.2,5.2,0.72); modGrp.add(intCamLed);
     const intCamLens=_cyl(0.68,0.68,0.36,_m(0x0c1828,0.12,0.10),8);
     intCamLens.rotation.x=Math.PI/2; intCamLens.position.set(-3.2,5.2,0.88); modGrp.add(intCamLens);
+    // Layer 4 — servo drives + pneumatic manifold visible from side (below feeder zone)
+    const servoFrame=_b(7.8,3.2,5.5,_m(0x0e1016,0.75,0.20));
+    servoFrame.position.set(0,-15.0,-3.0); modGrp.add(servoFrame);
+    for(let si=0;si<3;si++){
+      const sd=_b(1.9,2.4,1.1,_m(0x182030,0.42,0.45)); sd.position.set(-2.4+si*2.4,-15.0,-3.0); modGrp.add(sd);
+      const sdLed=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.28,0.14),
+        new THREE.MeshStandardMaterial({color:0x00bb44,roughness:0.20,emissive:new THREE.Color(0,0.30,0.12)}));
+      sdLed.position.set(-2.4+si*2.4,-13.9,-2.45); modGrp.add(sdLed);
+    }
+    const pManifold=_b(7.2,0.85,0.85,_m(0x3a6090,0.35,0.55));
+    pManifold.position.set(0,-17.2,-3.5); modGrp.add(pManifold);
+    for(let pi=0;pi<6;pi++){
+      const pFit=_cyl(0.13,0.13,0.52,_m(0x2a4c72,0.30,0.62));
+      pFit.position.set(-2.8+pi*1.12,-16.75,-3.5); modGrp.add(pFit);
+    }
+    const cab1=_b(0.52,4.8,0.52,_m(0x180f0f,0.88,0.04)); cab1.position.set(-3.4,-15.2,-5.5); modGrp.add(cab1);
+    const cab2=_b(0.52,4.5,0.52,_m(0x0d1818,0.88,0.04)); cab2.position.set(3.4,-15.2,-5.5); modGrp.add(cab2);
 
     const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(0,11.6,0); modGrp.add(stripe);
     const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(0,14.5,0.75);
