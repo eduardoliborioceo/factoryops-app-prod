@@ -2148,7 +2148,7 @@ function buildNXTMachine(g){
 
   // Module dividers
   [-5.5,5.5].forEach(dx=>{
-    const div=_b(0.6,31,20,mWhite2); div.position.set(dx,2.0,0); g.add(div);
+    const div=_b(0.6,38,20,mWhite2); div.position.set(dx,1.5,0); g.add(div);
   });
 
   // ─── X-Gantry beam (precision linear axis inside machine) ───
@@ -2160,23 +2160,48 @@ function buildNXTMachine(g){
   const rA=_b(33,0.45,0.45,mRail); rA.position.set(0,8.7,2.2); g.add(rA);
   const rB=_b(33,0.45,0.45,mRail); rB.position.set(0,7.3,2.2); g.add(rB);
 
-  // ─── Placement head (H12HS) ───
-  const zCarriage=_b(3.2,1.8,3.2,mAlum); zCarriage.position.set(0,8,3); g.add(zCarriage);
-  const head=_b(2.8,5.2,2.8,_m(0xb8b8c0,0.22,0.82)); head.position.set(0,4.5,3);
-  _edges(head,0xaaaaaa,0.28); g.add(head);
-  s3.headObj=head;
-  for(let nx=0;nx<3;nx++) for(let nz=0;nz<4;nz++){
-    const noz=_cyl(0.09,0.09,1.5,_m(0x707070,0.2,0.9));
-    noz.position.set((nx-1)*0.72,2.5,3+(nz-1.5)*0.6); g.add(noz);
+  // ─── Placement head (H12 — blue carriage unit, all parts grouped for animation) ───
+  const headGrp=new THREE.Group(); headGrp.position.set(0,0,0); g.add(headGrp);
+  s3.headObj=headGrp;
+  const xCarriage=_b(4.8,1.6,2.8,_m(0x282c38,0.38,0.55));
+  xCarriage.position.set(0,8,3); headGrp.add(xCarriage);
+  [-1.8,1.8].forEach(hx=>{
+    const rlBlk=_b(0.52,1.5,0.55,_m(0x1e2230,0.40,0.55));
+    rlBlk.position.set(hx,8,1.85); headGrp.add(rlBlk);
+  });
+  const mBlue=_m(0x1a4dc8,0.42,0.22);
+  const headBody=_b(3.0,6.5,2.6,mBlue);
+  _edges(headBody,0x0f3090,0.18); headBody.position.set(0,5.5,3); headGrp.add(headBody);
+  const headFace=_b(2.4,5.8,0.18,_m(0x2258e0,0.38,0.16));
+  headFace.position.set(0,5.5,4.32); headGrp.add(headFace);
+  const handleBase=_b(2.6,0.52,2.6,_m(0x141620,0.55,0.12));
+  handleBase.position.set(0,9.0,3); headGrp.add(handleBase);
+  const handleGrip=_b(1.8,0.35,0.50,_m(0x0c0e14,0.72,0.05));
+  handleGrip.position.set(0,9.3,3); headGrp.add(handleGrip);
+  const warnHead=_b(0.82,0.82,0.15,_m(0xffcc00,0.50,0.0));
+  warnHead.position.set(-1.0,7.0,4.34); headGrp.add(warnHead);
+  const nozzleShaft=_b(2.0,3.5,1.8,_m(0x888898,0.30,0.70));
+  nozzleShaft.position.set(0,1.0,3); headGrp.add(nozzleShaft);
+  for(let nx=0;nx<2;nx++) for(let nz=0;nz<3;nz++){
+    const noz=_cyl(0.10,0.10,1.8,_m(0x606070,0.20,0.90));
+    noz.position.set((nx-0.5)*0.76,-0.5,3+(nz-1)*0.60); headGrp.add(noz);
   }
-  const screw=_cyl(0.18,0.18,5,_m(0xcccccc,0.15,0.95)); screw.position.set(1.5,6.5,4.2); g.add(screw);
+  const thetaMot=_cyl(0.52,0.52,1.3,_m(0x1a1c24,0.42,0.45));
+  thetaMot.rotation.z=Math.PI/2; thetaMot.position.set(1.8,0.8,3); headGrp.add(thetaMot);
 
-  // ─── Parts camera (upward-looking vision) ───
-  const vcam=_b(3.2,2,3.2,_m(0x08101a,0.6,0.5)); vcam.position.set(-5.5,5.5,4); g.add(vcam);
-  const vlens=_cyl(0.6,0.6,0.55,_m(0x102244,0.2,0.5));
-  vlens.rotation.x=Math.PI/2; vlens.position.set(-5.5,5.5,5.6); g.add(vlens);
-  const ledRing=_cyl(1.05,1.05,0.22,_m(0xffffc8,0.2,0));
-  ledRing.rotation.x=Math.PI/2; ledRing.position.set(-5.5,5.5,5.3); g.add(ledRing);
+  // ─── Parts camera (octagonal housing, upward-looking, amber LED ring) ───
+  const camBase=_b(4.6,1.5,4.6,_m(0x090e14,0.68,0.32));
+  camBase.position.set(-5.5,5.2,3.5); g.add(camBase);
+  const camBody=_cyl(2.1,2.1,1.5,_m(0x08101a,0.65,0.35),8);
+  camBody.rotation.x=Math.PI/2; camBody.position.set(-5.5,5.2,4.8); g.add(camBody);
+  const camLedRing=_cyl(2.55,2.55,0.28,
+    new THREE.MeshStandardMaterial({color:0xff9900,roughness:0.22,emissive:new THREE.Color(0.55,0.25,0.0),metalness:0}),8);
+  camLedRing.rotation.x=Math.PI/2; camLedRing.position.set(-5.5,5.2,5.72); g.add(camLedRing);
+  const camLedInner=_cyl(1.55,1.55,0.22,
+    new THREE.MeshStandardMaterial({color:0xffcc44,roughness:0.18,emissive:new THREE.Color(0.28,0.16,0.0),metalness:0}),8);
+  camLedInner.rotation.x=Math.PI/2; camLedInner.position.set(-5.5,5.2,5.70); g.add(camLedInner);
+  const camLens=_cyl(0.88,0.88,0.45,_m(0x0c1828,0.12,0.10),8);
+  camLens.rotation.x=Math.PI/2; camLens.position.set(-5.5,5.2,5.88); g.add(camLens);
 
   // ─── 3 Modules (each slides forward on click to reveal interior) ───
   const mPalStr=_m(0x17191e,0.72,0.28);
@@ -2190,7 +2215,7 @@ function buildNXTMachine(g){
     g.add(modGrp);
     s3.nxtModuleGrps.push(modGrp);
 
-    const bodyLo=_b(10.5,24,20,mWhite); bodyLo.position.set(0,-0.5,0);
+    const bodyLo=_b(10.5,28,20,mWhite); bodyLo.position.set(0,-2.5,0);
     _edges(bodyLo,0xb0b4bc,0.08); modGrp.add(bodyLo);
     s3.nxtModuleBodyMeshes.push(bodyLo);
 
@@ -2254,31 +2279,44 @@ function buildNXTMachine(g){
       s3.nxtLedMeshes[sk]=led;
     }
 
-    // ─ Controls panel (below feeder area) ─
-    const ctrlPnl=_b(9.5,0.92,0.22,_m(0x12141c,0.80,0.10));
-    ctrlPnl.position.set(0,-11.2,10.38); modGrp.add(ctrlPnl);
-    const cPort=_cyl(0.42,0.42,0.35,_m(0x1c1e28,0.62,0.18));
-    cPort.rotation.x=Math.PI/2; cPort.position.set(-3.2,-11.2,10.58); modGrp.add(cPort);
-    const cPortRim=_cyl(0.54,0.54,0.08,_m(0x2e3040,0.50,0.30));
-    cPortRim.rotation.x=Math.PI/2; cPortRim.position.set(-3.2,-11.2,10.42); modGrp.add(cPortRim);
-    const rotSel=_cyl(0.52,0.52,0.18,_m(0x282c38,0.50,0.10));
-    rotSel.rotation.x=Math.PI/2; rotSel.position.set(-0.8,-11.2,10.52); modGrp.add(rotSel);
-    const rotArrow=_b(0.11,0.58,0.10,_m(0x888ea0,0.50,0.10));
-    rotArrow.position.set(-0.8,-11.2,10.62); modGrp.add(rotArrow);
-    const swBase=_b(0.82,0.82,0.22,_m(0x202230,0.52,0.10));
-    swBase.position.set(1.8,-11.2,10.44); modGrp.add(swBase);
-    const swKnob=_cyl(0.26,0.26,0.28,_m(0xd0d0d8,0.28,0.65));
-    swKnob.rotation.x=Math.PI/2; swKnob.position.set(1.8,-11.2,10.64); modGrp.add(swKnob);
+    // ─ Controls panel (below feeder area — cable port, L/R selector, chave geral) ─
+    const ctrlPnl=_b(9.5,1.8,0.32,_m(0x10121a,0.78,0.12));
+    ctrlPnl.position.set(0,-13.0,10.50); modGrp.add(ctrlPnl);
+    // Cable entry port
+    const cPort=_cyl(0.58,0.58,0.48,_m(0x1c1e28,0.62,0.18));
+    cPort.rotation.x=Math.PI/2; cPort.position.set(-3.2,-13.0,10.80); modGrp.add(cPort);
+    const cPortRim=_cyl(0.72,0.72,0.12,_m(0x3a3e50,0.48,0.35));
+    cPortRim.rotation.x=Math.PI/2; cPortRim.position.set(-3.2,-13.0,10.60); modGrp.add(cPortRim);
+    const cPortHole=_cyl(0.30,0.30,0.18,_m(0x06080c,0.90,0.05));
+    cPortHole.rotation.x=Math.PI/2; cPortHole.position.set(-3.2,-13.0,10.86); modGrp.add(cPortHole);
+    // Left/right rotary selector
+    const rotSel=_cyl(0.68,0.68,0.25,_m(0x282c38,0.50,0.10));
+    rotSel.rotation.x=Math.PI/2; rotSel.position.set(-0.8,-13.0,10.76); modGrp.add(rotSel);
+    const rotArrow=_b(0.14,0.72,0.14,_m(0x9aa0b4,0.45,0.12));
+    rotArrow.position.set(-0.8,-13.0,10.88); modGrp.add(rotArrow);
+    const rotArrowH=_b(0.72,0.14,0.14,_m(0x9aa0b4,0.45,0.12));
+    rotArrowH.position.set(-0.8,-13.0,10.88); modGrp.add(rotArrowH);
+    // Main switch (chave geral)
+    const swBase=_b(1.1,1.1,0.28,_m(0x1c1e2a,0.50,0.12));
+    swBase.position.set(2.2,-13.0,10.62); modGrp.add(swBase);
+    const swKnob=_cyl(0.36,0.36,0.38,_m(0xd8d8e0,0.25,0.70));
+    swKnob.rotation.x=Math.PI/2; swKnob.position.set(2.2,-13.0,10.90); modGrp.add(swKnob);
+    const swRing=_cyl(0.48,0.48,0.12,_m(0x282c38,0.45,0.30));
+    swRing.rotation.x=Math.PI/2; swRing.position.set(2.2,-13.0,10.70); modGrp.add(swRing);
 
-    // ─ Scrap bin (tape waste tray at module base) ─
-    const scrapHsg=_b(9.4,1.80,8.0,_m(0x0a0c10,0.88,0.04));
-    scrapHsg.position.set(0,-11.9,5.9); modGrp.add(scrapHsg);
-    const scrapFront=_b(9.4,1.80,0.22,_m(0x0e1016,0.82,0.05));
-    scrapFront.position.set(0,-11.9,10.02); modGrp.add(scrapFront);
-    const scrapLabel=_b(4.5,0.52,0.12,_m(0xcc1111,0.65,0.00));
-    scrapLabel.position.set(0,-12.38,10.14); modGrp.add(scrapLabel);
-    const scrapHandle=_b(2.0,0.26,0.26,_m(0x282c38,0.52,0.15));
-    scrapHandle.position.set(0,-11.15,10.22); modGrp.add(scrapHandle);
+    // ─ Scrap bin (tape waste collector — slides out from module base) ─
+    const scrapHsg=_b(9.2,2.8,8.5,_m(0x0a0c10,0.88,0.04));
+    scrapHsg.position.set(0,-14.8,5.8); modGrp.add(scrapHsg);
+    const scrapFront=_b(9.2,2.8,0.35,_m(0x0e1016,0.82,0.05));
+    scrapFront.position.set(0,-14.8,10.22); modGrp.add(scrapFront);
+    // Red warning label (two lines like real machine)
+    const scrapLbl1=_b(5.2,0.60,0.14,_m(0xcc1111,0.65,0.00));
+    scrapLbl1.position.set(0,-14.1,10.38); modGrp.add(scrapLbl1);
+    const scrapLbl2=_b(5.2,0.60,0.14,_m(0xcc1111,0.65,0.00));
+    scrapLbl2.position.set(0,-15.2,10.38); modGrp.add(scrapLbl2);
+    // Handle strip
+    const scrapHandle=_b(3.0,0.32,0.32,_m(0x2a2e3c,0.50,0.18));
+    scrapHandle.position.set(0,-13.6,10.38); modGrp.add(scrapHandle);
   });
 
   // ─── Conveyor (PCB transport) — mid-machine, between feeders and monitors ───
