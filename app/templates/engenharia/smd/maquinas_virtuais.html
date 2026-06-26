@@ -1896,7 +1896,7 @@ const s3 = {
   pcbTrains:[], lastT:0,
   nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[],
   nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[],
-  nxtModuleSides:[]
+  nxtModuleSides:[], nxtModuleWindows:[]
 };
 
 function set3DView(to3D){
@@ -2210,6 +2210,7 @@ function buildNXTMachine(g){
   s3.nxtModuleBodyMeshes=[];
   s3.nxtModuleOpen=[false,false,false];
   s3.nxtModuleSides=[];
+  s3.nxtModuleWindows=[];
   modXs.forEach((mx,idx)=>{
     const mk=modKeys[idx];
     const modGrp=new THREE.Group();
@@ -2223,15 +2224,19 @@ function buildNXTMachine(g){
     s3.nxtModuleBodyMeshes.push(bodyBack);
     const bodyTop=_b(10.5,0.55,20,mWhite); bodyTop.position.set(0,11.22,0); modGrp.add(bodyTop);
     const bodyBot=_b(10.5,0.55,20,mWhite); bodyBot.position.set(0,-16.22,0); modGrp.add(bodyBot);
-    const sideMatL=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
-    const bodySideL=new THREE.Mesh(new THREE.BoxGeometry(0.55,28,20),sideMatL);
-    bodySideL.castShadow=true; bodySideL.receiveShadow=true;
-    bodySideL.position.set(-5.22,-2.5,0); modGrp.add(bodySideL);
-    const sideMatR=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
-    const bodySideR=new THREE.Mesh(new THREE.BoxGeometry(0.55,28,20),sideMatR);
-    bodySideR.castShadow=true; bodySideR.receiveShadow=true;
-    bodySideR.position.set(5.22,-2.5,0); modGrp.add(bodySideR);
-    s3.nxtModuleSides.push({L:bodySideL,R:bodySideR});
+    // Upper side panels — head-access zone (y=0→11.5): fade transparent when module opens
+    const sideHiMatL=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
+    const bodySideHiL=new THREE.Mesh(new THREE.BoxGeometry(0.55,11.5,20),sideHiMatL);
+    bodySideHiL.castShadow=true; bodySideHiL.receiveShadow=true;
+    bodySideHiL.position.set(-5.22,5.75,0); modGrp.add(bodySideHiL);
+    const sideHiMatR=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
+    const bodySideHiR=new THREE.Mesh(new THREE.BoxGeometry(0.55,11.5,20),sideHiMatR);
+    bodySideHiR.castShadow=true; bodySideHiR.receiveShadow=true;
+    bodySideHiR.position.set(5.22,5.75,0); modGrp.add(bodySideHiR);
+    s3.nxtModuleSides.push({L:bodySideHiL,R:bodySideHiR});
+    // Lower side panels — feeder zone (y=-16.5→0): always opaque (feeder mechanism enclosed)
+    const bodySideLoL=_b(0.55,16.5,20,mWhite); bodySideLoL.position.set(-5.22,-8.25,0); modGrp.add(bodySideLoL);
+    const bodySideLoR=_b(0.55,16.5,20,mWhite); bodySideLoR.position.set(5.22,-8.25,0); modGrp.add(bodySideLoR);
 
     // Interior: gantry rail + H12 placement head + parts camera (visible when sides fade open)
     const intRail=_b(9.2,0.45,0.45,_m(0x5e6270,0.28,0.82));
@@ -2270,6 +2275,7 @@ function buildNXTMachine(g){
     const winGlass=new THREE.Mesh(new THREE.BoxGeometry(4.5,4.2,0.14),
       new THREE.MeshStandardMaterial({color:0x0c1018,roughness:0.08,metalness:0.05,transparent:true,opacity:0.72}));
     winGlass.position.set(0,7.0,10.44); modGrp.add(winGlass);
+    s3.nxtModuleWindows.push(winGlass);
     [-1,1].forEach(sx=>{
       for(let vi=0;vi<5;vi++){
         const vt=_b(0.15,0.85,13,_m(0xb4b8c0,0.5,0.08));
@@ -2824,6 +2830,12 @@ function animate3D(){
       const tOp=s3.nxtModuleOpen[i]?0.07:1.0;
       L.material.opacity+=(tOp-L.material.opacity)*0.06;
       R.material.opacity+=(tOp-R.material.opacity)*0.06;
+    });
+  }
+  if(s3.nxtModuleWindows.length){
+    s3.nxtModuleWindows.forEach((win,i)=>{
+      const tOp=s3.nxtModuleOpen[i]?0.05:0.72;
+      win.material.opacity+=(tOp-win.material.opacity)*0.05;
     });
   }
   if(machineState==="running"&&s3.nxtSlotQty){
