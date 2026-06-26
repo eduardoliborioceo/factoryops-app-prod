@@ -2223,6 +2223,7 @@ function buildNXTMachine(g){
     s3.nxtModuleBodyMeshes.push(bodyBack);
     const bodyTop=_b(10.5,0.55,20,mWhite); bodyTop.position.set(0,11.22,0); modGrp.add(bodyTop);
     const bodyBot=_b(10.5,0.55,20,mWhite); bodyBot.position.set(0,-16.22,0); modGrp.add(bodyBot);
+    const bodyFront=_b(10.5,28,0.22,mWhite); bodyFront.position.set(0,-2.5,9.78); modGrp.add(bodyFront);
     // Upper side panels — head-access zone (y=0→11.5): fade transparent when module opens
     const sideHiMatL=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
     const bodySideHiL=new THREE.Mesh(new THREE.BoxGeometry(0.55,11.5,20),sideHiMatL);
