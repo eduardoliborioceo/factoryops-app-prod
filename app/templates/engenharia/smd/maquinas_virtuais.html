@@ -1895,7 +1895,8 @@ const s3 = {
   nxtGhost:null, nxtGhostMat:null, nxtHitWall:null, nxtGhostSlot:null,
   pcbTrains:[], lastT:0,
   nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[],
-  nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[]
+  nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[],
+  nxtModuleSides:[]
 };
 
 function set3DView(to3D){
@@ -2208,6 +2209,7 @@ function buildNXTMachine(g){
   s3.nxtModuleGrps=[];
   s3.nxtModuleBodyMeshes=[];
   s3.nxtModuleOpen=[false,false,false];
+  s3.nxtModuleSides=[];
   modXs.forEach((mx,idx)=>{
     const mk=modKeys[idx];
     const modGrp=new THREE.Group();
@@ -2215,9 +2217,47 @@ function buildNXTMachine(g){
     g.add(modGrp);
     s3.nxtModuleGrps.push(modGrp);
 
-    const bodyLo=_b(10.5,28,20,mWhite); bodyLo.position.set(0,-2.5,0);
-    _edges(bodyLo,0xb0b4bc,0.08); modGrp.add(bodyLo);
-    s3.nxtModuleBodyMeshes.push(bodyLo);
+    // Module shell: back/top/bottom walls + transparent side panels (fade open for interior access)
+    const bodyBack=_b(10.5,28,0.55,mWhite); bodyBack.position.set(0,-2.5,-9.72);
+    _edges(bodyBack,0xb0b4bc,0.08); modGrp.add(bodyBack);
+    s3.nxtModuleBodyMeshes.push(bodyBack);
+    const bodyTop=_b(10.5,0.55,20,mWhite); bodyTop.position.set(0,11.22,0); modGrp.add(bodyTop);
+    const bodyBot=_b(10.5,0.55,20,mWhite); bodyBot.position.set(0,-16.22,0); modGrp.add(bodyBot);
+    const sideMatL=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
+    const bodySideL=new THREE.Mesh(new THREE.BoxGeometry(0.55,28,20),sideMatL);
+    bodySideL.castShadow=true; bodySideL.receiveShadow=true;
+    bodySideL.position.set(-5.22,-2.5,0); modGrp.add(bodySideL);
+    const sideMatR=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
+    const bodySideR=new THREE.Mesh(new THREE.BoxGeometry(0.55,28,20),sideMatR);
+    bodySideR.castShadow=true; bodySideR.receiveShadow=true;
+    bodySideR.position.set(5.22,-2.5,0); modGrp.add(bodySideR);
+    s3.nxtModuleSides.push({L:bodySideL,R:bodySideR});
+
+    // Interior: gantry rail + H12 placement head + parts camera (visible when sides fade open)
+    const intRail=_b(9.2,0.45,0.45,_m(0x5e6270,0.28,0.82));
+    intRail.position.set(0,8.5,-2.0); modGrp.add(intRail);
+    const intYCol=_b(0.45,11,0.45,_m(0x585c66,0.32,0.75));
+    intYCol.position.set(0,3.5,-2.0); modGrp.add(intYCol);
+    const intHeadBody=_b(3.0,5.5,2.2,_m(0x1a4dc8,0.42,0.22));
+    intHeadBody.position.set(0,5.5,-2.0); modGrp.add(intHeadBody);
+    _edges(intHeadBody,0x0f3090,0.18);
+    const intHandle=_b(2.6,0.48,2.2,_m(0x141620,0.55,0.12));
+    intHandle.position.set(0,8.8,-2.0); modGrp.add(intHandle);
+    const intNozzleShaft=_b(2.0,2.8,1.6,_m(0x888898,0.30,0.70));
+    intNozzleShaft.position.set(0,1.2,-2.0); modGrp.add(intNozzleShaft);
+    for(let nx=0;nx<2;nx++) for(let nz=0;nz<3;nz++){
+      const noz=_cyl(0.10,0.10,1.6,_m(0x606070,0.20,0.90));
+      noz.position.set((nx-0.5)*0.70,-0.4,-2.0+(nz-1)*0.52); modGrp.add(noz);
+    }
+    const intCamBase=_b(3.6,1.2,3.6,_m(0x090e14,0.68,0.32));
+    intCamBase.position.set(-3.2,5.2,-1.5); modGrp.add(intCamBase);
+    const intCamBody=_cyl(1.5,1.5,1.1,_m(0x08101a,0.65,0.35),8);
+    intCamBody.rotation.x=Math.PI/2; intCamBody.position.set(-3.2,5.2,-0.2); modGrp.add(intCamBody);
+    const intCamLed=_cyl(1.95,1.95,0.22,
+      new THREE.MeshStandardMaterial({color:0xff9900,roughness:0.22,emissive:new THREE.Color(0.55,0.25,0.0),metalness:0}),8);
+    intCamLed.rotation.x=Math.PI/2; intCamLed.position.set(-3.2,5.2,0.72); modGrp.add(intCamLed);
+    const intCamLens=_cyl(0.68,0.68,0.36,_m(0x0c1828,0.12,0.10),8);
+    intCamLens.rotation.x=Math.PI/2; intCamLens.position.set(-3.2,5.2,0.88); modGrp.add(intCamLens);
 
     const stripe=_b(10.5,0.75,20.5,mPurple); stripe.position.set(0,11.6,0); modGrp.add(stripe);
     const panH=_b(10.5,5.8,22.5,mDkGrey); panH.position.set(0,14.5,0.75);
@@ -2296,13 +2336,16 @@ function buildNXTMachine(g){
     rotArrow.position.set(-0.8,-13.0,10.88); modGrp.add(rotArrow);
     const rotArrowH=_b(0.72,0.14,0.14,_m(0x9aa0b4,0.45,0.12));
     rotArrowH.position.set(-0.8,-13.0,10.88); modGrp.add(rotArrowH);
-    // Main switch (chave geral)
-    const swBase=_b(1.1,1.1,0.28,_m(0x1c1e2a,0.50,0.12));
-    swBase.position.set(2.2,-13.0,10.62); modGrp.add(swBase);
-    const swKnob=_cyl(0.36,0.36,0.38,_m(0xd8d8e0,0.25,0.70));
-    swKnob.rotation.x=Math.PI/2; swKnob.position.set(2.2,-13.0,10.90); modGrp.add(swKnob);
-    const swRing=_cyl(0.48,0.48,0.12,_m(0x282c38,0.45,0.30));
-    swRing.rotation.x=Math.PI/2; swRing.position.set(2.2,-13.0,10.70); modGrp.add(swRing);
+    // Chave geral — D11-32A rotary panel key switch (cylindrical body + flat key blade)
+    const swFlange=_b(1.05,1.05,0.14,_m(0x1c1e2a,0.50,0.12));
+    swFlange.position.set(2.2,-13.0,10.57); modGrp.add(swFlange);
+    const swBody=_cyl(0.42,0.42,0.44,_m(0x181a22,0.55,0.18));
+    swBody.rotation.x=Math.PI/2; swBody.position.set(2.2,-13.0,10.85); modGrp.add(swBody);
+    const swFace=_cyl(0.40,0.40,0.06,_m(0xc8c8d0,0.25,0.65));
+    swFace.rotation.x=Math.PI/2; swFace.position.set(2.2,-13.0,11.10); modGrp.add(swFace);
+    // Flat key blade (horizontal = off position)
+    const swKey=_b(0.62,0.14,0.18,_m(0xb0b4bc,0.30,0.55));
+    swKey.position.set(2.2,-13.0,11.17); modGrp.add(swKey);
 
     // ─ Scrap bin (tape waste collector — slides out from module base) ─
     const scrapHsg=_b(9.2,2.8,8.5,_m(0x0a0c10,0.88,0.04));
@@ -2774,6 +2817,13 @@ function animate3D(){
       const tz=s3.nxtModuleOpen[i]?20:0;
       grp.position.z+=(tz-grp.position.z)*0.08;
       if(s3.cssPanels[i]) s3.cssPanels[i].position.z=12.2+grp.position.z;
+    });
+  }
+  if(s3.nxtModuleSides.length){
+    s3.nxtModuleSides.forEach(({L,R},i)=>{
+      const tOp=s3.nxtModuleOpen[i]?0.07:1.0;
+      L.material.opacity+=(tOp-L.material.opacity)*0.06;
+      R.material.opacity+=(tOp-R.material.opacity)*0.06;
     });
   }
   if(machineState==="running"&&s3.nxtSlotQty){
