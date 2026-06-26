@@ -1896,7 +1896,8 @@ const s3 = {
   pcbTrains:[], lastT:0,
   nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[],
   nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[],
-  nxtModuleSides:[]
+  nxtModuleSides:[],
+  nxtScrapGrps:[], nxtScrapOpen:[false,false,false], nxtScrapBodyMeshes:[]
 };
 
 function set3DView(to3D){
@@ -2114,16 +2115,16 @@ function buildNXTMachine(g){
   const mRail  =_m(0xaaaaaa,0.18,0.88);
 
   // ─── Base (black platform) ───
-  const base=_b(40,2.8,22,mBase); base.position.set(0,-12.4,0); g.add(base);
+  const base=_b(40,2.8,22,mBase); base.position.set(0,-22.6,0); g.add(base);
   [[-17,-9],[-17,9],[17,-9],[17,9]].forEach(([x,z])=>{
-    const ft=_b(2.4,1.5,2.4,mBase); ft.position.set(x,-13.85,z); g.add(ft);
+    const ft=_b(2.4,1.5,2.4,mBase); ft.position.set(x,-24.05,z); g.add(ft);
   });
   // Base-level status panels per module slot
   [-11,0,11].forEach(mx=>{
-    const sp=_b(4.5,0.7,0.5,mDkGrey); sp.position.set(mx,-11.8,10.8); g.add(sp);
+    const sp=_b(4.5,0.7,0.5,mDkGrey); sp.position.set(mx,-21.2,10.8); g.add(sp);
     const spLed=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.3,0.18),
       new THREE.MeshStandardMaterial({color:0x00cc44,roughness:0.2,emissive:new THREE.Color(0,0.4,0.1)}));
-    spLed.position.set(mx-1.5,-11.8,11.08); g.add(spLed);
+    spLed.position.set(mx-1.5,-21.2,11.08); g.add(spLed);
   });
 
   // ─── Back wall ───
@@ -2210,6 +2211,9 @@ function buildNXTMachine(g){
   s3.nxtModuleBodyMeshes=[];
   s3.nxtModuleOpen=[false,false,false];
   s3.nxtModuleSides=[];
+  s3.nxtScrapGrps=[];
+  s3.nxtScrapOpen=[false,false,false];
+  s3.nxtScrapBodyMeshes=[];
   modXs.forEach((mx,idx)=>{
     const mk=modKeys[idx];
     const modGrp=new THREE.Group();
@@ -2217,13 +2221,13 @@ function buildNXTMachine(g){
     g.add(modGrp);
     s3.nxtModuleGrps.push(modGrp);
 
-    // Module shell: back/top/bottom walls + transparent side panels (fade open for interior access)
-    const bodyBack=_b(10.5,28,0.55,mWhite); bodyBack.position.set(0,-2.5,-9.72);
+    // Module shell: back/top/bottom/front walls + transparent upper side + opaque lower side
+    const bodyBack=_b(10.5,36,0.55,mWhite); bodyBack.position.set(0,-6.5,-9.72);
     _edges(bodyBack,0xb0b4bc,0.08); modGrp.add(bodyBack);
     s3.nxtModuleBodyMeshes.push(bodyBack);
     const bodyTop=_b(10.5,0.55,20,mWhite); bodyTop.position.set(0,11.22,0); modGrp.add(bodyTop);
-    const bodyBot=_b(10.5,0.55,20,mWhite); bodyBot.position.set(0,-16.22,0); modGrp.add(bodyBot);
-    const bodyFront=_b(10.5,28,0.22,mWhite); bodyFront.position.set(0,-2.5,9.78); modGrp.add(bodyFront);
+    const bodyBot=_b(10.5,0.55,20,mWhite); bodyBot.position.set(0,-24.22,0); modGrp.add(bodyBot);
+    const bodyFront=_b(10.5,36,0.22,mWhite); bodyFront.position.set(0,-6.5,9.78); modGrp.add(bodyFront);
     // Upper side panels — head-access zone (y=0→11.5): fade transparent when module opens
     const sideHiMatL=new THREE.MeshStandardMaterial({color:0xdfe2e8,roughness:0.30,metalness:0.10,transparent:true,opacity:1.0});
     const bodySideHiL=new THREE.Mesh(new THREE.BoxGeometry(0.55,11.5,20),sideHiMatL);
@@ -2234,9 +2238,9 @@ function buildNXTMachine(g){
     bodySideHiR.castShadow=true; bodySideHiR.receiveShadow=true;
     bodySideHiR.position.set(5.22,5.75,0); modGrp.add(bodySideHiR);
     s3.nxtModuleSides.push({L:bodySideHiL,R:bodySideHiR});
-    // Lower side panels — feeder zone (y=-16.5→0): always opaque (feeder mechanism enclosed)
-    const bodySideLoL=_b(0.55,16.5,20,mWhite); bodySideLoL.position.set(-5.22,-8.25,0); modGrp.add(bodySideLoL);
-    const bodySideLoR=_b(0.55,16.5,20,mWhite); bodySideLoR.position.set(5.22,-8.25,0); modGrp.add(bodySideLoR);
+    // Lower side panels — feeder+scrap zone (y=-24.5→0): always opaque
+    const bodySideLoL=_b(0.55,24.5,20,mWhite); bodySideLoL.position.set(-5.22,-12.25,0); modGrp.add(bodySideLoL);
+    const bodySideLoR=_b(0.55,24.5,20,mWhite); bodySideLoR.position.set(5.22,-12.25,0); modGrp.add(bodySideLoR);
 
     // Interior: gantry rail + H12 placement head + parts camera (visible when sides fade open)
     const intRail=_b(9.2,0.45,0.45,_m(0x5e6270,0.28,0.82));
@@ -2352,19 +2356,29 @@ function buildNXTMachine(g){
     const swKey=_b(0.62,0.14,0.18,_m(0xb0b4bc,0.30,0.55));
     swKey.position.set(2.2,-13.0,11.17); modGrp.add(swKey);
 
-    // ─ Scrap bin (tape waste collector — slides out from module base) ─
-    const scrapHsg=_b(9.2,2.8,8.5,_m(0x0a0c10,0.88,0.04));
-    scrapHsg.position.set(0,-14.8,5.8); modGrp.add(scrapHsg);
-    const scrapFront=_b(9.2,2.8,0.35,_m(0x0e1016,0.82,0.05));
-    scrapFront.position.set(0,-14.8,10.22); modGrp.add(scrapFront);
-    // Red warning label (two lines like real machine)
-    const scrapLbl1=_b(5.2,0.60,0.14,_m(0xcc1111,0.65,0.00));
-    scrapLbl1.position.set(0,-14.1,10.38); modGrp.add(scrapLbl1);
-    const scrapLbl2=_b(5.2,0.60,0.14,_m(0xcc1111,0.65,0.00));
-    scrapLbl2.position.set(0,-15.2,10.38); modGrp.add(scrapLbl2);
-    // Handle strip
-    const scrapHandle=_b(3.0,0.32,0.32,_m(0x2a2e3c,0.50,0.18));
-    scrapHandle.position.set(0,-13.6,10.38); modGrp.add(scrapHandle);
+    // ─ Scrap drawer (tape waste collector — pulls forward on click) ─
+    const scrapGrp=new THREE.Group(); modGrp.add(scrapGrp);
+    s3.nxtScrapGrps.push(scrapGrp);
+    // Tray housing (open-top box, h=8)
+    const scrapHsg=_b(9.2,8,8.8,_m(0x0a0c10,0.88,0.04));
+    scrapHsg.position.set(0,-19.5,4.6); scrapGrp.add(scrapHsg);
+    // Front face panel (clickable)
+    const scrapFront=_b(9.2,8,0.35,_m(0x0e1016,0.82,0.05));
+    scrapFront.position.set(0,-19.5,10.22); scrapGrp.add(scrapFront);
+    s3.nxtScrapBodyMeshes.push(scrapFront);
+    // Warning labels (3 lines)
+    const scrapLbl1=_b(6.0,0.65,0.14,_m(0xcc1111,0.65,0.00));
+    scrapLbl1.position.set(0,-16.5,10.40); scrapGrp.add(scrapLbl1);
+    const scrapLbl2=_b(6.0,0.65,0.14,_m(0xcc1111,0.65,0.00));
+    scrapLbl2.position.set(0,-19.5,10.40); scrapGrp.add(scrapLbl2);
+    const scrapLbl3=_b(6.0,0.65,0.14,_m(0xcc1111,0.65,0.00));
+    scrapLbl3.position.set(0,-22.5,10.40); scrapGrp.add(scrapLbl3);
+    // Pull handle (centred, near top of front face)
+    const scrapHandle=_b(3.2,0.38,0.38,_m(0x2a2e3c,0.50,0.18));
+    scrapHandle.position.set(0,-15.5,10.42); scrapGrp.add(scrapHandle);
+    // Waste accumulation visual (dark material at tray bottom)
+    const wasteFloor=_b(8.6,0.6,7.8,_m(0x1a1208,0.92,0.02));
+    wasteFloor.position.set(0,-23.4,4.4); scrapGrp.add(wasteFloor);
   });
 
   // ─── Conveyor (PCB transport) — mid-machine, between feeders and monitors ───
@@ -2831,6 +2845,12 @@ function animate3D(){
       R.material.opacity+=(tOp-R.material.opacity)*0.06;
     });
   }
+  if(s3.nxtScrapGrps.length){
+    s3.nxtScrapGrps.forEach((grp,i)=>{
+      const tz=s3.nxtScrapOpen[i]?15:0;
+      grp.position.z+=(tz-grp.position.z)*0.08;
+    });
+  }
   if(machineState==="running"&&s3.nxtSlotQty){
     s3.nxtConsumeAccum+=dt;
     if(s3.nxtConsumeAccum>=0.5){
@@ -2955,7 +2975,10 @@ function nxtUpdateToolbar(){
 function nxtFeederMode(force){
   const entering=force!==undefined?force:!s3.nxtPlacing;
   s3.nxtPlacing=entering;
-  if(entering&&s3.nxtModuleGrps.length) s3.nxtModuleOpen=[false,false,false];
+  if(entering&&s3.nxtModuleGrps.length){
+    s3.nxtModuleOpen=[false,false,false];
+    s3.nxtScrapOpen=[false,false,false];
+  }
   const btn=document.getElementById("nxtBtnFeeder");
   const hint=document.getElementById("nxt3dHint");
   const canvas=document.getElementById("mv3dCanvas");
@@ -3023,13 +3046,25 @@ function nxt3DClick(e){
     if(s3.nxtGhostMat) s3.nxtGhostMat.color.setHex(s3.nxtSlotHasFeeder[mk][fi]?0xff3333:0x2288ff);
     return;
   }
-  if(!s3.nxtModuleBodyMeshes.length||!s3.camera||!s3.nxtRaycaster) return;
+  if(!s3.camera||!s3.nxtRaycaster) return;
   const canvas=document.getElementById("mv3dCanvas");
   if(!canvas) return;
   const rect=canvas.getBoundingClientRect();
   const nx=((e.clientX-rect.left)/rect.width)*2-1;
   const ny=-((e.clientY-rect.top)/rect.height)*2+1;
   s3.nxtRaycaster.setFromCamera({x:nx,y:ny},s3.camera);
+  // Scrap drawer click
+  if(s3.nxtScrapBodyMeshes.length){
+    const scrHits=s3.nxtRaycaster.intersectObjects(s3.nxtScrapBodyMeshes,false);
+    if(scrHits.length){
+      e.stopPropagation();
+      const si=s3.nxtScrapBodyMeshes.indexOf(scrHits[0].object);
+      if(si>=0) s3.nxtScrapOpen[si]=!s3.nxtScrapOpen[si];
+      return;
+    }
+  }
+  // Module body click
+  if(!s3.nxtModuleBodyMeshes.length) return;
   const hits=s3.nxtRaycaster.intersectObjects(s3.nxtModuleBodyMeshes,false);
   if(!hits.length) return;
   e.stopPropagation();
