@@ -1896,7 +1896,7 @@ const s3 = {
   pcbTrains:[], lastT:0,
   nxtSlotQty:null, nxtSlotCapacity:null, nxtConsumeAccum:0, nxtAndonLights:[],
   nxtModuleGrps:[], nxtModuleOpen:[false,false,false], nxtModuleBodyMeshes:[],
-  nxtModuleSides:[], nxtModuleWindows:[]
+  nxtModuleSides:[], nxtModuleWindows:[], nxtModuleFrontPanels:[]
 };
 
 function set3DView(to3D){
@@ -2211,6 +2211,7 @@ function buildNXTMachine(g){
   s3.nxtModuleOpen=[false,false,false];
   s3.nxtModuleSides=[];
   s3.nxtModuleWindows=[];
+  s3.nxtModuleFrontPanels=[];
   modXs.forEach((mx,idx)=>{
     const mk=modKeys[idx];
     const modGrp=new THREE.Group();
@@ -2271,6 +2272,7 @@ function buildNXTMachine(g){
     panTop.position.set(0,17.3,0.75); modGrp.add(panTop);
     // Dark inspection window (tinted acrylic — see interior from close range)
     const winFrame=_b(5.5,5.2,0.38,_m(0x181c24,0.72,0.12));
+    winFrame.material.transparent=true;
     winFrame.position.set(0,7.0,10.20); modGrp.add(winFrame);
     const winGlass=new THREE.Mesh(new THREE.BoxGeometry(4.5,4.2,0.14),
       new THREE.MeshStandardMaterial({color:0x0c1018,roughness:0.08,metalness:0.05,transparent:true,opacity:0.72}));
@@ -2302,9 +2304,12 @@ function buildNXTMachine(g){
     const lastDiv=_b(0.07,10.5,2.7,mPalStr);
     lastDiv.position.set(5.25,-5.0,10.9); modGrp.add(lastDiv);
     const indPnl=_b(10.5,2.2,0.58,_m(0x12141a,0.82,0.18));
+    indPnl.material.transparent=true;
     indPnl.position.set(0,1.85,11.28); modGrp.add(indPnl);
     const indGroove=_b(10.5,0.50,0.38,_m(0x0c0d10,0.90,0.05));
+    indGroove.material.transparent=true;
     indGroove.position.set(0,1.05,11.30); modGrp.add(indGroove);
+    s3.nxtModuleFrontPanels.push([winFrame,indPnl,indGroove]);
     for(let fi=0;fi<nF;fi++){
       const fxL=-5.25+(fi+0.5)*fSp;
       const sk=`${mk}_${fi}`;
@@ -2836,6 +2841,12 @@ function animate3D(){
     s3.nxtModuleWindows.forEach((win,i)=>{
       const tOp=s3.nxtModuleOpen[i]?0.05:0.72;
       win.material.opacity+=(tOp-win.material.opacity)*0.05;
+    });
+  }
+  if(s3.nxtModuleFrontPanels.length){
+    s3.nxtModuleFrontPanels.forEach((panels,i)=>{
+      const tOp=s3.nxtModuleOpen[i]?0.06:1.0;
+      panels.forEach(m=>{m.material.opacity+=(tOp-m.material.opacity)*0.05;});
     });
   }
   if(machineState==="running"&&s3.nxtSlotQty){
